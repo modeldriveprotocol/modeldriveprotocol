@@ -48,23 +48,45 @@
       <pre><code id="status">Booting…</code></pre>
     </main>
 
-    <script src="../../packages/client/dist/modeldriveprotocol-client.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js"></script>
     <script>
       const status = document.getElementById("status");
+      const readPageInfo = () => ({
+        title: document.title,
+        url: window.location.href,
+        lang: document.documentElement.lang || navigator.language,
+        heading: document.querySelector("h1")?.textContent?.trim() ?? ""
+      });
 
       const client = MDP.createMdpClient({
         serverUrl: "ws://127.0.0.1:7070",
         client: {
           id: "browser-example",
-          name: "Browser Example Client",
-          description: "Static example page"
+          name: document.title || "Browser Example Client",
+          description: `Static example page for ${window.location.hostname}`
         }
       });
 
+      client.exposeTool("getPageInfo", async () => readPageInfo());
+
       client.exposeTool("searchDom", async ({ query }) => ({
         query,
-        matches: document.body.innerText.includes(query) ? 1 : 0
+        matches: document.body.innerText.includes(query) ? 1 : 0,
+        title: document.title,
+        url: window.location.href
       }));
+
+      client.exposeResource(
+        "webpage://example/page-info",
+        async () => ({
+          mimeType: "application/json",
+          text: JSON.stringify(readPageInfo(), null, 2)
+        }),
+        {
+          name: "Example Page Info",
+          mimeType: "application/json"
+        }
+      );
 
       client.exposeResource(
         "webpage://example/body",

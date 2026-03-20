@@ -27,18 +27,27 @@ JS client 应该暴露与其他运行时一致的抽象：注册 capability hand
 - 位于 `packages/client/dist/*.js` 下的 ESM SDK 文件
 - 浏览器全局 bundle `packages/client/dist/modeldriveprotocol-client.global.js`
 
+如果要走浏览器全局脚本，可以直接使用 npm CDN 形式：
+
+`https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js`
+
 这个全局 bundle 会把 `MDP` 挂到 `window` 上，因此普通浏览器页面可以直接这样使用：
 
 ```html
-<script src="/assets/modeldriveprotocol-client.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js"></script>
 <script>
   const client = MDP.createMdpClient({
     serverUrl: "ws://127.0.0.1:7070",
     client: {
       id: "browser-01",
-      name: "Browser Client"
+      name: document.title || "Browser Client"
     }
   });
+
+  client.exposeTool("getPageInfo", async () => ({
+    title: document.title,
+    url: window.location.href
+  }));
 </script>
 ```
 
@@ -94,45 +103,71 @@ client.register();
 ### WebSocket
 
 ```html
-<script src="/assets/modeldriveprotocol-client.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js"></script>
 <script>
-  const client = MDP.createMdpClient({
-    serverUrl: "wss://127.0.0.1:7070",
-    client: {
-      id: "browser-01",
-      name: "Browser Client"
-    }
-  });
+  void (async () => {
+    const readPageInfo = () => ({
+      title: document.title,
+      url: window.location.href
+    });
 
-  client.exposeTool("searchDom", async ({ query }, context) => ({
-    query,
-    matches: document.body.innerText.includes(query) ? 1 : 0,
-    authToken: context.auth?.token
-  }));
+    const client = MDP.createMdpClient({
+      serverUrl: "wss://127.0.0.1:7070",
+      client: {
+        id: "browser-01",
+        name: document.title || "Browser Client"
+      }
+    });
 
-  await client.connect();
-  client.register();
+    client.exposeTool("getPageInfo", async (_args, context) => ({
+      ...readPageInfo(),
+      authToken: context.auth?.token
+    }));
+
+    client.exposeTool("searchDom", async ({ query }, context) => ({
+      query,
+      matches: document.body.innerText.includes(query) ? 1 : 0,
+      title: document.title,
+      url: window.location.href,
+      authToken: context.auth?.token
+    }));
+
+    await client.connect();
+    client.register();
+  })();
 </script>
 ```
 
 ### HTTP Loop
 
 ```html
-<script src="/assets/modeldriveprotocol-client.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js"></script>
 <script>
-  const client = MDP.createMdpClient({
-    serverUrl: "https://127.0.0.1:7070",
-    auth: {
-      token: "client-session-token"
-    },
-    client: {
-      id: "browser-01",
-      name: "Browser Client"
-    }
-  });
+  void (async () => {
+    const readPageInfo = () => ({
+      title: document.title,
+      url: window.location.href
+    });
 
-  await client.connect();
-  client.register();
+    const client = MDP.createMdpClient({
+      serverUrl: "https://127.0.0.1:7070",
+      auth: {
+        token: "client-session-token"
+      },
+      client: {
+        id: "browser-01",
+        name: document.title || "Browser Client"
+      }
+    });
+
+    client.exposeTool("getPageInfo", async (_args, context) => ({
+      ...readPageInfo(),
+      authToken: context.auth?.token
+    }));
+
+    await client.connect();
+    client.register();
+  })();
 </script>
 ```
 

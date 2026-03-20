@@ -5,85 +5,117 @@ status: MVP
 
 # Quick Start
 
-The fastest path to a working setup is:
+The shortest end-to-end path is:
 
-1. Build the workspace.
-2. Run the TypeScript MDP server.
-3. Start one client process.
-4. Register a tool, prompt, skill, and resource.
-5. Connect an MCP host and call the bridge tools.
+1. Start the MDP server CLI.
+2. Start one MDP client.
+3. Register at least one capability.
+4. Connect an MCP host and call the bridge tools.
+
+## 1. Start the Server CLI
 
 ```bash
-pnpm install
-pnpm build
-node packages/server/dist/cli.js --port 7070
+npx @modeldriveprotocol/server --port 7070
 ```
+
+If the package is already installed, the same CLI is available as `modeldriveprotocol-server`.
+
+By default the same listener exposes:
+
+- WebSocket at `ws://127.0.0.1:7070`
+- HTTP loop at `http://127.0.0.1:7070/mdp/http-loop`
 
 To expose secure endpoints, provide a key pair:
 
 ```bash
-node packages/server/dist/cli.js --port 7070 --tls-key ./certs/server-key.pem --tls-cert ./certs/server-cert.pem
+npx @modeldriveprotocol/server --port 7070 --tls-key ./certs/server-key.pem --tls-cert ./certs/server-cert.pem
 ```
 
-For a browser-first path, load the generated bundle:
+With TLS enabled, the endpoints become `wss://127.0.0.1:7070` and `https://127.0.0.1:7070/mdp/http-loop`.
 
-```html
-<script src="/assets/modeldriveprotocol-client.global.js"></script>
+## 2. Start One Client
+
+Use `ws://` or `wss://` when you want a direct bidirectional session:
+
+```ts
+import { createMdpClient } from "@modeldriveprotocol/client";
+
+const client = createMdpClient({
+  serverUrl: "ws://127.0.0.1:7070",
+  client: {
+    id: "browser-01",
+    name: "Browser Client"
+  }
+});
+
+client.exposeTool("searchDom", async ({ query }) => ({
+  query,
+  matches: 3
+}));
+
+await client.connect();
+client.register();
 ```
 
-Then create and register a client.
+Use `http://` or `https://` when the runtime prefers request/response polling or when you want explicit HTTP-carried auth:
 
-WebSocket example:
+```ts
+import { createMdpClient } from "@modeldriveprotocol/client";
+
+const client = createMdpClient({
+  serverUrl: "http://127.0.0.1:7070",
+  auth: {
+    token: "client-session-token"
+  },
+  client: {
+    id: "browser-01",
+    name: "Browser Client"
+  }
+});
+
+client.exposeTool("searchDom", async ({ query }, context) => ({
+  query,
+  matches: 3,
+  authToken: context.auth?.token
+}));
+
+await client.connect();
+client.register();
+```
+
+If you want a browser-global example, load the bundle first and wrap the async work explicitly:
 
 ```html
+<script src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js"></script>
 <script>
-  const client = MDP.createMdpClient({
-    serverUrl: "ws://127.0.0.1:7070",
-    client: {
-      id: "browser-01",
-      name: "Browser Client"
-    }
-  });
+  void (async () => {
+    const client = MDP.createMdpClient({
+      serverUrl: "ws://127.0.0.1:7070",
+      client: {
+        id: "browser-01",
+        name: document.title || "Browser Client"
+      }
+    });
 
-  await client.connect();
-  client.register();
+    client.exposeTool("getPageInfo", async () => ({
+      title: document.title,
+      url: window.location.href
+    }));
+
+    await client.connect();
+    client.register();
+  })();
 </script>
 ```
 
-HTTP loop example:
+## 3. Connect an MCP Host
 
-```html
-<script>
-  const client = MDP.createMdpClient({
-    serverUrl: "http://127.0.0.1:7070",
-    auth: {
-      token: "client-session-token"
-    },
-    client: {
-      id: "browser-01",
-      name: "Browser Client"
-    }
-  });
+After a client registers, the MCP bridge exposes stable tools such as:
 
-  await client.connect();
-  client.register();
-</script>
-```
+- `listClients`
+- `listTools`
+- `callTools`
+- `getPrompt`
+- `readResource`
 
-The previous MVP path still works too:
-
-1. Run the TypeScript MDP server.
-2. Start one client process.
-3. Register a tool, prompt, skill, and resource.
-4. Connect an MCP host and call the bridge tools.
-
-Current reference transport choices are:
-
-- `ws://` / `wss://` for socket sessions
-- `http://` / `https://` for HTTP loop mode
-
-Use `ws://` / `wss://` when you want a direct bidirectional session.
-
-Use `http://` / `https://` when the runtime prefers request/response polling or when you want to carry auth with explicit HTTP headers.
-
-The runtime still keeps an in-memory registry. Transport can now vary without changing the MCP bridge contract.
+The registry remains in-memory, but the transport can vary without changing the MCP bridge contract.

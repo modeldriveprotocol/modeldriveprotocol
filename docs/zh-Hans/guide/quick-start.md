@@ -5,85 +5,117 @@ status: MVP
 
 # 快速开始
 
-从零到一跑通最短路径是：
+最短的端到端路径是：
 
-1. 构建整个 workspace。
-2. 启动 TypeScript MDP server。
-3. 启动一个 client 进程。
-4. 注册一个 tool、prompt、skill 和 resource。
-5. 连接一个 MCP host，并调用 bridge tools。
+1. 启动 MDP server CLI。
+2. 启动一个 MDP client。
+3. 注册至少一个 capability。
+4. 连接 MCP host 并调用 bridge tools。
+
+## 1. 启动 Server CLI
 
 ```bash
-pnpm install
-pnpm build
-node packages/server/dist/cli.js --port 7070
+npx @modeldriveprotocol/server --port 7070
 ```
+
+如果包已经安装到环境里，也可以直接使用 `modeldriveprotocol-server` 这个 CLI 名称。
+
+默认情况下，同一个 listener 会同时暴露：
+
+- `ws://127.0.0.1:7070` 上的 WebSocket
+- `http://127.0.0.1:7070/mdp/http-loop` 上的 HTTP loop
 
 如果要暴露安全端点，可以额外提供证书与私钥：
 
 ```bash
-node packages/server/dist/cli.js --port 7070 --tls-key ./certs/server-key.pem --tls-cert ./certs/server-cert.pem
+npx @modeldriveprotocol/server --port 7070 --tls-key ./certs/server-key.pem --tls-cert ./certs/server-cert.pem
 ```
 
-如果先走浏览器路径，可以直接加载生成好的 bundle：
+启用 TLS 后，端点会变成 `wss://127.0.0.1:7070` 和 `https://127.0.0.1:7070/mdp/http-loop`。
 
-```html
-<script src="/assets/modeldriveprotocol-client.global.js"></script>
+## 2. 启动一个 Client
+
+需要直接双向会话时，用 `ws://` 或 `wss://`：
+
+```ts
+import { createMdpClient } from "@modeldriveprotocol/client";
+
+const client = createMdpClient({
+  serverUrl: "ws://127.0.0.1:7070",
+  client: {
+    id: "browser-01",
+    name: "Browser Client"
+  }
+});
+
+client.exposeTool("searchDom", async ({ query }) => ({
+  query,
+  matches: 3
+}));
+
+await client.connect();
+client.register();
 ```
 
-然后创建并注册一个 client：
+运行时更偏请求响应轮询，或者希望明确通过 HTTP 携带认证信息时，用 `http://` 或 `https://`：
 
-WebSocket 示例：
+```ts
+import { createMdpClient } from "@modeldriveprotocol/client";
+
+const client = createMdpClient({
+  serverUrl: "http://127.0.0.1:7070",
+  auth: {
+    token: "client-session-token"
+  },
+  client: {
+    id: "browser-01",
+    name: "Browser Client"
+  }
+});
+
+client.exposeTool("searchDom", async ({ query }, context) => ({
+  query,
+  matches: 3,
+  authToken: context.auth?.token
+}));
+
+await client.connect();
+client.register();
+```
+
+如果你要走浏览器全局 bundle 路径，先加载脚本，再显式包一层异步调用：
 
 ```html
+<script src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js"></script>
 <script>
-  const client = MDP.createMdpClient({
-    serverUrl: "ws://127.0.0.1:7070",
-    client: {
-      id: "browser-01",
-      name: "Browser Client"
-    }
-  });
+  void (async () => {
+    const client = MDP.createMdpClient({
+      serverUrl: "ws://127.0.0.1:7070",
+      client: {
+        id: "browser-01",
+        name: document.title || "Browser Client"
+      }
+    });
 
-  await client.connect();
-  client.register();
+    client.exposeTool("getPageInfo", async () => ({
+      title: document.title,
+      url: window.location.href
+    }));
+
+    await client.connect();
+    client.register();
+  })();
 </script>
 ```
 
-HTTP loop 示例：
+## 3. 连接 MCP Host
 
-```html
-<script>
-  const client = MDP.createMdpClient({
-    serverUrl: "http://127.0.0.1:7070",
-    auth: {
-      token: "client-session-token"
-    },
-    client: {
-      id: "browser-01",
-      name: "Browser Client"
-    }
-  });
+client 注册完成后，MCP bridge 会稳定暴露这些 tools：
 
-  await client.connect();
-  client.register();
-</script>
-```
+- `listClients`
+- `listTools`
+- `callTools`
+- `getPrompt`
+- `readResource`
 
-MVP 当前仍然建议这条路径：
-
-1. 启动 TypeScript MDP server。
-2. 启动一个 client 进程。
-3. 注册一个 tool、prompt、skill 和 resource。
-4. 连接一个 MCP host，并调用 bridge tools。
-
-当前参考 transport 选项是：
-
-- 面向 socket 会话的 `ws://` / `wss://`
-- 面向 HTTP loop 模式的 `http://` / `https://`
-
-需要直接双向会话时，用 `ws://` / `wss://`。
-
-运行时更偏请求响应轮询，或者希望明确通过 HTTP headers 携带认证信息时，用 `http://` / `https://`。
-
-运行时仍然使用内存 registry，但 transport 已经可以变化，而不影响 MCP bridge 契约。
+registry 仍然是内存态，但 transport 已经可以变化，而不影响 MCP bridge 契约。

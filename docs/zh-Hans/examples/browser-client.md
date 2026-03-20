@@ -27,36 +27,51 @@ status: MVP
   </head>
   <body>
     <h1>MDP Browser Client</h1>
-    <script src="/assets/modeldriveprotocol-client.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js"></script>
     <script>
-      const client = MDP.createMdpClient({
-        serverUrl: "ws://127.0.0.1:7070",
-        client: {
-          id: "browser-01",
-          name: "Browser Client"
-        }
-      });
+      void (async () => {
+        const readPageInfo = () => ({
+          title: document.title,
+          url: window.location.href,
+          heading: document.querySelector("h1")?.textContent?.trim() ?? ""
+        });
 
-      client.exposeTool("searchDom", async ({ query }, context) => ({
-        query,
-        matches: document.body.innerText.includes(query) ? 1 : 0,
-        authToken: context.auth?.token
-      }));
+        const client = MDP.createMdpClient({
+          serverUrl: "ws://127.0.0.1:7070",
+          client: {
+            id: "browser-01",
+            name: document.title || "Browser Client"
+          }
+        });
 
-      client.exposeResource(
-        "webpage://active-tab/selection",
-        async () => ({
-          mimeType: "text/plain",
-          text: window.getSelection()?.toString() ?? ""
-        }),
-        {
-          name: "Current Selection",
-          mimeType: "text/plain"
-        }
-      );
+        client.exposeTool("getPageInfo", async (_args, context) => ({
+          ...readPageInfo(),
+          authToken: context.auth?.token
+        }));
 
-      await client.connect();
-      client.register();
+        client.exposeTool("searchDom", async ({ query }, context) => ({
+          query,
+          matches: document.body.innerText.includes(query) ? 1 : 0,
+          title: document.title,
+          url: window.location.href,
+          authToken: context.auth?.token
+        }));
+
+        client.exposeResource(
+          "webpage://active-tab/page-info",
+          async () => ({
+            mimeType: "application/json",
+            text: JSON.stringify(readPageInfo(), null, 2)
+          }),
+          {
+            name: "Current Page Info",
+            mimeType: "application/json"
+          }
+        );
+
+        await client.connect();
+        client.register();
+      })();
     </script>
   </body>
 </html>
@@ -68,26 +83,40 @@ status: MVP
 <!doctype html>
 <html>
   <body>
-    <script src="/assets/modeldriveprotocol-client.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js"></script>
     <script>
-      const client = MDP.createMdpClient({
-        serverUrl: "http://127.0.0.1:7070",
-        auth: {
-          token: "browser-session-token"
-        },
-        client: {
-          id: "browser-01",
-          name: "Browser Client"
-        }
-      });
+      void (async () => {
+        const readPageInfo = () => ({
+          title: document.title,
+          url: window.location.href
+        });
 
-      await client.connect();
-      client.register();
+        const client = MDP.createMdpClient({
+          serverUrl: "http://127.0.0.1:7070",
+          auth: {
+            token: "browser-session-token"
+          },
+          client: {
+            id: "browser-01",
+            name: document.title || "Browser Client"
+          }
+        });
+
+        client.exposeTool("getPageInfo", async (_args, context) => ({
+          ...readPageInfo(),
+          authToken: context.auth?.token
+        }));
+
+        await client.connect();
+        client.register();
+      })();
     </script>
   </body>
 </html>
 ```
 
 ## 仓库示例
+
+这个示例会先暴露 `getPageInfo`，这样 host 可以先拿到页面标题和 URL，再决定是否调用更具体的工具。
 
 可直接查看[部署在 Pages 上的浏览器示例](/examples/browser/index.html)作为启动模板。
