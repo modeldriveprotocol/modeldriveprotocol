@@ -1,5 +1,6 @@
 import type {
   CapabilityKind,
+  ClientConnectionDescriptor,
   ClientDescriptor,
   IndexedPromptDescriptor,
   IndexedResourceDescriptor,
@@ -12,6 +13,7 @@ export interface RegisteredClientSnapshot {
   descriptor: ClientDescriptor;
   connectedAt: Date;
   lastSeenAt: Date;
+  connection: ClientConnectionDescriptor;
 }
 
 export interface CapabilityTarget {
@@ -27,12 +29,15 @@ export class CapabilityIndex {
   ) {}
 
   listClients(): ListedClient[] {
-    return this.listRegisteredClients().map(({ descriptor, connectedAt, lastSeenAt }) => ({
-      ...descriptor,
-      status: "online",
-      connectedAt: connectedAt.toISOString(),
-      lastSeenAt: lastSeenAt.toISOString()
-    }));
+    return this.listRegisteredClients().map(
+      ({ descriptor, connectedAt, lastSeenAt, connection }) => ({
+        ...descriptor,
+        status: "online",
+        connectedAt: connectedAt.toISOString(),
+        lastSeenAt: lastSeenAt.toISOString(),
+        connection
+      })
+    );
   }
 
   listTools(clientId?: string): IndexedToolDescriptor[] {

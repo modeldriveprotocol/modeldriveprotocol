@@ -5,14 +5,18 @@ status: MVP
 
 # Transport
 
-The protocol should stay transport-agnostic, but the MVP uses WebSocket.
+The protocol stays transport-agnostic. The current reference implementation ships two MDP-side transports:
 
-That gives the first working version:
+- `ws` / `wss` for direct bidirectional sessions
+- `http` / `https` loop mode for runtimes that prefer request/response polling
 
-- bidirectional messaging
-- request correlation
-- heartbeat support
-- easy native and browser embedding
+Both transports preserve the same message model:
 
-Later transports can be added without rewriting the registry or router logic.
+- `registerClient`
+- `unregisterClient`
+- `callClient`
+- `callClientResult`
+- `ping`
+- `pong`
 
+That means registry, routing, and MCP bridge logic stay unchanged when the transport changes.

@@ -20,14 +20,23 @@ describe("InvocationRouter", () => {
       name: "searchDom",
       args: {
         query: "mdp"
+      },
+      auth: {
+        token: "host-token"
       }
     });
 
     const outboundMessage = vi.mocked(session.send).mock.calls[0]?.[0] as {
       requestId: string;
+      auth?: {
+        token?: string;
+      };
     };
 
     expect(outboundMessage.requestId).toBeTypeOf("string");
+    expect(outboundMessage.auth).toEqual({
+      token: "host-token"
+    });
 
     const resolved = router.resolve({
       type: "callClientResult",

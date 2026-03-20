@@ -1,8 +1,30 @@
 import type { JsonObject, JsonSchema } from "./json.js";
 
 export const capabilityKinds = ["tool", "prompt", "skill", "resource"] as const;
+export const clientConnectionModes = ["ws", "http-loop"] as const;
+export const clientAuthSources = [
+  "none",
+  "message",
+  "transport",
+  "transport+message"
+] as const;
 
 export type CapabilityKind = (typeof capabilityKinds)[number];
+export type ClientConnectionMode = (typeof clientConnectionModes)[number];
+export type ClientAuthSource = (typeof clientAuthSources)[number];
+
+export interface AuthContext {
+  scheme?: string;
+  token?: string;
+  headers?: Record<string, string>;
+  metadata?: JsonObject;
+}
+
+export interface ClientConnectionDescriptor {
+  mode: ClientConnectionMode;
+  secure: boolean;
+  authSource: ClientAuthSource;
+}
 
 export interface ToolDescriptor {
   name: string;
@@ -52,6 +74,7 @@ export interface ListedClient extends ClientDescriptor {
   status: "online";
   connectedAt: string;
   lastSeenAt: string;
+  connection: ClientConnectionDescriptor;
 }
 
 export interface IndexedToolDescriptor extends ToolDescriptor {

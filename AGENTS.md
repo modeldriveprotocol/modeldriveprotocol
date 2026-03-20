@@ -21,12 +21,13 @@ If you are new to the project, read files in this order:
 3. [packages/protocol/src/models.ts](./packages/protocol/src/models.ts)
 4. [packages/protocol/src/messages.ts](./packages/protocol/src/messages.ts)
 5. [packages/server/src/mdp-server.ts](./packages/server/src/mdp-server.ts)
-6. [packages/server/src/mcp-bridge.ts](./packages/server/src/mcp-bridge.ts)
-7. [packages/client/src/mdp-client.ts](./packages/client/src/mdp-client.ts)
-8. [scripts/smoke-test.mjs](./scripts/smoke-test.mjs)
-9. [packages/protocol/test/guards.test.ts](./packages/protocol/test/guards.test.ts)
-10. [packages/client/test/mdp-client.test.ts](./packages/client/test/mdp-client.test.ts)
-11. [packages/server/test/invocation-router.test.ts](./packages/server/test/invocation-router.test.ts)
+6. [packages/server/src/transport-server.ts](./packages/server/src/transport-server.ts)
+7. [packages/server/src/mcp-bridge.ts](./packages/server/src/mcp-bridge.ts)
+8. [packages/client/src/mdp-client.ts](./packages/client/src/mdp-client.ts)
+9. [scripts/smoke-test.mjs](./scripts/smoke-test.mjs)
+10. [packages/protocol/test/guards.test.ts](./packages/protocol/test/guards.test.ts)
+11. [packages/client/test/mdp-client.test.ts](./packages/client/test/mdp-client.test.ts)
+12. [packages/server/test/invocation-router.test.ts](./packages/server/test/invocation-router.test.ts)
 
 That order mirrors the intended abstraction stack:
 
@@ -68,7 +69,9 @@ Read here when working on:
 - capability indexing
 - invocation routing
 - MCP bridge tools
-- WebSocket transport
+- WebSocket / HTTP loop transports
+- TLS listener setup
+- transport-carried authentication
 
 Key files:
 
@@ -77,11 +80,13 @@ Key files:
 - [packages/server/src/capability-index.ts](./packages/server/src/capability-index.ts)
 - [packages/server/src/invocation-router.ts](./packages/server/src/invocation-router.ts)
 - [packages/server/src/mcp-bridge.ts](./packages/server/src/mcp-bridge.ts)
+- [packages/server/src/transport-server.ts](./packages/server/src/transport-server.ts)
 - [packages/server/src/ws-server.ts](./packages/server/src/ws-server.ts)
 - [packages/server/src/cli.ts](./packages/server/src/cli.ts)
 - [packages/server/test/capability-index.test.ts](./packages/server/test/capability-index.test.ts)
 - [packages/server/test/invocation-router.test.ts](./packages/server/test/invocation-router.test.ts)
 - [packages/server/test/mdp-server.test.ts](./packages/server/test/mdp-server.test.ts)
+- [packages/server/test/transport-server.test.ts](./packages/server/test/transport-server.test.ts)
 
 ### `packages/client`
 
@@ -98,6 +103,7 @@ Read here when working on:
 Key files:
 
 - [packages/client/src/mdp-client.ts](./packages/client/src/mdp-client.ts)
+- [packages/client/src/http-loop-client.ts](./packages/client/src/http-loop-client.ts)
 - [packages/client/src/procedure-registry.ts](./packages/client/src/procedure-registry.ts)
 - [packages/client/src/ws-client.ts](./packages/client/src/ws-client.ts)
 - [packages/client/src/browser-entry.ts](./packages/client/src/browser-entry.ts)
@@ -227,11 +233,13 @@ If a change touches multiple layers, update them in this order:
 
 As of the current MVP:
 
-- MDP-side transport is WebSocket only
+- MDP-side transports are `ws` / `wss` and `http` / `https` loop
 - registry is in-memory only
 - MCP-side surface is fixed bridge tools
 - clients are the capability source
 - the server is a registry and invocation router, not the capability owner
+- registration and invocation messages may carry auth envelopes
+- transport requests may also carry auth headers for server-side policy
 
 If you change any of those assumptions, update:
 
@@ -249,7 +257,7 @@ Avoid these mistakes:
 - adding runtime-specific assumptions into the protocol package
 - adding dynamic MCP tool generation when the repo is intentionally using a fixed bridge surface
 - skipping unit tests and relying only on the smoke test
-- expanding transports before understanding `ClientSession`, `CapabilityIndex`, and `InvocationRouter`
+- expanding transports before understanding `ClientSession`, `CapabilityIndex`, `InvocationRouter`, and `MdpTransportServer`
 
 ## Recommended Next Work
 

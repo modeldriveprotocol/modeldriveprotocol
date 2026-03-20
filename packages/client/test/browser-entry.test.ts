@@ -38,5 +38,12 @@ describe("browser entry", () => {
         serverProtocol: "wss"
       })
     ).toBe("wss://localhost:8080");
+    expect(
+      resolveServerUrl({
+        serverHost: "localhost",
+        serverPort: 8080,
+        serverProtocol: "https"
+      })
+    ).toBe("https://localhost:8080");
   });
 });

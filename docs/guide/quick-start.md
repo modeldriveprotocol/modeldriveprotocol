@@ -19,6 +19,12 @@ pnpm build
 node packages/server/dist/cli.js --port 7070
 ```
 
+To expose secure endpoints, provide a key pair:
+
+```bash
+node packages/server/dist/cli.js --port 7070 --tls-key ./certs/server-key.pem --tls-cert ./certs/server-cert.pem
+```
+
 For a browser-first path, load the generated bundle:
 
 ```html
@@ -30,7 +36,10 @@ Then create and register a client:
 ```html
 <script>
   const client = MDP.createMdpClient({
-    serverUrl: "ws://127.0.0.1:7070",
+    serverUrl: "http://127.0.0.1:7070",
+    auth: {
+      token: "client-session-token"
+    },
     client: {
       id: "browser-01",
       name: "Browser Client"
@@ -49,4 +58,11 @@ The previous MVP path still works too:
 3. Register a tool, prompt, skill, and resource.
 4. Connect an MCP host and call the bridge tools.
 
-For the MVP, use WebSocket transport and an in-memory registry. That keeps the implementation simple while still proving the protocol shape.
+Current reference transport choices are:
+
+- `ws://` / `wss://` for socket sessions
+- `http://` / `https://` for HTTP loop mode
+
+The quick path above uses HTTP loop because it works well in browser and request/response-first runtimes. Use `wss://` when you want a secure socket session instead.
+
+The runtime still keeps an in-memory registry. Transport can now vary without changing the MCP bridge contract.

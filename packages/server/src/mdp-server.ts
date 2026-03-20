@@ -1,21 +1,41 @@
 import type {
+  AuthContext,
   ClientDescriptor,
   ClientToServerMessage,
   ListedClient
 } from "@modeldriveprotocol/protocol";
 import { createSerializedError } from "@modeldriveprotocol/protocol";
-import type WebSocket from "ws";
 
 import { CapabilityIndex, type CapabilityTarget, type RegisteredClientSnapshot } from "./capability-index.js";
-import { ClientSession } from "./client-session.js";
+import {
+  ClientSession,
+  type ClientSessionTransport
+} from "./client-session.js";
 import { InvocationRouter, type InvocationRequest } from "./invocation-router.js";
+
+export interface RegistrationAuthorizationContext {
+  session: ClientSession;
+  client: ClientDescriptor;
+  auth?: AuthContext;
+  transportAuth?: AuthContext;
+}
+
+export interface InvocationAuthorizationContext extends InvocationRequest {
+  session: ClientSession;
+  registeredAuth?: AuthContext;
+  transportAuth?: AuthContext;
+}
 
 export interface MdpServerOptions {
   heartbeatIntervalMs?: number;
+  heartbeatTimeoutMs?: number;
   invocationTimeoutMs?: number;
+  authorizeRegistration?: (context: RegistrationAuthorizationContext) => void;
+  authorizeInvocation?: (context: InvocationAuthorizationContext) => void;
 }
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 30_000;
+const DEFAULT_HEARTBEAT_TIMEOUT_MS = 90_000;
 const DEFAULT_INVOCATION_TIMEOUT_MS = 15_000;
 
 export class MdpServerRuntime {
@@ -25,11 +45,22 @@ export class MdpServerRuntime {
   private readonly sessionsByConnectionId = new Map<string, ClientSession>();
   private readonly sessionsByClientId = new Map<string, ClientSession>();
   private readonly heartbeatIntervalMs: number;
+  private readonly heartbeatTimeoutMs: number;
+  private readonly authorizeRegistration:
+    | ((context: RegistrationAuthorizationContext) => void)
+    | undefined;
+  private readonly authorizeInvocation:
+    | ((context: InvocationAuthorizationContext) => void)
+    | undefined;
   private heartbeatTimer: NodeJS.Timeout | undefined;
 
   constructor(options: MdpServerOptions = {}) {
     this.heartbeatIntervalMs =
       options.heartbeatIntervalMs ?? DEFAULT_HEARTBEAT_INTERVAL_MS;
+    this.heartbeatTimeoutMs =
+      options.heartbeatTimeoutMs ?? DEFAULT_HEARTBEAT_TIMEOUT_MS;
+    this.authorizeRegistration = options.authorizeRegistration;
+    this.authorizeInvocation = options.authorizeInvocation;
 
     this.capabilityIndex = new CapabilityIndex(() => this.getRegisteredSnapshots());
     this.invocationRouter = new InvocationRouter(
@@ -39,8 +70,11 @@ export class MdpServerRuntime {
     );
   }
 
-  createSession(connectionId: string, socket: WebSocket): ClientSession {
-    const session = new ClientSession(connectionId, socket);
+  createSession(
+    connectionId: string,
+    transport: ClientSessionTransport
+  ): ClientSession {
+    const session = new ClientSession(connectionId, transport);
     this.sessionsByConnectionId.set(connectionId, session);
     return session;
   }
@@ -50,7 +84,7 @@ export class MdpServerRuntime {
 
     switch (message.type) {
       case "registerClient":
-        this.registerClient(session, message.client);
+        this.registerClient(session, message.client, message.auth);
         return;
       case "unregisterClient":
         this.unregisterClient(session, message.clientId);
@@ -87,6 +121,7 @@ export class MdpServerRuntime {
     }
 
     this.sessionsByConnectionId.delete(connectionId);
+    session.close();
   }
 
   listClients(): ListedClient[] {
@@ -94,6 +129,19 @@ export class MdpServerRuntime {
   }
 
   invoke(request: InvocationRequest) {
+    const session = this.sessionsByClientId.get(request.clientId);
+
+    if (!session) {
+      throw new Error(`Client "${request.clientId}" is not connected`);
+    }
+
+    this.authorizeInvocation?.({
+      ...request,
+      session,
+      ...(session.registeredAuth ? { registeredAuth: session.registeredAuth } : {}),
+      ...(session.transportAuth ? { transportAuth: session.transportAuth } : {})
+    });
+
     return this.invocationRouter.invoke(request);
   }
 
@@ -107,7 +155,14 @@ export class MdpServerRuntime {
     }
 
     this.heartbeatTimer = setInterval(() => {
+      const now = Date.now();
+
       for (const session of this.sessionsByConnectionId.values()) {
+        if (now - session.lastSeenAt.getTime() > this.heartbeatTimeoutMs) {
+          this.disconnectSession(session.connectionId);
+          continue;
+        }
+
         try {
           session.send({
             type: "ping",
@@ -145,7 +200,18 @@ export class MdpServerRuntime {
     this.sessionsByClientId.clear();
   }
 
-  private registerClient(session: ClientSession, descriptor: ClientDescriptor): void {
+  private registerClient(
+    session: ClientSession,
+    descriptor: ClientDescriptor,
+    auth?: AuthContext
+  ): void {
+    this.authorizeRegistration?.({
+      session,
+      client: descriptor,
+      ...(auth ? { auth } : {}),
+      ...(session.transportAuth ? { transportAuth: session.transportAuth } : {})
+    });
+
     const previousClientId = session.clientId;
 
     if (
@@ -163,7 +229,7 @@ export class MdpServerRuntime {
       this.disconnectSession(existing.connectionId);
     }
 
-    session.register(descriptor);
+    session.register(descriptor, auth);
     this.sessionsByClientId.set(descriptor.id, session);
   }
 
@@ -189,7 +255,8 @@ export class MdpServerRuntime {
       .map((session) => ({
         descriptor: session.descriptor as ClientDescriptor,
         connectedAt: session.connectedAt,
-        lastSeenAt: session.lastSeenAt
+        lastSeenAt: session.lastSeenAt,
+        connection: session.connection
       }));
   }
 }

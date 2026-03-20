@@ -16,13 +16,27 @@ describe("protocol guards", () => {
     const message = parseMessage(
       JSON.stringify({
         type: "registerClient",
-        client: clientDescriptor
+        client: clientDescriptor,
+        auth: {
+          scheme: "Bearer",
+          token: "client-token",
+          headers: {
+            authorization: "Bearer client-token"
+          }
+        }
       })
     );
 
     expect(message).toEqual({
       type: "registerClient",
-      client: clientDescriptor
+      client: clientDescriptor,
+      auth: {
+        scheme: "Bearer",
+        token: "client-token",
+        headers: {
+          authorization: "Bearer client-token"
+        }
+      }
     });
   });
 
@@ -53,5 +67,37 @@ describe("protocol guards", () => {
     });
     expect(isStringRecord({ host: "127.0.0.1", port: "7070" })).toBe(true);
     expect(isStringRecord({ host: "127.0.0.1", port: 7070 })).toBe(false);
+  });
+
+  it("parses callClient auth envelopes", () => {
+    const message = parseMessage(
+      JSON.stringify({
+        type: "callClient",
+        requestId: "req-03",
+        clientId: "client-01",
+        kind: "tool",
+        name: "searchDom",
+        auth: {
+          token: "host-token",
+          metadata: {
+            requestId: "trace-01"
+          }
+        }
+      })
+    );
+
+    expect(message).toEqual({
+      type: "callClient",
+      requestId: "req-03",
+      clientId: "client-01",
+      kind: "tool",
+      name: "searchDom",
+      auth: {
+        token: "host-token",
+        metadata: {
+          requestId: "trace-01"
+        }
+      }
+    });
   });
 });

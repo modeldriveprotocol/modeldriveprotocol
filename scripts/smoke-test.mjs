@@ -8,7 +8,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { createMdpClient } from "../packages/client/dist/index.js";
 
 const port = 7190;
-const serverUrl = `ws://127.0.0.1:${port}`;
+const serverUrl = `http://127.0.0.1:${port}`;
 const transport = new StdioClientTransport({
   command: process.execPath,
   args: ["packages/server/dist/cli.js", "--port", String(port)],
@@ -34,6 +34,9 @@ const mcpClient = new Client(
 
 const mdpClient = createMdpClient({
   serverUrl,
+  auth: {
+    token: "client-token"
+  },
   client: {
     id: "browser-01",
     name: "Browser Client",
@@ -43,9 +46,10 @@ const mdpClient = createMdpClient({
 });
 
 mdpClient
-  .exposeTool("searchDom", async ({ query } = {}) => ({
+  .exposeTool("searchDom", async ({ query } = {}, context) => ({
     query,
-    matches: 3
+    matches: 3,
+    authToken: context.auth?.token
   }))
   .exposePrompt("summarizeSelection", async ({ tone } = {}) => ({
     messages: [
@@ -95,6 +99,14 @@ try {
   });
   assert.notEqual(listClientsResult.isError, true);
   assert.equal(listClientsResult.structuredContent?.clients?.length, 1);
+  assert.equal(
+    listClientsResult.structuredContent?.clients?.[0]?.connection?.mode,
+    "http-loop"
+  );
+  assert.equal(
+    listClientsResult.structuredContent?.clients?.[0]?.connection?.authSource,
+    "message"
+  );
 
   const listRemoteToolsResult = await mcpClient.callTool({
     name: "listTools",
@@ -115,11 +127,15 @@ try {
       toolName: "searchDom",
       args: {
         query: "mdp"
+      },
+      auth: {
+        token: "host-token"
       }
     }
   });
   assert.notEqual(toolCallResult.isError, true);
   assert.equal(toolCallResult.structuredContent?.data?.matches, 3);
+  assert.equal(toolCallResult.structuredContent?.data?.authToken, "host-token");
 
   const promptResult = await mcpClient.callTool({
     name: "getPrompt",
@@ -150,7 +166,7 @@ try {
 }
 
 async function waitForServerReady(stderrChunks, expectedPort) {
-  const expectedLine = `ws://127.0.0.1:${expectedPort}`;
+  const expectedLine = `http://127.0.0.1:${expectedPort}/mdp/http-loop`;
 
   for (let attempt = 0; attempt < 100; attempt += 1) {
     if (stderrChunks.join("").includes(expectedLine)) {

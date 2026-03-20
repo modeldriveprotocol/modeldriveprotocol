@@ -21,3 +21,5 @@ Bridge tools 包括：
 - `readResource`
 
 这样的 bridge surface 可以让 host 侧保持稳定，同时允许 client registry 在运行时动态变化。
+
+`callClients`、`callTools`、`getPrompt`、`callSkills`、`readResource` 这类调用型 bridge tools 还支持可选的 `auth` 对象。这个 payload 会原样下发给目标 client，体现在 `callClient.auth` 里。

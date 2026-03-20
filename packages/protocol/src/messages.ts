@@ -1,10 +1,11 @@
 import type { SerializedError } from "./errors.js";
 import type { RpcArguments } from "./json.js";
-import type { CapabilityKind, ClientDescriptor } from "./models.js";
+import type { AuthContext, CapabilityKind, ClientDescriptor } from "./models.js";
 
 export interface RegisterClientMessage {
   type: "registerClient";
   client: ClientDescriptor;
+  auth?: AuthContext;
 }
 
 export interface UnregisterClientMessage {
@@ -20,6 +21,7 @@ export interface CallClientMessage {
   name?: string;
   uri?: string;
   args?: RpcArguments;
+  auth?: AuthContext;
 }
 
 export interface CallClientResultMessage {

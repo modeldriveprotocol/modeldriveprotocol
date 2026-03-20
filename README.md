@@ -44,6 +44,12 @@ The core model is:
 
 Capabilities can be exposed as `tools`, `prompts`, `skills`, and `resources`.
 
+Current transport support includes:
+
+- `ws` / `wss` for bidirectional socket sessions
+- `http` / `https` loop mode for long-polling runtimes
+- auth envelopes on client registration and routed invocation messages
+
 ## Architecture
 
 At a high level, MDP sits between MCP hosts and runtime-local capabilities:

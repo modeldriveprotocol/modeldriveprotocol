@@ -8,7 +8,7 @@ status: MVP
 第一版可用实现应该足够小：
 
 - 单个 server 进程
-- WebSocket transport
+- `ws` / `wss` 与 `http` / `https loop` transports
 - 内存 registry
 - 一个 client 可以暴露全部四类 capability
 - 稳定的 MCP bridge tools

@@ -21,7 +21,12 @@ function createSnapshot(
       ...overrides
     },
     connectedAt: new Date("2026-03-20T00:00:00.000Z"),
-    lastSeenAt: new Date("2026-03-20T00:05:00.000Z")
+    lastSeenAt: new Date("2026-03-20T00:05:00.000Z"),
+    connection: {
+      mode: "ws",
+      secure: false,
+      authSource: "none"
+    }
   };
 }
 

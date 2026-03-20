@@ -19,6 +19,12 @@ pnpm build
 node packages/server/dist/cli.js --port 7070
 ```
 
+如果要暴露安全端点，可以额外提供证书与私钥：
+
+```bash
+node packages/server/dist/cli.js --port 7070 --tls-key ./certs/server-key.pem --tls-cert ./certs/server-cert.pem
+```
+
 如果先走浏览器路径，可以直接加载生成好的 bundle：
 
 ```html
@@ -30,7 +36,10 @@ node packages/server/dist/cli.js --port 7070
 ```html
 <script>
   const client = MDP.createMdpClient({
-    serverUrl: "ws://127.0.0.1:7070",
+    serverUrl: "http://127.0.0.1:7070",
+    auth: {
+      token: "client-session-token"
+    },
     client: {
       id: "browser-01",
       name: "Browser Client"
@@ -49,4 +58,11 @@ MVP 当前仍然建议这条路径：
 3. 注册一个 tool、prompt、skill 和 resource。
 4. 连接一个 MCP host，并调用 bridge tools。
 
-第一版使用 WebSocket 传输和内存 registry。这样可以先把协议形状跑通，同时保持实现足够简单。
+当前参考 transport 选项是：
+
+- 面向 socket 会话的 `ws://` / `wss://`
+- 面向 HTTP loop 模式的 `http://` / `https://`
+
+上面的快速路径默认走 HTTP loop，因为它同时适合浏览器和偏请求响应的运行时。如果你需要安全的 socket 会话，可以改用 `wss://`。
+
+运行时仍然使用内存 registry，但 transport 已经可以变化，而不影响 MCP bridge 契约。

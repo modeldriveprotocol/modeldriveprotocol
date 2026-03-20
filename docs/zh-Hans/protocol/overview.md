@@ -9,6 +9,12 @@ MDP 同时是一个发现协议和一个 RPC bridge 协议。
 
 client 提供能力，server 负责存储和索引，MCP host 则通过固定的 bridge surface 消费这些能力。
 
+协议线框本身保持传输无关，当前实现已经提供：
+
+- `ws` / `wss` 会话
+- `http` / `https loop` 会话
+- `registerClient` 和 `callClient` 上的可选 auth envelope
+
 MDP 当前定义四类能力：
 
 - `tools`

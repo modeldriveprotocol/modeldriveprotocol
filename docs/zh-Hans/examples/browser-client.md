@@ -28,16 +28,20 @@ status: MVP
     <script src="/assets/modeldriveprotocol-client.global.js"></script>
     <script>
       const client = MDP.createMdpClient({
-        serverUrl: "ws://127.0.0.1:7070",
+        serverUrl: "http://127.0.0.1:7070",
+        auth: {
+          token: "browser-session-token"
+        },
         client: {
           id: "browser-01",
           name: "Browser Client"
         }
       });
 
-      client.exposeTool("searchDom", async ({ query }) => ({
+      client.exposeTool("searchDom", async ({ query }, context) => ({
         query,
-        matches: document.body.innerText.includes(query) ? 1 : 0
+        matches: document.body.innerText.includes(query) ? 1 : 0,
+        authToken: context.auth?.token
       }));
 
       client.exposeResource(

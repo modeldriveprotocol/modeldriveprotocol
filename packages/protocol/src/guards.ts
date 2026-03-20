@@ -1,7 +1,14 @@
 import { protocolErrorCodes } from "./errors.js";
 import { isJsonObject } from "./json.js";
-import { capabilityKinds } from "./models.js";
-import type { CapabilityKind, ClientDescriptor, ResourceDescriptor } from "./models.js";
+import { capabilityKinds, clientAuthSources, clientConnectionModes } from "./models.js";
+import type {
+  AuthContext,
+  CapabilityKind,
+  ClientAuthSource,
+  ClientConnectionMode,
+  ClientDescriptor,
+  ResourceDescriptor
+} from "./models.js";
 import type { MdpMessage } from "./messages.js";
 
 function isStringArray(value: unknown): value is string[] {
@@ -14,6 +21,36 @@ function hasString(value: unknown, key: string): boolean {
 
 export function isCapabilityKind(value: unknown): value is CapabilityKind {
   return typeof value === "string" && capabilityKinds.includes(value as CapabilityKind);
+}
+
+function isClientConnectionMode(value: unknown): value is ClientConnectionMode {
+  return typeof value === "string" && clientConnectionModes.includes(value as ClientConnectionMode);
+}
+
+function isClientAuthSource(value: unknown): value is ClientAuthSource {
+  return typeof value === "string" && clientAuthSources.includes(value as ClientAuthSource);
+}
+
+function isAuthContext(value: unknown): value is AuthContext {
+  if (!isJsonObject(value)) {
+    return false;
+  }
+
+  return (
+    (!("scheme" in value) || typeof value.scheme === "string") &&
+    (!("token" in value) || typeof value.token === "string") &&
+    (!("headers" in value) || isStringRecord(value.headers)) &&
+    (!("metadata" in value) || isJsonObject(value.metadata))
+  );
+}
+
+function isClientConnectionDescriptor(value: unknown): boolean {
+  return (
+    isJsonObject(value) &&
+    isClientConnectionMode(value.mode) &&
+    typeof value.secure === "boolean" &&
+    isClientAuthSource(value.authSource)
+  );
 }
 
 function isResourceDescriptor(value: unknown): value is ResourceDescriptor {
@@ -46,6 +83,17 @@ export function isClientDescriptor(value: unknown): value is ClientDescriptor {
   );
 }
 
+export function isListedClient(value: unknown): boolean {
+  return (
+    isClientDescriptor(value) &&
+    isJsonObject(value) &&
+    value.status === "online" &&
+    typeof value.connectedAt === "string" &&
+    typeof value.lastSeenAt === "string" &&
+    isClientConnectionDescriptor(value.connection)
+  );
+}
+
 export function isProtocolErrorCode(value: unknown): value is (typeof protocolErrorCodes)[number] {
   return typeof value === "string" && protocolErrorCodes.includes(value as (typeof protocolErrorCodes)[number]);
 }
@@ -60,7 +108,11 @@ export function isMdpMessage(value: unknown): value is MdpMessage {
 
   switch (type) {
     case "registerClient":
-      return isJsonObject(value) && isClientDescriptor(value.client);
+      return (
+        isJsonObject(value) &&
+        isClientDescriptor(value.client) &&
+        (!("auth" in value) || isAuthContext(value.auth))
+      );
     case "unregisterClient":
       return hasString(value, "clientId");
     case "callClient":
@@ -68,6 +120,7 @@ export function isMdpMessage(value: unknown): value is MdpMessage {
         hasString(object, "requestId") &&
         hasString(object, "clientId") &&
         isCapabilityKind(isJsonObject(object) ? object.kind : undefined) &&
+        (!("auth" in object) || isAuthContext(object.auth)) &&
         ((hasString(object, "name") && !("uri" in object && object.uri !== undefined)) ||
           (hasString(object, "uri") && !("name" in object && object.name !== undefined)) ||
           (hasString(object, "name") && hasString(object, "uri")))

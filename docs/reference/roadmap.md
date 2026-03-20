@@ -11,8 +11,9 @@ The current baseline is:
 
 - one TypeScript MDP server
 - one TypeScript client SDK with browser bundle output
-- one WebSocket-based MDP transport
+- `ws` / `wss` plus `http` / `https` loop MDP transports
 - one fixed MCP bridge surface
+- auth envelopes on registration and invocation, plus server-side authorization hooks
 - one smoke test proving the end-to-end path
 
 ## Guiding Direction
@@ -133,7 +134,7 @@ This is also the phase where the project should decide whether client capability
 
 ## Phase 4: Add Security and Policy
 
-Status: not first, but necessary before broader adoption
+Status: partially started, still incomplete
 
 ### Goal
 
@@ -141,9 +142,9 @@ Move from “works locally” toward “safe enough to expose intentionally”.
 
 ### Deliverables
 
-- client authentication model
+- extend the current auth envelopes into a stronger client authentication model
 - trust boundary definition between host, server, and clients
-- authorization policy hooks for capability invocation
+- extend and harden the existing authorization policy hooks for capability invocation
 - optional allowlists / deny lists by client, capability kind, or capability name
 - audit logging for invocations
 - clearer security guidance for local vs remote deployment
@@ -158,7 +159,7 @@ Security controls depend on stable lifecycle and routing semantics. Adding polic
 
 ## Phase 5: Expand Transports
 
-Status: after runtime boundaries are stable
+Status: started, but still expandable
 
 ### Goal
 
@@ -175,7 +176,7 @@ Support more host environments without coupling the rest of the system to WebSoc
 ### Deliverables
 
 - transport interface cleanup where needed
-- at least one non-WebSocket transport implementation
+- extend the shipped HTTP loop transport with more deployment-oriented options if needed
 - tests proving transport substitution does not change registry and routing semantics
 
 ### Acceptance Bar

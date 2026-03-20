@@ -106,16 +106,21 @@ export class ProcedureRegistry {
     };
   }
 
-  invoke(message: Pick<CallClientMessage, "kind" | "name" | "uri" | "args">): Promise<unknown> {
+  invoke(
+    message: Pick<
+      CallClientMessage,
+      "requestId" | "clientId" | "kind" | "name" | "uri" | "args" | "auth"
+    >
+  ): Promise<unknown> {
     switch (message.kind) {
       case "tool":
-        return this.run(this.tools, message.name, "tool", message.args);
+        return this.run(this.tools, message.name, "tool", message);
       case "prompt":
-        return this.run(this.prompts, message.name, "prompt", message.args);
+        return this.run(this.prompts, message.name, "prompt", message);
       case "skill":
-        return this.run(this.skills, message.name, "skill", message.args);
+        return this.run(this.skills, message.name, "skill", message);
       case "resource":
-        return this.run(this.resources, message.uri, "resource", message.args);
+        return this.run(this.resources, message.uri, "resource", message);
     }
   }
 
@@ -123,7 +128,10 @@ export class ProcedureRegistry {
     entries: Map<string, ProcedureEntry<TDescriptor>>,
     key: string | undefined,
     kind: string,
-    args: CallClientMessage["args"]
+    message: Pick<
+      CallClientMessage,
+      "requestId" | "clientId" | "kind" | "name" | "uri" | "args" | "auth"
+    >
   ): Promise<unknown> {
     if (!key) {
       throw new Error(`Missing ${kind} key`);
@@ -135,6 +143,13 @@ export class ProcedureRegistry {
       throw new Error(`Unknown ${kind} "${key}"`);
     }
 
-    return entry.handler(args);
+    return entry.handler(message.args, {
+      requestId: message.requestId,
+      clientId: message.clientId,
+      kind: message.kind,
+      ...(message.name ? { name: message.name } : {}),
+      ...(message.uri ? { uri: message.uri } : {}),
+      ...(message.auth ? { auth: message.auth } : {})
+    });
   }
 }

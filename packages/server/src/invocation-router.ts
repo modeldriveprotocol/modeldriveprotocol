@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import type {
+  AuthContext,
   CallClientResultMessage,
   CapabilityKind,
   RpcArguments
@@ -15,6 +16,7 @@ export interface InvocationRequest {
   name?: string;
   uri?: string;
   args?: RpcArguments;
+  auth?: AuthContext;
 }
 
 interface PendingInvocation {
@@ -65,7 +67,8 @@ export class InvocationRouter {
           kind: request.kind,
           ...(request.name ? { name: request.name } : {}),
           ...(request.uri ? { uri: request.uri } : {}),
-          ...(request.args ? { args: request.args } : {})
+          ...(request.args ? { args: request.args } : {}),
+          ...(request.auth ? { auth: request.auth } : {})
         });
       } catch (error) {
         clearTimeout(timeout);

@@ -1,4 +1,5 @@
 export * from "./browser-entry.js";
+export * from "./http-loop-client.js";
 export * from "./mdp-client.js";
 export * from "./procedure-registry.js";
 export * from "./types.js";

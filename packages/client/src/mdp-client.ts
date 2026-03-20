@@ -1,9 +1,11 @@
 import {
   createSerializedError,
-  isMdpMessage,
-  type CallClientMessage
+  type AuthContext,
+  type CallClientMessage,
+  type ServerToClientMessage
 } from "@modeldriveprotocol/protocol";
 
+import { HttpLoopClientTransport } from "./http-loop-client.js";
 import { ProcedureRegistry } from "./procedure-registry.js";
 import type {
   BrowserScriptClientAttributes,
@@ -14,20 +16,23 @@ import type {
   ExposeResourceOptions,
   ExposeSkillOptions,
   ExposeToolOptions,
-  MdpClientOptions
+  MdpClientOptions,
+  ClientTransport
 } from "./types.js";
 import { WebSocketClientTransport } from "./ws-client.js";
 
 export class MdpClient {
   private clientInfo: ClientInfo;
   private readonly registry = new ProcedureRegistry();
-  private readonly transport;
+  private readonly transport: ClientTransport;
+  private auth: AuthContext | undefined;
   private connected = false;
   private registered = false;
 
   constructor(options: MdpClientOptions) {
     this.clientInfo = options.client;
-    this.transport = options.transport ?? new WebSocketClientTransport(options.serverUrl);
+    this.auth = options.auth;
+    this.transport = options.transport ?? createDefaultTransport(options.serverUrl);
     this.transport.onMessage((message) => {
       void this.handleMessage(message);
     });
@@ -78,6 +83,11 @@ export class MdpClient {
     this.connected = true;
   }
 
+  setAuth(auth?: AuthContext): this {
+    this.auth = auth;
+    return this;
+  }
+
   register(overrides: ClientDescriptorOverride = {}): void {
     this.ensureConnected();
     this.clientInfo = {
@@ -87,7 +97,8 @@ export class MdpClient {
 
     this.transport.send({
       type: "registerClient",
-      client: this.registry.describe(this.clientInfo)
+      client: this.registry.describe(this.clientInfo),
+      ...(this.auth ? { auth: this.auth } : {})
     });
     this.registered = true;
   }
@@ -109,11 +120,7 @@ export class MdpClient {
     return this.registry.describe(this.clientInfo);
   }
 
-  private async handleMessage(message: unknown): Promise<void> {
-    if (!isMdpMessage(message)) {
-      return;
-    }
-
+  private async handleMessage(message: ServerToClientMessage): Promise<void> {
     switch (message.type) {
       case "ping":
         this.transport.send({
@@ -161,6 +168,21 @@ export class MdpClient {
 
 export function createMdpClient(options: MdpClientOptions): MdpClient {
   return new MdpClient(options);
+}
+
+function createDefaultTransport(serverUrl: string): ClientTransport {
+  const protocol = new URL(serverUrl).protocol;
+
+  switch (protocol) {
+    case "ws:":
+    case "wss:":
+      return new WebSocketClientTransport(serverUrl);
+    case "http:":
+    case "https:":
+      return new HttpLoopClientTransport(serverUrl);
+    default:
+      throw new Error(`Unsupported MDP transport protocol: ${protocol}`);
+  }
 }
 
 export function resolveServerUrl(attributes: BrowserScriptClientAttributes): string {

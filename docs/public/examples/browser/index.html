@@ -53,7 +53,10 @@
       const status = document.getElementById("status");
 
       const client = MDP.createMdpClient({
-        serverUrl: "ws://127.0.0.1:7070",
+        serverUrl: "http://127.0.0.1:7070",
+        auth: {
+          token: "browser-example-token"
+        },
         client: {
           id: "browser-example",
           name: "Browser Example Client",
@@ -61,9 +64,10 @@
         }
       });
 
-      client.exposeTool("searchDom", async ({ query }) => ({
+      client.exposeTool("searchDom", async ({ query }, context) => ({
         query,
-        matches: document.body.innerText.includes(query) ? 1 : 0
+        matches: document.body.innerText.includes(query) ? 1 : 0,
+        authToken: context.auth?.token
       }));
 
       client.exposeResource(
@@ -81,7 +85,7 @@
       (async () => {
         await client.connect();
         client.register();
-        status.textContent = "Connected to ws://127.0.0.1:7070 and registered.";
+        status.textContent = "Connected to http://127.0.0.1:7070 in HTTP loop mode and registered.";
       })().catch((error) => {
         status.textContent = String(error);
       });

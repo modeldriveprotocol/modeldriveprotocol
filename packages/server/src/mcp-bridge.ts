@@ -1,18 +1,30 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import type { CallClientResultMessage } from "@modeldriveprotocol/protocol";
+import type {
+  AuthContext,
+  CallClientResultMessage
+} from "@modeldriveprotocol/protocol";
 
 import type { MdpServerRuntime } from "./mdp-server.js";
 
 const argsSchema = z.record(z.string(), z.unknown()).optional();
+const authSchema = z
+  .object({
+    scheme: z.string().optional(),
+    token: z.string().optional(),
+    headers: z.record(z.string(), z.string()).optional(),
+    metadata: z.record(z.string(), z.unknown()).optional()
+  })
+  .optional();
 
 const callClientsSchema = {
   clientIds: z.array(z.string()).optional(),
   kind: z.enum(["tool", "prompt", "skill", "resource"]),
   name: z.string().optional(),
   uri: z.string().optional(),
-  args: argsSchema
+  args: argsSchema,
+  auth: authSchema
 };
 
 export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
@@ -36,7 +48,7 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
         "Invoke a capability on one or more MDP clients using the generic bridge surface.",
       inputSchema: callClientsSchema
     },
-    async ({ clientIds, kind, name, uri, args }) => {
+    async ({ clientIds, kind, name, uri, args, auth }) => {
       const targets =
         clientIds && clientIds.length > 0
           ? clientIds
@@ -59,7 +71,8 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
               kind,
               ...(name ? { name } : {}),
               ...(uri ? { uri } : {}),
-              ...(args ? { args } : {})
+              ...(args ? { args } : {}),
+              ...withAuth(auth)
             })
           ))
         }))
@@ -87,16 +100,18 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
       inputSchema: {
         clientId: z.string(),
         toolName: z.string(),
-        args: argsSchema
+        args: argsSchema,
+        auth: authSchema
       }
     },
-    async ({ clientId, toolName, args }) =>
+    async ({ clientId, toolName, args, auth }) =>
       invocationResult(
         await runtime.invoke({
           clientId,
           kind: "tool",
           name: toolName,
-          ...(args ? { args } : {})
+          ...(args ? { args } : {}),
+          ...withAuth(auth)
         })
       )
   );
@@ -120,16 +135,18 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
       inputSchema: {
         clientId: z.string(),
         promptName: z.string(),
-        args: argsSchema
+        args: argsSchema,
+        auth: authSchema
       }
     },
-    async ({ clientId, promptName, args }) =>
+    async ({ clientId, promptName, args, auth }) =>
       invocationResult(
         await runtime.invoke({
           clientId,
           kind: "prompt",
           name: promptName,
-          ...(args ? { args } : {})
+          ...(args ? { args } : {}),
+          ...withAuth(auth)
         })
       )
   );
@@ -153,16 +170,18 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
       inputSchema: {
         clientId: z.string(),
         skillName: z.string(),
-        args: argsSchema
+        args: argsSchema,
+        auth: authSchema
       }
     },
-    async ({ clientId, skillName, args }) =>
+    async ({ clientId, skillName, args, auth }) =>
       invocationResult(
         await runtime.invoke({
           clientId,
           kind: "skill",
           name: skillName,
-          ...(args ? { args } : {})
+          ...(args ? { args } : {}),
+          ...withAuth(auth)
         })
       )
   );
@@ -186,16 +205,18 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
       inputSchema: {
         clientId: z.string(),
         uri: z.string(),
-        args: argsSchema
+        args: argsSchema,
+        auth: authSchema
       }
     },
-    async ({ clientId, uri, args }) =>
+    async ({ clientId, uri, args, auth }) =>
       invocationResult(
         await runtime.invoke({
           clientId,
           kind: "resource",
           uri,
-          ...(args ? { args } : {})
+          ...(args ? { args } : {}),
+          ...withAuth(auth)
         })
       )
   );
@@ -258,6 +279,55 @@ function successResult(payload: Record<string, unknown>) {
     ],
     structuredContent: payload
   };
+}
+
+function normalizeAuth(
+  auth:
+    | {
+        scheme?: string | undefined;
+        token?: string | undefined;
+        headers?: Record<string, string> | undefined;
+        metadata?: Record<string, unknown> | undefined;
+      }
+    | undefined
+): AuthContext | undefined {
+  if (!auth) {
+    return undefined;
+  }
+
+  const normalized: AuthContext = {};
+
+  if (auth.scheme) {
+    normalized.scheme = auth.scheme;
+  }
+
+  if (auth.token) {
+    normalized.token = auth.token;
+  }
+
+  if (auth.headers && Object.keys(auth.headers).length > 0) {
+    normalized.headers = auth.headers;
+  }
+
+  if (auth.metadata && Object.keys(auth.metadata).length > 0) {
+    normalized.metadata = auth.metadata as NonNullable<AuthContext["metadata"]>;
+  }
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+}
+
+function withAuth(
+  auth:
+    | {
+        scheme?: string | undefined;
+        token?: string | undefined;
+        headers?: Record<string, string> | undefined;
+        metadata?: Record<string, unknown> | undefined;
+      }
+    | undefined
+) {
+  const normalized = normalizeAuth(auth);
+  return normalized ? { auth: normalized } : {};
 }
 
 function errorResult(message: string) {

@@ -22,3 +22,4 @@ Bridge tools:
 
 The bridge surface keeps the host integration stable while still allowing the client registry to change at runtime.
 
+Invocation-oriented bridge tools such as `callClients`, `callTools`, `getPrompt`, `callSkills`, and `readResource` also accept an optional `auth` object. That payload is forwarded to the target client as `callClient.auth`.

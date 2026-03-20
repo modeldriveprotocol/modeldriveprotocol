@@ -54,7 +54,7 @@ function readScriptAttributes(script: HTMLScriptElement): BrowserScriptClientAtt
       ? {
           serverProtocol: script.getAttribute(
             `${SCRIPT_ATTRIBUTE_PREFIX}server-protocol`
-          ) as "ws" | "wss"
+          ) as "ws" | "wss" | "http" | "https"
         }
       : {}),
     ...(script.getAttribute(`${SCRIPT_ATTRIBUTE_PREFIX}client-id`)

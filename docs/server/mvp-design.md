@@ -8,7 +8,7 @@ status: MVP
 The first usable version should be small:
 
 - single server process
-- WebSocket transport
+- `ws` / `wss` plus `http` / `https` loop transports
 - in-memory registry
 - one client can expose all four capability kinds
 - stable MCP bridge tools
@@ -19,4 +19,3 @@ Non-goals for the MVP:
 - multi-tenant policy engine
 - per-capability dynamic MCP tool generation
 - complex persistence
-

@@ -11,8 +11,9 @@ status: Draft
 
 - 一个 TypeScript MDP server
 - 一个带浏览器 bundle 的 TypeScript client SDK
-- 一个基于 WebSocket 的 MDP transport
+- 一组 `ws` / `wss` 与 `http` / `https loop` 的 MDP transports
 - 一组固定的 MCP bridge surface
+- 注册与调用阶段的 auth envelopes，以及 server 侧 authorization hooks
 - 一个能验证端到端链路的 smoke test
 
 ## 指导方向
@@ -133,7 +134,7 @@ status: Draft
 
 ## 第四阶段：加入安全与策略
 
-状态：不是最先做，但在更广泛使用前是必须项
+状态：已经起步，但仍未完成
 
 ### 目标
 
@@ -141,9 +142,9 @@ status: Draft
 
 ### 交付物
 
-- client authentication 模型
+- 把当前 auth envelope 扩展成更完整的 client authentication 模型
 - host、server 和 clients 之间的 trust boundary 定义
-- capability invocation 的 authorization policy hooks
+- 扩展并加固当前已有的 capability invocation authorization policy hooks
 - 按 client、capability kind 或 capability name 的 allowlist / denylist
 - 调用审计日志
 - 面向本地部署和远程部署的安全指导
@@ -158,7 +159,7 @@ status: Draft
 
 ## 第五阶段：扩展 transport
 
-状态：等运行时边界稳定后再做
+状态：已经开始，但还有扩展空间
 
 ### 目标
 
@@ -175,7 +176,7 @@ status: Draft
 ### 交付物
 
 - 在需要处清理 transport interface
-- 至少交付一个非 WebSocket transport 实现
+- 在需要时继续扩展当前已交付的 HTTP loop transport
 - 用测试证明 transport 替换不会影响 registry 与 routing 语义
 
 ### 验收标准

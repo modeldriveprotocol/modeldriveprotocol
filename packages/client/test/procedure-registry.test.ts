@@ -53,7 +53,11 @@ describe("ProcedureRegistry", () => {
   });
 
   it("routes invocation by capability kind", async () => {
-    const toolHandler = vi.fn(async ({ query }) => ({ query, matches: 3 }));
+    const toolHandler = vi.fn(async ({ query }, context) => ({
+      query,
+      matches: 3,
+      authToken: context.auth?.token
+    }));
     const resourceHandler = vi.fn(async () => ({
       mimeType: "text/plain",
       text: "Selected text"
@@ -67,16 +71,24 @@ describe("ProcedureRegistry", () => {
 
     await expect(
       registry.invoke({
+        requestId: "req-01",
+        clientId: "client-01",
         kind: "tool",
         name: "searchDom",
-        args: { query: "mdp" }
+        args: { query: "mdp" },
+        auth: {
+          token: "host-token"
+        }
       })
     ).resolves.toEqual({
       query: "mdp",
-      matches: 3
+      matches: 3,
+      authToken: "host-token"
     });
     await expect(
       registry.invoke({
+        requestId: "req-02",
+        clientId: "client-01",
         kind: "resource",
         uri: "webpage://selection"
       })
@@ -85,7 +97,18 @@ describe("ProcedureRegistry", () => {
       text: "Selected text"
     });
 
-    expect(toolHandler).toHaveBeenCalledWith({ query: "mdp" });
+    expect(toolHandler).toHaveBeenCalledWith(
+      { query: "mdp" },
+      {
+        requestId: "req-01",
+        clientId: "client-01",
+        kind: "tool",
+        name: "searchDom",
+        auth: {
+          token: "host-token"
+        }
+      }
+    );
     expect(resourceHandler).toHaveBeenCalledOnce();
   });
 
@@ -94,12 +117,16 @@ describe("ProcedureRegistry", () => {
 
     await expect(
       registry.invoke({
+        requestId: "req-03",
+        clientId: "client-01",
         kind: "tool"
       })
     ).rejects.toThrow('Missing tool key');
 
     await expect(
       registry.invoke({
+        requestId: "req-04",
+        clientId: "client-01",
         kind: "tool",
         name: "missingTool"
       })

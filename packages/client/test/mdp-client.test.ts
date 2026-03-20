@@ -1,23 +1,27 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type {
+  ClientToServerMessage,
+  ServerToClientMessage
+} from "@modeldriveprotocol/protocol";
 import type { ClientTransport } from "../src/types.js";
 import { createMdpClient } from "../src/mdp-client.js";
 
 class FakeTransport implements ClientTransport {
-  readonly sent: unknown[] = [];
+  readonly sent: ClientToServerMessage[] = [];
 
-  private messageHandler?: (message: unknown) => void;
+  private messageHandler?: (message: ServerToClientMessage) => void;
   private closeHandler?: () => void;
 
   connect = vi.fn(async () => {});
 
-  send = vi.fn((message: unknown) => {
+  send = vi.fn((message: ClientToServerMessage) => {
     this.sent.push(message);
   });
 
   close = vi.fn(async () => {});
 
-  onMessage(handler: (message: unknown) => void): void {
+  onMessage(handler: (message: ServerToClientMessage) => void): void {
     this.messageHandler = handler;
   }
 
@@ -25,7 +29,7 @@ class FakeTransport implements ClientTransport {
     this.closeHandler = handler;
   }
 
-  emit(message: unknown): void {
+  emit(message: ServerToClientMessage): void {
     this.messageHandler?.(message);
   }
 
@@ -38,10 +42,14 @@ describe("MdpClient", () => {
   it("requires a connection before register", () => {
     const transport = new FakeTransport();
     const client = createMdpClient({
-      serverUrl: "ws://127.0.0.1:7070",
+      serverUrl: "http://127.0.0.1:7070",
       client: {
         id: "browser-01",
         name: "Browser Client"
+      },
+      auth: {
+        scheme: "Bearer",
+        token: "client-token"
       },
       transport
     });
@@ -56,6 +64,10 @@ describe("MdpClient", () => {
       client: {
         id: "browser-01",
         name: "Browser Client"
+      },
+      auth: {
+        scheme: "Bearer",
+        token: "client-token"
       },
       transport
     });
@@ -85,6 +97,10 @@ describe("MdpClient", () => {
         prompts: [],
         skills: [],
         resources: []
+      },
+      auth: {
+        scheme: "Bearer",
+        token: "client-token"
       }
     });
   });
@@ -100,9 +116,10 @@ describe("MdpClient", () => {
       transport
     });
 
-    client.exposeTool("searchDom", async ({ query }) => ({
+    client.exposeTool("searchDom", async ({ query }, context) => ({
       query,
-      matches: 3
+      matches: 3,
+      authToken: context.auth?.token
     }));
 
     transport.emit({
@@ -117,6 +134,9 @@ describe("MdpClient", () => {
       name: "searchDom",
       args: {
         query: "modeldriveprotocol"
+      },
+      auth: {
+        token: "host-token"
       }
     });
 
@@ -132,7 +152,8 @@ describe("MdpClient", () => {
           ok: true,
           data: {
             query: "modeldriveprotocol",
-            matches: 3
+            matches: 3,
+            authToken: "host-token"
           }
         }
       ]);
@@ -170,6 +191,39 @@ describe("MdpClient", () => {
           }
         }
       ]);
+    });
+  });
+
+  it("updates registration auth via setAuth", async () => {
+    const transport = new FakeTransport();
+    const client = createMdpClient({
+      serverUrl: "ws://127.0.0.1:7070",
+      client: {
+        id: "browser-01",
+        name: "Browser Client"
+      },
+      transport
+    });
+
+    await client.connect();
+    client.setAuth({
+      token: "rotated-token"
+    });
+    client.register();
+
+    expect(transport.sent[0]).toEqual({
+      type: "registerClient",
+      client: {
+        id: "browser-01",
+        name: "Browser Client",
+        tools: [],
+        prompts: [],
+        skills: [],
+        resources: []
+      },
+      auth: {
+        token: "rotated-token"
+      }
     });
   });
 });

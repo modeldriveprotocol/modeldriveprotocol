@@ -1,4 +1,8 @@
-import { parseMessage } from "@modeldriveprotocol/protocol";
+import {
+  parseMessage,
+  type ClientToServerMessage,
+  type ServerToClientMessage
+} from "@modeldriveprotocol/protocol";
 
 import type { ClientTransport } from "./types.js";
 
@@ -16,7 +20,7 @@ export type WebSocketFactory = (url: string) => WebSocketLike;
 
 export class WebSocketClientTransport implements ClientTransport {
   private socket?: WebSocketLike;
-  private messageHandler?: (message: unknown) => void;
+  private messageHandler?: (message: ServerToClientMessage) => void;
   private closeHandler?: () => void;
 
   constructor(
@@ -48,7 +52,13 @@ export class WebSocketClientTransport implements ClientTransport {
             return;
           }
 
-          this.messageHandler(parseMessage(payload));
+          const message = asServerToClientMessage(parseMessage(payload));
+
+          if (!message) {
+            return;
+          }
+
+          this.messageHandler(message);
         });
       });
 
@@ -58,7 +68,7 @@ export class WebSocketClientTransport implements ClientTransport {
     });
   }
 
-  send(message: unknown): void {
+  send(message: ClientToServerMessage): void {
     if (!this.socket || this.socket.readyState !== 1) {
       throw new Error("Transport is not connected");
     }
@@ -70,7 +80,7 @@ export class WebSocketClientTransport implements ClientTransport {
     this.socket?.close(code, reason);
   }
 
-  onMessage(handler: (message: unknown) => void): void {
+  onMessage(handler: (message: ServerToClientMessage) => void): void {
     this.messageHandler = handler;
   }
 
@@ -87,6 +97,20 @@ function defaultWebSocketFactory(url: string): WebSocketLike {
   }
 
   return new WebSocketConstructor(url) as WebSocketLike;
+}
+
+function asServerToClientMessage(
+  message: ReturnType<typeof parseMessage>
+): ServerToClientMessage | undefined {
+  if (
+    message.type === "callClient" ||
+    message.type === "ping" ||
+    message.type === "pong"
+  ) {
+    return message;
+  }
+
+  return undefined;
 }
 
 async function readMessagePayload(event: MessageEvent): Promise<string> {
