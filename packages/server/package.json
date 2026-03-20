@@ -27,6 +27,7 @@
   },
   "scripts": {
     "build": "tsc -b",
-    "clean": "node ../../scripts/clean.mjs"
+    "clean": "node ../../scripts/clean.mjs",
+    "test": "vitest run test"
   }
 }

@@ -6,7 +6,10 @@
     "build": "pnpm --filter @modeldriveprotocol/protocol build && pnpm --filter @modeldriveprotocol/client build && pnpm --filter @modeldriveprotocol/server build",
     "clean": "node scripts/clean.mjs",
     "typecheck": "tsc -b tsconfig.json --pretty false",
-    "test": "node scripts/smoke-test.mjs",
+    "test": "pnpm test:unit && pnpm test:smoke",
+    "test:unit": "vitest run",
+    "test:smoke": "node scripts/smoke-test.mjs",
+    "test:watch": "vitest",
     "docs:dev": "node scripts/prepare-docs.mjs && vitepress dev docs",
     "docs:build": "node scripts/prepare-docs.mjs && vitepress build docs",
     "docs:preview": "vitepress preview docs"
@@ -15,7 +18,9 @@
     "esbuild": "^0.25.12",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@types/node": "^24.0.0",
+    "jsdom": "^26.1.0",
     "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
     "vitepress": "^1.6.4"
   }
 }
