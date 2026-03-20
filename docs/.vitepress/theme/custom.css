@@ -1,8 +1,31 @@
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0");
+
 :root {
   --vp-c-brand-1: #0f766e;
   --vp-c-brand-2: #115e59;
   --vp-c-brand-3: #134e4a;
   --vp-c-brand-soft: rgba(15, 118, 110, 0.12);
+}
+
+.dark {
+  --vp-c-brand-1: #2dd4bf;
+  --vp-c-brand-2: #5eead4;
+  --vp-c-brand-3: #99f6e4;
+  --vp-c-brand-soft: rgba(45, 212, 191, 0.16);
+}
+
+.material-symbols-rounded {
+  font-family: "Material Symbols Rounded";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  display: inline-block;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
 }
 
 .VPHero .name {
@@ -11,6 +34,10 @@
 
 .VPNavBar {
   backdrop-filter: blur(10px);
+}
+
+.dark .VPNavBar {
+  background-color: rgba(8, 15, 20, 0.72);
 }
 
 .VPDoc h1,
@@ -25,4 +52,12 @@
 
 .VPHome .container {
   max-width: 1152px;
+}
+
+.mdp-playground-page .VPContent {
+  padding-top: 0;
+}
+
+.mdp-playground-page .VPFooter {
+  display: none;
 }

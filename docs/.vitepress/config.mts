@@ -9,6 +9,7 @@ interface LocaleCopy {
     server: string;
     client: string;
     examples: string;
+    playground: string;
     reference: string;
   };
   sections: {
@@ -17,6 +18,7 @@ interface LocaleCopy {
     server: string;
     client: string;
     examples: string;
+    playground: string;
     reference: string;
   };
   pages: {
@@ -49,6 +51,9 @@ interface LocaleCopy {
   lastUpdatedText: string;
   docFooterPrev: string;
   docFooterNext: string;
+  darkModeSwitchLabel: string;
+  lightModeSwitchTitle: string;
+  darkModeSwitchTitle: string;
   sidebarMenuLabel: string;
   returnToTopLabel: string;
   langMenuLabel: string;
@@ -63,6 +68,7 @@ const enUS: LocaleCopy = {
     server: "Server",
     client: "Client",
     examples: "Examples",
+    playground: "Playground",
     reference: "Reference"
   },
   sections: {
@@ -71,6 +77,7 @@ const enUS: LocaleCopy = {
     server: "Server",
     client: "Client",
     examples: "Examples",
+    playground: "Playground",
     reference: "Reference"
   },
   pages: {
@@ -103,6 +110,9 @@ const enUS: LocaleCopy = {
   lastUpdatedText: "Last updated",
   docFooterPrev: "Previous page",
   docFooterNext: "Next page",
+  darkModeSwitchLabel: "Appearance",
+  lightModeSwitchTitle: "Switch to light theme",
+  darkModeSwitchTitle: "Switch to dark theme",
   sidebarMenuLabel: "Menu",
   returnToTopLabel: "Return to top",
   langMenuLabel: "Change language"
@@ -115,6 +125,7 @@ const zhHans: LocaleCopy = {
     server: "服务端",
     client: "客户端",
     examples: "示例",
+    playground: "Playground",
     reference: "参考"
   },
   sections: {
@@ -123,6 +134,7 @@ const zhHans: LocaleCopy = {
     server: "服务端",
     client: "客户端",
     examples: "示例",
+    playground: "Playground",
     reference: "参考"
   },
   pages: {
@@ -155,6 +167,9 @@ const zhHans: LocaleCopy = {
   lastUpdatedText: "最后更新",
   docFooterPrev: "上一页",
   docFooterNext: "下一页",
+  darkModeSwitchLabel: "外观",
+  lightModeSwitchTitle: "切换到浅色主题",
+  darkModeSwitchTitle: "切换到暗色主题",
   sidebarMenuLabel: "目录",
   returnToTopLabel: "返回顶部",
   langMenuLabel: "切换语言"
@@ -166,7 +181,7 @@ export default defineConfig({
   base,
   cleanUrls: true,
   lastUpdated: true,
-  appearance: false,
+  appearance: true,
   locales: {
     root: {
       label: "en-US",
@@ -194,6 +209,7 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
       { text: copy.nav.server, link: localePath(prefix, "/server/overview") },
       { text: copy.nav.client, link: localePath(prefix, "/client/overview") },
       { text: copy.nav.examples, link: localePath(prefix, "/examples/browser-client") },
+      { text: copy.nav.playground, link: localePath(prefix, "/playground/") },
       { text: copy.nav.reference, link: localePath(prefix, "/reference/glossary") }
     ],
     sidebar: {
@@ -252,11 +268,16 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
         {
           text: copy.sections.examples,
           items: [
-            { text: copy.pages.playground, link: localePath(prefix, "/examples/playground") },
             { text: copy.pages.browserClient, link: localePath(prefix, "/examples/browser-client") },
             { text: copy.pages.nativeClient, link: localePath(prefix, "/examples/native-client") },
             { text: copy.pages.endToEnd, link: localePath(prefix, "/examples/end-to-end") }
           ]
+        }
+      ],
+      [localePath(prefix, "/playground/")]: [
+        {
+          text: copy.sections.playground,
+          items: [{ text: copy.pages.playground, link: localePath(prefix, "/playground/") }]
         }
       ],
       [localePath(prefix, "/reference/")]: [
@@ -276,6 +297,9 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
       prev: copy.docFooterPrev,
       next: copy.docFooterNext
     },
+    darkModeSwitchLabel: copy.darkModeSwitchLabel,
+    lightModeSwitchTitle: copy.lightModeSwitchTitle,
+    darkModeSwitchTitle: copy.darkModeSwitchTitle,
     footer: {
       message: copy.footerMessage
     },
