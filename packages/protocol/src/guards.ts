@@ -1,0 +1,105 @@
+import { protocolErrorCodes } from "./errors.js";
+import { isJsonObject } from "./json.js";
+import { capabilityKinds } from "./models.js";
+import type { CapabilityKind, ClientDescriptor, ResourceDescriptor } from "./models.js";
+import type { MdpMessage } from "./messages.js";
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function hasString(value: unknown, key: string): boolean {
+  return isJsonObject(value) && typeof value[key] === "string";
+}
+
+export function isCapabilityKind(value: unknown): value is CapabilityKind {
+  return typeof value === "string" && capabilityKinds.includes(value as CapabilityKind);
+}
+
+function isResourceDescriptor(value: unknown): value is ResourceDescriptor {
+  return hasString(value, "uri") && hasString(value, "name");
+}
+
+function isNamedDescriptor(value: unknown): value is { name: string } {
+  return hasString(value, "name");
+}
+
+export function isClientDescriptor(value: unknown): value is ClientDescriptor {
+  if (!hasString(value, "id") || !hasString(value, "name")) {
+    return false;
+  }
+
+  const tools = isJsonObject(value) ? value.tools : undefined;
+  const prompts = isJsonObject(value) ? value.prompts : undefined;
+  const skills = isJsonObject(value) ? value.skills : undefined;
+  const resources = isJsonObject(value) ? value.resources : undefined;
+
+  return (
+    Array.isArray(tools) &&
+    tools.every(isNamedDescriptor) &&
+    Array.isArray(prompts) &&
+    prompts.every(isNamedDescriptor) &&
+    Array.isArray(skills) &&
+    skills.every(isNamedDescriptor) &&
+    Array.isArray(resources) &&
+    resources.every(isResourceDescriptor)
+  );
+}
+
+export function isProtocolErrorCode(value: unknown): value is (typeof protocolErrorCodes)[number] {
+  return typeof value === "string" && protocolErrorCodes.includes(value as (typeof protocolErrorCodes)[number]);
+}
+
+export function isMdpMessage(value: unknown): value is MdpMessage {
+  if (!isJsonObject(value) || typeof value.type !== "string") {
+    return false;
+  }
+
+  const object = value;
+  const type = object.type;
+
+  switch (type) {
+    case "registerClient":
+      return isJsonObject(value) && isClientDescriptor(value.client);
+    case "unregisterClient":
+      return hasString(value, "clientId");
+    case "callClient":
+      return (
+        hasString(object, "requestId") &&
+        hasString(object, "clientId") &&
+        isCapabilityKind(isJsonObject(object) ? object.kind : undefined) &&
+        ((hasString(object, "name") && !("uri" in object && object.uri !== undefined)) ||
+          (hasString(object, "uri") && !("name" in object && object.name !== undefined)) ||
+          (hasString(object, "name") && hasString(object, "uri")))
+      );
+    case "callClientResult":
+      return (
+        hasString(object, "requestId") &&
+        isJsonObject(object) &&
+        typeof object.ok === "boolean" &&
+        (!("error" in object) ||
+          (isJsonObject(object.error) &&
+            isProtocolErrorCode(object.error.code) &&
+            typeof object.error.message === "string"))
+      );
+    case "ping":
+    case "pong":
+      return isJsonObject(object) && typeof object.timestamp === "number";
+    default:
+      return false;
+  }
+}
+
+export function parseMessage(raw: string): MdpMessage {
+  const parsed = JSON.parse(raw) as unknown;
+
+  if (!isMdpMessage(parsed)) {
+    throw new Error("Invalid MDP message");
+  }
+
+  return parsed;
+}
+
+export function isStringRecord(value: unknown): value is Record<string, string> {
+  return isJsonObject(value) && isStringArray(Object.values(value));
+}

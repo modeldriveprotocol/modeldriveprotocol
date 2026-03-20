@@ -1,0 +1,30 @@
+{
+  "name": "@mdp/client",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser-entry.d.ts",
+      "default": "./dist/browser-entry.js"
+    },
+    "./global": {
+      "default": "./dist/mdp-client.global.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@mdp/protocol": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc -b && node ./scripts/bundle.mjs",
+    "clean": "node ../../scripts/clean.mjs"
+  }
+}

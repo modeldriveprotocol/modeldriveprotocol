@@ -1,0 +1,21 @@
+{
+  "name": "mdp",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "build": "pnpm --filter @mdp/protocol build && pnpm --filter @mdp/client build && pnpm --filter @mdp/server build",
+    "clean": "node scripts/clean.mjs",
+    "typecheck": "tsc -b tsconfig.json --pretty false",
+    "test": "node scripts/smoke-test.mjs",
+    "docs:dev": "node scripts/prepare-docs.mjs && vitepress dev docs",
+    "docs:build": "node scripts/prepare-docs.mjs && vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.12",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.3",
+    "vitepress": "^1.6.4"
+  }
+}

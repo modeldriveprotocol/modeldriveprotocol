@@ -1,0 +1,28 @@
+:root {
+  --vp-c-brand-1: #0f766e;
+  --vp-c-brand-2: #115e59;
+  --vp-c-brand-3: #134e4a;
+  --vp-c-brand-soft: rgba(15, 118, 110, 0.12);
+}
+
+.VPHero .name {
+  letter-spacing: -0.04em;
+}
+
+.VPNavBar {
+  backdrop-filter: blur(10px);
+}
+
+.VPDoc h1,
+.VPDoc h2,
+.VPDoc h3 {
+  letter-spacing: -0.02em;
+}
+
+.VPHome .VPButton {
+  border-radius: 999px;
+}
+
+.VPHome .container {
+  max-width: 1152px;
+}

@@ -1,0 +1,8 @@
+node_modules/
+packages/*/node_modules/
+packages/*/dist/
+packages/*/*.tsbuildinfo
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+docs/public/assets/mdp-client.global.js
+docs/public/assets/mdp-client.global.js.map

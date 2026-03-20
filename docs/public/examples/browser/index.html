@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MDP Browser Client Example</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "SF Mono", "IBM Plex Mono", ui-monospace, monospace;
+        background: linear-gradient(180deg, #f7f4ec 0%, #ece8dc 100%);
+        color: #1c1a17;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+      }
+
+      main {
+        width: min(720px, calc(100vw - 32px));
+        padding: 32px;
+        border: 1px solid rgba(28, 26, 23, 0.12);
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(16px);
+        box-shadow: 0 24px 60px rgba(28, 26, 23, 0.08);
+      }
+
+      h1 {
+        margin-top: 0;
+        font-size: 28px;
+      }
+
+      code,
+      pre {
+        font-family: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>MDP Browser Client Example</h1>
+      <p>
+        This page exposes one tool and one resource to a running MDP server.
+      </p>
+      <pre><code id="status">Booting…</code></pre>
+    </main>
+
+    <script src="../../assets/mdp-client.global.js"></script>
+    <script>
+      const status = document.getElementById("status");
+
+      const client = MDP.createMdpClient({
+        serverUrl: "ws://127.0.0.1:7070",
+        client: {
+          id: "browser-example",
+          name: "Browser Example Client",
+          description: "Static example page"
+        }
+      });
+
+      client.exposeTool("searchDom", async ({ query }) => ({
+        query,
+        matches: document.body.innerText.includes(query) ? 1 : 0
+      }));
+
+      client.exposeResource(
+        "webpage://example/body",
+        async () => ({
+          mimeType: "text/plain",
+          text: document.body.innerText
+        }),
+        {
+          name: "Example Page Body",
+          mimeType: "text/plain"
+        }
+      );
+
+      (async () => {
+        await client.connect();
+        client.register();
+        status.textContent = "Connected to ws://127.0.0.1:7070 and registered.";
+      })().catch((error) => {
+        status.textContent = String(error);
+      });
+    </script>
+  </body>
+</html>
