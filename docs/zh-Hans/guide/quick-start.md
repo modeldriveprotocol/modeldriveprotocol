@@ -8,9 +8,9 @@ status: MVP
 最短的端到端路径是：
 
 1. 启动 MDP server CLI。
-2. 启动一个 MDP client。
-3. 注册至少一个 capability。
-4. 连接 MCP host 并调用 bridge tools。
+2. 在你的 MCP 工具里配置这个 server。
+3. 启动一个 MDP client。
+4. 和 Agent 对话，试着调用刚注册的工具。
 
 ## 1. 启动 Server CLI
 
@@ -20,23 +20,24 @@ npx @modeldriveprotocol/server --port 7070
 
 如果包已经安装到环境里，也可以直接使用 `modeldriveprotocol-server` 这个 CLI 名称。
 
-默认情况下，同一个 listener 会同时暴露：
+如果你的 MCP 工具使用配置文件，可以把这个 CLI 配到 `mcpServers` 里：
 
-- `ws://127.0.0.1:7070` 上的 WebSocket
-- `http://127.0.0.1:7070/mdp/http-loop` 上的 HTTP loop
-- `http://127.0.0.1:7070/mdp/auth` 上的 auth bootstrap
-
-如果要暴露安全端点，可以额外提供证书与私钥：
-
-```bash
-npx @modeldriveprotocol/server --port 7070 --tls-key ./certs/server-key.pem --tls-cert ./certs/server-cert.pem
+```json
+{
+  "mcpServers": {
+    "mdp": {
+      "command": "npx",
+      "args": ["-y", "@modeldriveprotocol/server", "--port", "7070"]
+    }
+  }
+}
 ```
 
-启用 TLS 后，端点会变成 `wss://127.0.0.1:7070`、`https://127.0.0.1:7070/mdp/http-loop` 和 `https://127.0.0.1:7070/mdp/auth`。
+server 实际暴露的 transport 端点可以继续阅读 [APIs](/zh-Hans/server/api)。如果要启用 TLS 和安全端点，继续阅读 [安全](/zh-Hans/server/security)。
 
 ## 2. 启动一个 Client
 
-需要直接双向会话时，用 `ws://` 或 `wss://`：
+快速开始里先用最小的 websocket 例子即可：
 
 ```ts
 import { createMdpClient } from "@modeldriveprotocol/client";
@@ -58,85 +59,10 @@ await client.connect();
 client.register();
 ```
 
-如果运行时像浏览器一样无法直接给 WebSocket 设置 header，可以复用同一个 auth envelope。`connect()` 会自动先做 auth cookie bootstrap：
+如果你要看 auth、HTTP loop、浏览器全局 bundle 等接入方式，继续阅读[生态 > SDKs > JavaScript](/zh-Hans/sdk/javascript/usage)。
 
-```ts
-import { createMdpClient } from "@modeldriveprotocol/client";
+## 3. 在 MCP 工具里试试看
 
-const client = createMdpClient({
-  serverUrl: "wss://127.0.0.1:7070",
-  auth: {
-    token: "client-session-token"
-  },
-  client: {
-    id: "browser-01",
-    name: "Browser Client"
-  }
-});
+当 MCP 配置生效、client 也注册完成后，直接在你配置了 MCP 的工具里和 Agent 对话，试着调用相关工具看看。
 
-await client.connect();
-client.register();
-```
-
-运行时更偏请求响应轮询，或者希望明确通过 HTTP 携带认证信息时，用 `http://` 或 `https://`：
-
-```ts
-import { createMdpClient } from "@modeldriveprotocol/client";
-
-const client = createMdpClient({
-  serverUrl: "http://127.0.0.1:7070",
-  auth: {
-    token: "client-session-token"
-  },
-  client: {
-    id: "browser-01",
-    name: "Browser Client"
-  }
-});
-
-client.exposeTool("searchDom", async ({ query }, context) => ({
-  query,
-  matches: 3,
-  authToken: context.auth?.token
-}));
-
-await client.connect();
-client.register();
-```
-
-如果你要走浏览器全局 bundle 路径，先加载脚本，再显式包一层异步调用：
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js"></script>
-<script>
-  void (async () => {
-    const client = MDP.createMdpClient({
-      serverUrl: "ws://127.0.0.1:7070",
-      client: {
-        id: "browser-01",
-        name: document.title || "Browser Client"
-      }
-    });
-
-    client.exposeTool("getPageInfo", async () => ({
-      title: document.title,
-      url: window.location.href
-    }));
-
-    await client.connect();
-    client.register();
-  })();
-</script>
-```
-
-## 3. 连接 MCP Host
-
-client 注册完成后，MCP bridge 会稳定暴露这些 tools：
-
-- `listClients`
-- `listTools`
-- `callTools`
-- `getPrompt`
-- `readResource`
-
-registry 仍然是内存态，但 transport 已经可以变化，而不影响 MCP bridge 契约。
+例如，可以让 Agent 先列出可用 client，或者直接调用你刚刚暴露的那个 tool。完整的 bridge surface 可继续阅读 [Tools](/zh-Hans/server/tools)。

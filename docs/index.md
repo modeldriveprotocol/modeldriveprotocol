@@ -7,11 +7,11 @@ hero:
   tagline: "A protocol for exposing runtime internal procedures to AI through client registration and MCP bridge tools."
   actions:
     - theme: brand
-      text: "Learn the protocol"
-      link: /guide/introduction
+      text: "Quick Start"
+      link: /guide/quick-start
     - theme: alt
-      text: "Build a server"
-      link: /server/mvp-design
+      text: "JavaScript SDK"
+      link: /sdk/javascript/quick-start
 
 features:
   - title: "Cross-runtime"
@@ -28,8 +28,7 @@ MDP is a language-neutral protocol for exposing internal procedures to AI. It is
 
 ## Start here
 
-- Read the [introduction](/guide/introduction) for the problem statement.
-- Review the [architecture](/guide/architecture) for client/server boundaries.
-- Inspect the [message schema](/protocol/message-schema) for the wire format.
-- Follow the [server MVP](/server/mvp-design) to implement a first working stack.
-
+- Start with the [quick start](/guide/quick-start) for the shortest end-to-end path.
+- Read [what MDP is](/guide/introduction) to understand the problem and scope.
+- Review the [server tools](/server/tools) page for the fixed MCP bridge surface.
+- Use the [JavaScript SDK quick start](/sdk/javascript/quick-start) when you want to expose capabilities from a browser or local process.

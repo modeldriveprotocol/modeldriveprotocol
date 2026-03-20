@@ -8,9 +8,9 @@ status: MVP
 The shortest end-to-end path is:
 
 1. Start the MDP server CLI.
-2. Start one MDP client.
-3. Register at least one capability.
-4. Connect an MCP host and call the bridge tools.
+2. Configure your MCP tool to launch the server.
+3. Start one MDP client.
+4. Talk to your agent and try the registered tools.
 
 ## 1. Start the Server CLI
 
@@ -20,23 +20,24 @@ npx @modeldriveprotocol/server --port 7070
 
 If the package is already installed, the same CLI is available as `modeldriveprotocol-server`.
 
-By default the same listener exposes:
+In an MCP-capable tool, point the MCP server entry at the CLI:
 
-- WebSocket at `ws://127.0.0.1:7070`
-- HTTP loop at `http://127.0.0.1:7070/mdp/http-loop`
-- auth bootstrap at `http://127.0.0.1:7070/mdp/auth`
-
-To expose secure endpoints, provide a key pair:
-
-```bash
-npx @modeldriveprotocol/server --port 7070 --tls-key ./certs/server-key.pem --tls-cert ./certs/server-cert.pem
+```json
+{
+  "mcpServers": {
+    "mdp": {
+      "command": "npx",
+      "args": ["-y", "@modeldriveprotocol/server", "--port", "7070"]
+    }
+  }
+}
 ```
 
-With TLS enabled, the endpoints become `wss://127.0.0.1:7070`, `https://127.0.0.1:7070/mdp/http-loop`, and `https://127.0.0.1:7070/mdp/auth`.
+For the transport endpoints exposed by the server, see [APIs](/server/api). For TLS and secure deployment, see [Security](/server/security).
 
 ## 2. Start One Client
 
-Use `ws://` or `wss://` when you want a direct bidirectional session:
+For the quick start, use the smallest websocket example:
 
 ```ts
 import { createMdpClient } from "@modeldriveprotocol/client";
@@ -58,85 +59,10 @@ await client.connect();
 client.register();
 ```
 
-In browser-like runtimes where you cannot set websocket headers directly, reuse the same auth envelope. `connect()` will bootstrap the auth cookie automatically:
+For auth, HTTP loop mode, and browser-global usage, continue with the [JavaScript SDK docs](/sdk/javascript/usage).
 
-```ts
-import { createMdpClient } from "@modeldriveprotocol/client";
+## 3. Try It in Your MCP Tool
 
-const client = createMdpClient({
-  serverUrl: "wss://127.0.0.1:7070",
-  auth: {
-    token: "client-session-token"
-  },
-  client: {
-    id: "browser-01",
-    name: "Browser Client"
-  }
-});
+After the MCP server is configured in your tool and the client is registered, open a chat with your agent and ask it to try the related tools.
 
-await client.connect();
-client.register();
-```
-
-Use `http://` or `https://` when the runtime prefers request/response polling or when you want explicit HTTP-carried auth:
-
-```ts
-import { createMdpClient } from "@modeldriveprotocol/client";
-
-const client = createMdpClient({
-  serverUrl: "http://127.0.0.1:7070",
-  auth: {
-    token: "client-session-token"
-  },
-  client: {
-    id: "browser-01",
-    name: "Browser Client"
-  }
-});
-
-client.exposeTool("searchDom", async ({ query }, context) => ({
-  query,
-  matches: 3,
-  authToken: context.auth?.token
-}));
-
-await client.connect();
-client.register();
-```
-
-If you want a browser-global example, load the bundle first and wrap the async work explicitly:
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js"></script>
-<script>
-  void (async () => {
-    const client = MDP.createMdpClient({
-      serverUrl: "ws://127.0.0.1:7070",
-      client: {
-        id: "browser-01",
-        name: document.title || "Browser Client"
-      }
-    });
-
-    client.exposeTool("getPageInfo", async () => ({
-      title: document.title,
-      url: window.location.href
-    }));
-
-    await client.connect();
-    client.register();
-  })();
-</script>
-```
-
-## 3. Connect an MCP Host
-
-After a client registers, the MCP bridge exposes stable tools such as:
-
-- `listClients`
-- `listTools`
-- `callTools`
-- `getPrompt`
-- `readResource`
-
-The registry remains in-memory, but the transport can vary without changing the MCP bridge contract.
+For example, ask the agent to list available clients or call the tool you just exposed. If you want the full bridge surface, see [Tools](/server/tools).

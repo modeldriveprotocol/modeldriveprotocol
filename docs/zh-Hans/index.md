@@ -7,11 +7,11 @@ hero:
   tagline: "通过 client 注册与 MCP bridge tools，把运行时内部过程调用暴露给 AI 的协议。"
   actions:
     - theme: brand
-      text: "阅读协议"
-      link: /zh-Hans/guide/introduction
+      text: "快速使用"
+      link: /zh-Hans/guide/quick-start
     - theme: alt
-      text: "构建服务端"
-      link: /zh-Hans/server/mvp-design
+      text: "JavaScript SDK"
+      link: /zh-Hans/sdk/javascript/quick-start
 
 features:
   - title: "跨运行时"
@@ -28,7 +28,7 @@ MDP 是一个面向 AI 的语言无关协议，用来暴露运行时内部的过
 
 ## 从这里开始
 
-- 阅读[介绍](/zh-Hans/guide/introduction)了解问题定义。
-- 查看[架构](/zh-Hans/guide/architecture)理解 client / server 边界。
-- 阅读[消息模型](/zh-Hans/protocol/message-schema)查看线上的消息格式。
-- 参考[服务端 MVP](/zh-Hans/server/mvp-design)实现第一版可运行链路。
+- 从[快速使用](/zh-Hans/guide/quick-start)开始，先跑通最短链路。
+- 阅读[什么是 MDP？](/zh-Hans/guide/introduction)了解协议要解决的问题。
+- 查看 [Server / Tools](/zh-Hans/server/tools) 理解固定的 MCP bridge surface。
+- 如果你要从浏览器或本地进程接入，先看 [JavaScript SDK / 简易上手](/zh-Hans/sdk/javascript/quick-start)。
