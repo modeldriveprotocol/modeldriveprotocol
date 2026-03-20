@@ -3,18 +3,28 @@
 | en-US | [zh-Hans](./README.zh-Hans.md) |
 | --- | --- |
 
-MDP is a cross-runtime capability registration and RPC bridge protocol built around MCP.
+MDP turns runtime-local capabilities into MCP-reachable capabilities.
 
-In this repo, the current MVP is:
+If your useful logic lives inside a browser tab, mobile app, desktop process, embedded runtime, or local agent, MDP gives it one bridge server to register with and one stable way for AI hosts to call it.
 
-- a TypeScript MDP server
-- a TypeScript client SDK that builds to JavaScript
-- a multilingual VitePress documentation site
-- a stable MCP bridge surface built from fixed tools instead of dynamic per-client tool generation
+Instead of standing up a separate MCP server for every runtime, MDP keeps responsibilities clean:
 
-## What MDP Solves
+- clients own capabilities
+- the MDP server owns registration and routing
+- MCP hosts talk to one fixed bridge surface
 
-MDP lets arbitrary runtimes expose internal procedures to AI through one bridge server.
+## Why MDP Exists
+
+MCP is a strong host-side protocol, but many real capabilities live somewhere else: inside apps, devices, browser sessions, and local processes.
+
+MDP is the layer between those runtimes and MCP. It lets arbitrary runtimes register capabilities and route invocations through one server without generating a brand-new MCP tool surface for every connected client.
+
+A typical setup looks like this:
+
+- a web app exposes user-context tools
+- a mobile app exposes device-local actions
+- a local process exposes operational procedures
+- one MDP server presents all of them to MCP hosts through fixed bridge tools
 
 That runtime can be:
 
@@ -32,97 +42,28 @@ The core model is:
 - the MDP server maintains registration and routing
 - the MDP server exposes bridge tools to MCP hosts
 
-Supported capability kinds in the MVP:
+Capabilities can be exposed as `tools`, `prompts`, `skills`, and `resources`.
 
-- `tools`
-- `prompts`
-- `skills`
-- `resources`
+## Architecture
 
-## Workspace
+At a high level, MDP sits between MCP hosts and runtime-local capabilities:
 
-```text
-packages/
-  protocol/  shared MDP message and model types
-  server/    TypeScript MDP server + MCP bridge
-  client/    TypeScript client SDK that emits JavaScript
-docs/        VitePress documentation site
-scripts/     repo utilities and smoke test
-```
-
-## MCP Bridge Tools
-
-The MVP server exposes fixed MCP tools:
-
-- `listClients`
-- `callClients`
-- `listTools`
-- `callTools`
-- `listPrompts`
-- `getPrompt`
-- `listSkills`
-- `callSkills`
-- `listResources`
-- `readResource`
-
-## Quick Start
-
-Install dependencies:
-
-```bash
-pnpm install
-```
-
-Build the workspace:
-
-```bash
-pnpm build
-```
-
-Run the smoke test:
-
-```bash
-pnpm test
-```
-
-Run the docs site locally:
-
-```bash
-pnpm docs:dev
-```
-
-Build the docs site:
-
-```bash
-pnpm docs:build
+```mermaid
+flowchart LR
+  host["MCP Host"] <-->|"fixed bridge tools"| server["MDP Server<br/>registry + routing"]
+  server <-->|"capability registration<br/>invocation routing"| clients["MDP Clients"]
+  clients --> web["Web App"]
+  clients --> mobile["Mobile App"]
+  clients --> local["Desktop / Device / Local Process"]
 ```
 
 ## Documentation
 
-Use the docs site for protocol and implementation details:
+Use the docs for getting started and protocol details:
 
-- [Guide](./docs/guide/introduction.md)
+- [Introduction](./docs/guide/introduction.md)
+- [Quick Start](./docs/guide/quick-start.md)
+- [Architecture](./docs/guide/architecture.md)
 - [Protocol Overview](./docs/protocol/overview.md)
 - [MCP Bridge](./docs/protocol/mcp-bridge.md)
-- [Server MVP Design](./docs/server/mvp-design.md)
-- [JS Client](./docs/client/js-client.md)
 - [Embedding Other Runtimes](./docs/client/embedding.md)
-
-## MVP Status
-
-Current MVP scope:
-
-- WebSocket transport on the MDP side
-- in-memory client registry
-- client capability registration
-- routing from MCP bridge tools to connected clients
-- TypeScript client runtime with JavaScript output
-- browser global bundle at `packages/client/dist/modeldriveprotocol-client.global.js`
-
-Out of scope for this MVP:
-
-- auth and permission policy
-- durable registry storage
-- multi-node routing
-- non-WebSocket transports
-- native SDKs beyond the JavaScript-first client
