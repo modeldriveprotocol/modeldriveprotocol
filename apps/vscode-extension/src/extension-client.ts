@@ -1,14 +1,14 @@
-import { createMdpClient, type MdpClient } from "@modeldriveprotocol/client";
-import * as vscode from "vscode";
+import { type MdpClient, createMdpClient } from '@modeldriveprotocol/client'
+import * as vscode from 'vscode'
 
-import { registerCapabilities } from "./capabilities.js";
+import { registerCapabilities } from './capabilities.js'
 import {
+  type ExtensionConfiguration,
   createDefaultClientId,
   createDefaultClientName,
-  getWorkspaceLabel,
-  type ExtensionConfiguration
-} from "./model.js";
-import { createObservedClientTransport } from "./transport.js";
+  getWorkspaceLabel
+} from './model.js'
+import { createObservedClientTransport } from './transport.js'
 
 export function createExtensionClient(
   context: vscode.ExtensionContext,
@@ -16,10 +16,10 @@ export function createExtensionClient(
   log: (message: string) => void,
   onTransportClose: (client: MdpClient) => void
 ): MdpClient {
-  let client: MdpClient;
+  let client: MdpClient
   const transport = createObservedClientTransport(config.serverUrl, () => {
-    onTransportClose(client);
-  });
+    onTransportClose(client)
+  })
 
   client = createMdpClient({
     serverUrl: config.serverUrl,
@@ -27,38 +27,36 @@ export function createExtensionClient(
     client: createExtensionClientInfo(context, config),
     ...(config.authToken
       ? {
-          auth: {
-            token: config.authToken
-          }
+        auth: {
+          token: config.authToken
         }
+      }
       : {})
-  });
+  })
 
   registerCapabilities(client, {
     config,
     log
-  });
+  })
 
-  return client;
+  return client
 }
 
 export function createExtensionClientInfo(
   context: vscode.ExtensionContext,
   config: ExtensionConfiguration
 ) {
-  const folders = (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.name);
-  const workspaceLabel = getWorkspaceLabel(folders);
-  const id =
-    config.clientId ??
-    createDefaultClientId(vscode.env.machineId, workspaceLabel);
-  const name = config.clientName ?? createDefaultClientName(workspaceLabel);
-  const clientVersion = readExtensionVersion(context);
+  const folders = (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.name)
+  const workspaceLabel = getWorkspaceLabel(folders)
+  const id = config.clientId ??
+    createDefaultClientId(vscode.env.machineId, workspaceLabel)
+  const name = config.clientName ?? createDefaultClientName(workspaceLabel)
+  const clientVersion = readExtensionVersion(context)
 
   return {
     id,
     name,
-    description:
-      "VSCode extension host exposing editor, resource, prompt, and skill capabilities through MDP.",
+    description: 'VSCode extension host exposing editor, resource, prompt, and skill capabilities through MDP.',
     ...(clientVersion ? { version: clientVersion } : {}),
     platform: `vscode-${vscode.version}`,
     metadata: {
@@ -68,15 +66,15 @@ export function createExtensionClientInfo(
       allowedCommandCount: config.allowedCommands.length,
       autoConnect: config.autoConnect
     }
-  };
+  }
 }
 
 function readExtensionVersion(
   context: vscode.ExtensionContext
 ): string | undefined {
   const packageJson = context.extension.packageJSON as {
-    version?: unknown;
-  };
+    version?: unknown
+  }
 
-  return typeof packageJson.version === "string" ? packageJson.version : undefined;
+  return typeof packageJson.version === 'string' ? packageJson.version : undefined
 }

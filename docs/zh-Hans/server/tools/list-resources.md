@@ -31,4 +31,3 @@ status: MVP
 
 - 能力是通过 URI 标识，而不是通过名称标识
 - 调用 [readResource](/zh-Hans/server/tools/read-resource) 前先确认有哪些 resource
-

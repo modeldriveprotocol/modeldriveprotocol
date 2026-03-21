@@ -1,24 +1,24 @@
-import { rm } from "node:fs/promises";
-import { resolve } from "node:path";
+import { rm } from 'node:fs/promises'
+import { resolve } from 'node:path'
 
 const targets = [
-  "packages/protocol/dist",
-  "packages/client/dist",
-  "packages/server/dist",
-  "apps/chrome-extension/dist",
-  "apps/vscode-extension/dist",
-  "packages/protocol/tsconfig.tsbuildinfo",
-  "packages/client/tsconfig.tsbuildinfo",
-  "packages/server/tsconfig.tsbuildinfo",
-  "apps/chrome-extension/tsconfig.tsbuildinfo",
-  "apps/vscode-extension/tsconfig.tsbuildinfo",
-  "docs/.vitepress/cache",
-  "docs/.vitepress/dist",
-  "docs/public/assets/mdp-client.global.js",
-  "docs/public/assets/mdp-client.global.js.map",
-  "docs/public/assets/modeldriveprotocol-client.global.js",
-  "docs/public/assets/modeldriveprotocol-client.global.js.map"
-];
+  'packages/protocol/dist',
+  'packages/client/dist',
+  'packages/server/dist',
+  'apps/chrome-extension/dist',
+  'apps/vscode-extension/dist',
+  'packages/protocol/tsconfig.tsbuildinfo',
+  'packages/client/tsconfig.tsbuildinfo',
+  'packages/server/tsconfig.tsbuildinfo',
+  'apps/chrome-extension/tsconfig.tsbuildinfo',
+  'apps/vscode-extension/tsconfig.tsbuildinfo',
+  'docs/.vitepress/cache',
+  'docs/.vitepress/dist',
+  'docs/public/assets/mdp-client.global.js',
+  'docs/public/assets/mdp-client.global.js.map',
+  'docs/public/assets/modeldriveprotocol-client.global.js',
+  'docs/public/assets/modeldriveprotocol-client.global.js.map'
+]
 
 await Promise.all(
   targets.map((target) =>
@@ -27,4 +27,4 @@ await Promise.all(
       recursive: true
     })
   )
-);
+)

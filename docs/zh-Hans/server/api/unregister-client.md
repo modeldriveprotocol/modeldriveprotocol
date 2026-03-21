@@ -7,16 +7,16 @@ status: Draft
 
 `unregisterClient` 是一个从 client 发往 server 的生命周期事件，用来移除一个逻辑 client 注册，而不要求 transport 立刻断开。
 
-| 事件类型 | 事件流向 |
-| --- | --- |
+| 事件类型           | 事件流向         |
+| ------------------ | ---------------- |
 | `unregisterClient` | Client -> Server |
 
 ## 数据定义
 
 ```ts
 interface UnregisterClientMessage {
-  type: "unregisterClient";
-  clientId: string;
+  type: 'unregisterClient'
+  clientId: string
 }
 ```
 

@@ -1,56 +1,56 @@
 import {
-  createSerializedError,
   type AuthContext,
   type CallClientMessage,
-  type ServerToClientMessage
-} from "@modeldriveprotocol/protocol";
+  type ServerToClientMessage,
+  createSerializedError
+} from '@modeldriveprotocol/protocol'
 
-import { HttpLoopClientTransport } from "./http-loop-client.js";
-import { ProcedureRegistry } from "./procedure-registry.js";
+import { HttpLoopClientTransport } from './http-loop-client.js'
+import { ProcedureRegistry } from './procedure-registry.js'
 import type {
   BrowserScriptClientAttributes,
   CapabilityHandler,
-  ClientTransportAuthOptions,
   ClientDescriptorOverride,
   ClientInfo,
+  ClientTransport,
+  ClientTransportAuthOptions,
   ExposePromptOptions,
   ExposeResourceOptions,
   ExposeSkillOptions,
   ExposeToolOptions,
   MdpClientOptions,
-  ClientTransport,
   SkillDefinition,
   SkillResolver
-} from "./types.js";
-import { WebSocketClientTransport } from "./ws-client.js";
+} from './types.js'
+import { WebSocketClientTransport } from './ws-client.js'
 
 export class MdpClient {
-  private readonly serverUrl: string;
-  private readonly serverProtocol: string;
-  private readonly usesDefaultTransport: boolean;
-  private clientInfo: ClientInfo;
-  private readonly registry = new ProcedureRegistry();
-  private readonly transport: ClientTransport;
-  private readonly transportAuth: ClientTransportAuthOptions | undefined;
-  private auth: AuthContext | undefined;
-  private connected = false;
-  private registered = false;
+  private readonly serverUrl: string
+  private readonly serverProtocol: string
+  private readonly usesDefaultTransport: boolean
+  private clientInfo: ClientInfo
+  private readonly registry = new ProcedureRegistry()
+  private readonly transport: ClientTransport
+  private readonly transportAuth: ClientTransportAuthOptions | undefined
+  private auth: AuthContext | undefined
+  private connected = false
+  private registered = false
 
   constructor(options: MdpClientOptions) {
-    this.serverUrl = options.serverUrl;
-    this.serverProtocol = new URL(options.serverUrl).protocol;
-    this.usesDefaultTransport = options.transport === undefined;
-    this.clientInfo = options.client;
-    this.auth = options.auth;
-    this.transportAuth = options.transportAuth;
-    this.transport = options.transport ?? createDefaultTransport(options.serverUrl);
+    this.serverUrl = options.serverUrl
+    this.serverProtocol = new URL(options.serverUrl).protocol
+    this.usesDefaultTransport = options.transport === undefined
+    this.clientInfo = options.client
+    this.auth = options.auth
+    this.transportAuth = options.transportAuth
+    this.transport = options.transport ?? createDefaultTransport(options.serverUrl)
     this.transport.onMessage((message) => {
-      void this.handleMessage(message);
-    });
+      void this.handleMessage(message)
+    })
     this.transport.onClose(() => {
-      this.connected = false;
-      this.registered = false;
-    });
+      this.connected = false
+      this.registered = false
+    })
   }
 
   exposeTool(
@@ -58,8 +58,8 @@ export class MdpClient {
     handler: CapabilityHandler,
     options?: ExposeToolOptions
   ): this {
-    this.registry.exposeTool(name, handler, options);
-    return this;
+    this.registry.exposeTool(name, handler, options)
+    return this
   }
 
   exposePrompt(
@@ -67,38 +67,38 @@ export class MdpClient {
     handler: CapabilityHandler,
     options?: ExposePromptOptions
   ): this {
-    this.registry.exposePrompt(name, handler, options);
-    return this;
+    this.registry.exposePrompt(name, handler, options)
+    return this
   }
 
-  exposeSkill(name: string, content: string, options?: ExposeSkillOptions): this;
+  exposeSkill(name: string, content: string, options?: ExposeSkillOptions): this
   exposeSkill(
     name: string,
     handler: CapabilityHandler,
     options?: ExposeSkillOptions
-  ): this;
+  ): this
   exposeSkill(
     name: string,
     resolver: SkillResolver,
     options?: ExposeSkillOptions
-  ): this;
+  ): this
   exposeSkill(
     name: string,
     definition: SkillDefinition,
     options?: ExposeSkillOptions
   ): this {
-    if (typeof definition === "string") {
-      this.registry.exposeSkill(name, definition, options);
-      return this;
+    if (typeof definition === 'string') {
+      this.registry.exposeSkill(name, definition, options)
+      return this
     }
 
     if (options?.inputSchema === undefined) {
-      this.registry.exposeSkill(name, definition as SkillResolver, options);
-      return this;
+      this.registry.exposeSkill(name, definition as SkillResolver, options)
+      return this
     }
 
-    this.registry.exposeSkill(name, definition as CapabilityHandler, options);
-    return this;
+    this.registry.exposeSkill(name, definition as CapabilityHandler, options)
+    return this
   }
 
   exposeResource(
@@ -106,202 +106,200 @@ export class MdpClient {
     handler: CapabilityHandler,
     options: ExposeResourceOptions
   ): this {
-    this.registry.exposeResource(uri, handler, options);
-    return this;
+    this.registry.exposeResource(uri, handler, options)
+    return this
   }
 
   async connect(): Promise<void> {
-    await this.authenticateTransport();
-    await this.transport.connect();
-    this.connected = true;
+    await this.authenticateTransport()
+    await this.transport.connect()
+    this.connected = true
   }
 
   setAuth(auth?: AuthContext): this {
-    this.auth = auth;
-    return this;
+    this.auth = auth
+    return this
   }
 
   async authenticateTransport(auth: AuthContext | undefined = this.auth): Promise<void> {
-    const effectiveTransportAuth =
-      this.transportAuth ??
+    const effectiveTransportAuth = this.transportAuth ??
       (this.usesDefaultTransport &&
-      auth &&
-      isWebSocketProtocol(this.serverProtocol)
+          auth &&
+          isWebSocketProtocol(this.serverProtocol)
         ? ({
-            mode: "cookie"
-          } satisfies ClientTransportAuthOptions)
-        : undefined);
+          mode: 'cookie'
+        } satisfies ClientTransportAuthOptions)
+        : undefined)
 
     if (!effectiveTransportAuth) {
-      return;
+      return
     }
 
     switch (effectiveTransportAuth.mode) {
-      case "cookie":
+      case 'cookie':
         await bootstrapCookieTransportAuth(
           this.serverUrl,
           effectiveTransportAuth,
           effectiveTransportAuth.auth ?? auth
-        );
-        return;
+        )
+        return
     }
   }
 
   register(overrides: ClientDescriptorOverride = {}): void {
-    this.ensureConnected();
+    this.ensureConnected()
     this.clientInfo = {
       ...this.clientInfo,
       ...overrides
-    };
+    }
 
     this.transport.send({
-      type: "registerClient",
+      type: 'registerClient',
       client: this.registry.describe(this.clientInfo),
       ...(this.auth ? { auth: this.auth } : {})
-    });
-    this.registered = true;
+    })
+    this.registered = true
   }
 
   async disconnect(): Promise<void> {
     if (this.connected && this.registered) {
       this.transport.send({
-        type: "unregisterClient",
+        type: 'unregisterClient',
         clientId: this.clientInfo.id
-      });
+      })
     }
 
-    await this.transport.close();
-    this.connected = false;
-    this.registered = false;
+    await this.transport.close()
+    this.connected = false
+    this.registered = false
   }
 
   describe() {
-    return this.registry.describe(this.clientInfo);
+    return this.registry.describe(this.clientInfo)
   }
 
   private async handleMessage(message: ServerToClientMessage): Promise<void> {
     switch (message.type) {
-      case "ping":
+      case 'ping':
         this.transport.send({
-          type: "pong",
+          type: 'pong',
           timestamp: message.timestamp
-        });
-        return;
-      case "callClient":
-        await this.handleInvocation(message);
-        return;
+        })
+        return
+      case 'callClient':
+        await this.handleInvocation(message)
+        return
       default:
-        return;
+        return
     }
   }
 
   private async handleInvocation(message: CallClientMessage): Promise<void> {
     try {
-      const data = await this.registry.invoke(message);
+      const data = await this.registry.invoke(message)
 
       this.transport.send({
-        type: "callClientResult",
+        type: 'callClientResult',
         requestId: message.requestId,
         ok: true,
         data
-      });
+      })
     } catch (error) {
-      const normalized =
-        error instanceof Error ? error : new Error(String(error));
+      const normalized = error instanceof Error ? error : new Error(String(error))
 
       this.transport.send({
-        type: "callClientResult",
+        type: 'callClientResult',
         requestId: message.requestId,
         ok: false,
-        error: createSerializedError("handler_error", normalized.message)
-      });
+        error: createSerializedError('handler_error', normalized.message)
+      })
     }
   }
 
   private ensureConnected(): void {
     if (!this.connected) {
-      throw new Error("MDP client is not connected");
+      throw new Error('MDP client is not connected')
     }
   }
 }
 
 export function createMdpClient(options: MdpClientOptions): MdpClient {
-  return new MdpClient(options);
+  return new MdpClient(options)
 }
 
 function createDefaultTransport(serverUrl: string): ClientTransport {
-  const protocol = new URL(serverUrl).protocol;
+  const protocol = new URL(serverUrl).protocol
 
   switch (protocol) {
-    case "ws:":
-    case "wss:":
-      return new WebSocketClientTransport(serverUrl);
-    case "http:":
-    case "https:":
-      return new HttpLoopClientTransport(serverUrl);
+    case 'ws:':
+    case 'wss:':
+      return new WebSocketClientTransport(serverUrl)
+    case 'http:':
+    case 'https:':
+      return new HttpLoopClientTransport(serverUrl)
     default:
-      throw new Error(`Unsupported MDP transport protocol: ${protocol}`);
+      throw new Error(`Unsupported MDP transport protocol: ${protocol}`)
   }
 }
 
 function isWebSocketProtocol(protocol: string): boolean {
-  return protocol === "ws:" || protocol === "wss:";
+  return protocol === 'ws:' || protocol === 'wss:'
 }
 
-const DEFAULT_COOKIE_AUTH_ENDPOINT = "/mdp/auth";
+const DEFAULT_COOKIE_AUTH_ENDPOINT = '/mdp/auth'
 
 async function bootstrapCookieTransportAuth(
   serverUrl: string,
-  options: Extract<ClientTransportAuthOptions, { mode: "cookie" }>,
+  options: Extract<ClientTransportAuthOptions, { mode: 'cookie' }>,
   auth: AuthContext | undefined
 ): Promise<void> {
   if (!auth) {
-    throw new Error("Cookie transport auth requires an auth context");
+    throw new Error('Cookie transport auth requires an auth context')
   }
 
-  const fetchImpl = options.fetch ?? globalThis.fetch;
+  const fetchImpl = options.fetch ?? globalThis.fetch
 
   if (!fetchImpl) {
-    throw new Error("No fetch implementation is available in this runtime");
+    throw new Error('No fetch implementation is available in this runtime')
   }
 
   const response = await fetchImpl(resolveTransportAuthEndpoint(serverUrl, options.endpoint), {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "content-type": "application/json",
+      'content-type': 'application/json',
       ...options.headers
     },
     body: JSON.stringify({
       auth
     }),
-    credentials: options.credentials ?? "include"
-  });
+    credentials: options.credentials ?? 'include'
+  })
 
   if (!response.ok) {
-    throw new Error(`Unable to bootstrap websocket auth for ${serverUrl}`);
+    throw new Error(`Unable to bootstrap websocket auth for ${serverUrl}`)
   }
 }
 
 function resolveTransportAuthEndpoint(serverUrl: string, endpoint?: string): string {
-  const baseUrl = new URL(serverUrl);
+  const baseUrl = new URL(serverUrl)
 
-  if (baseUrl.protocol === "ws:") {
-    baseUrl.protocol = "http:";
-  } else if (baseUrl.protocol === "wss:") {
-    baseUrl.protocol = "https:";
+  if (baseUrl.protocol === 'ws:') {
+    baseUrl.protocol = 'http:'
+  } else if (baseUrl.protocol === 'wss:') {
+    baseUrl.protocol = 'https:'
   }
 
-  return new URL(endpoint ?? DEFAULT_COOKIE_AUTH_ENDPOINT, baseUrl).toString();
+  return new URL(endpoint ?? DEFAULT_COOKIE_AUTH_ENDPOINT, baseUrl).toString()
 }
 
 export function resolveServerUrl(attributes: BrowserScriptClientAttributes): string {
   if (attributes.serverUrl) {
-    return attributes.serverUrl;
+    return attributes.serverUrl
   }
 
-  const protocol = attributes.serverProtocol ?? "ws";
-  const host = attributes.serverHost ?? "127.0.0.1";
-  const port = attributes.serverPort ?? 7070;
+  const protocol = attributes.serverProtocol ?? 'ws'
+  const host = attributes.serverHost ?? '127.0.0.1'
+  const port = attributes.serverPort ?? 7070
 
-  return `${protocol}://${host}:${port}`;
+  return `${protocol}://${host}:${port}`
 }

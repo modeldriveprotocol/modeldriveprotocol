@@ -7,33 +7,33 @@ status: Draft
 
 `callClient` 是一个从 server 发往 client 的调用事件，用来把一次已路由的 capability 调用下发到目标 client。
 
-| 事件类型 | 事件流向 |
-| --- | --- |
+| 事件类型     | 事件流向         |
+| ------------ | ---------------- |
 | `callClient` | Server -> Client |
 
 ## 数据定义
 
 ```ts
-type CapabilityKind = "tool" | "prompt" | "skill" | "resource";
+type CapabilityKind = 'tool' | 'prompt' | 'skill' | 'resource'
 
-type RpcArguments = Record<string, unknown>;
+type RpcArguments = Record<string, unknown>
 
 interface AuthContext {
-  scheme?: string;
-  token?: string;
-  headers?: Record<string, string>;
-  metadata?: Record<string, unknown>;
+  scheme?: string
+  token?: string
+  headers?: Record<string, string>
+  metadata?: Record<string, unknown>
 }
 
 interface CallClientMessage {
-  type: "callClient";
-  requestId: string;
-  clientId: string;
-  kind: CapabilityKind;
-  name?: string;
-  uri?: string;
-  args?: RpcArguments;
-  auth?: AuthContext;
+  type: 'callClient'
+  requestId: string
+  clientId: string
+  kind: CapabilityKind
+  name?: string
+  uri?: string
+  args?: RpcArguments
+  auth?: AuthContext
 }
 ```
 

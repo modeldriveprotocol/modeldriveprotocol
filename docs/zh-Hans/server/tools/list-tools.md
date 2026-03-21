@@ -32,4 +32,3 @@ status: MVP
 - 已经明确只关心 tool
 - 想只看某一个 client 的 tool 列表
 - 调用 [callTools](/zh-Hans/server/tools/call-tools) 之前先确认入参结构
-

@@ -9,12 +9,12 @@ HTTP loop is the request-response transport alternative to websocket sessions.
 
 ## Endpoint summary
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `POST` | [`/mdp/http-loop/connect`](/server/api/http-loop-connect) | Create a loop session |
-| `POST` | [`/mdp/http-loop/send`](/server/api/http-loop-send) | Send one client-to-server MDP message |
-| `GET` | [`/mdp/http-loop/poll`](/server/api/http-loop-poll) | Receive one server-to-client MDP message |
-| `POST` | [`/mdp/http-loop/disconnect`](/server/api/http-loop-disconnect) | Close the loop session |
+| Method | Path                                                            | Purpose                                  |
+| ------ | --------------------------------------------------------------- | ---------------------------------------- |
+| `POST` | [`/mdp/http-loop/connect`](/server/api/http-loop-connect)       | Create a loop session                    |
+| `POST` | [`/mdp/http-loop/send`](/server/api/http-loop-send)             | Send one client-to-server MDP message    |
+| `GET`  | [`/mdp/http-loop/poll`](/server/api/http-loop-poll)             | Receive one server-to-client MDP message |
+| `POST` | [`/mdp/http-loop/disconnect`](/server/api/http-loop-disconnect) | Close the loop session                   |
 
 ## Session identification
 
@@ -48,6 +48,36 @@ Response:
 5. `POST /disconnect`
 
 `waitMs` on `/poll` is clamped to `60000`.
+
+## Sequence diagram
+
+```mermaid
+sequenceDiagram
+  participant Client as MDP Client
+  participant Server as MDP Server
+  participant Host as MCP Host
+
+  Client->>Server: POST /mdp/http-loop/connect
+  Server-->>Client: 200 { sessionId }
+  Client->>Server: POST /mdp/http-loop/send registerClient
+
+  loop While waiting for routed work
+    Client->>Server: GET /mdp/http-loop/poll?waitMs=...
+    alt No queued server message
+      Server-->>Client: 204 No Content
+    else Routed invocation is available
+      Host->>Server: call tool or skill routed to this client
+      Server-->>Client: 200 callClient
+      Client->>Server: POST /mdp/http-loop/send callClientResult
+      Server-->>Host: Return invocation result
+    end
+  end
+
+  opt Graceful shutdown
+    Client->>Server: POST /mdp/http-loop/disconnect
+    Server-->>Client: 204 No Content
+  end
+```
 
 For request and response details per endpoint, continue with:
 

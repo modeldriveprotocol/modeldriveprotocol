@@ -37,4 +37,3 @@ Each item in `clients` is a `ListedClient` with:
 - you want to confirm whether a runtime is connected
 - you need a quick capability summary before drilling into one kind
 - you want connection metadata such as transport mode or auth source
-

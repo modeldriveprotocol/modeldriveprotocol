@@ -7,16 +7,16 @@ status: Draft
 
 `pong` is the heartbeat acknowledgement event used by either side to reply to a received `ping`.
 
-| Event Type | Flow Direction |
-| --- | --- |
-| `pong` | Both directions |
+| Event Type | Flow Direction  |
+| ---------- | --------------- |
+| `pong`     | Both directions |
 
 ## Data Definition
 
 ```ts
 interface PongMessage {
-  type: "pong";
-  timestamp: number;
+  type: 'pong'
+  timestamp: number
 }
 ```
 

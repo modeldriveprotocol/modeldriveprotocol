@@ -19,4 +19,3 @@ flowchart LR
 ```
 
 The important boundary is that the server is thin. It should not contain application-specific logic, only registry and routing logic.
-

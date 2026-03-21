@@ -5,6 +5,10 @@ packages/*/*.tsbuildinfo
 apps/*/dist/
 apps/*/*.tsbuildinfo
 apps/*/*.vsix
+.DS_Store
+.idea/
+.eslintcache
+coverage/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
 docs/public/assets/mdp-client.global.js

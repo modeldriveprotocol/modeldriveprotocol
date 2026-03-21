@@ -10,31 +10,31 @@ The JavaScript SDK is the fastest way to expose MDP capabilities from a browser,
 ## 1. Create a client
 
 ```ts
-import { createMdpClient } from "@modeldriveprotocol/client";
+import { createMdpClient } from '@modeldriveprotocol/client'
 
 const client = createMdpClient({
-  serverUrl: "ws://127.0.0.1:7070",
+  serverUrl: 'ws://127.0.0.1:7070',
   client: {
-    id: "browser-01",
-    name: "Browser Client"
+    id: 'browser-01',
+    name: 'Browser Client'
   }
-});
+})
 ```
 
 ## 2. Expose one tool
 
 ```ts
-client.exposeTool("searchDom", async ({ query }) => ({
+client.exposeTool('searchDom', async ({ query }) => ({
   query,
-  matches: document.body.innerText.includes(String(query ?? "")) ? 1 : 0
-}));
+  matches: document.body.innerText.includes(String(query ?? '')) ? 1 : 0
+}))
 ```
 
 ## 3. Connect and register
 
 ```ts
-await client.connect();
-client.register();
+await client.connect()
+client.register()
 ```
 
 ## 4. Call it through the server

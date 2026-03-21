@@ -7,69 +7,69 @@ status: Draft
 
 `registerClient` is the client-to-server lifecycle event used to publish one client identity plus its current capability catalog.
 
-| Event Type | Flow Direction |
-| --- | --- |
+| Event Type       | Flow Direction   |
+| ---------------- | ---------------- |
 | `registerClient` | Client -> Server |
 
 ## Data Definition
 
 ```ts
 interface AuthContext {
-  scheme?: string;
-  token?: string;
-  headers?: Record<string, string>;
-  metadata?: Record<string, unknown>;
+  scheme?: string
+  token?: string
+  headers?: Record<string, string>
+  metadata?: Record<string, unknown>
 }
 
 interface ToolDescriptor {
-  name: string;
-  description?: string;
-  inputSchema?: Record<string, unknown>;
+  name: string
+  description?: string
+  inputSchema?: Record<string, unknown>
 }
 
 interface PromptArgumentDescriptor {
-  name: string;
-  description?: string;
-  required?: boolean;
+  name: string
+  description?: string
+  required?: boolean
 }
 
 interface PromptDescriptor {
-  name: string;
-  description?: string;
-  arguments?: PromptArgumentDescriptor[];
+  name: string
+  description?: string
+  arguments?: PromptArgumentDescriptor[]
 }
 
 interface SkillDescriptor {
-  name: string;
-  description?: string;
-  contentType?: string;
-  inputSchema?: Record<string, unknown>;
+  name: string
+  description?: string
+  contentType?: string
+  inputSchema?: Record<string, unknown>
 }
 
 interface ResourceDescriptor {
-  uri: string;
-  name: string;
-  description?: string;
-  mimeType?: string;
+  uri: string
+  name: string
+  description?: string
+  mimeType?: string
 }
 
 interface ClientDescriptor {
-  id: string;
-  name: string;
-  description?: string;
-  version?: string;
-  platform?: string;
-  metadata?: Record<string, unknown>;
-  tools: ToolDescriptor[];
-  prompts: PromptDescriptor[];
-  skills: SkillDescriptor[];
-  resources: ResourceDescriptor[];
+  id: string
+  name: string
+  description?: string
+  version?: string
+  platform?: string
+  metadata?: Record<string, unknown>
+  tools: ToolDescriptor[]
+  prompts: PromptDescriptor[]
+  skills: SkillDescriptor[]
+  resources: ResourceDescriptor[]
 }
 
 interface RegisterClientMessage {
-  type: "registerClient";
-  client: ClientDescriptor;
-  auth?: AuthContext;
+  type: 'registerClient'
+  client: ClientDescriptor
+  auth?: AuthContext
 }
 ```
 

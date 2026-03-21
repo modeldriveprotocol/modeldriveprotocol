@@ -7,33 +7,33 @@ status: Draft
 
 `callClient` is the server-to-client invocation event used to deliver one routed capability call to a connected client.
 
-| Event Type | Flow Direction |
-| --- | --- |
+| Event Type   | Flow Direction   |
+| ------------ | ---------------- |
 | `callClient` | Server -> Client |
 
 ## Data Definition
 
 ```ts
-type CapabilityKind = "tool" | "prompt" | "skill" | "resource";
+type CapabilityKind = 'tool' | 'prompt' | 'skill' | 'resource'
 
-type RpcArguments = Record<string, unknown>;
+type RpcArguments = Record<string, unknown>
 
 interface AuthContext {
-  scheme?: string;
-  token?: string;
-  headers?: Record<string, string>;
-  metadata?: Record<string, unknown>;
+  scheme?: string
+  token?: string
+  headers?: Record<string, string>
+  metadata?: Record<string, unknown>
 }
 
 interface CallClientMessage {
-  type: "callClient";
-  requestId: string;
-  clientId: string;
-  kind: CapabilityKind;
-  name?: string;
-  uri?: string;
-  args?: RpcArguments;
-  auth?: AuthContext;
+  type: 'callClient'
+  requestId: string
+  clientId: string
+  kind: CapabilityKind
+  name?: string
+  uri?: string
+  args?: RpcArguments
+  auth?: AuthContext
 }
 ```
 

@@ -1,176 +1,171 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest'
 
-import {
-  createSerializedError,
-  isSkillPath,
-  isStringRecord,
-  parseMessage
-} from "../src/index.js";
+import { createSerializedError, isSkillPath, isStringRecord, parseMessage } from '../src/index.js'
 
 const clientDescriptor = {
-  id: "client-01",
-  name: "Protocol Test Client",
+  id: 'client-01',
+  name: 'Protocol Test Client',
   tools: [],
   prompts: [],
   skills: [],
   resources: []
-};
+}
 
-describe("protocol guards", () => {
-  it("parses a valid registerClient message", () => {
+describe('protocol guards', () => {
+  it('parses a valid registerClient message', () => {
     const message = parseMessage(
       JSON.stringify({
-        type: "registerClient",
+        type: 'registerClient',
         client: clientDescriptor,
         auth: {
-          scheme: "Bearer",
-          token: "client-token",
+          scheme: 'Bearer',
+          token: 'client-token',
           headers: {
-            authorization: "Bearer client-token"
+            authorization: 'Bearer client-token'
           }
         }
       })
-    );
+    )
 
     expect(message).toEqual({
-      type: "registerClient",
+      type: 'registerClient',
       client: clientDescriptor,
       auth: {
-        scheme: "Bearer",
-        token: "client-token",
+        scheme: 'Bearer',
+        token: 'client-token',
         headers: {
-          authorization: "Bearer client-token"
+          authorization: 'Bearer client-token'
         }
       }
-    });
-  });
+    })
+  })
 
-  it("preserves skill content metadata on descriptors", () => {
+  it('preserves skill content metadata on descriptors', () => {
     const message = parseMessage(
       JSON.stringify({
-        type: "registerClient",
+        type: 'registerClient',
         client: {
           ...clientDescriptor,
           skills: [
             {
-              name: "workspace/review",
-              description: "Review the workspace root.",
-              contentType: "text/markdown"
+              name: 'workspace/review',
+              description: 'Review the workspace root.',
+              contentType: 'text/markdown'
             }
           ]
         }
       })
-    );
+    )
 
     expect(message).toEqual({
-      type: "registerClient",
+      type: 'registerClient',
       client: {
         ...clientDescriptor,
         skills: [
           {
-            name: "workspace/review",
-            description: "Review the workspace root.",
-            contentType: "text/markdown"
+            name: 'workspace/review',
+            description: 'Review the workspace root.',
+            contentType: 'text/markdown'
           }
         ]
       }
-    });
-  });
+    })
+  })
 
-  it("rejects callClient messages without a name or uri target", () => {
+  it('rejects callClient messages without a name or uri target', () => {
     expect(() =>
       parseMessage(
         JSON.stringify({
-          type: "callClient",
-          requestId: "req-01",
-          clientId: "client-01",
-          kind: "tool"
+          type: 'callClient',
+          requestId: 'req-01',
+          clientId: 'client-01',
+          kind: 'tool'
         })
       )
-    ).toThrow("Invalid MDP message");
-  });
+    ).toThrow('Invalid MDP message')
+  })
 
-  it("rejects invalid skill paths", () => {
-    expect(isSkillPath("workspace/review")).toBe(true);
-    expect(isSkillPath("/workspace/review")).toBe(false);
-    expect(isSkillPath("workspace//review")).toBe(false);
-    expect(isSkillPath("workspace/../review")).toBe(false);
-    expect(isSkillPath("workspace/review?topic=mdp")).toBe(false);
+  it('rejects invalid skill paths', () => {
+    expect(isSkillPath('workspace/review')).toBe(true)
+    expect(isSkillPath('/workspace/review')).toBe(false)
+    expect(isSkillPath('workspace//review')).toBe(false)
+    expect(isSkillPath('workspace/../review')).toBe(false)
+    expect(isSkillPath('workspace/review?topic=mdp')).toBe(false)
 
     expect(() =>
       parseMessage(
         JSON.stringify({
-          type: "registerClient",
+          type: 'registerClient',
           client: {
             ...clientDescriptor,
             skills: [
               {
-                name: "workspace/../review"
+                name: 'workspace/../review'
               }
             ]
           }
         })
       )
-    ).toThrow("Invalid MDP message");
+    ).toThrow('Invalid MDP message')
 
     expect(() =>
       parseMessage(
         JSON.stringify({
-          type: "callClient",
-          requestId: "req-04",
-          clientId: "client-01",
-          kind: "skill",
-          name: "workspace/review?topic=mdp"
+          type: 'callClient',
+          requestId: 'req-04',
+          clientId: 'client-01',
+          kind: 'skill',
+          name: 'workspace/review?topic=mdp'
         })
       )
-    ).toThrow("Invalid MDP message");
-  });
+    ).toThrow('Invalid MDP message')
+  })
 
-  it("accepts string records and preserves serialized error details", () => {
-    const error = createSerializedError("bad_request", "Invalid input", {
-      field: "query"
-    });
+  it('accepts string records and preserves serialized error details', () => {
+    const error = createSerializedError('bad_request', 'Invalid input', {
+      field: 'query'
+    })
 
     expect(error).toEqual({
-      code: "bad_request",
-      message: "Invalid input",
+      code: 'bad_request',
+      message: 'Invalid input',
       details: {
-        field: "query"
+        field: 'query'
       }
-    });
-    expect(isStringRecord({ host: "127.0.0.1", port: "7070" })).toBe(true);
-    expect(isStringRecord({ host: "127.0.0.1", port: 7070 })).toBe(false);
-  });
+    })
+    expect(isStringRecord({ host: '127.0.0.1', port: '7070' })).toBe(true)
+    expect(isStringRecord({ host: '127.0.0.1', port: 7070 })).toBe(false)
+  })
 
-  it("parses callClient auth envelopes", () => {
+  it('parses callClient auth envelopes', () => {
     const message = parseMessage(
       JSON.stringify({
-        type: "callClient",
-        requestId: "req-03",
-        clientId: "client-01",
-        kind: "tool",
-        name: "searchDom",
+        type: 'callClient',
+        requestId: 'req-03',
+        clientId: 'client-01',
+        kind: 'tool',
+        name: 'searchDom',
         auth: {
-          token: "host-token",
+          token: 'host-token',
           metadata: {
-            requestId: "trace-01"
+            requestId: 'trace-01'
           }
         }
       })
-    );
+    )
 
     expect(message).toEqual({
-      type: "callClient",
-      requestId: "req-03",
-      clientId: "client-01",
-      kind: "tool",
-      name: "searchDom",
+      type: 'callClient',
+      requestId: 'req-03',
+      clientId: 'client-01',
+      kind: 'tool',
+      name: 'searchDom',
       auth: {
-        token: "host-token",
+        token: 'host-token',
         metadata: {
-          requestId: "trace-01"
+          requestId: 'trace-01'
         }
       }
-    });
-  });
-});
+    })
+  })
+})

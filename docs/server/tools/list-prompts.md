@@ -31,4 +31,3 @@ Each prompt descriptor includes `clientId`, `clientName`, `name`, and optional `
 
 - you need prompt templates or prompt builders
 - you want to discover prompt arguments before calling [getPrompt](/server/tools/get-prompt)
-

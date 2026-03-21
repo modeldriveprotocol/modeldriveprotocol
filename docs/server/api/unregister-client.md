@@ -7,16 +7,16 @@ status: Draft
 
 `unregisterClient` is the client-to-server lifecycle event used to remove one logical client registration while the transport can still remain open.
 
-| Event Type | Flow Direction |
-| --- | --- |
+| Event Type         | Flow Direction   |
+| ------------------ | ---------------- |
 | `unregisterClient` | Client -> Server |
 
 ## Data Definition
 
 ```ts
 interface UnregisterClientMessage {
-  type: "unregisterClient";
-  clientId: string;
+  type: 'unregisterClient'
+  clientId: string
 }
 ```
 

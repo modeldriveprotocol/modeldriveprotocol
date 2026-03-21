@@ -34,4 +34,3 @@ Hierarchical skill names can be used for progressive disclosure.
 - you want to browse documented workflows
 - you expect static Markdown skills or dynamic skill resolvers
 - you need a skill name before calling [callSkills](/server/tools/call-skills)
-

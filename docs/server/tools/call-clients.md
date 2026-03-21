@@ -64,4 +64,3 @@ If no clients match, the server returns:
 - you want one generic entry point
 - the same capability may exist on several clients
 - you want server-side fan-out without calling each client separately
-

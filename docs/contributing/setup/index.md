@@ -11,11 +11,11 @@ The structure here should stay extensible. Today the repository only requires a 
 
 ## Current environment matrix
 
-| Environment | Status | Used by |
-| --- | --- | --- |
-| Node.js | Required | protocol, client, server, docs, extensions, scripts |
-| Go | Not used yet | reserved for future modules |
-| Rust | Not used yet | reserved for future modules |
+| Environment | Status       | Used by                                             |
+| ----------- | ------------ | --------------------------------------------------- |
+| Node.js     | Required     | protocol, client, server, docs, extensions, scripts |
+| Go          | Not used yet | reserved for future modules                         |
+| Rust        | Not used yet | reserved for future modules                         |
 
 ## What exists today
 

@@ -10,4 +10,3 @@ status: Draft
 - `host`: the MCP consumer
 - `bridge tool`: a stable MCP tool that discovers or invokes client capabilities
 - `runtime`: the local environment where the capability lives
-

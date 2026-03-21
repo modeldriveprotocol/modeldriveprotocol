@@ -46,15 +46,14 @@ GET /skills/client-01/docs/root/child?topic=mdp
 
 ## 错误码
 
-| 状态码 | 结构 | 触发条件 |
-| --- | --- | --- |
-| `400` | `{ "error": string }` | skill 请求格式非法 |
-| `404` | 空响应体 | skill descriptor 不存在 |
-| `405` | 空响应体 | 方法不是 `GET` 或 `OPTIONS` |
-| `502` | `{ "error": unknown }` | 目标 client 上的 skill 调用失败 |
+| 状态码 | 结构                   | 触发条件                        |
+| ------ | ---------------------- | ------------------------------- |
+| `400`  | `{ "error": string }`  | skill 请求格式非法              |
+| `404`  | 空响应体               | skill descriptor 不存在         |
+| `405`  | 空响应体               | 方法不是 `GET` 或 `OPTIONS`     |
+| `502`  | `{ "error": unknown }` | 目标 client 上的 skill 调用失败 |
 
 ## 说明
 
 - `OPTIONS` 返回 `204`。
 - 返回 `405` 时会带 `Allow: GET, OPTIONS`。
-

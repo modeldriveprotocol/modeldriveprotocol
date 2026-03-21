@@ -1,33 +1,29 @@
-import type { MdpClient } from "@modeldriveprotocol/client";
+import type { MdpClient } from '@modeldriveprotocol/client'
 
-import {
-  getActiveEditorSnapshot,
-  jsonResource,
-  listWorkspaceFolders
-} from "./shared.js";
-import type { CapabilityEnvironment } from "./types.js";
+import { getActiveEditorSnapshot, jsonResource, listWorkspaceFolders } from './shared.js'
+import type { CapabilityEnvironment } from './types.js'
 
 export function registerCapabilityResources(
   client: MdpClient,
   environment: CapabilityEnvironment
 ): void {
-  const { config } = environment;
+  const { config } = environment
 
   client.exposeResource(
-    "vscode://workspace/folders",
+    'vscode://workspace/folders',
     async () =>
       jsonResource({
         workspaceFolders: listWorkspaceFolders()
       }),
     {
-      name: "VSCode Workspace Folders",
-      description: "Workspace folders from the current VSCode window.",
-      mimeType: "application/json"
+      name: 'VSCode Workspace Folders',
+      description: 'Workspace folders from the current VSCode window.',
+      mimeType: 'application/json'
     }
-  );
+  )
 
   client.exposeResource(
-    "vscode://active-editor/document",
+    'vscode://active-editor/document',
     async () =>
       jsonResource(
         getActiveEditorSnapshot({
@@ -37,14 +33,14 @@ export function registerCapabilityResources(
         })
       ),
     {
-      name: "Active VSCode Document",
-      description: "Current active editor document metadata and text excerpt.",
-      mimeType: "application/json"
+      name: 'Active VSCode Document',
+      description: 'Current active editor document metadata and text excerpt.',
+      mimeType: 'application/json'
     }
-  );
+  )
 
   client.exposeResource(
-    "vscode://active-editor/selection",
+    'vscode://active-editor/selection',
     async () =>
       jsonResource(
         getActiveEditorSnapshot({
@@ -54,9 +50,9 @@ export function registerCapabilityResources(
         })
       ),
     {
-      name: "Active VSCode Selection",
-      description: "Current active editor selection and its surrounding metadata.",
-      mimeType: "application/json"
+      name: 'Active VSCode Selection',
+      description: 'Current active editor selection and its surrounding metadata.',
+      mimeType: 'application/json'
     }
-  );
+  )
 }

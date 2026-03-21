@@ -1,27 +1,23 @@
-import {
-  parseMessage,
-  type ClientToServerMessage,
-  type ServerToClientMessage
-} from "@modeldriveprotocol/protocol";
+import { type ClientToServerMessage, type ServerToClientMessage, parseMessage } from '@modeldriveprotocol/protocol'
 
-import type { ClientTransport } from "./types.js";
+import type { ClientTransport } from './types.js'
 
 export interface WebSocketLike {
-  readonly readyState: number;
+  readonly readyState: number
   addEventListener(
-    type: "open" | "message" | "error" | "close",
+    type: 'open' | 'message' | 'error' | 'close',
     listener: (event: Event | MessageEvent | CloseEvent) => void
-  ): void;
-  close(code?: number, reason?: string): void;
-  send(data: string): void;
+  ): void
+  close(code?: number, reason?: string): void
+  send(data: string): void
 }
 
-export type WebSocketFactory = (url: string) => WebSocketLike;
+export type WebSocketFactory = (url: string) => WebSocketLike
 
 export class WebSocketClientTransport implements ClientTransport {
-  private socket?: WebSocketLike;
-  private messageHandler?: (message: ServerToClientMessage) => void;
-  private closeHandler?: () => void;
+  private socket?: WebSocketLike
+  private messageHandler?: (message: ServerToClientMessage) => void
+  private closeHandler?: () => void
 
   constructor(
     private readonly serverUrl: string,
@@ -30,109 +26,109 @@ export class WebSocketClientTransport implements ClientTransport {
 
   async connect(): Promise<void> {
     if (this.socket && this.socket.readyState === 1) {
-      return;
+      return
     }
 
-    this.socket = this.webSocketFactory(this.serverUrl);
+    this.socket = this.webSocketFactory(this.serverUrl)
 
     await new Promise<void>((resolve, reject) => {
-      const socket = this.socket as WebSocketLike;
+      const socket = this.socket as WebSocketLike
 
-      socket.addEventListener("open", () => {
-        resolve();
-      });
+      socket.addEventListener('open', () => {
+        resolve()
+      })
 
-      socket.addEventListener("error", () => {
-        reject(new Error(`Unable to connect to ${this.serverUrl}`));
-      });
+      socket.addEventListener('error', () => {
+        reject(new Error(`Unable to connect to ${this.serverUrl}`))
+      })
 
-      socket.addEventListener("message", (event) => {
+      socket.addEventListener('message', (event) => {
         void readMessagePayload(event as MessageEvent).then((payload) => {
           if (!this.messageHandler) {
-            return;
+            return
           }
 
-          const message = asServerToClientMessage(parseMessage(payload));
+          const message = asServerToClientMessage(parseMessage(payload))
 
           if (!message) {
-            return;
+            return
           }
 
-          this.messageHandler(message);
-        });
-      });
+          this.messageHandler(message)
+        })
+      })
 
-      socket.addEventListener("close", () => {
-        this.closeHandler?.();
-      });
-    });
+      socket.addEventListener('close', () => {
+        this.closeHandler?.()
+      })
+    })
   }
 
   send(message: ClientToServerMessage): void {
     if (!this.socket || this.socket.readyState !== 1) {
-      throw new Error("Transport is not connected");
+      throw new Error('Transport is not connected')
     }
 
-    this.socket.send(JSON.stringify(message));
+    this.socket.send(JSON.stringify(message))
   }
 
   async close(code?: number, reason?: string): Promise<void> {
-    this.socket?.close(code, reason);
+    this.socket?.close(code, reason)
   }
 
   onMessage(handler: (message: ServerToClientMessage) => void): void {
-    this.messageHandler = handler;
+    this.messageHandler = handler
   }
 
   onClose(handler: () => void): void {
-    this.closeHandler = handler;
+    this.closeHandler = handler
   }
 }
 
 function defaultWebSocketFactory(url: string): WebSocketLike {
-  const WebSocketConstructor = globalThis.WebSocket;
+  const WebSocketConstructor = globalThis.WebSocket
 
   if (!WebSocketConstructor) {
-    throw new Error("No WebSocket implementation is available in this runtime");
+    throw new Error('No WebSocket implementation is available in this runtime')
   }
 
-  return new WebSocketConstructor(url) as WebSocketLike;
+  return new WebSocketConstructor(url) as WebSocketLike
 }
 
 function asServerToClientMessage(
   message: ReturnType<typeof parseMessage>
 ): ServerToClientMessage | undefined {
   if (
-    message.type === "callClient" ||
-    message.type === "ping" ||
-    message.type === "pong"
+    message.type === 'callClient' ||
+    message.type === 'ping' ||
+    message.type === 'pong'
   ) {
-    return message;
+    return message
   }
 
-  return undefined;
+  return undefined
 }
 
 async function readMessagePayload(event: MessageEvent): Promise<string> {
-  if (typeof event.data === "string") {
-    return event.data;
+  if (typeof event.data === 'string') {
+    return event.data
   }
 
   if (event.data instanceof ArrayBuffer) {
-    return new TextDecoder().decode(event.data);
+    return new TextDecoder().decode(event.data)
   }
 
   if (event.data instanceof Blob) {
-    return event.data.text();
+    return event.data.text()
   }
 
   if (
-    typeof event.data === "object" &&
+    typeof event.data === 'object' &&
     event.data !== null &&
-    "toString" in event.data
+    'toString' in event.data
   ) {
-    return String(event.data);
+    return String(event.data)
   }
 
-  throw new Error("Unsupported WebSocket payload");
+  throw new Error('Unsupported WebSocket payload')
 }

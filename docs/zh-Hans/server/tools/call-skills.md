@@ -36,4 +36,3 @@ status: MVP
 ```
 
 静态 skill 的 `data` 通常是 Markdown 文本；动态 skill 则可以返回 client 自定义 payload。
-

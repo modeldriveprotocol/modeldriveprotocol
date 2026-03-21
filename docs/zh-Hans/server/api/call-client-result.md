@@ -7,25 +7,25 @@ status: Draft
 
 `callClientResult` 是一个从 client 发往 server 的调用事件，用来结束一次已路由请求，并返回成功结果或错误结果。
 
-| 事件类型 | 事件流向 |
-| --- | --- |
+| 事件类型           | 事件流向         |
+| ------------------ | ---------------- |
 | `callClientResult` | Client -> Server |
 
 ## 数据定义
 
 ```ts
 interface SerializedError {
-  code: string;
-  message: string;
-  details?: unknown;
+  code: string
+  message: string
+  details?: unknown
 }
 
 interface CallClientResultMessage {
-  type: "callClientResult";
-  requestId: string;
-  ok: boolean;
-  data?: unknown;
-  error?: SerializedError;
+  type: 'callClientResult'
+  requestId: string
+  ok: boolean
+  data?: unknown
+  error?: SerializedError
 }
 ```
 

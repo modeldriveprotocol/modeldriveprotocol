@@ -7,25 +7,25 @@ status: Draft
 
 `callClientResult` is the client-to-server invocation event used to complete one routed request with either success data or an error.
 
-| Event Type | Flow Direction |
-| --- | --- |
+| Event Type         | Flow Direction   |
+| ------------------ | ---------------- |
 | `callClientResult` | Client -> Server |
 
 ## Data Definition
 
 ```ts
 interface SerializedError {
-  code: string;
-  message: string;
-  details?: unknown;
+  code: string
+  message: string
+  details?: unknown
 }
 
 interface CallClientResultMessage {
-  type: "callClientResult";
-  requestId: string;
-  ok: boolean;
-  data?: unknown;
-  error?: SerializedError;
+  type: 'callClientResult'
+  requestId: string
+  ok: boolean
+  data?: unknown
+  error?: SerializedError
 }
 ```
 

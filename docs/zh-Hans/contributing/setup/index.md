@@ -11,11 +11,11 @@ status: Draft
 
 ## 当前环境矩阵
 
-| 环境 | 状态 | 目前用途 |
-| --- | --- | --- |
-| Node.js | 必需 | protocol、client、server、docs、extensions、scripts |
-| Go | 暂未使用 | 预留给未来模块 |
-| Rust | 暂未使用 | 预留给未来模块 |
+| 环境    | 状态     | 目前用途                                            |
+| ------- | -------- | --------------------------------------------------- |
+| Node.js | 必需     | protocol、client、server、docs、extensions、scripts |
+| Go      | 暂未使用 | 预留给未来模块                                      |
+| Rust    | 暂未使用 | 预留给未来模块                                      |
 
 ## 当前实际存在的环境
 

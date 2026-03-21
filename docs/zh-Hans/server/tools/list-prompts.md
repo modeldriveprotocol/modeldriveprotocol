@@ -31,4 +31,3 @@ status: MVP
 
 - 需要 prompt 模板或 prompt builder
 - 在调用 [getPrompt](/zh-Hans/server/tools/get-prompt) 之前先确认参数
-

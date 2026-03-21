@@ -46,4 +46,3 @@ Optional fields:
 ```
 
 Use `getPrompt` when the result should be a prompt payload rather than an immediate side effect.
-

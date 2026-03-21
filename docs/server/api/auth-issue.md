@@ -33,12 +33,11 @@ Headers:
 
 ## Error cases
 
-| Status | Shape | When it happens |
-| --- | --- | --- |
-| `400` | `{ "error": string }` | Invalid JSON, invalid auth shape, or no auth context available |
-| `404` | empty body | Wrong path or unsupported method |
+| Status | Shape                 | When it happens                                                |
+| ------ | --------------------- | -------------------------------------------------------------- |
+| `400`  | `{ "error": string }` | Invalid JSON, invalid auth shape, or no auth context available |
+| `404`  | empty body            | Wrong path or unsupported method                               |
 
 ## Notes
 
 - The server can fall back to transport auth from `Authorization`, `Cookie`, and `x-mdp-auth-*` headers.
-

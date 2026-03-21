@@ -47,12 +47,11 @@ GET /mdp/http-loop/poll?sessionId=SESSION_ID&waitMs=25000
 
 ## 错误码
 
-| 状态码 | 结构 | 触发条件 |
-| --- | --- | --- |
-| `404` | 空响应体 | session ID 缺失或不存在 |
-| `400` | `{ "error": string }` | HTTP loop 请求格式非法 |
+| 状态码 | 结构                  | 触发条件                |
+| ------ | --------------------- | ----------------------- |
+| `404`  | 空响应体              | session ID 缺失或不存在 |
+| `400`  | `{ "error": string }` | HTTP loop 请求格式非法  |
 
 ## 说明
 
 - 每次 `/poll` 都会刷新该 session 的 transport auth 和最后活跃时间。
-

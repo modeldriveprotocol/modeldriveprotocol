@@ -9,45 +9,45 @@ status: Draft
 
 ## 按任务阅读
 
-| 目标 | 入口 |
-| --- | --- |
-| 建立一个双向会话 | [WebSocket 建立链接](/zh-Hans/server/api/websocket-connection) |
-| 用请求响应方式代替 socket | [HTTP Loop 建立链接](/zh-Hans/server/api/http-loop-connection) |
-| 浏览器在开 websocket 前先完成鉴权引导 | [鉴权引导](/zh-Hans/server/api/auth-bootstrap) |
-| 查看 websocket 有哪些消息事件 | [registerClient](/zh-Hans/server/api/register-client)、[callClient](/zh-Hans/server/api/call-client)、[ping](/zh-Hans/server/api/ping) |
-| 查看精确的 HTTP 接口契约 | [POST /mdp/http-loop/connect](/zh-Hans/server/api/http-loop-connect)、[POST /mdp/auth](/zh-Hans/server/api/auth-issue) |
+| 目标                                  | 入口                                                                                                                                   |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 建立一个双向会话                      | [WebSocket 建立链接](/zh-Hans/server/api/websocket-connection)                                                                         |
+| 用请求响应方式代替 socket             | [HTTP Loop 建立链接](/zh-Hans/server/api/http-loop-connection)                                                                         |
+| 浏览器在开 websocket 前先完成鉴权引导 | [鉴权引导](/zh-Hans/server/api/auth-bootstrap)                                                                                         |
+| 查看 websocket 有哪些消息事件         | [registerClient](/zh-Hans/server/api/register-client)、[callClient](/zh-Hans/server/api/call-client)、[ping](/zh-Hans/server/api/ping) |
+| 查看精确的 HTTP 接口契约              | [POST /mdp/http-loop/connect](/zh-Hans/server/api/http-loop-connect)、[POST /mdp/auth](/zh-Hans/server/api/auth-issue)                 |
 
 ## 建立链接
 
-| 方式 | 入口 | 说明 |
-| --- | --- | --- |
-| [WebSocket 建立链接](/zh-Hans/server/api/websocket-connection) | `ws://127.0.0.1:7070` | 双向 JSON MDP 消息 |
-| [HTTP Loop 建立链接](/zh-Hans/server/api/http-loop-connection) | `/mdp/http-loop/connect` | 基于 session 的 long-poll transport |
-| [鉴权引导](/zh-Hans/server/api/auth-bootstrap) | `/mdp/auth` | 主要给浏览器 websocket client 做 cookie 引导 |
+| 方式                                                           | 入口                     | 说明                                         |
+| -------------------------------------------------------------- | ------------------------ | -------------------------------------------- |
+| [WebSocket 建立链接](/zh-Hans/server/api/websocket-connection) | `ws://127.0.0.1:7070`    | 双向 JSON MDP 消息                           |
+| [HTTP Loop 建立链接](/zh-Hans/server/api/http-loop-connection) | `/mdp/http-loop/connect` | 基于 session 的 long-poll transport          |
+| [鉴权引导](/zh-Hans/server/api/auth-bootstrap)                 | `/mdp/auth`              | 主要给浏览器 websocket client 做 cookie 引导 |
 
 ## 消息事件
 
-| 事件 | 方向 | 作用 |
-| --- | --- | --- |
-| [registerClient](/zh-Hans/server/api/register-client) | Client -> Server | 注册 capability 元数据 |
-| [unregisterClient](/zh-Hans/server/api/unregister-client) | Client -> Server | 删除一个已注册 client 会话 |
-| [callClient](/zh-Hans/server/api/call-client) | Server -> Client | 路由一个 capability 调用 |
-| [callClientResult](/zh-Hans/server/api/call-client-result) | Client -> Server | 回传调用结果 |
-| [ping](/zh-Hans/server/api/ping) | 双向 | 心跳保活 |
-| [pong](/zh-Hans/server/api/pong) | 双向 | 心跳确认 |
+| 事件                                                       | 方向             | 作用                       |
+| ---------------------------------------------------------- | ---------------- | -------------------------- |
+| [registerClient](/zh-Hans/server/api/register-client)      | Client -> Server | 注册 capability 元数据     |
+| [unregisterClient](/zh-Hans/server/api/unregister-client)  | Client -> Server | 删除一个已注册 client 会话 |
+| [callClient](/zh-Hans/server/api/call-client)              | Server -> Client | 路由一个 capability 调用   |
+| [callClientResult](/zh-Hans/server/api/call-client-result) | Client -> Server | 回传调用结果               |
+| [ping](/zh-Hans/server/api/ping)                           | 双向             | 心跳保活                   |
+| [pong](/zh-Hans/server/api/pong)                           | 双向             | 心跳确认                   |
 
 ## 外部接口
 
-| 接口 | 方法 | 作用 |
-| --- | --- | --- |
-| [POST /mdp/http-loop/connect](/zh-Hans/server/api/http-loop-connect) | `POST` | 创建一个 HTTP loop session |
-| [POST /mdp/http-loop/send](/zh-Hans/server/api/http-loop-send) | `POST` | 发送一条 client-to-server 消息 |
-| [GET /mdp/http-loop/poll](/zh-Hans/server/api/http-loop-poll) | `GET` | 拉取一条 server-to-client 消息 |
-| [POST /mdp/http-loop/disconnect](/zh-Hans/server/api/http-loop-disconnect) | `POST` | 关闭一个 HTTP loop session |
-| [POST /mdp/auth](/zh-Hans/server/api/auth-issue) | `POST` | 签发一个 auth cookie |
-| [DELETE /mdp/auth](/zh-Hans/server/api/auth-delete) | `DELETE` | 清除一个 auth cookie |
-| [GET /skills/:clientId/*skillPath](/zh-Hans/server/api/skill-route-direct) | `GET` | 通过直接路由读取一个 skill |
-| [GET /:clientId/skills/*skillPath](/zh-Hans/server/api/skill-route-nested) | `GET` | 通过嵌套路由读取一个 skill |
+| 接口                                                                       | 方法     | 作用                           |
+| -------------------------------------------------------------------------- | -------- | ------------------------------ |
+| [POST /mdp/http-loop/connect](/zh-Hans/server/api/http-loop-connect)       | `POST`   | 创建一个 HTTP loop session     |
+| [POST /mdp/http-loop/send](/zh-Hans/server/api/http-loop-send)             | `POST`   | 发送一条 client-to-server 消息 |
+| [GET /mdp/http-loop/poll](/zh-Hans/server/api/http-loop-poll)              | `GET`    | 拉取一条 server-to-client 消息 |
+| [POST /mdp/http-loop/disconnect](/zh-Hans/server/api/http-loop-disconnect) | `POST`   | 关闭一个 HTTP loop session     |
+| [POST /mdp/auth](/zh-Hans/server/api/auth-issue)                           | `POST`   | 签发一个 auth cookie           |
+| [DELETE /mdp/auth](/zh-Hans/server/api/auth-delete)                        | `DELETE` | 清除一个 auth cookie           |
+| [GET /skills/:clientId/*skillPath](/zh-Hans/server/api/skill-route-direct) | `GET`    | 通过直接路由读取一个 skill     |
+| [GET /:clientId/skills/*skillPath](/zh-Hans/server/api/skill-route-nested) | `GET`    | 通过嵌套路由读取一个 skill     |
 
 ## 共享 JSON 类型
 

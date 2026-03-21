@@ -1,33 +1,29 @@
-import { isAbsolute } from "node:path";
+import { isAbsolute } from 'node:path'
 
-import * as vscode from "vscode";
+import * as vscode from 'vscode'
 
 import {
-  severityLabel,
-  toJsonCompatible,
-  truncateText,
   type SerializedDiagnostic,
   type SerializedRange,
-  type TextSlice
-} from "../model.js";
-import type {
-  ActiveEditorSnapshot,
-  DocumentSnapshot,
-  SerializedTextSearchMatch
-} from "./types.js";
+  type TextSlice,
+  severityLabel,
+  toJsonCompatible,
+  truncateText
+} from '../model.js'
+import type { ActiveEditorSnapshot, DocumentSnapshot, SerializedTextSearchMatch } from './types.js'
 
 export function getActiveEditorSnapshot(options: {
-  includeDocumentText: boolean;
-  includeSelectionText: boolean;
-  textLimit: number;
+  includeDocumentText: boolean
+  includeSelectionText: boolean
+  textLimit: number
 }): ActiveEditorSnapshot {
-  const editor = vscode.window.activeTextEditor;
+  const editor = vscode.window.activeTextEditor
 
   if (!editor) {
     return {
       available: false,
-      reason: "No active editor is open in this VSCode window."
-    };
+      reason: 'No active editor is open in this VSCode window.'
+    }
   }
 
   return {
@@ -43,7 +39,7 @@ export function getActiveEditorSnapshot(options: {
         ? { text: truncateText(editor.document.getText(editor.selection), options.textLimit) }
         : {})
     }
-  };
+  }
 }
 
 export function listWorkspaceFolders() {
@@ -51,14 +47,14 @@ export function listWorkspaceFolders() {
     name: folder.name,
     index: folder.index,
     uri: folder.uri.toString()
-  }));
+  }))
 }
 
 export function createDocumentSnapshot(
   document: vscode.TextDocument,
   options: {
-    includeText: boolean;
-    textLimit: number;
+    includeText: boolean
+    textLimit: number
   }
 ): DocumentSnapshot {
   return {
@@ -72,41 +68,41 @@ export function createDocumentSnapshot(
     ...(options.includeText
       ? { text: truncateText(document.getText(), options.textLimit) }
       : {})
-  };
+  }
 }
 
 export async function resolveWorkspaceDocument(
   options: Record<string, unknown>
 ): Promise<vscode.TextDocument> {
-  const uri = readString(options.uri);
+  const uri = readString(options.uri)
 
   if (uri) {
-    return vscode.workspace.openTextDocument(vscode.Uri.parse(uri));
+    return vscode.workspace.openTextDocument(vscode.Uri.parse(uri))
   }
 
-  const workspacePath = normalizeWorkspacePath(readString(options.path));
+  const workspacePath = normalizeWorkspacePath(readString(options.path))
 
   if (!workspacePath) {
-    throw new Error('Provide either "uri" or "path" when reading a workspace file.');
+    throw new Error('Provide either "uri" or "path" when reading a workspace file.')
   }
 
   if (isAbsolute(workspacePath)) {
-    return vscode.workspace.openTextDocument(vscode.Uri.file(workspacePath));
+    return vscode.workspace.openTextDocument(vscode.Uri.file(workspacePath))
   }
 
-  const matches = await vscode.workspace.findFiles(workspacePath, undefined, 2);
+  const matches = await vscode.workspace.findFiles(workspacePath, undefined, 2)
 
   if (matches.length === 0) {
-    throw new Error(`No workspace file matched "${workspacePath}".`);
+    throw new Error(`No workspace file matched "${workspacePath}".`)
   }
 
   if (matches.length > 1) {
     throw new Error(
       `Workspace path "${workspacePath}" matched multiple files. Use "uri" to disambiguate.`
-    );
+    )
   }
 
-  return vscode.workspace.openTextDocument(matches[0] as vscode.Uri);
+  return vscode.workspace.openTextDocument(matches[0] as vscode.Uri)
 }
 
 export function resolveReviewText(
@@ -114,23 +110,23 @@ export function resolveReviewText(
 ): TextSlice {
   return activeEditor.selection.isEmpty
     ? (activeEditor.text as TextSlice)
-    : activeEditor.selection.text ?? (activeEditor.text as TextSlice);
+    : activeEditor.selection.text ?? (activeEditor.text as TextSlice)
 }
 
 export async function searchWorkspaceText(options: {
-  query: string;
-  include?: string | undefined;
-  exclude?: string | undefined;
-  maxResults: number;
-  isCaseSensitive: boolean;
-  isRegExp: boolean;
-  isWordMatch: boolean;
-  previewChars: number;
+  query: string
+  include?: string | undefined
+  exclude?: string | undefined
+  maxResults: number
+  isCaseSensitive: boolean
+  isRegExp: boolean
+  isWordMatch: boolean
+  previewChars: number
 }): Promise<{
-  results: SerializedTextSearchMatch[];
-  limitHit: boolean;
+  results: SerializedTextSearchMatch[]
+  limitHit: boolean
 }> {
-  const results: SerializedTextSearchMatch[] = [];
+  const results: SerializedTextSearchMatch[] = []
   const completion = await vscode.workspace.findTextInFiles(
     {
       pattern: options.query,
@@ -149,42 +145,42 @@ export async function searchWorkspaceText(options: {
     },
     (result) => {
       if (!isTextSearchMatch(result) || results.length >= options.maxResults) {
-        return;
+        return
       }
 
-      results.push(serializeTextSearchMatch(result));
+      results.push(serializeTextSearchMatch(result))
     }
-  );
+  )
 
   return {
     results,
     limitHit: completion.limitHit ?? results.length >= options.maxResults
-  };
+  }
 }
 
 export function collectDiagnostics(options: {
-  uri?: string | undefined;
-  limit: number;
-  severity?: ReturnType<typeof readSeverity> | undefined;
+  uri?: string | undefined
+  limit: number
+  severity?: ReturnType<typeof readSeverity> | undefined
 }): SerializedDiagnostic[] {
   const diagnostics = options.uri
     ? (() => {
-        const uri = vscode.Uri.parse(options.uri as string);
-        return [[uri, vscode.languages.getDiagnostics(uri)] as const];
-      })()
-    : vscode.languages.getDiagnostics();
+      const uri = vscode.Uri.parse(options.uri as string)
+      return [[uri, vscode.languages.getDiagnostics(uri)] as const]
+    })()
+    : vscode.languages.getDiagnostics()
 
-  const entries: SerializedDiagnostic[] = [];
+  const entries: SerializedDiagnostic[] = []
 
   for (const [uri, items] of diagnostics) {
     for (const diagnostic of items) {
-      const severity = severityLabel(diagnostic.severity);
+      const severity = severityLabel(diagnostic.severity)
 
       if (options.severity && severity !== options.severity) {
-        continue;
+        continue
       }
 
-      const code = normalizeDiagnosticCode(diagnostic.code);
+      const code = normalizeDiagnosticCode(diagnostic.code)
       const entry: SerializedDiagnostic = {
         uri: uri.toString(),
         severity,
@@ -192,38 +188,38 @@ export function collectDiagnostics(options: {
         range: serializeRange(diagnostic.range),
         ...(diagnostic.source ? { source: diagnostic.source } : {}),
         ...(code !== undefined ? { code } : {})
-      };
+      }
 
-      entries.push(entry);
+      entries.push(entry)
 
       if (entries.length >= options.limit) {
-        return entries;
+        return entries
       }
     }
   }
 
-  return entries;
+  return entries
 }
 
 export function jsonResource(payload: unknown) {
   return {
-    mimeType: "application/json",
+    mimeType: 'application/json',
     text: JSON.stringify(toJsonCompatible(payload), null, 2)
-  };
+  }
 }
 
 export function asObject(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
-    : {};
+    : {}
 }
 
 export function readString(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined
 }
 
 export function readBoolean(value: unknown, fallback: boolean): boolean {
-  return typeof value === "boolean" ? value : fallback;
+  return typeof value === 'boolean' ? value : fallback
 }
 
 export function readPositiveNumber(
@@ -231,36 +227,36 @@ export function readPositiveNumber(
   fallback: number,
   max: number
 ): number {
-  return typeof value === "number" && Number.isFinite(value) && value > 0
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
     ? Math.min(Math.floor(value), max)
-    : fallback;
+    : fallback
 }
 
 export function readSeverity(value: unknown) {
   if (
-    value === "error" ||
-    value === "warning" ||
-    value === "information" ||
-    value === "hint"
+    value === 'error' ||
+    value === 'warning' ||
+    value === 'information' ||
+    value === 'hint'
   ) {
-    return value;
+    return value
   }
 
-  return undefined;
+  return undefined
 }
 
 function normalizeDiagnosticCode(
   code: string | number | { value: string | number } | undefined
 ): string | number | undefined {
   if (code === undefined) {
-    return undefined;
+    return undefined
   }
 
-  if (typeof code === "string" || typeof code === "number") {
-    return code;
+  if (typeof code === 'string' || typeof code === 'number') {
+    return code
   }
 
-  return code.value;
+  return code.value
 }
 
 function serializeRange(range: vscode.Range): SerializedRange {
@@ -273,14 +269,14 @@ function serializeRange(range: vscode.Range): SerializedRange {
       line: range.end.line,
       character: range.end.character
     }
-  };
+  }
 }
 
 function serializeRangeList(
   value: vscode.Range | readonly vscode.Range[]
 ): SerializedRange[] {
-  const ranges = Array.isArray(value) ? value : [value];
-  return ranges.map((range) => serializeRange(range));
+  const ranges = Array.isArray(value) ? value : [value]
+  return ranges.map((range) => serializeRange(range))
 }
 
 function serializeTextSearchMatch(
@@ -294,26 +290,26 @@ function serializeTextSearchMatch(
       text: match.preview.text,
       matches: serializeRangeList(match.preview.matches)
     }
-  };
+  }
 }
 
 function isTextSearchMatch(
   result: vscode.TextSearchResult
 ): result is vscode.TextSearchMatch {
-  return "preview" in result && "ranges" in result;
+  return 'preview' in result && 'ranges' in result
 }
 
 function toRelativePath(uri: vscode.Uri): string {
   return vscode.workspace.asRelativePath(
     uri,
     (vscode.workspace.workspaceFolders?.length ?? 0) > 1
-  );
+  )
 }
 
 function normalizeWorkspacePath(value: string | undefined): string | undefined {
   if (!value) {
-    return undefined;
+    return undefined
   }
 
-  return value.replace(/^[.][/\\]/, "").replace(/\\/g, "/");
+  return value.replace(/^[.][/\\]/, '').replace(/\\/g, '/')
 }

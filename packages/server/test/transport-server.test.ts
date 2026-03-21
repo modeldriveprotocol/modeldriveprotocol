@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import WebSocket from "ws";
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import WebSocket from 'ws'
 
-import { MdpServerRuntime } from "../src/mdp-server.js";
-import { MdpTransportServer } from "../src/transport-server.js";
+import { MdpServerRuntime } from '../src/mdp-server.js'
+import { MdpTransportServer } from '../src/transport-server.js'
 
 const TEST_TLS_KEY = `-----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDEXsJqTUr4qlZi
@@ -31,7 +31,7 @@ xtY4AKm2jaRVPuN+bkOonj84yxn563ZPLabTwwCpAoGBAMeYEDlz9zwjRYIdwq1D
 5I42C5g4TPjPAoS5vGnrutJhJml09HCdVJLCBrtt5YWjF/+/fSSU1nUZSc/Wpk4t
 7iHqcDkNgRwFKR4U9sfArli7aaZoHppxKdZxd3nwMLqDFQUeTiMJM668tblvovoY
 gyMpW2gXzhs/vyhwrpaA3YeK
------END PRIVATE KEY-----`;
+-----END PRIVATE KEY-----`
 
 const TEST_TLS_CERT = `-----BEGIN CERTIFICATE-----
 MIIDCTCCAfGgAwIBAgIUBsyRh7Mzngm4UZdwAGjYzyJDOOgwDQYJKoZIhvcNAQEL
@@ -51,140 +51,143 @@ aVfZN8q/ZdzPir7oPrIka3VAaAJm7ZTifaC8rZBZPrM/NKoniAg0Rscn7MSVfEer
 NmJyG95Pw/Ko+6cboxdHKteGO2ydjn36UBDddVKyTyFuu0itGHSRDr0Eji8F8WQA
 zeqKOGcTcVPtgQ15a7BnEIou51Nh9e0rSjol1Ooxp9mtMXcJGKl0GeO4D/S7ldcM
 5kHkt52o2WojwA4LAw==
------END CERTIFICATE-----`;
+-----END CERTIFICATE-----`
 
 const registeredClient = {
-  id: "client-01",
-  name: "HTTP Loop Client",
-  tools: [{ name: "searchDom" }],
+  id: 'client-01',
+  name: 'HTTP Loop Client',
+  tools: [{ name: 'searchDom' }],
   prompts: [],
   skills: [],
   resources: []
-};
+}
 
-const servers: MdpTransportServer[] = [];
+const servers: MdpTransportServer[] = []
 
 afterEach(async () => {
-  await Promise.allSettled(servers.splice(0).map((server) => server.stop()));
-});
+  await Promise.allSettled(servers.splice(0).map((server) => server.stop()))
+})
 
-describe("MdpTransportServer", () => {
-  it("refreshes HTTP loop auth from send and poll requests", async () => {
-    const authorizeRegistration = vi.fn();
-    const authorizeInvocation = vi.fn();
+describe('MdpTransportServer', () => {
+  it('refreshes HTTP loop auth from send and poll requests', async () => {
+    const authorizeRegistration = vi.fn()
+    const authorizeInvocation = vi.fn()
     const runtime = new MdpServerRuntime({
       authorizeRegistration,
       authorizeInvocation
-    });
+    })
     const server = new MdpTransportServer(runtime, {
-      host: "127.0.0.1",
+      host: '127.0.0.1',
       port: 0,
       longPollTimeoutMs: 50
-    });
-    servers.push(server);
-    await server.start();
+    })
+    servers.push(server)
+    await server.start()
 
     const connectResponse = await fetch(`${server.endpoints.httpLoop}/connect`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "content-type": "application/json"
+        'content-type': 'application/json'
       },
-      body: "{}"
-    });
-    const connectPayload = (await connectResponse.json()) as { sessionId: string };
+      body: '{}'
+    })
+    const connectPayload = (await connectResponse.json()) as { sessionId: string }
 
-    expect(connectPayload.sessionId).toBeTypeOf("string");
+    expect(connectPayload.sessionId).toBeTypeOf('string')
 
     await fetch(`${server.endpoints.httpLoop}/send`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "content-type": "application/json",
-        "x-mdp-session-id": connectPayload.sessionId,
-        authorization: "Bearer register-token"
+        'content-type': 'application/json',
+        'x-mdp-session-id': connectPayload.sessionId,
+        authorization: 'Bearer register-token'
       },
       body: JSON.stringify({
         message: {
-          type: "registerClient",
+          type: 'registerClient',
           client: registeredClient,
           auth: {
-            token: "message-token"
+            token: 'message-token'
           }
         }
       })
-    });
+    })
 
     expect(authorizeRegistration).toHaveBeenCalledWith(
       expect.objectContaining({
         transportAuth: expect.objectContaining({
-          token: "register-token"
+          token: 'register-token'
         })
       })
-    );
+    )
     expect(runtime.listClients()).toEqual([
       expect.objectContaining({
-        id: "client-01",
+        id: 'client-01',
         connection: {
-          mode: "http-loop",
+          mode: 'http-loop',
           secure: false,
-          authSource: "transport+message"
+          authSource: 'transport+message'
         }
       })
-    ]);
+    ])
 
     const idlePollResponse = await fetch(
       `${server.endpoints.httpLoop}/poll?sessionId=${connectPayload.sessionId}&waitMs=1`,
       {
         headers: {
-          authorization: "Bearer poll-token"
+          authorization: 'Bearer poll-token'
         }
       }
-    );
+    )
 
-    expect(idlePollResponse.status).toBe(204);
+    expect(idlePollResponse.status).toBe(204)
 
     const invocation = runtime.invoke({
-      clientId: "client-01",
-      kind: "tool",
-      name: "searchDom",
+      clientId: 'client-01',
+      kind: 'tool',
+      name: 'searchDom',
       auth: {
-        token: "host-token"
+        token: 'host-token'
       }
-    });
+    })
     expect(authorizeInvocation).toHaveBeenCalledWith(
       expect.objectContaining({
         transportAuth: expect.objectContaining({
-          token: "poll-token"
+          token: 'poll-token'
         })
       })
-    );
+    )
 
-    const pollResponse = await fetch(`${server.endpoints.httpLoop}/poll?sessionId=${connectPayload.sessionId}&waitMs=100`, {
-      headers: {
-        authorization: "Bearer poll-token"
+    const pollResponse = await fetch(
+      `${server.endpoints.httpLoop}/poll?sessionId=${connectPayload.sessionId}&waitMs=100`,
+      {
+        headers: {
+          authorization: 'Bearer poll-token'
+        }
       }
-    });
+    )
     const pollPayload = (await pollResponse.json()) as {
       message: {
-        requestId: string;
+        requestId: string
         auth?: {
-          token?: string;
-        };
-      };
-    };
+          token?: string
+        }
+      }
+    }
 
     expect(pollPayload.message.auth).toEqual({
-      token: "host-token"
-    });
+      token: 'host-token'
+    })
 
     await fetch(`${server.endpoints.httpLoop}/send`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "content-type": "application/json",
-        "x-mdp-session-id": connectPayload.sessionId
+        'content-type': 'application/json',
+        'x-mdp-session-id': connectPayload.sessionId
       },
       body: JSON.stringify({
         message: {
-          type: "callClientResult",
+          type: 'callClientResult',
           requestId: pollPayload.message.requestId,
           ok: true,
           data: {
@@ -192,313 +195,311 @@ describe("MdpTransportServer", () => {
           }
         }
       })
-    });
+    })
 
     await expect(invocation).resolves.toEqual({
-      type: "callClientResult",
+      type: 'callClientResult',
       requestId: pollPayload.message.requestId,
       ok: true,
       data: {
         matches: 3
       }
-    });
-  });
+    })
+  })
 
-  it("answers CORS preflights for HTTP loop endpoints", async () => {
-    const runtime = new MdpServerRuntime();
+  it('answers CORS preflights for HTTP loop endpoints', async () => {
+    const runtime = new MdpServerRuntime()
     const server = new MdpTransportServer(runtime, {
-      host: "127.0.0.1",
+      host: '127.0.0.1',
       port: 0
-    });
-    servers.push(server);
-    await server.start();
+    })
+    servers.push(server)
+    await server.start()
 
     const response = await fetch(`${server.endpoints.httpLoop}/connect`, {
-      method: "OPTIONS",
+      method: 'OPTIONS',
       headers: {
-        origin: "https://browser.example.test",
-        "access-control-request-method": "POST",
-        "access-control-request-headers":
-          "content-type, x-mdp-session-id, authorization"
+        origin: 'https://browser.example.test',
+        'access-control-request-method': 'POST',
+        'access-control-request-headers': 'content-type, x-mdp-session-id, authorization'
       }
-    });
+    })
 
-    expect(response.status).toBe(204);
-    expect(response.headers.get("access-control-allow-origin")).toBe(
-      "https://browser.example.test"
-    );
-    expect(response.headers.get("access-control-allow-credentials")).toBe("true");
-    expect(response.headers.get("access-control-allow-methods")).toBe(
-      "GET, POST, OPTIONS"
-    );
-    expect(response.headers.get("access-control-allow-headers")).toBe(
-      "content-type, x-mdp-session-id, authorization"
-    );
-  });
+    expect(response.status).toBe(204)
+    expect(response.headers.get('access-control-allow-origin')).toBe(
+      'https://browser.example.test'
+    )
+    expect(response.headers.get('access-control-allow-credentials')).toBe('true')
+    expect(response.headers.get('access-control-allow-methods')).toBe(
+      'GET, POST, OPTIONS'
+    )
+    expect(response.headers.get('access-control-allow-headers')).toBe(
+      'content-type, x-mdp-session-id, authorization'
+    )
+  })
 
-  it("accepts secure websocket clients over wss", async () => {
-    const runtime = new MdpServerRuntime();
+  it('accepts secure websocket clients over wss', async () => {
+    const runtime = new MdpServerRuntime()
     const server = new MdpTransportServer(runtime, {
-      host: "127.0.0.1",
+      host: '127.0.0.1',
       port: 0,
       tls: {
         key: TEST_TLS_KEY,
         cert: TEST_TLS_CERT
       }
-    });
-    servers.push(server);
-    await server.start();
+    })
+    servers.push(server)
+    await server.start()
 
     const socket = new WebSocket(server.endpoints.ws, {
       rejectUnauthorized: false
-    });
+    })
 
-    await waitForOpen(socket);
+    await waitForOpen(socket)
 
     socket.send(
       JSON.stringify({
-        type: "registerClient",
+        type: 'registerClient',
         client: registeredClient
       })
-    );
+    )
 
     await vi.waitFor(() => {
       expect(runtime.listClients()).toEqual([
         expect.objectContaining({
-          id: "client-01",
+          id: 'client-01',
           connection: {
-            mode: "ws",
+            mode: 'ws',
             secure: true,
-            authSource: "none"
+            authSource: 'none'
           }
         })
-      ]);
-    });
+      ])
+    })
 
-    socket.close();
-    await waitForClose(socket);
-  });
+    socket.close()
+    await waitForClose(socket)
+  })
 
-  it("issues auth cookies that websocket clients can reuse", async () => {
-    const authorizeRegistration = vi.fn();
+  it('issues auth cookies that websocket clients can reuse', async () => {
+    const authorizeRegistration = vi.fn()
     const runtime = new MdpServerRuntime({
       authorizeRegistration
-    });
+    })
     const server = new MdpTransportServer(runtime, {
-      host: "127.0.0.1",
+      host: '127.0.0.1',
       port: 0
-    });
-    servers.push(server);
-    await server.start();
+    })
+    servers.push(server)
+    await server.start()
 
     const authResponse = await fetch(server.endpoints.auth, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "content-type": "application/json"
+        'content-type': 'application/json'
       },
       body: JSON.stringify({
         auth: {
-          scheme: "Bearer",
-          token: "cookie-token",
+          scheme: 'Bearer',
+          token: 'cookie-token',
           metadata: {
-            source: "auth-endpoint"
+            source: 'auth-endpoint'
           }
         }
       })
-    });
-    const cookieHeader = readSetCookieHeader(authResponse);
+    })
+    const cookieHeader = readSetCookieHeader(authResponse)
 
-    expect(authResponse.status).toBe(204);
-    expect(cookieHeader).toContain("mdp_auth=");
+    expect(authResponse.status).toBe(204)
+    expect(cookieHeader).toContain('mdp_auth=')
 
     const socket = new WebSocket(server.endpoints.ws, {
       headers: {
-        cookie: cookieHeader.split(";")[0] as string
+        cookie: cookieHeader.split(';')[0] as string
       }
-    });
+    })
 
-    await waitForOpen(socket);
+    await waitForOpen(socket)
 
     socket.send(
       JSON.stringify({
-        type: "registerClient",
+        type: 'registerClient',
         client: registeredClient
       })
-    );
+    )
 
     await vi.waitFor(() => {
       expect(authorizeRegistration).toHaveBeenCalledWith(
         expect.objectContaining({
           transportAuth: expect.objectContaining({
-            scheme: "Bearer",
-            token: "cookie-token",
+            scheme: 'Bearer',
+            token: 'cookie-token',
             metadata: {
-              source: "auth-endpoint"
+              source: 'auth-endpoint'
             }
           })
         })
-      );
+      )
       expect(runtime.listClients()).toEqual([
         expect.objectContaining({
-          id: "client-01",
+          id: 'client-01',
           connection: {
-            mode: "ws",
+            mode: 'ws',
             secure: false,
-            authSource: "transport"
+            authSource: 'transport'
           }
         })
-      ]);
-    });
+      ])
+    })
 
-    socket.close();
-    await waitForClose(socket);
-  });
+    socket.close()
+    await waitForClose(socket)
+  })
 
-  it("serves skill content over HTTP routes with query params and headers", async () => {
-    const runtime = new MdpServerRuntime();
+  it('serves skill content over HTTP routes with query params and headers', async () => {
+    const runtime = new MdpServerRuntime()
     const server = new MdpTransportServer(runtime, {
-      host: "127.0.0.1",
+      host: '127.0.0.1',
       port: 0,
       longPollTimeoutMs: 50
-    });
-    servers.push(server);
-    await server.start();
+    })
+    servers.push(server)
+    await server.start()
 
-    const sessionId = await connectHttpLoopClient(server);
+    const sessionId = await connectHttpLoopClient(server)
     await sendHttpLoopMessage(server, sessionId, {
-      type: "registerClient",
+      type: 'registerClient',
       client: {
         ...registeredClient,
         skills: [
           {
-            name: "docs/root/child",
-            description: "Child skill",
-            contentType: "text/markdown"
+            name: 'docs/root/child',
+            description: 'Child skill',
+            contentType: 'text/markdown'
           }
         ]
       }
-    });
+    })
 
     const nestedRouteResponsePromise = fetch(
-      `${server.endpoints.httpLoop.replace("/mdp/http-loop", "")}/client-01/skills/docs/root/child?a=1`,
+      `${server.endpoints.httpLoop.replace('/mdp/http-loop', '')}/client-01/skills/docs/root/child?a=1`,
       {
         headers: {
-          "x-test-header": "nested"
+          'x-test-header': 'nested'
         }
       }
-    );
+    )
 
-    const nestedInvocation = await pollHttpLoopMessage(server, sessionId);
+    const nestedInvocation = await pollHttpLoopMessage(server, sessionId)
 
     expect(nestedInvocation).toEqual(
       expect.objectContaining({
-        type: "callClient",
-        kind: "skill",
-        name: "docs/root/child",
+        type: 'callClient',
+        kind: 'skill',
+        name: 'docs/root/child',
         args: expect.objectContaining({
           query: {
-            a: "1"
+            a: '1'
           },
           headers: expect.objectContaining({
-            "x-test-header": "nested"
+            'x-test-header': 'nested'
           })
         })
       })
-    );
+    )
 
     await sendHttpLoopMessage(server, sessionId, {
-      type: "callClientResult",
+      type: 'callClientResult',
       requestId: nestedInvocation.requestId,
       ok: true,
-      data: "# Child Skill\n\nNested route."
-    });
+      data: '# Child Skill\n\nNested route.'
+    })
 
-    const nestedRouteResponse = await nestedRouteResponsePromise;
+    const nestedRouteResponse = await nestedRouteResponsePromise
 
-    expect(nestedRouteResponse.status).toBe(200);
-    expect(nestedRouteResponse.headers.get("content-type")).toContain(
-      "text/markdown"
-    );
+    expect(nestedRouteResponse.status).toBe(200)
+    expect(nestedRouteResponse.headers.get('content-type')).toContain(
+      'text/markdown'
+    )
     await expect(nestedRouteResponse.text()).resolves.toBe(
-      "# Child Skill\n\nNested route."
-    );
+      '# Child Skill\n\nNested route.'
+    )
 
     const directRouteResponsePromise = fetch(
-      `${server.endpoints.httpLoop.replace("/mdp/http-loop", "")}/skills/client-01/docs/root/child?topic=mdp`,
+      `${server.endpoints.httpLoop.replace('/mdp/http-loop', '')}/skills/client-01/docs/root/child?topic=mdp`,
       {
         headers: {
-          "x-test-header": "direct"
+          'x-test-header': 'direct'
         }
       }
-    );
+    )
 
-    const directInvocation = await pollHttpLoopMessage(server, sessionId);
+    const directInvocation = await pollHttpLoopMessage(server, sessionId)
 
     expect(directInvocation).toEqual(
       expect.objectContaining({
-        type: "callClient",
-        kind: "skill",
-        name: "docs/root/child",
+        type: 'callClient',
+        kind: 'skill',
+        name: 'docs/root/child',
         args: expect.objectContaining({
           query: {
-            topic: "mdp"
+            topic: 'mdp'
           },
           headers: expect.objectContaining({
-            "x-test-header": "direct"
+            'x-test-header': 'direct'
           })
         })
       })
-    );
+    )
 
     await sendHttpLoopMessage(server, sessionId, {
-      type: "callClientResult",
+      type: 'callClientResult',
       requestId: directInvocation.requestId,
       ok: true,
-      data: "# Child Skill\n\nDirect route."
-    });
+      data: '# Child Skill\n\nDirect route.'
+    })
 
-    const directRouteResponse = await directRouteResponsePromise;
+    const directRouteResponse = await directRouteResponsePromise
 
-    expect(directRouteResponse.status).toBe(200);
+    expect(directRouteResponse.status).toBe(200)
     await expect(directRouteResponse.text()).resolves.toBe(
-      "# Child Skill\n\nDirect route."
-    );
-  });
-});
+      '# Child Skill\n\nDirect route.'
+    )
+  })
+})
 
 async function waitForOpen(socket: WebSocket): Promise<void> {
   await new Promise<void>((resolve, reject) => {
-    socket.once("open", () => resolve());
-    socket.once("error", reject);
-  });
+    socket.once('open', () => resolve())
+    socket.once('error', reject)
+  })
 }
 
 async function waitForClose(socket: WebSocket): Promise<void> {
   await new Promise<void>((resolve) => {
-    socket.once("close", () => resolve());
-  });
+    socket.once('close', () => resolve())
+  })
 }
 
 function readSetCookieHeader(response: Response): string {
-  const fromSpecializedAccessor =
-    "getSetCookie" in response.headers &&
-    typeof response.headers.getSetCookie === "function"
-      ? response.headers.getSetCookie()[0]
-      : undefined;
+  const fromSpecializedAccessor = 'getSetCookie' in response.headers &&
+      typeof response.headers.getSetCookie === 'function'
+    ? response.headers.getSetCookie()[0]
+    : undefined
 
-  return fromSpecializedAccessor ?? response.headers.get("set-cookie") ?? "";
+  return fromSpecializedAccessor ?? response.headers.get('set-cookie') ?? ''
 }
 
 async function connectHttpLoopClient(server: MdpTransportServer): Promise<string> {
   const connectResponse = await fetch(`${server.endpoints.httpLoop}/connect`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "content-type": "application/json"
+      'content-type': 'application/json'
     },
-    body: "{}"
-  });
-  const connectPayload = (await connectResponse.json()) as { sessionId: string };
-  return connectPayload.sessionId;
+    body: '{}'
+  })
+  const connectPayload = (await connectResponse.json()) as { sessionId: string }
+  return connectPayload.sessionId
 }
 
 async function sendHttpLoopMessage(
@@ -507,39 +508,39 @@ async function sendHttpLoopMessage(
   message: Record<string, unknown>
 ): Promise<void> {
   await fetch(`${server.endpoints.httpLoop}/send`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "content-type": "application/json",
-      "x-mdp-session-id": sessionId
+      'content-type': 'application/json',
+      'x-mdp-session-id': sessionId
     },
     body: JSON.stringify({
       message
     })
-  });
+  })
 }
 
 async function pollHttpLoopMessage(
   server: MdpTransportServer,
   sessionId: string
 ): Promise<{
-  requestId: string;
-  type: "callClient";
-  kind: "skill" | "tool" | "prompt" | "resource";
-  name?: string;
-  args?: Record<string, unknown>;
+  requestId: string
+  type: 'callClient'
+  kind: 'skill' | 'tool' | 'prompt' | 'resource'
+  name?: string
+  args?: Record<string, unknown>
 }> {
   const response = await fetch(
     `${server.endpoints.httpLoop}/poll?sessionId=${sessionId}&waitMs=100`
-  );
+  )
   const payload = (await response.json()) as {
     message: {
-      requestId: string;
-      type: "callClient";
-      kind: "skill" | "tool" | "prompt" | "resource";
-      name?: string;
-      args?: Record<string, unknown>;
-    };
-  };
+      requestId: string
+      type: 'callClient'
+      kind: 'skill' | 'tool' | 'prompt' | 'resource'
+      name?: string
+      args?: Record<string, unknown>
+    }
+  }
 
-  return payload.message;
+  return payload.message
 }

@@ -40,14 +40,13 @@ GET /client-01/skills/docs/root/child?a=1
 
 ## 错误码
 
-| 状态码 | 结构 | 触发条件 |
-| --- | --- | --- |
-| `400` | `{ "error": string }` | skill 请求格式非法 |
-| `404` | 空响应体 | skill descriptor 不存在 |
-| `405` | 空响应体 | 方法不是 `GET` 或 `OPTIONS` |
-| `502` | `{ "error": unknown }` | 目标 client 上的 skill 调用失败 |
+| 状态码 | 结构                   | 触发条件                        |
+| ------ | ---------------------- | ------------------------------- |
+| `400`  | `{ "error": string }`  | skill 请求格式非法              |
+| `404`  | 空响应体               | skill descriptor 不存在         |
+| `405`  | 空响应体               | 方法不是 `GET` 或 `OPTIONS`     |
+| `502`  | `{ "error": unknown }` | 目标 client 上的 skill 调用失败 |
 
 ## 说明
 
 - 这个路由与 [GET /skills/:clientId/*skillPath](/zh-Hans/server/api/skill-route-direct) 在功能上等价。
-

@@ -1,4 +1,1 @@
-export {
-  registerCapabilities,
-  type CapabilityEnvironment
-} from "./capabilities/index.js";
+export { type CapabilityEnvironment, registerCapabilities } from './capabilities/index.js'

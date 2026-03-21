@@ -36,4 +36,3 @@ Optional fields:
 ```
 
 For static skills, `data` is often Markdown text. For dynamic skills, it can be any client-defined payload.
-

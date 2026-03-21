@@ -2,38 +2,38 @@
   --vp-c-brand-1: #0f766e;
   --vp-c-brand-2: #115e59;
   --vp-c-brand-3: #134e4a;
-  --vp-c-brand-soft: rgba(15, 118, 110, 0.12);
-  --mdp-home-surface-1: rgba(255, 255, 255, 0.94);
-  --mdp-home-surface-2: rgba(241, 249, 247, 0.92);
-  --mdp-home-surface-3: rgba(233, 246, 243, 0.9);
-  --mdp-home-border: rgba(15, 118, 110, 0.16);
-  --mdp-home-border-strong: rgba(15, 118, 110, 0.32);
-  --mdp-home-shadow: 0 32px 80px rgba(15, 23, 42, 0.14);
-  --mdp-home-shadow-soft: 0 18px 42px rgba(15, 23, 42, 0.12);
-  --mdp-home-gridline: rgba(15, 118, 110, 0.08);
-  --mdp-home-glow-1: rgba(45, 212, 191, 0.28);
-  --mdp-home-glow-2: rgba(251, 146, 60, 0.2);
+  --vp-c-brand-soft: rgba(15, 118, 110, .12);
+  --mdp-home-surface-1: rgba(255, 255, 255, .94);
+  --mdp-home-surface-2: rgba(241, 249, 247, .92);
+  --mdp-home-surface-3: rgba(233, 246, 243, .9);
+  --mdp-home-border: rgba(15, 118, 110, .16);
+  --mdp-home-border-strong: rgba(15, 118, 110, .32);
+  --mdp-home-shadow: 0 32px 80px rgba(15, 23, 42, .14);
+  --mdp-home-shadow-soft: 0 18px 42px rgba(15, 23, 42, .12);
+  --mdp-home-gridline: rgba(15, 118, 110, .08);
+  --mdp-home-glow-1: rgba(45, 212, 191, .28);
+  --mdp-home-glow-2: rgba(251, 146, 60, .2);
 }
 
 .dark {
   --vp-c-brand-1: #2dd4bf;
   --vp-c-brand-2: #5eead4;
   --vp-c-brand-3: #99f6e4;
-  --vp-c-brand-soft: rgba(45, 212, 191, 0.16);
-  --mdp-home-surface-1: rgba(14, 22, 27, 0.88);
-  --mdp-home-surface-2: rgba(11, 18, 24, 0.94);
-  --mdp-home-surface-3: rgba(15, 25, 31, 0.9);
-  --mdp-home-border: rgba(94, 234, 212, 0.18);
-  --mdp-home-border-strong: rgba(94, 234, 212, 0.34);
-  --mdp-home-shadow: 0 28px 80px rgba(2, 8, 23, 0.46);
-  --mdp-home-shadow-soft: 0 18px 40px rgba(2, 8, 23, 0.36);
-  --mdp-home-gridline: rgba(94, 234, 212, 0.1);
-  --mdp-home-glow-1: rgba(45, 212, 191, 0.22);
-  --mdp-home-glow-2: rgba(251, 146, 60, 0.12);
+  --vp-c-brand-soft: rgba(45, 212, 191, .16);
+  --mdp-home-surface-1: rgba(14, 22, 27, .88);
+  --mdp-home-surface-2: rgba(11, 18, 24, .94);
+  --mdp-home-surface-3: rgba(15, 25, 31, .9);
+  --mdp-home-border: rgba(94, 234, 212, .18);
+  --mdp-home-border-strong: rgba(94, 234, 212, .34);
+  --mdp-home-shadow: 0 28px 80px rgba(2, 8, 23, .46);
+  --mdp-home-shadow-soft: 0 18px 40px rgba(2, 8, 23, .36);
+  --mdp-home-gridline: rgba(94, 234, 212, .1);
+  --mdp-home-glow-1: rgba(45, 212, 191, .22);
+  --mdp-home-glow-2: rgba(251, 146, 60, .12);
 }
 
 .VPHero .name {
-  letter-spacing: -0.04em;
+  letter-spacing: -.04em;
 }
 
 .VPNavBar {
@@ -41,13 +41,13 @@
 }
 
 .dark .VPNavBar {
-  background-color: rgba(8, 15, 20, 0.72);
+  background-color: rgba(8, 15, 20, .72);
 }
 
 .VPDoc h1,
 .VPDoc h2,
 .VPDoc h3 {
-  letter-spacing: -0.02em;
+  letter-spacing: -.02em;
 }
 
 .VPDoc .mdp-mermaid {
@@ -80,9 +80,14 @@
   z-index: 2;
   margin: -4px 0 16px;
   padding: 10px 0;
-  background:
-    linear-gradient(180deg, var(--vp-sidebar-bg-color) 0%, var(--vp-sidebar-bg-color) 82%, transparent 100%);
-  border-bottom: 1px solid color-mix(in srgb, var(--vp-c-divider) 82%, transparent);
+  background: linear-gradient(
+    180deg,
+    var(--vp-sidebar-bg-color) 0%,
+    var(--vp-sidebar-bg-color) 82%,
+    transparent 100%
+  );
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--vp-c-divider) 82%, transparent);
 }
 
 .mdp-sidebar-filter__field {
@@ -102,7 +107,7 @@
 }
 
 .mdp-sidebar-filter__icon::after {
-  content: "";
+  content: '';
   position: absolute;
   right: -4px;
   bottom: -4px;
@@ -121,14 +126,20 @@
   padding: 8px 34px 8px 34px;
   border: 1px solid color-mix(in srgb, var(--vp-c-divider) 78%, transparent);
   border-radius: 11px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--vp-c-bg-soft) 94%, white 6%) 0%, var(--vp-c-bg-soft) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--vp-c-bg-soft) 94%, white 6%) 0%,
+    var(--vp-c-bg-soft) 100%
+  );
   color: var(--vp-c-text-1);
   font-size: 12px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    0 8px 18px rgba(15, 23, 42, 0.035);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    inset 0 1px 0 rgba(255, 255, 255, .3),
+    0 8px 18px rgba(15, 23, 42, .035);
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease,
+    background-color .2s ease;
 }
 
 .mdp-sidebar-filter__input:focus {
@@ -137,19 +148,18 @@
   background: var(--vp-c-bg-soft);
   box-shadow:
     0 0 0 3px color-mix(in srgb, var(--vp-c-brand-1) 13%, transparent),
-    0 10px 22px rgba(15, 23, 42, 0.06);
+    0 10px 22px rgba(15, 23, 42, .06);
 }
 
 .dark .mdp-sidebar-filter__input {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--vp-c-bg-soft) 88%, black 12%) 0%,
-      color-mix(in srgb, var(--vp-c-bg-soft) 96%, black 4%) 100%
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--vp-c-bg-soft) 88%, black 12%) 0%,
+    color-mix(in srgb, var(--vp-c-bg-soft) 96%, black 4%) 100%
+  );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 10px 20px rgba(2, 8, 23, 0.22);
+    inset 0 1px 0 rgba(255, 255, 255, .04),
+    0 10px 20px rgba(2, 8, 23, .22);
 }
 
 .mdp-sidebar-filter__input::-webkit-search-cancel-button {
@@ -174,12 +184,16 @@
   line-height: 1;
   transform: translateY(-50%);
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition: background-color .2s ease, border-color .2s ease, color .2s ease;
 }
 
 .mdp-sidebar-filter__clear:hover {
   border-color: color-mix(in srgb, var(--vp-c-divider) 84%, transparent);
-  background: color-mix(in srgb, var(--vp-c-brand-soft) 42%, var(--vp-c-default-soft));
+  background: color-mix(
+    in srgb,
+    var(--vp-c-brand-soft) 42%,
+    var(--vp-c-default-soft)
+  );
   color: var(--vp-c-text-1);
 }
 
@@ -229,18 +243,34 @@
 .VPHome {
   overflow: hidden;
   background:
-    radial-gradient(circle at 10% 10%, rgba(20, 184, 166, 0.16), transparent 28rem),
-    radial-gradient(circle at 88% 8%, rgba(251, 146, 60, 0.12), transparent 18rem),
-    linear-gradient(135deg, rgba(220, 252, 248, 0.3), transparent 36rem),
-    linear-gradient(180deg, rgba(248, 250, 252, 0.86), rgba(255, 255, 255, 0));
+    radial-gradient(
+      circle at 10% 10%,
+      rgba(20, 184, 166, .16),
+      transparent 28rem
+    ),
+    radial-gradient(
+    circle at 88% 8%,
+    rgba(251, 146, 60, .12),
+    transparent 18rem
+  ),
+    linear-gradient(135deg, rgba(220, 252, 248, .3), transparent 36rem),
+    linear-gradient(180deg, rgba(248, 250, 252, .86), rgba(255, 255, 255, 0));
 }
 
 .dark .VPHome {
   background:
-    radial-gradient(circle at 10% 10%, rgba(45, 212, 191, 0.16), transparent 28rem),
-    radial-gradient(circle at 88% 10%, rgba(251, 146, 60, 0.08), transparent 18rem),
-    linear-gradient(135deg, rgba(13, 148, 136, 0.08), transparent 36rem),
-    linear-gradient(180deg, rgba(8, 15, 20, 0.92), rgba(8, 15, 20, 0));
+    radial-gradient(
+      circle at 10% 10%,
+      rgba(45, 212, 191, .16),
+      transparent 28rem
+    ),
+    radial-gradient(
+    circle at 88% 10%,
+    rgba(251, 146, 60, .08),
+    transparent 18rem
+  ),
+    linear-gradient(135deg, rgba(13, 148, 136, .08), transparent 36rem),
+    linear-gradient(180deg, rgba(8, 15, 20, .92), rgba(8, 15, 20, 0));
 }
 
 html.mdp-home-paged {
@@ -254,7 +284,7 @@ html.mdp-home-paged {
 
 .VPHome .VPHero::before,
 .VPHome .VPHero::after {
-  content: "";
+  content: '';
   position: absolute;
   pointer-events: none;
 }
@@ -267,17 +297,33 @@ html.mdp-home-paged {
   border: 1px solid var(--mdp-home-border);
   border-radius: 36px;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(242, 250, 248, 0.76)),
-    radial-gradient(circle at 18% 18%, var(--mdp-home-glow-1), transparent 24rem),
-    radial-gradient(circle at 82% 20%, var(--mdp-home-glow-2), transparent 16rem);
+    linear-gradient(145deg, rgba(255, 255, 255, .96), rgba(242, 250, 248, .76)),
+    radial-gradient(
+    circle at 18% 18%,
+    var(--mdp-home-glow-1),
+    transparent 24rem
+  ),
+    radial-gradient(
+    circle at 82% 20%,
+    var(--mdp-home-glow-2),
+    transparent 16rem
+  );
   box-shadow: var(--mdp-home-shadow);
 }
 
 .dark .VPHome .VPHero::before {
   background:
-    linear-gradient(145deg, rgba(13, 20, 24, 0.94), rgba(10, 17, 22, 0.86)),
-    radial-gradient(circle at 18% 18%, var(--mdp-home-glow-1), transparent 24rem),
-    radial-gradient(circle at 82% 20%, var(--mdp-home-glow-2), transparent 16rem);
+    linear-gradient(145deg, rgba(13, 20, 24, .94), rgba(10, 17, 22, .86)),
+    radial-gradient(
+    circle at 18% 18%,
+    var(--mdp-home-glow-1),
+    transparent 24rem
+  ),
+    radial-gradient(
+    circle at 82% 20%,
+    var(--mdp-home-glow-2),
+    transparent 16rem
+  );
 }
 
 .VPHome .VPHero::after {
@@ -290,7 +336,7 @@ html.mdp-home-paged {
     linear-gradient(var(--mdp-home-gridline) 1px, transparent 1px),
     linear-gradient(90deg, var(--mdp-home-gridline) 1px, transparent 1px);
   background-size: 28px 28px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 82%);
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, .55), transparent 82%);
 }
 
 .VPHome .VPHero .container {
@@ -312,13 +358,13 @@ html.mdp-home-paged {
 .VPHome .VPHero .name {
   max-width: fit-content;
   padding: 8px 14px;
-  border: 1px solid rgba(15, 118, 110, 0.12);
+  border: 1px solid rgba(15, 118, 110, .12);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.58);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, .58);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, .06);
   font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.16em;
+  letter-spacing: .16em;
   line-height: 1.4;
   text-transform: uppercase;
 }
@@ -326,8 +372,8 @@ html.mdp-home-paged {
 .VPHome .VPHero .text {
   max-width: 640px;
   font-size: clamp(3.6rem, 7vw, 5.6rem);
-  line-height: 0.9;
-  letter-spacing: -0.08em;
+  line-height: .9;
+  letter-spacing: -.08em;
 }
 
 .VPHome .VPHero .tagline {
@@ -362,27 +408,27 @@ html.mdp-home-paged {
   position: relative;
   overflow: hidden;
   min-width: 170px;
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, .14);
   background: linear-gradient(135deg, #0b6b63, #14b8a6 62%, #54e0cb);
   box-shadow:
-    0 20px 44px rgba(15, 118, 110, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.26);
+    0 20px 44px rgba(15, 118, 110, .28),
+    inset 0 1px 0 rgba(255, 255, 255, .26);
 }
 
 .VPHome .VPButton.brand::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 1px;
   border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 46%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .2), transparent 46%);
   pointer-events: none;
 }
 
 .VPHome .VPButton.brand:hover {
-  opacity: 0.98;
+  opacity: .98;
   box-shadow:
-    0 24px 52px rgba(15, 118, 110, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    0 24px 52px rgba(15, 118, 110, .34),
+    inset 0 1px 0 rgba(255, 255, 255, .3);
 }
 
 .VPHome .VPButton.brand:active {
@@ -414,26 +460,34 @@ html.mdp-home-paged {
   border: 1px solid var(--mdp-home-border);
   border-radius: 30px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.14)),
-    radial-gradient(circle at 50% 50%, rgba(20, 184, 166, 0.12), transparent 54%);
+    linear-gradient(180deg, rgba(255, 255, 255, .66), rgba(255, 255, 255, .14)),
+    radial-gradient(
+    circle at 50% 50%,
+    rgba(20, 184, 166, .12),
+    transparent 54%
+  );
   box-shadow: var(--mdp-home-shadow);
   backdrop-filter: blur(12px);
 }
 
 .VPHome .VPHero .image-container::before,
 .VPHome .VPHero .image-container::after {
-  content: "";
+  content: '';
   position: absolute;
   pointer-events: none;
 }
 
 .VPHome .VPHero .image-container::before {
   inset: 16px;
-  border: 1px solid rgba(15, 118, 110, 0.1);
+  border: 1px solid rgba(15, 118, 110, .1);
   border-radius: 24px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 36%),
-    radial-gradient(circle at 18% 18%, rgba(45, 212, 191, 0.14), transparent 10rem);
+    linear-gradient(180deg, rgba(255, 255, 255, .28), transparent 36%),
+    radial-gradient(
+    circle at 18% 18%,
+    rgba(45, 212, 191, .14),
+    transparent 10rem
+  );
 }
 
 .VPHome .VPHero .image-container::after {
@@ -442,44 +496,52 @@ html.mdp-home-paged {
   width: 56px;
   height: 8px;
   border-radius: 999px;
-  background: rgba(15, 118, 110, 0.18);
+  background: rgba(15, 118, 110, .18);
   box-shadow:
-    72px 0 0 rgba(15, 118, 110, 0.11),
-    144px 0 0 rgba(15, 118, 110, 0.08);
+    72px 0 0 rgba(15, 118, 110, .11),
+    144px 0 0 rgba(15, 118, 110, .08);
 }
 
 .dark .VPHome .VPHero .image-container {
   background:
-    linear-gradient(180deg, rgba(16, 24, 29, 0.72), rgba(8, 15, 20, 0.24)),
-    radial-gradient(circle at 50% 50%, rgba(45, 212, 191, 0.1), transparent 54%);
+    linear-gradient(180deg, rgba(16, 24, 29, .72), rgba(8, 15, 20, .24)),
+    radial-gradient(circle at 50% 50%, rgba(45, 212, 191, .1), transparent 54%);
 }
 
 .dark .VPHome .VPHero .image-container::before {
-  border-color: rgba(94, 234, 212, 0.1);
+  border-color: rgba(94, 234, 212, .1);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 36%),
-    radial-gradient(circle at 18% 18%, rgba(45, 212, 191, 0.14), transparent 10rem);
+    linear-gradient(180deg, rgba(255, 255, 255, .04), transparent 36%),
+    radial-gradient(
+    circle at 18% 18%,
+    rgba(45, 212, 191, .14),
+    transparent 10rem
+  );
 }
 
 .dark .VPHome .VPHero .image-container::after {
-  background: rgba(94, 234, 212, 0.18);
+  background: rgba(94, 234, 212, .18);
   box-shadow:
-    72px 0 0 rgba(94, 234, 212, 0.12),
-    144px 0 0 rgba(94, 234, 212, 0.08);
+    72px 0 0 rgba(94, 234, 212, .12),
+    144px 0 0 rgba(94, 234, 212, .08);
 }
 
 .VPHome .VPHero .image-bg {
   width: 74%;
   height: 74%;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(45, 212, 191, 0.28), rgba(45, 212, 191, 0.08) 48%, transparent 74%);
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(45, 212, 191, .28),
+    rgba(45, 212, 191, .08) 48%,
+    transparent 74%
+  );
   filter: blur(6px);
 }
 
 .VPHome .VPHero :deep(.image-src) {
   max-width: 88%;
   max-height: 88%;
-  filter: drop-shadow(0 20px 40px rgba(15, 23, 42, 0.18));
+  filter: drop-shadow(0 20px 40px rgba(15, 23, 42, .18));
 }
 
 .VPHome .VPFeatures {
@@ -493,19 +555,20 @@ html.mdp-home-paged {
   border: 1px solid var(--mdp-home-border);
   border-radius: 24px;
   background:
-    linear-gradient(180deg, var(--mdp-home-surface-1), var(--mdp-home-surface-2)),
-    linear-gradient(120deg, rgba(20, 184, 166, 0.08), transparent 55%);
-  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.12);
-  transition:
-    transform 0.25s ease,
-    border-color 0.25s ease,
-    box-shadow 0.25s ease;
+    linear-gradient(
+      180deg,
+      var(--mdp-home-surface-1),
+      var(--mdp-home-surface-2)
+    ),
+    linear-gradient(120deg, rgba(20, 184, 166, .08), transparent 55%);
+  box-shadow: 0 22px 48px rgba(15, 23, 42, .12);
+  transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
 
 .VPHome .VPFeature:hover {
   transform: translateY(-4px);
   border-color: var(--mdp-home-border-strong);
-  box-shadow: 0 24px 44px rgba(15, 23, 42, 0.16);
+  box-shadow: 0 24px 44px rgba(15, 23, 42, .16);
 }
 
 .VPHome .VPFeature .box {
@@ -518,8 +581,8 @@ html.mdp-home-paged {
   width: 64px;
   height: 64px;
   background:
-    linear-gradient(135deg, rgba(20, 184, 166, 0.22), rgba(15, 118, 110, 0.08)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.4), transparent);
+    linear-gradient(135deg, rgba(20, 184, 166, .22), rgba(15, 118, 110, .08)),
+    linear-gradient(180deg, rgba(255, 255, 255, .4), transparent);
   color: var(--vp-c-brand-1);
 }
 
@@ -536,7 +599,7 @@ html.mdp-home-paged {
 .VPHome .VPFeature .title {
   font-size: 20px;
   line-height: 1.35;
-  letter-spacing: -0.03em;
+  letter-spacing: -.03em;
 }
 
 .VPHome .VPFeature .details {
@@ -580,12 +643,20 @@ html.mdp-home-paged {
   border: 1px solid var(--mdp-home-border);
   border-radius: 18px;
   background:
-    linear-gradient(180deg, var(--mdp-home-surface-1), var(--mdp-home-surface-2)),
-    radial-gradient(circle at top left, rgba(20, 184, 166, 0.12), transparent 8rem);
+    linear-gradient(
+      180deg,
+      var(--mdp-home-surface-1),
+      var(--mdp-home-surface-2)
+    ),
+    radial-gradient(
+    circle at top left,
+    rgba(20, 184, 166, .12),
+    transparent 8rem
+  );
   color: var(--vp-c-brand-1);
   font-size: 18px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: .08em;
   box-shadow: var(--mdp-home-shadow-soft);
 }
 
@@ -593,7 +664,7 @@ html.mdp-home-paged {
   margin: 0;
   font-size: clamp(30px, 4vw, 44px);
   line-height: 1.02;
-  letter-spacing: -0.05em;
+  letter-spacing: -.05em;
 }
 
 .mdp-home-screen-header p {
@@ -611,18 +682,22 @@ html.mdp-home-paged {
   border-top: 0;
   font-size: clamp(30px, 4vw, 42px);
   line-height: 1.05;
-  letter-spacing: -0.05em;
+  letter-spacing: -.05em;
 }
 
 .VPHome .vp-doc > h2::before {
-  content: "";
+  content: '';
   position: absolute;
-  top: 0.16em;
+  top: .16em;
   left: 0;
   width: 6px;
-  height: 0.86em;
+  height: .86em;
   border-radius: 999px;
-  background: linear-gradient(180deg, var(--vp-c-brand-1), rgba(251, 146, 60, 0.92));
+  background: linear-gradient(
+    180deg,
+    var(--vp-c-brand-1),
+    rgba(251, 146, 60, .92)
+  );
 }
 
 .VPHome .vp-doc > h2 .header-anchor {
@@ -647,20 +722,28 @@ html.mdp-home-paged {
   border: 1px solid var(--mdp-home-border);
   border-radius: 30px;
   background:
-    linear-gradient(180deg, var(--mdp-home-surface-1), var(--mdp-home-surface-3)),
-    radial-gradient(circle at top right, rgba(251, 146, 60, 0.12), transparent 14rem);
+    linear-gradient(
+      180deg,
+      var(--mdp-home-surface-1),
+      var(--mdp-home-surface-3)
+    ),
+    radial-gradient(
+    circle at top right,
+    rgba(251, 146, 60, .12),
+    transparent 14rem
+  );
   box-shadow: var(--mdp-home-shadow-soft);
 }
 
 .mdp-home-band::after {
-  content: "";
+  content: '';
   position: absolute;
   right: -8%;
   bottom: -28%;
   width: 260px;
   height: 260px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(45, 212, 191, 0.14), transparent 68%);
+  background: radial-gradient(circle, rgba(45, 212, 191, .14), transparent 68%);
   pointer-events: none;
 }
 
@@ -674,7 +757,7 @@ html.mdp-home-paged {
   color: var(--vp-c-brand-1);
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: .08em;
   text-transform: uppercase;
 }
 
@@ -682,7 +765,7 @@ html.mdp-home-paged {
   margin: 16px 0 0;
   font-size: clamp(28px, 4vw, 44px);
   line-height: 1;
-  letter-spacing: -0.05em;
+  letter-spacing: -.05em;
 }
 
 .mdp-home-band p {
@@ -707,20 +790,28 @@ html.mdp-home-paged {
   border: 1px solid var(--mdp-home-border);
   border-radius: 22px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.42)),
-    radial-gradient(circle at left center, rgba(45, 212, 191, 0.1), transparent 8rem);
+    linear-gradient(180deg, rgba(255, 255, 255, .72), rgba(255, 255, 255, .42)),
+    radial-gradient(
+    circle at left center,
+    rgba(45, 212, 191, .1),
+    transparent 8rem
+  );
 }
 
 .dark .mdp-home-metric {
   background:
-    linear-gradient(180deg, rgba(15, 25, 31, 0.84), rgba(8, 15, 20, 0.46)),
-    radial-gradient(circle at left center, rgba(45, 212, 191, 0.08), transparent 8rem);
+    linear-gradient(180deg, rgba(15, 25, 31, .84), rgba(8, 15, 20, .46)),
+    radial-gradient(
+    circle at left center,
+    rgba(45, 212, 191, .08),
+    transparent 8rem
+  );
 }
 
 .mdp-home-metric strong {
   font-size: 36px;
   line-height: 1;
-  letter-spacing: -0.05em;
+  letter-spacing: -.05em;
   color: var(--vp-c-brand-1);
 }
 
@@ -751,41 +842,50 @@ html.mdp-home-paged {
   border: 1px solid var(--mdp-home-border);
   border-radius: 24px;
   background:
-    linear-gradient(180deg, var(--mdp-home-surface-1), var(--mdp-home-surface-2)),
-    radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 12rem);
+    linear-gradient(
+      180deg,
+      var(--mdp-home-surface-1),
+      var(--mdp-home-surface-2)
+    ),
+    radial-gradient(
+    circle at top right,
+    rgba(20, 184, 166, .12),
+    transparent 12rem
+  );
   box-shadow: var(--mdp-home-shadow-soft);
 }
 
 .mdp-home-card::before,
 .mdp-home-step::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   right: 0;
   left: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--vp-c-brand-1), rgba(251, 146, 60, 0.92));
+  background: linear-gradient(
+    90deg,
+    var(--vp-c-brand-1),
+    rgba(251, 146, 60, .92)
+  );
 }
 
 .mdp-home-card {
   text-decoration: none;
   color: inherit;
-  transition:
-    transform 0.25s ease,
-    border-color 0.25s ease,
-    box-shadow 0.25s ease;
+  transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
 
 .mdp-home-card:hover {
   transform: translateY(-6px);
   border-color: var(--mdp-home-border-strong);
-  box-shadow: 0 24px 44px rgba(15, 23, 42, 0.16);
+  box-shadow: 0 24px 44px rgba(15, 23, 42, .16);
 }
 
 .mdp-home-card-kicker {
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--vp-c-brand-1);
 }
@@ -795,7 +895,7 @@ html.mdp-home-paged {
   margin: 0;
   font-size: 22px;
   line-height: 1.2;
-  letter-spacing: -0.03em;
+  letter-spacing: -.03em;
 }
 
 .mdp-home-card p,
@@ -824,11 +924,15 @@ html.mdp-home-paged {
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(20, 184, 166, 0.22), rgba(15, 118, 110, 0.1));
+  background: linear-gradient(
+    135deg,
+    rgba(20, 184, 166, .22),
+    rgba(15, 118, 110, .1)
+  );
   color: var(--vp-c-brand-1);
   font-size: 14px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: .08em;
 }
 
 .mdp-home-fit-list {
@@ -842,7 +946,11 @@ html.mdp-home-paged {
   padding: 14px 18px;
   border: 1px solid var(--mdp-home-border);
   border-radius: 999px;
-  background: linear-gradient(180deg, var(--mdp-home-surface-1), var(--mdp-home-surface-2));
+  background: linear-gradient(
+    180deg,
+    var(--mdp-home-surface-1),
+    var(--mdp-home-surface-2)
+  );
   line-height: 1.65;
   box-shadow: var(--mdp-home-shadow-soft);
 }
@@ -853,8 +961,16 @@ html.mdp-home-paged {
   border: 1px solid var(--mdp-home-border);
   border-radius: 24px;
   background:
-    linear-gradient(180deg, var(--mdp-home-surface-1), var(--mdp-home-surface-2)),
-    radial-gradient(circle at top left, rgba(20, 184, 166, 0.12), transparent 12rem);
+    linear-gradient(
+      180deg,
+      var(--mdp-home-surface-1),
+      var(--mdp-home-surface-2)
+    ),
+    radial-gradient(
+    circle at top left,
+    rgba(20, 184, 166, .12),
+    transparent 12rem
+  );
   line-height: 1.8;
   color: var(--vp-c-text-2);
   box-shadow: var(--mdp-home-shadow-soft);
@@ -867,7 +983,9 @@ html.mdp-home-paged {
 @media (min-width: 960px) {
   html.mdp-home-paged {
     scroll-snap-type: y mandatory;
-    scroll-padding-top: calc(var(--vp-nav-height) + var(--vp-layout-top-height, 0px));
+    scroll-padding-top: calc(
+      var(--vp-nav-height) + var(--vp-layout-top-height, 0px)
+    );
   }
 
   html.mdp-home-paged .VPFooter {
@@ -883,7 +1001,9 @@ html.mdp-home-paged {
   html.mdp-home-paged .VPHome .mdp-home-screen {
     scroll-snap-align: start;
     scroll-snap-stop: always;
-    scroll-margin-top: calc(var(--vp-nav-height) + var(--vp-layout-top-height, 0px));
+    scroll-margin-top: calc(
+      var(--vp-nav-height) + var(--vp-layout-top-height, 0px)
+    );
   }
 
   html.mdp-home-paged .VPHome .VPHero {
@@ -900,7 +1020,9 @@ html.mdp-home-paged {
 
   html.mdp-home-paged .VPHome .VPFeatures,
   html.mdp-home-paged .VPHome .mdp-home-screen {
-    min-height: calc(100svh - var(--vp-nav-height) - var(--vp-layout-top-height, 0px));
+    min-height: calc(
+      100svh - var(--vp-nav-height) - var(--vp-layout-top-height, 0px)
+    );
   }
 
   html.mdp-home-paged .VPHome .VPFeatures {
@@ -932,7 +1054,7 @@ html.mdp-home-paged {
   }
 
   .mdp-home-band {
-    grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.8fr);
+    grid-template-columns: minmax(0, 1.3fr) minmax(300px, .8fr);
     align-items: start;
     padding: 38px;
   }

@@ -9,32 +9,32 @@ The server exposes one fixed MCP bridge surface. It does not generate one MCP to
 
 ## Read by task
 
-| Task | Start here |
-| --- | --- |
-| See which clients are online | [listClients](/server/tools/list-clients) |
-| See a capability catalog by kind | [listTools](/server/tools/list-tools), [listPrompts](/server/tools/list-prompts), [listSkills](/server/tools/list-skills), [listResources](/server/tools/list-resources) |
-| Invoke one exact capability on one exact client | [callTools](/server/tools/call-tools), [getPrompt](/server/tools/get-prompt), [callSkills](/server/tools/call-skills), [readResource](/server/tools/read-resource) |
-| Fan out one invocation to multiple clients | [callClients](/server/tools/call-clients) |
+| Task                                            | Start here                                                                                                                                                               |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| See which clients are online                    | [listClients](/server/tools/list-clients)                                                                                                                                |
+| See a capability catalog by kind                | [listTools](/server/tools/list-tools), [listPrompts](/server/tools/list-prompts), [listSkills](/server/tools/list-skills), [listResources](/server/tools/list-resources) |
+| Invoke one exact capability on one exact client | [callTools](/server/tools/call-tools), [getPrompt](/server/tools/get-prompt), [callSkills](/server/tools/call-skills), [readResource](/server/tools/read-resource)       |
+| Fan out one invocation to multiple clients      | [callClients](/server/tools/call-clients)                                                                                                                                |
 
 ## Discovery tools
 
-| Tool | Returns |
-| --- | --- |
-| [listClients](/server/tools/list-clients) | Connected client summaries and connection metadata |
-| [listTools](/server/tools/list-tools) | Indexed tool descriptors |
-| [listPrompts](/server/tools/list-prompts) | Indexed prompt descriptors |
-| [listSkills](/server/tools/list-skills) | Indexed skill descriptors |
-| [listResources](/server/tools/list-resources) | Indexed resource descriptors |
+| Tool                                          | Returns                                            |
+| --------------------------------------------- | -------------------------------------------------- |
+| [listClients](/server/tools/list-clients)     | Connected client summaries and connection metadata |
+| [listTools](/server/tools/list-tools)         | Indexed tool descriptors                           |
+| [listPrompts](/server/tools/list-prompts)     | Indexed prompt descriptors                         |
+| [listSkills](/server/tools/list-skills)       | Indexed skill descriptors                          |
+| [listResources](/server/tools/list-resources) | Indexed resource descriptors                       |
 
 ## Invocation tools
 
-| Tool | Use when |
-| --- | --- |
-| [callTools](/server/tools/call-tools) | You know one client ID and one tool name |
-| [getPrompt](/server/tools/get-prompt) | You know one client ID and one prompt name |
-| [callSkills](/server/tools/call-skills) | You know one client ID and one skill name |
-| [readResource](/server/tools/read-resource) | You know one client ID and one resource URI |
-| [callClients](/server/tools/call-clients) | You want a generic entry point or multi-client fan-out |
+| Tool                                        | Use when                                               |
+| ------------------------------------------- | ------------------------------------------------------ |
+| [callTools](/server/tools/call-tools)       | You know one client ID and one tool name               |
+| [getPrompt](/server/tools/get-prompt)       | You know one client ID and one prompt name             |
+| [callSkills](/server/tools/call-skills)     | You know one client ID and one skill name              |
+| [readResource](/server/tools/read-resource) | You know one client ID and one resource URI            |
+| [callClients](/server/tools/call-clients)   | You want a generic entry point or multi-client fan-out |
 
 ## Shared input fields
 
@@ -101,4 +101,3 @@ curl 'http://127.0.0.1:7070/client-01/skills/workspace/review/files?topic=mdp'
 ```
 
 Those routes resolve one exact skill node and return the skill body directly, commonly as `text/markdown`.
-

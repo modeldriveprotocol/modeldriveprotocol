@@ -46,4 +46,3 @@ status: MVP
 ```
 
 当你需要的是 prompt payload，而不是立刻执行一个动作时，用这个接口。
-

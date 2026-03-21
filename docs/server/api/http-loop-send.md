@@ -46,12 +46,11 @@ Status `202 Accepted`:
 
 ## Error cases
 
-| Status | Shape | When it happens |
-| --- | --- | --- |
-| `400` | `{ "error": string }` | Invalid JSON, invalid message shape, or server-side handling error |
-| `404` | empty body | Missing or unknown session ID |
+| Status | Shape                 | When it happens                                                    |
+| ------ | --------------------- | ------------------------------------------------------------------ |
+| `400`  | `{ "error": string }` | Invalid JSON, invalid message shape, or server-side handling error |
+| `404`  | empty body            | Missing or unknown session ID                                      |
 
 ## Notes
 
 - Each `/send` request refreshes the session's transport auth and last-seen time.
-

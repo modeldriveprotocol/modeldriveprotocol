@@ -58,9 +58,9 @@ Saving the options page requests host permissions for the configured patterns.
 Injected page scripts can register tools like this:
 
 ```js
-window.__MDP_EXTENSION_BRIDGE__.registerTool("readAppState", () => {
-  return window.app.store.getState();
-});
+window.__MDP_EXTENSION_BRIDGE__.registerTool('readAppState', () => {
+  return window.app.store.getState()
+})
 ```
 
 After injection, the extension client exposes MDP tools such as:

@@ -27,4 +27,3 @@ MDP covers:
 - lifecycle tracking
 
 It does not prescribe application business logic or UI design.
-

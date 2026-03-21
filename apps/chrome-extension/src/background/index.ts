@@ -1,41 +1,40 @@
-import { ChromeExtensionRuntime } from "./runtime.js";
-import { asRecord, serializeError, type UnknownRecord } from "../shared/utils.js";
+import { type UnknownRecord, asRecord, serializeError } from '../shared/utils.js'
+import { ChromeExtensionRuntime } from './runtime.js'
 
-const runtime = new ChromeExtensionRuntime();
+const runtime = new ChromeExtensionRuntime()
 
 chrome.runtime.onInstalled.addListener(() => {
-  void runtime.initialize();
-});
+  void runtime.initialize()
+})
 
 chrome.runtime.onStartup.addListener(() => {
-  void runtime.initialize();
-});
+  void runtime.initialize()
+})
 
 chrome.storage.onChanged.addListener((_changes: unknown, areaName: string) => {
-  if (areaName === "local") {
-    void runtime.refresh();
+  if (areaName === 'local') {
+    void runtime.refresh()
   }
-});
+})
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === "loading") {
-    runtime.handleTabRemoved(tabId);
-    return;
+  if (changeInfo.status === 'loading') {
+    runtime.handleTabRemoved(tabId)
+    return
   }
 
-  if (changeInfo.status !== "complete") {
-    return;
+  if (changeInfo.status !== 'complete') {
+    return
   }
 
-  void runtime.handleTabUpdated(tabId, typeof tab.url === "string" ? tab.url : undefined).catch(
+  void runtime.handleTabUpdated(tabId, typeof tab.url === 'string' ? tab.url : undefined).catch(
     () => undefined
-  );
-  }
-);
+  )
+})
 
 chrome.tabs.onRemoved.addListener((tabId: number) => {
-  runtime.handleTabRemoved(tabId);
-});
+  runtime.handleTabRemoved(tabId)
+})
 
 chrome.runtime.onMessage.addListener(
   (
@@ -49,17 +48,17 @@ chrome.runtime.onMessage.addListener(
         sendResponse({
           ok: true,
           ...(data !== undefined ? { data } : {})
-        });
+        })
       })
       .catch((error) => {
         sendResponse({
           ok: false,
           error: serializeError(error)
-        });
-      });
+        })
+      })
 
-    return true;
+    return true
   }
-);
+)
 
-void runtime.initialize();
+void runtime.initialize()

@@ -26,11 +26,10 @@ Status `204 No Content`
 
 ## Error cases
 
-| Status | Shape | When it happens |
-| --- | --- | --- |
-| `400` | `{ "error": string }` | Malformed HTTP loop request |
+| Status | Shape                 | When it happens             |
+| ------ | --------------------- | --------------------------- |
+| `400`  | `{ "error": string }` | Malformed HTTP loop request |
 
 ## Notes
 
 - If the session does not exist, the endpoint still returns `204`.
-

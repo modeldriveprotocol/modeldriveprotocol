@@ -40,23 +40,23 @@ server 实际暴露的 client transport 接口可以继续阅读 [对外接口](
 快速开始里先用最小的 websocket 例子即可：
 
 ```ts
-import { createMdpClient } from "@modeldriveprotocol/client";
+import { createMdpClient } from '@modeldriveprotocol/client'
 
 const client = createMdpClient({
-  serverUrl: "ws://127.0.0.1:7070",
+  serverUrl: 'ws://127.0.0.1:7070',
   client: {
-    id: "browser-01",
-    name: "Browser Client"
+    id: 'browser-01',
+    name: 'Browser Client'
   }
-});
+})
 
-client.exposeTool("searchDom", async ({ query }) => ({
+client.exposeTool('searchDom', async ({ query }) => ({
   query,
   matches: 3
-}));
+}))
 
-await client.connect();
-client.register();
+await client.connect()
+client.register()
 ```
 
 如果你要看 auth、HTTP loop、浏览器全局 bundle 等接入方式，继续阅读[生态 > SDKs > JavaScript](/zh-Hans/sdk/javascript/usage)。

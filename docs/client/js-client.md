@@ -29,23 +29,23 @@ The client exposes the same abstraction as other runtimes: register capability h
 ## Minimal example
 
 ```ts
-import { createMdpClient } from "@modeldriveprotocol/client";
+import { createMdpClient } from '@modeldriveprotocol/client'
 
 const client = createMdpClient({
-  serverUrl: "ws://127.0.0.1:7070",
+  serverUrl: 'ws://127.0.0.1:7070',
   client: {
-    id: "browser-01",
-    name: "Browser Client"
+    id: 'browser-01',
+    name: 'Browser Client'
   }
-});
+})
 
-client.exposeTool("searchDom", async ({ query }) => ({
+client.exposeTool('searchDom', async ({ query }) => ({
   query,
   matches: 3
-}));
+}))
 
-await client.connect();
-client.register();
+await client.connect()
+client.register()
 ```
 
 For transport choices, auth bootstrap, browser-global usage, and richer capability definitions, continue with the linked SDK pages above.

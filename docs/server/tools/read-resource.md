@@ -39,4 +39,3 @@ Optional fields:
 ```
 
 Use this path for snapshots, documents, and state reads that are better modeled as resources than actions.
-

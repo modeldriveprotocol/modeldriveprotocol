@@ -16,4 +16,3 @@ Its responsibilities are:
 - route calls to clients and collect results
 
 The server should not know whether the client is implemented in Swift, Kotlin, C++, JavaScript, or Python.
-

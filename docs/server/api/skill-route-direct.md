@@ -46,15 +46,14 @@ If the resolved skill returns non-string data, the server responds with JSON:
 
 ## Error cases
 
-| Status | Shape | When it happens |
-| --- | --- | --- |
-| `400` | `{ "error": string }` | Invalid skill request |
-| `404` | empty body | Skill descriptor not found |
-| `405` | empty body | Method is not `GET` or `OPTIONS` |
-| `502` | `{ "error": unknown }` | Skill invocation failed on the target client |
+| Status | Shape                  | When it happens                              |
+| ------ | ---------------------- | -------------------------------------------- |
+| `400`  | `{ "error": string }`  | Invalid skill request                        |
+| `404`  | empty body             | Skill descriptor not found                   |
+| `405`  | empty body             | Method is not `GET` or `OPTIONS`             |
+| `502`  | `{ "error": unknown }` | Skill invocation failed on the target client |
 
 ## Notes
 
 - `OPTIONS` returns `204`.
 - On `405`, the response includes `Allow: GET, OPTIONS`.
-

@@ -22,8 +22,7 @@ Headers:
 
 ## Error cases
 
-| Status | Shape | When it happens |
-| --- | --- | --- |
-| `400` | `{ "error": string }` | Invalid auth request handling |
-| `404` | empty body | Wrong path or unsupported method |
-
+| Status | Shape                 | When it happens                  |
+| ------ | --------------------- | -------------------------------- |
+| `400`  | `{ "error": string }` | Invalid auth request handling    |
+| `404`  | empty body            | Wrong path or unsupported method |

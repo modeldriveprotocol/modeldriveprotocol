@@ -9,32 +9,32 @@ server 对外暴露的是一组固定的 MCP bridge 工具，不会为每个已�
 
 ## 按任务阅读
 
-| 目标 | 入口 |
-| --- | --- |
-| 看当前有哪些在线 client | [listClients](/zh-Hans/server/tools/list-clients) |
-| 按能力类型查看目录 | [listTools](/zh-Hans/server/tools/list-tools)、[listPrompts](/zh-Hans/server/tools/list-prompts)、[listSkills](/zh-Hans/server/tools/list-skills)、[listResources](/zh-Hans/server/tools/list-resources) |
-| 对一个确定 client 的一个确定能力发起调用 | [callTools](/zh-Hans/server/tools/call-tools)、[getPrompt](/zh-Hans/server/tools/get-prompt)、[callSkills](/zh-Hans/server/tools/call-skills)、[readResource](/zh-Hans/server/tools/read-resource) |
-| 把同一个调用打到多个 client | [callClients](/zh-Hans/server/tools/call-clients) |
+| 目标                                     | 入口                                                                                                                                                                                                     |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 看当前有哪些在线 client                  | [listClients](/zh-Hans/server/tools/list-clients)                                                                                                                                                        |
+| 按能力类型查看目录                       | [listTools](/zh-Hans/server/tools/list-tools)、[listPrompts](/zh-Hans/server/tools/list-prompts)、[listSkills](/zh-Hans/server/tools/list-skills)、[listResources](/zh-Hans/server/tools/list-resources) |
+| 对一个确定 client 的一个确定能力发起调用 | [callTools](/zh-Hans/server/tools/call-tools)、[getPrompt](/zh-Hans/server/tools/get-prompt)、[callSkills](/zh-Hans/server/tools/call-skills)、[readResource](/zh-Hans/server/tools/read-resource)       |
+| 把同一个调用打到多个 client              | [callClients](/zh-Hans/server/tools/call-clients)                                                                                                                                                        |
 
 ## 发现类工具
 
-| 工具 | 返回内容 |
-| --- | --- |
-| [listClients](/zh-Hans/server/tools/list-clients) | 在线 client 摘要与连接信息 |
-| [listTools](/zh-Hans/server/tools/list-tools) | tool 描述列表 |
-| [listPrompts](/zh-Hans/server/tools/list-prompts) | prompt 描述列表 |
-| [listSkills](/zh-Hans/server/tools/list-skills) | skill 描述列表 |
-| [listResources](/zh-Hans/server/tools/list-resources) | resource 描述列表 |
+| 工具                                                  | 返回内容                   |
+| ----------------------------------------------------- | -------------------------- |
+| [listClients](/zh-Hans/server/tools/list-clients)     | 在线 client 摘要与连接信息 |
+| [listTools](/zh-Hans/server/tools/list-tools)         | tool 描述列表              |
+| [listPrompts](/zh-Hans/server/tools/list-prompts)     | prompt 描述列表            |
+| [listSkills](/zh-Hans/server/tools/list-skills)       | skill 描述列表             |
+| [listResources](/zh-Hans/server/tools/list-resources) | resource 描述列表          |
 
 ## 调用类工具
 
-| 工具 | 适用场景 |
-| --- | --- |
-| [callTools](/zh-Hans/server/tools/call-tools) | 已知 client ID 与 tool 名称 |
-| [getPrompt](/zh-Hans/server/tools/get-prompt) | 已知 client ID 与 prompt 名称 |
-| [callSkills](/zh-Hans/server/tools/call-skills) | 已知 client ID 与 skill 名称 |
-| [readResource](/zh-Hans/server/tools/read-resource) | 已知 client ID 与 resource URI |
-| [callClients](/zh-Hans/server/tools/call-clients) | 需要通用入口或多 client fan-out |
+| 工具                                                | 适用场景                        |
+| --------------------------------------------------- | ------------------------------- |
+| [callTools](/zh-Hans/server/tools/call-tools)       | 已知 client ID 与 tool 名称     |
+| [getPrompt](/zh-Hans/server/tools/get-prompt)       | 已知 client ID 与 prompt 名称   |
+| [callSkills](/zh-Hans/server/tools/call-skills)     | 已知 client ID 与 skill 名称    |
+| [readResource](/zh-Hans/server/tools/read-resource) | 已知 client ID 与 resource URI  |
+| [callClients](/zh-Hans/server/tools/call-clients)   | 需要通用入口或多 client fan-out |
 
 ## 共享入参
 
@@ -101,4 +101,3 @@ curl 'http://127.0.0.1:7070/client-01/skills/workspace/review/files?topic=mdp'
 ```
 
 这些路由会解析一个精确的 skill 节点，并直接返回 skill 内容，通常是 `text/markdown`。
-

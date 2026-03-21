@@ -34,4 +34,3 @@ status: MVP
 - 想浏览工作流或文档型能力
 - 需要静态 Markdown skill 或动态 skill resolver
 - 在调用 [callSkills](/zh-Hans/server/tools/call-skills) 之前先拿到 skill 名称
-

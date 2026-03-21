@@ -12,20 +12,20 @@ In the JavaScript SDK, you do not define MCP tools directly. You define MDP capa
 Use `exposeTool(name, handler, options?)` to publish a callable tool.
 
 ```ts
-client.exposeTool("searchDom", async ({ query }, context) => ({
+client.exposeTool('searchDom', async ({ query }, context) => ({
   query,
   matches: 3,
   authToken: context.auth?.token
 }), {
-  description: "Search the current page",
+  description: 'Search the current page',
   inputSchema: {
-    type: "object",
+    type: 'object',
     properties: {
-      query: { type: "string" }
+      query: { type: 'string' }
     },
-    required: ["query"]
+    required: ['query']
   }
-});
+})
 ```
 
 Tool metadata maps to the protocol descriptor shape:
@@ -39,18 +39,18 @@ Tool metadata maps to the protocol descriptor shape:
 Use `exposePrompt(name, handler, options?)` when the runtime provides prompt templates or prompt builders.
 
 ```ts
-client.exposePrompt("summarizeSelection", async () => ({
-  messages: [{ role: "user", content: "Summarize the active selection." }]
+client.exposePrompt('summarizeSelection', async () => ({
+  messages: [{ role: 'user', content: 'Summarize the active selection.' }]
 }), {
-  description: "Build a summarization prompt",
+  description: 'Build a summarization prompt',
   arguments: [
     {
-      name: "tone",
-      description: "Desired summary tone",
+      name: 'tone',
+      description: 'Desired summary tone',
       required: false
     }
   ]
-});
+})
 ```
 
 Prompt metadata uses:
@@ -64,16 +64,20 @@ Prompt metadata uses:
 Use `exposeResource(uri, handler, options)` for readable runtime state.
 
 ```ts
-client.exposeResource("webpage://active-tab/page-info", async () => ({
-  mimeType: "application/json",
-  text: JSON.stringify({
-    title: document.title,
-    url: window.location.href
-  }, null, 2)
+client.exposeResource('webpage://active-tab/page-info', async () => ({
+  mimeType: 'application/json',
+  text: JSON.stringify(
+    {
+      title: document.title,
+      url: window.location.href
+    },
+    null,
+    2
+  )
 }), {
-  name: "Current Page Info",
-  mimeType: "application/json"
-});
+  name: 'Current Page Info',
+  mimeType: 'application/json'
+})
 ```
 
 Resource metadata uses:

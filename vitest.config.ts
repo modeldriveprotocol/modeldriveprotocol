@@ -1,24 +1,24 @@
-import { fileURLToPath } from "node:url";
+import { fileURLToPath } from 'node:url'
 
-import { defineConfig } from "vitest/config";
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   resolve: {
     alias: {
-      "@modeldriveprotocol/protocol": fileURLToPath(
-        new URL("./packages/protocol/src/index.ts", import.meta.url)
+      '@modeldriveprotocol/protocol': fileURLToPath(
+        new URL('./packages/protocol/src/index.ts', import.meta.url)
       ),
-      "@modeldriveprotocol/client": fileURLToPath(
-        new URL("./packages/client/src/index.ts", import.meta.url)
+      '@modeldriveprotocol/client': fileURLToPath(
+        new URL('./packages/client/src/index.ts', import.meta.url)
       ),
-      "@modeldriveprotocol/server": fileURLToPath(
-        new URL("./packages/server/src/index.ts", import.meta.url)
+      '@modeldriveprotocol/server': fileURLToPath(
+        new URL('./packages/server/src/index.ts', import.meta.url)
       )
     }
   },
   test: {
-    include: ["packages/*/test/**/*.test.ts", "apps/*/test/**/*.test.ts"],
+    include: ['packages/*/test/**/*.test.ts', 'apps/*/test/**/*.test.ts'],
     clearMocks: true,
     restoreMocks: true
   }
-});
+})

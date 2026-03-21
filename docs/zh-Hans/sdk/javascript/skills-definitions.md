@@ -14,24 +14,24 @@ Skill 是具名的技能文档。
 
 ```ts
 client.exposeSkill(
-  "workspace/review",
+  'workspace/review',
   () =>
-    "# Workspace Review\n" +
-    "\n" +
-    "Review the workspace root.\n" +
-    "\n" +
-    "You can read `workspace/review/files` for file-level guidance."
-);
+    '# Workspace Review\n' +
+    '\n' +
+    'Review the workspace root.\n' +
+    '\n' +
+    'You can read `workspace/review/files` for file-level guidance.'
+)
 
 client.exposeSkill(
-  "workspace/review/files",
+  'workspace/review/files',
   (query, headers) =>
-    "# Workspace Review Files\n" +
-    "\n" +
-    `Topic: ${query.topic ?? "general"}\n` +
-    "\n" +
-    `Header: ${headers["x-review-scope"] ?? "none"}`
-);
+    '# Workspace Review Files\n' +
+    '\n' +
+    `Topic: ${query.topic ?? 'general'}\n` +
+    '\n' +
+    `Header: ${headers['x-review-scope'] ?? 'none'}`
+)
 ```
 
 当前 skill descriptor 的字段是：

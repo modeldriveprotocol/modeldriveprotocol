@@ -12,4 +12,3 @@ No. JavaScript is just one adapter path. The protocol is language-neutral and sh
 ## Why not generate one MCP tool per client capability?
 
 Because the set is dynamic. A stable bridge surface is easier to reason about, easier to keep compatible, and better suited to runtime-local procedures.
-

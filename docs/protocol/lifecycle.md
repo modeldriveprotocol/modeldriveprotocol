@@ -21,4 +21,3 @@ Server lifecycle:
 3. index capabilities
 4. route requests
 5. clean up on timeout or disconnect
-

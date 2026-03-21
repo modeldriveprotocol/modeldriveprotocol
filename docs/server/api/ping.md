@@ -7,16 +7,16 @@ status: Draft
 
 `ping` is the heartbeat event used by either side to confirm that the websocket session is still alive.
 
-| Event Type | Flow Direction |
-| --- | --- |
-| `ping` | Both directions |
+| Event Type | Flow Direction  |
+| ---------- | --------------- |
+| `ping`     | Both directions |
 
 ## Data Definition
 
 ```ts
 interface PingMessage {
-  type: "ping";
-  timestamp: number;
+  type: 'ping'
+  timestamp: number
 }
 ```
 

@@ -1,107 +1,116 @@
 <script setup lang="ts">
-import { useData, withBase } from "vitepress";
+import { useData, withBase } from 'vitepress'
 import {
+  type PropType,
   computed,
   defineComponent,
   h,
   onBeforeUnmount,
   onMounted,
   ref,
-  type PropType,
   watch
-} from "vue";
+} from 'vue'
 
-type TransportSchema = "ws" | "wss" | "http" | "https";
-type ConnectionStatus = "idle" | "connecting" | "connected" | "disconnecting" | "error";
-type ThemePreference = "light" | "dark" | "auto";
+type TransportSchema = 'ws' | 'wss' | 'http' | 'https'
+type ConnectionStatus =
+  | 'idle'
+  | 'connecting'
+  | 'connected'
+  | 'disconnecting'
+  | 'error'
+type ThemePreference = 'light' | 'dark' | 'auto'
 
 interface StoredConnection {
-  id: string;
-  name: string;
-  schema: TransportSchema;
-  host: string;
-  url: string;
-  token: string;
+  id: string
+  name: string
+  schema: TransportSchema
+  host: string
+  url: string
+  token: string
 }
 
 interface PlaygroundConnection extends StoredConnection {
-  status: ConnectionStatus;
-  detail: string;
+  status: ConnectionStatus
+  detail: string
 }
 
 interface PlaygroundClient {
-  connect(): Promise<void>;
-  register(): void;
-  disconnect(): Promise<void>;
-  exposeTool(name: string, handler: (...args: unknown[]) => unknown, options?: unknown): void;
+  connect(): Promise<void>
+  register(): void
+  disconnect(): Promise<void>
+  exposeTool(
+    name: string,
+    handler: (...args: unknown[]) => unknown,
+    options?: unknown
+  ): void
   exposeResource(
     uri: string,
     handler: (...args: unknown[]) => unknown,
     options: unknown
-  ): void;
+  ): void
 }
 
 interface MdpGlobal {
   createMdpClient(options: {
-    serverUrl: string;
-    auth?: { token: string };
+    serverUrl: string
+    auth?: { token: string }
     client: {
-      id: string;
-      name: string;
-      description: string;
-      platform: string;
-      metadata: Record<string, unknown>;
-    };
-  }): PlaygroundClient;
+      id: string
+      name: string
+      description: string
+      platform: string
+      metadata: Record<string, unknown>
+    }
+  }): PlaygroundClient
 }
 
 interface PlaygroundSession {
-  client: PlaygroundClient;
+  client: PlaygroundClient
 }
 
 interface DocsPageEntry {
-  title: string;
-  path: string;
-  section: string | null;
+  title: string
+  path: string
+  section: string | null
 }
 
 declare global {
   interface Window {
-    MDP?: MdpGlobal;
+    MDP?: MdpGlobal
   }
 }
 
-const STORAGE_KEY = "mdp-docs-playground-connections-v1";
-const DEFAULT_HOST = "127.0.0.1:7070";
-const SCHEMAS: TransportSchema[] = ["ws", "wss", "http", "https"];
-const APPEARANCE_KEY = "vitepress-theme-appearance";
-const EXTERNAL_URL_RE = /^(?:[a-z]+:|\/\/)/i;
-const THEME_PREFERENCES: ThemePreference[] = ["light", "dark", "auto"];
+const STORAGE_KEY = 'mdp-docs-playground-connections-v1'
+const DEFAULT_HOST = '127.0.0.1:7070'
+const SCHEMAS: TransportSchema[] = ['ws', 'wss', 'http', 'https']
+const APPEARANCE_KEY = 'vitepress-theme-appearance'
+const EXTERNAL_URL_RE = /^(?:[a-z]+:|\/\/)/i
+const THEME_PREFERENCES: ThemePreference[] = ['light', 'dark', 'auto']
 
 const ICONS = {
-  plus: "add",
-  connect: "link",
-  disconnect: "link_off",
-  refresh: "refresh",
-  reset: "restart_alt",
-  stack: "stacks",
-  activity: "toggle_on",
-  bolt: "bolt",
-  server: "dns",
-  sliders: "tune",
-  copy: "content_copy",
-  trash: "delete",
-  globe: "language",
-  shield: "shield",
-  fingerprint: "fingerprint",
-  chevron: "expand_more",
-  spark: "auto_awesome"
-} as const;
+  plus: 'add',
+  connect: 'link',
+  disconnect: 'link_off',
+  refresh: 'refresh',
+  reset: 'restart_alt',
+  stack: 'stacks',
+  activity: 'toggle_on',
+  bolt: 'bolt',
+  server: 'dns',
+  sliders: 'tune',
+  copy: 'content_copy',
+  trash: 'delete',
+  globe: 'language',
+  shield: 'shield',
+  fingerprint: 'fingerprint',
+  chevron: 'expand_more',
+  spark: 'auto_awesome'
+} as const
 
-type IconName = keyof typeof ICONS;
+type IconName = keyof typeof ICONS
 
 const UiIcon = defineComponent({
-  name: "UiIcon",
+  name: 'UiIcon',
   props: {
     name: {
       type: String as PropType<IconName>,
@@ -111,275 +120,293 @@ const UiIcon = defineComponent({
   setup(props) {
     return () =>
       h(
-        "span",
+        'span',
         {
-          class: "ui-icon material-symbols-rounded",
-          "aria-hidden": "true"
+          class: 'ui-icon material-symbols-rounded',
+          'aria-hidden': 'true'
         },
         ICONS[props.name]
-      );
+      )
   }
-});
+})
 
 const translations = {
-  "en-US": {
-    badge: "VitePress Layout",
-    title: "What is this",
+  'en-US': {
+    badge: 'VitePress Layout',
+    title: 'What is this',
     intro:
-      "Run one or more browser-side MDP clients directly inside the docs site. Each card maps to a target server and keeps the common transport settings in view.",
-    endpoint: "Endpoint",
-    addConnection: "Add connection",
-    connectAll: "Connect all",
-    disconnectAll: "Disconnect all",
-    reset: "Reset",
-    connections: "Connections",
-    total: "Total",
-    active: "Active",
-    ready: "Bundle",
-    readyValue: "Ready",
-    loadingValue: "Loading",
-    errorValue: "Error",
-    loadingBundle: "Loading browser client runtime…",
-    bundleLoaded: "Browser client runtime loaded. Connections can be opened now.",
-    bundleError: "Unable to load the browser client runtime.",
-    retryBundle: "Retry runtime",
-    capabilitiesTitle: "Available capabilities",
+      'Run one or more browser-side MDP clients directly inside the docs site. Each card maps to a target server and keeps the common transport settings in view.',
+    endpoint: 'Endpoint',
+    addConnection: 'Add connection',
+    connectAll: 'Connect all',
+    disconnectAll: 'Disconnect all',
+    reset: 'Reset',
+    connections: 'Connections',
+    total: 'Total',
+    active: 'Active',
+    ready: 'Bundle',
+    readyValue: 'Ready',
+    loadingValue: 'Loading',
+    errorValue: 'Error',
+    loadingBundle: 'Loading browser client runtime…',
+    bundleLoaded:
+      'Browser client runtime loaded. Connections can be opened now.',
+    bundleError: 'Unable to load the browser client runtime.',
+    retryBundle: 'Retry runtime',
+    capabilitiesTitle: 'Available capabilities',
     capabilitiesIntro:
-      "Each connected entry exposes docs-aware tools and resources for navigation, locale inspection, theme control, and page discovery.",
+      'Each connected entry exposes docs-aware tools and resources for navigation, locale inspection, theme control, and page discovery.',
     capabilities: [
       {
-        name: "getPlaygroundInfo",
-        description: "Return current route, locale, theme state, and resolved connection config."
+        name: 'getPlaygroundInfo',
+        description:
+          'Return current route, locale, theme state, and resolved connection config.'
       },
       {
-        name: "echoConnectionConfig",
-        description: "Echo arbitrary input together with the active connection settings."
+        name: 'echoConnectionConfig',
+        description:
+          'Echo arbitrary input together with the active connection settings.'
       },
       {
-        name: "navigateToPath",
-        description: "Schedule navigation to a target docs path without interrupting the response."
+        name: 'navigateToPath',
+        description:
+          'Schedule navigation to a target docs path without interrupting the response.'
       },
       {
-        name: "getSupportedLanguages",
-        description: "List locale labels, language codes, links, and which one is active."
+        name: 'getSupportedLanguages',
+        description:
+          'List locale labels, language codes, links, and which one is active.'
       },
       {
-        name: "setThemePreference",
-        description: "Switch the docs site between light, dark, and auto appearance."
+        name: 'setThemePreference',
+        description:
+          'Switch the docs site between light, dark, and auto appearance.'
       },
       {
-        name: "listPagesByPath",
-        description: "Return matching docs pages for a path prefix from the current locale tree."
+        name: 'listPagesByPath',
+        description:
+          'Return matching docs pages for a path prefix from the current locale tree.'
       },
       {
-        name: "playground://connections/<id>",
-        description: "Expose the current connection snapshot as JSON."
+        name: 'playground://connections/<id>',
+        description: 'Expose the current connection snapshot as JSON.'
       },
       {
-        name: "playground://site/pages",
-        description: "Expose the current locale page index as JSON."
+        name: 'playground://site/pages',
+        description: 'Expose the current locale page index as JSON.'
       }
     ],
-    cardResolvedUrl: "Resolved server URL",
-    cardClientId: "Client ID",
-    fieldName: "Connection name",
-    fieldSchema: "Schema",
-    fieldHost: "Host",
-    fieldUrl: "URL override",
-    fieldToken: "Auth token",
-    fieldUrlHint: "If set, URL override takes precedence over schema + host.",
-    fieldTokenHint: "Optional. Useful when the server expects a transport-carried token.",
-    advanced: "Advanced",
-    advancedConfigured: "Configured",
-    namePlaceholder: "Local dev server",
-    hostPlaceholder: "127.0.0.1:7070",
-    urlPlaceholder: "ws://127.0.0.1:7070",
-    tokenPlaceholder: "browser-session-token",
-    connect: "Connect",
-    disconnect: "Disconnect",
-    duplicate: "Duplicate",
-    remove: "Remove",
-    idle: "Idle",
-    connecting: "Connecting",
-    connected: "Connected",
-    disconnecting: "Disconnecting",
-    error: "Error",
-    idleDetail: "Ready to open an MDP connection.",
-    connectingDetail: "Opening transport and registering the browser client…",
-    disconnectingDetail: "Closing transport and unregistering the browser client…",
-    disconnectedDetail: "Connection closed.",
+    cardResolvedUrl: 'Resolved server URL',
+    cardClientId: 'Client ID',
+    fieldName: 'Connection name',
+    fieldSchema: 'Schema',
+    fieldHost: 'Host',
+    fieldUrl: 'URL override',
+    fieldToken: 'Auth token',
+    fieldUrlHint: 'If set, URL override takes precedence over schema + host.',
+    fieldTokenHint:
+      'Optional. Useful when the server expects a transport-carried token.',
+    advanced: 'Advanced',
+    advancedConfigured: 'Configured',
+    namePlaceholder: 'Local dev server',
+    hostPlaceholder: '127.0.0.1:7070',
+    urlPlaceholder: 'ws://127.0.0.1:7070',
+    tokenPlaceholder: 'browser-session-token',
+    connect: 'Connect',
+    disconnect: 'Disconnect',
+    duplicate: 'Duplicate',
+    remove: 'Remove',
+    idle: 'Idle',
+    connecting: 'Connecting',
+    connected: 'Connected',
+    disconnecting: 'Disconnecting',
+    error: 'Error',
+    idleDetail: 'Ready to open an MDP connection.',
+    connectingDetail: 'Opening transport and registering the browser client…',
+    disconnectingDetail:
+      'Closing transport and unregistering the browser client…',
+    disconnectedDetail: 'Connection closed.',
     connectedDetail: (url: string) => `Connected to ${url}.`,
-    invalidUrl: "The resolved URL must use ws, wss, http, or https.",
+    invalidUrl: 'The resolved URL must use ws, wss, http, or https.',
     defaultConnectionName: (index: number) => `Connection ${index}`,
-    copySuffix: "Copy",
+    copySuffix: 'Copy',
     note:
-      "Use the connection cards for quick local validation. Open Advanced only when you need URL override or auth.",
-    emptyState: "Add a connection to start configuring the playground."
+      'Use the connection cards for quick local validation. Open Advanced only when you need URL override or auth.',
+    emptyState: 'Add a connection to start configuring the playground.'
   },
-  "zh-Hans": {
-    badge: "VitePress 布局页",
-    title: "这是什么",
+  'zh-Hans': {
+    badge: 'VitePress 布局页',
+    title: '这是什么',
     intro:
-      "直接在文档站里运行一个或多个浏览器侧 MDP client。每张连接卡对应一个目标 server，常用 transport 配置都会保留在主视图里。",
-    endpoint: "连接地址",
-    addConnection: "新增连接",
-    connectAll: "全部连接",
-    disconnectAll: "全部断开",
-    reset: "重置",
-    connections: "连接配置",
-    total: "总数",
-    active: "已连接",
-    ready: "运行时",
-    readyValue: "已就绪",
-    loadingValue: "加载中",
-    errorValue: "异常",
-    loadingBundle: "正在加载浏览器 client 运行时…",
-    bundleLoaded: "浏览器 client 运行时已加载，可以开始建立连接。",
-    bundleError: "浏览器 client 运行时加载失败。",
-    retryBundle: "重试运行时",
-    capabilitiesTitle: "可用能力",
-    capabilitiesIntro: "每个已连接项都会注册一组文档站感知能力，用来做导航、语言、主题和页面发现。",
+      '直接在文档站里运行一个或多个浏览器侧 MDP client。每张连接卡对应一个目标 server，常用 transport 配置都会保留在主视图里。',
+    endpoint: '连接地址',
+    addConnection: '新增连接',
+    connectAll: '全部连接',
+    disconnectAll: '全部断开',
+    reset: '重置',
+    connections: '连接配置',
+    total: '总数',
+    active: '已连接',
+    ready: '运行时',
+    readyValue: '已就绪',
+    loadingValue: '加载中',
+    errorValue: '异常',
+    loadingBundle: '正在加载浏览器 client 运行时…',
+    bundleLoaded: '浏览器 client 运行时已加载，可以开始建立连接。',
+    bundleError: '浏览器 client 运行时加载失败。',
+    retryBundle: '重试运行时',
+    capabilitiesTitle: '可用能力',
+    capabilitiesIntro:
+      '每个已连接项都会注册一组文档站感知能力，用来做导航、语言、主题和页面发现。',
     capabilities: [
       {
-        name: "getPlaygroundInfo",
-        description: "返回当前路由、语言、主题状态和解析后的连接配置。"
+        name: 'getPlaygroundInfo',
+        description: '返回当前路由、语言、主题状态和解析后的连接配置。'
       },
       {
-        name: "echoConnectionConfig",
-        description: "回显任意输入，并附带当前连接配置。"
+        name: 'echoConnectionConfig',
+        description: '回显任意输入，并附带当前连接配置。'
       },
       {
-        name: "navigateToPath",
-        description: "跳转到指定文档路径，并在跳转前先返回调用结果。"
+        name: 'navigateToPath',
+        description: '跳转到指定文档路径，并在跳转前先返回调用结果。'
       },
       {
-        name: "getSupportedLanguages",
-        description: "列出支持的语言标签、语言代码、入口链接以及当前激活项。"
+        name: 'getSupportedLanguages',
+        description: '列出支持的语言标签、语言代码、入口链接以及当前激活项。'
       },
       {
-        name: "setThemePreference",
-        description: "切换文档站的浅色、深色或跟随系统主题。"
+        name: 'setThemePreference',
+        description: '切换文档站的浅色、深色或跟随系统主题。'
       },
       {
-        name: "listPagesByPath",
-        description: "根据路径前缀返回当前 locale 下匹配的文档页面。"
+        name: 'listPagesByPath',
+        description: '根据路径前缀返回当前 locale 下匹配的文档页面。'
       },
       {
-        name: "playground://connections/<id>",
-        description: "以 JSON resource 暴露当前连接快照。"
+        name: 'playground://connections/<id>',
+        description: '以 JSON resource 暴露当前连接快照。'
       },
       {
-        name: "playground://site/pages",
-        description: "以 JSON resource 暴露当前 locale 的页面索引。"
+        name: 'playground://site/pages',
+        description: '以 JSON resource 暴露当前 locale 的页面索引。'
       }
     ],
-    cardResolvedUrl: "最终 server URL",
-    cardClientId: "Client ID",
-    fieldName: "连接名称",
-    fieldSchema: "Schema",
-    fieldHost: "Host",
-    fieldUrl: "URL 覆盖",
-    fieldToken: "鉴权 Token",
-    fieldUrlHint: "如果填写 URL，会优先覆盖 schema + host 的组合结果。",
-    fieldTokenHint: "可选；当 server 依赖 transport token 时比较有用。",
-    advanced: "高级配置",
-    advancedConfigured: "已配置",
-    namePlaceholder: "本地开发环境",
-    hostPlaceholder: "127.0.0.1:7070",
-    urlPlaceholder: "ws://127.0.0.1:7070",
-    tokenPlaceholder: "browser-session-token",
-    connect: "连接",
-    disconnect: "断开",
-    duplicate: "复制",
-    remove: "删除",
-    idle: "空闲",
-    connecting: "连接中",
-    connected: "已连接",
-    disconnecting: "断开中",
-    error: "异常",
-    idleDetail: "可以开始建立 MDP 连接。",
-    connectingDetail: "正在打开 transport，并注册浏览器 client…",
-    disconnectingDetail: "正在关闭 transport，并注销浏览器 client…",
-    disconnectedDetail: "连接已关闭。",
+    cardResolvedUrl: '最终 server URL',
+    cardClientId: 'Client ID',
+    fieldName: '连接名称',
+    fieldSchema: 'Schema',
+    fieldHost: 'Host',
+    fieldUrl: 'URL 覆盖',
+    fieldToken: '鉴权 Token',
+    fieldUrlHint: '如果填写 URL，会优先覆盖 schema + host 的组合结果。',
+    fieldTokenHint: '可选；当 server 依赖 transport token 时比较有用。',
+    advanced: '高级配置',
+    advancedConfigured: '已配置',
+    namePlaceholder: '本地开发环境',
+    hostPlaceholder: '127.0.0.1:7070',
+    urlPlaceholder: 'ws://127.0.0.1:7070',
+    tokenPlaceholder: 'browser-session-token',
+    connect: '连接',
+    disconnect: '断开',
+    duplicate: '复制',
+    remove: '删除',
+    idle: '空闲',
+    connecting: '连接中',
+    connected: '已连接',
+    disconnecting: '断开中',
+    error: '异常',
+    idleDetail: '可以开始建立 MDP 连接。',
+    connectingDetail: '正在打开 transport，并注册浏览器 client…',
+    disconnectingDetail: '正在关闭 transport，并注销浏览器 client…',
+    disconnectedDetail: '连接已关闭。',
     connectedDetail: (url: string) => `已连接到 ${url}。`,
-    invalidUrl: "最终 URL 必须使用 ws、wss、http 或 https。",
+    invalidUrl: '最终 URL 必须使用 ws、wss、http 或 https。',
     defaultConnectionName: (index: number) => `连接 ${index}`,
-    copySuffix: "副本",
-    note: "适合做本地联调和文档能力验证。只有在需要 URL 覆盖或鉴权时再打开高级配置。",
-    emptyState: "新增一个连接后即可开始配置 playground。"
+    copySuffix: '副本',
+    note:
+      '适合做本地联调和文档能力验证。只有在需要 URL 覆盖或鉴权时再打开高级配置。',
+    emptyState: '新增一个连接后即可开始配置 playground。'
   }
-} as const;
+} as const
 
-const { isDark, lang, localeIndex, site, theme } = useData();
+const { isDark, lang, localeIndex, site, theme } = useData()
 
 const copy = computed(
-  () => translations[(lang.value === "zh-Hans" ? "zh-Hans" : "en-US") as "en-US" | "zh-Hans"]
-);
-const currentLocalePrefix = computed(() => (localeIndex.value === "root" ? "" : `/${localeIndex.value}`));
-const docsPageEntries = computed(() => collectDocsPageEntries());
+  () =>
+    translations[
+      (lang.value === 'zh-Hans' ? 'zh-Hans' : 'en-US') as 'en-US' | 'zh-Hans'
+    ]
+)
+const currentLocalePrefix = computed(
+  () => (localeIndex.value === 'root' ? '' : `/${localeIndex.value}`)
+)
+const docsPageEntries = computed(() => collectDocsPageEntries())
 
-const bundleState = ref<"loading" | "ready" | "error">("loading");
-const bundleError = ref("");
-const connections = ref<PlaygroundConnection[]>([createDefaultConnection(1)]);
-const sessions = new Map<string, PlaygroundSession>();
-const expandedSchemaConnectionId = ref<string | null>(null);
+const bundleState = ref<'loading' | 'ready' | 'error'>('loading')
+const bundleError = ref('')
+const connections = ref<PlaygroundConnection[]>([createDefaultConnection(1)])
+const sessions = new Map<string, PlaygroundSession>()
+const expandedSchemaConnectionId = ref<string | null>(null)
 
-let bundlePromise: Promise<void> | null = null;
+let bundlePromise: Promise<void> | null = null
 
-const totalConnections = computed(() => connections.value.length);
+const totalConnections = computed(() => connections.value.length)
 const activeConnections = computed(
-  () => connections.value.filter((connection) => connection.status === "connected").length
-);
+  () =>
+    connections.value.filter((connection) => connection.status === 'connected')
+      .length
+)
 
 watch(
   connections,
   (value) => {
-    if (typeof window === "undefined") {
-      return;
+    if (typeof window === 'undefined') {
+      return
     }
 
     window.localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify(value.map((connection) => serializeConnection(connection)))
-    );
+    )
   },
   { deep: true }
-);
+)
 
 onMounted(async () => {
-  connections.value = loadConnections();
-  document.addEventListener("click", handleDocumentClick);
-  await initializeBundle();
-});
+  connections.value = loadConnections()
+  document.addEventListener('click', handleDocumentClick)
+  await initializeBundle()
+})
 
 onBeforeUnmount(() => {
-  document.removeEventListener("click", handleDocumentClick);
+  document.removeEventListener('click', handleDocumentClick)
   for (const session of sessions.values()) {
-    void session.client.disconnect().catch(() => undefined);
+    void session.client.disconnect().catch(() => undefined)
   }
-  sessions.clear();
-});
+  sessions.clear()
+})
 
 function handleDocumentClick(event: MouseEvent): void {
-  const target = event.target;
+  const target = event.target
 
-  if (!(target instanceof Element) || target.closest(".schema-selector")) {
-    return;
+  if (!(target instanceof Element) || target.closest('.schema-selector')) {
+    return
   }
 
-  expandedSchemaConnectionId.value = null;
+  expandedSchemaConnectionId.value = null
 }
 
 async function initializeBundle(): Promise<void> {
-  bundleState.value = "loading";
-  bundleError.value = "";
+  bundleState.value = 'loading'
+  bundleError.value = ''
 
   try {
-    await loadBundle();
-    bundleState.value = "ready";
+    await loadBundle()
+    bundleState.value = 'ready'
   } catch (error) {
-    bundleState.value = "error";
-    bundleError.value = normalizeError(error);
+    bundleState.value = 'error'
+    bundleError.value = normalizeError(error)
   }
 }
 
@@ -387,64 +414,75 @@ function createDefaultConnection(index: number): PlaygroundConnection {
   return {
     id: createConnectionId(),
     name: copy.value.defaultConnectionName(index),
-    schema: "ws",
+    schema: 'ws',
     host: DEFAULT_HOST,
-    url: "",
-    token: "",
-    status: "idle",
+    url: '',
+    token: '',
+    status: 'idle',
     detail: copy.value.idleDetail
-  };
+  }
 }
 
 function loadConnections(): PlaygroundConnection[] {
-  if (typeof window === "undefined") {
-    return [createDefaultConnection(1)];
+  if (typeof window === 'undefined') {
+    return [createDefaultConnection(1)]
   }
 
   try {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
+    const saved = window.localStorage.getItem(STORAGE_KEY)
 
     if (!saved) {
-      return [createDefaultConnection(1)];
+      return [createDefaultConnection(1)]
     }
 
-    const parsed = JSON.parse(saved) as unknown;
+    const parsed = JSON.parse(saved) as unknown
     const items = Array.isArray(parsed)
       ? parsed
-      : parsed && typeof parsed === "object" && Array.isArray((parsed as { connections?: unknown[] }).connections)
-        ? (parsed as { connections: unknown[] }).connections
-        : [];
+      : parsed && typeof parsed === 'object' &&
+          Array.isArray((parsed as { connections?: unknown[] }).connections)
+      ? (parsed as { connections: unknown[] }).connections
+      : []
 
     if (items.length === 0) {
-      return [createDefaultConnection(1)];
+      return [createDefaultConnection(1)]
     }
 
-    return items.map((item, index) => hydrateConnection(item, index));
+    return items.map((item, index) => hydrateConnection(item, index))
   } catch {
-    return [createDefaultConnection(1)];
+    return [createDefaultConnection(1)]
   }
 }
 
-function hydrateConnection(value: unknown, index: number): PlaygroundConnection {
-  const record = value && typeof value === "object" ? (value as Partial<StoredConnection>) : {};
-  const schema = SCHEMAS.includes(record.schema as TransportSchema) ? record.schema : "ws";
+function hydrateConnection(
+  value: unknown,
+  index: number
+): PlaygroundConnection {
+  const record = value && typeof value === 'object'
+    ? (value as Partial<StoredConnection>)
+    : {}
+  const schema = SCHEMAS.includes(record.schema as TransportSchema)
+    ? record.schema
+    : 'ws'
 
   return {
-    id: typeof record.id === "string" && record.id ? record.id : createConnectionId(),
-    name:
-      typeof record.name === "string" && record.name
-        ? record.name
-        : copy.value.defaultConnectionName(index + 1),
+    id: typeof record.id === 'string' && record.id
+      ? record.id
+      : createConnectionId(),
+    name: typeof record.name === 'string' && record.name
+      ? record.name
+      : copy.value.defaultConnectionName(index + 1),
     schema,
-    host: typeof record.host === "string" ? record.host : DEFAULT_HOST,
-    url: typeof record.url === "string" ? record.url : "",
-    token: typeof record.token === "string" ? record.token : "",
-    status: "idle",
+    host: typeof record.host === 'string' ? record.host : DEFAULT_HOST,
+    url: typeof record.url === 'string' ? record.url : '',
+    token: typeof record.token === 'string' ? record.token : '',
+    status: 'idle',
     detail: copy.value.idleDetail
-  };
+  }
 }
 
-function serializeConnection(connection: PlaygroundConnection): StoredConnection {
+function serializeConnection(
+  connection: PlaygroundConnection
+): StoredConnection {
   return {
     id: connection.id,
     name: connection.name,
@@ -452,497 +490,538 @@ function serializeConnection(connection: PlaygroundConnection): StoredConnection
     host: connection.host,
     url: connection.url,
     token: connection.token
-  };
+  }
 }
 
 function createConnectionId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
+  if (
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+  ) {
+    return crypto.randomUUID()
   }
 
-  return Math.random().toString(36).slice(2, 10);
+  return Math.random().toString(36).slice(2, 10)
 }
 
 function loadBundle(): Promise<void> {
-  if (typeof window === "undefined") {
-    return Promise.resolve();
+  if (typeof window === 'undefined') {
+    return Promise.resolve()
   }
 
   if (window.MDP?.createMdpClient) {
-    return Promise.resolve();
+    return Promise.resolve()
   }
 
   if (!bundlePromise) {
     bundlePromise = new Promise<void>((resolve, reject) => {
       const existing = document.querySelector<HTMLScriptElement>(
         'script[data-mdp-playground-runtime="true"]'
-      );
+      )
 
       if (existing) {
-        if (existing.dataset.loaded === "true") {
+        if (existing.dataset.loaded === 'true') {
           if (window.MDP?.createMdpClient) {
-            resolve();
+            resolve()
           } else {
-            reject(new Error(copy.value.bundleError));
+            reject(new Error(copy.value.bundleError))
           }
-          return;
+          return
         }
 
-        if (existing.dataset.failed === "true") {
-          reject(new Error(copy.value.bundleError));
-          return;
+        if (existing.dataset.failed === 'true') {
+          reject(new Error(copy.value.bundleError))
+          return
         }
 
-        existing.addEventListener("load", () => resolve(), { once: true });
-        existing.addEventListener("error", () => reject(new Error(copy.value.bundleError)), {
-          once: true
-        });
-        return;
+        existing.addEventListener('load', () => resolve(), { once: true })
+        existing.addEventListener(
+          'error',
+          () => reject(new Error(copy.value.bundleError)),
+          {
+            once: true
+          }
+        )
+        return
       }
 
-      const script = document.createElement("script");
-      script.src = withBase("/assets/modeldriveprotocol-client.global.js");
-      script.async = true;
-      script.dataset.mdpPlaygroundRuntime = "true";
+      const script = document.createElement('script')
+      script.src = withBase('/assets/modeldriveprotocol-client.global.js')
+      script.async = true
+      script.dataset.mdpPlaygroundRuntime = 'true'
       script.addEventListener(
-        "load",
+        'load',
         () => {
-          script.dataset.loaded = "true";
-          resolve();
+          script.dataset.loaded = 'true'
+          resolve()
         },
         { once: true }
-      );
+      )
       script.addEventListener(
-        "error",
+        'error',
         () => {
-          script.dataset.failed = "true";
-          reject(new Error(copy.value.bundleError));
+          script.dataset.failed = 'true'
+          reject(new Error(copy.value.bundleError))
         },
         {
           once: true
         }
-      );
-      document.head.append(script);
+      )
+      document.head.append(script)
     })
       .then(() => {
         if (!window.MDP?.createMdpClient) {
-          throw new Error(copy.value.bundleError);
+          throw new Error(copy.value.bundleError)
         }
       })
       .catch((error) => {
-        bundlePromise = null;
-        throw error;
-      });
+        bundlePromise = null
+        throw error
+      })
   }
 
-  return bundlePromise;
+  return bundlePromise
 }
 
 function statusLabel(status: ConnectionStatus): string {
   switch (status) {
-    case "connecting":
-      return copy.value.connecting;
-    case "connected":
-      return copy.value.connected;
-    case "disconnecting":
-      return copy.value.disconnecting;
-    case "error":
-      return copy.value.error;
+    case 'connecting':
+      return copy.value.connecting
+    case 'connected':
+      return copy.value.connected
+    case 'disconnecting':
+      return copy.value.disconnecting
+    case 'error':
+      return copy.value.error
     default:
-      return copy.value.idle;
+      return copy.value.idle
   }
 }
 
 function resolvedUrl(connection: PlaygroundConnection): string {
-  const explicitUrl = connection.url.trim();
+  const explicitUrl = connection.url.trim()
 
   if (explicitUrl) {
-    return explicitUrl;
+    return explicitUrl
   }
 
-  return `${connection.schema}://${connection.host.trim() || DEFAULT_HOST}`;
+  return `${connection.schema}://${connection.host.trim() || DEFAULT_HOST}`
 }
 
 function clientId(connection: PlaygroundConnection): string {
-  return `mdp-playground-${connection.id}`;
+  return `mdp-playground-${connection.id}`
 }
 
 function statusIcon(status: ConnectionStatus): IconName {
   switch (status) {
-    case "connecting":
-      return "connect";
-    case "connected":
-      return "activity";
-    case "disconnecting":
-      return "disconnect";
-    case "error":
-      return "shield";
+    case 'connecting':
+      return 'connect'
+    case 'connected':
+      return 'activity'
+    case 'disconnecting':
+      return 'disconnect'
+    case 'error':
+      return 'shield'
     default:
-      return "server";
+      return 'server'
   }
 }
 
 function canEdit(connection: PlaygroundConnection): boolean {
-  return connection.status === "idle" || connection.status === "error";
+  return connection.status === 'idle' || connection.status === 'error'
 }
 
 function canConnect(connection: PlaygroundConnection): boolean {
   return (
-    bundleState.value === "ready" &&
-    connection.status !== "connected" &&
-    connection.status !== "connecting" &&
-    connection.status !== "disconnecting"
-  );
+    bundleState.value === 'ready' &&
+    connection.status !== 'connected' &&
+    connection.status !== 'connecting' &&
+    connection.status !== 'disconnecting'
+  )
 }
 
 function canToggleConnection(connection: PlaygroundConnection): boolean {
   return (
-    connection.status !== "connecting" &&
-    connection.status !== "disconnecting" &&
-    (bundleState.value === "ready" || connection.status === "connected")
-  );
+    connection.status !== 'connecting' &&
+    connection.status !== 'disconnecting' &&
+    (bundleState.value === 'ready' || connection.status === 'connected')
+  )
 }
 
 function hasAdvancedConfig(connection: PlaygroundConnection): boolean {
-  return Boolean(connection.url.trim() || connection.token.trim());
+  return Boolean(connection.url.trim() || connection.token.trim())
 }
 
 function schemaIcon(schema: TransportSchema): IconName {
   switch (schema) {
-    case "http":
-      return "globe";
-    case "https":
-      return "shield";
-    case "wss":
-      return "shield";
+    case 'http':
+      return 'globe'
+    case 'https':
+      return 'shield'
+    case 'wss':
+      return 'shield'
     default:
-      return "connect";
+      return 'connect'
   }
 }
 
 function toggleSchemaMenu(connectionId: string): void {
   expandedSchemaConnectionId.value =
-    expandedSchemaConnectionId.value === connectionId ? null : connectionId;
+    expandedSchemaConnectionId.value === connectionId ? null : connectionId
 }
 
 function setSchema(connectionId: string, schema: TransportSchema): void {
-  updateConnection(connectionId, { schema });
-  expandedSchemaConnectionId.value = null;
+  updateConnection(connectionId, { schema })
+  expandedSchemaConnectionId.value = null
 }
 
 function toggleConnection(connectionId: string, enabled: boolean): void {
   if (enabled) {
-    void connectConnection(connectionId);
-    return;
+    void connectConnection(connectionId)
+    return
   }
 
-  void disconnectConnection(connectionId);
+  void disconnectConnection(connectionId)
 }
 
-function updateConnection(connectionId: string, patch: Partial<StoredConnection>): void {
-  const connection = findConnection(connectionId);
+function updateConnection(
+  connectionId: string,
+  patch: Partial<StoredConnection>
+): void {
+  const connection = findConnection(connectionId)
 
   if (!connection || !canEdit(connection)) {
-    return;
+    return
   }
 
-  Object.assign(connection, patch);
+  Object.assign(connection, patch)
 
-  if (connection.status === "error") {
-    connection.status = "idle";
-    connection.detail = copy.value.idleDetail;
+  if (connection.status === 'error') {
+    connection.status = 'idle'
+    connection.detail = copy.value.idleDetail
   }
 }
 
 function addConnection(): void {
-  connections.value.push(createDefaultConnection(connections.value.length + 1));
+  connections.value.push(createDefaultConnection(connections.value.length + 1))
 }
 
 function removeConnection(connectionId: string): void {
   if (connections.value.length === 1) {
-    return;
+    return
   }
 
-  const connection = findConnection(connectionId);
+  const connection = findConnection(connectionId)
 
   if (!connection || !canEdit(connection)) {
-    return;
+    return
   }
 
-  connections.value = connections.value.filter((item) => item.id !== connectionId);
+  connections.value = connections.value.filter((item) =>
+    item.id !== connectionId
+  )
 }
 
 async function resetConnections(): Promise<void> {
-  await disconnectAll(true);
-  connections.value = [createDefaultConnection(1)];
+  await disconnectAll(true)
+  connections.value = [createDefaultConnection(1)]
 }
 
 async function disconnectAll(silent = false): Promise<void> {
   for (const connection of connections.value) {
-    if (sessions.has(connection.id) || connection.status === "connected") {
-      await disconnectConnection(connection.id, silent);
+    if (sessions.has(connection.id) || connection.status === 'connected') {
+      await disconnectConnection(connection.id, silent)
     }
   }
 }
 
 async function connectConnection(connectionId: string): Promise<void> {
-  const connection = findConnection(connectionId);
+  const connection = findConnection(connectionId)
 
   if (!connection || !canConnect(connection)) {
-    return;
+    return
   }
 
-  const targetUrl = resolvedUrl(connection);
+  const targetUrl = resolvedUrl(connection)
 
   try {
-    assertSupportedUrl(targetUrl);
+    assertSupportedUrl(targetUrl)
   } catch (error) {
-    connection.status = "error";
-    connection.detail = normalizeError(error);
-    return;
+    connection.status = 'error'
+    connection.detail = normalizeError(error)
+    return
   }
 
   if (!window.MDP?.createMdpClient) {
-    connection.status = "error";
-    connection.detail = copy.value.bundleError;
-    return;
+    connection.status = 'error'
+    connection.detail = copy.value.bundleError
+    return
   }
 
-  connection.status = "connecting";
-  connection.detail = copy.value.connectingDetail;
+  connection.status = 'connecting'
+  connection.detail = copy.value.connectingDetail
 
   const client = window.MDP.createMdpClient({
     serverUrl: targetUrl,
-    ...(connection.token.trim() ? { auth: { token: connection.token.trim() } } : {}),
+    ...(connection.token.trim()
+      ? { auth: { token: connection.token.trim() } }
+      : {}),
     client: {
       id: clientId(connection),
       name: connection.name.trim() || copy.value.defaultConnectionName(1),
-      description: "MDP docs playground browser client",
-      platform: "web",
+      description: 'MDP docs playground browser client',
+      platform: 'web',
       metadata: {
-        source: "vitepress-playground",
+        source: 'vitepress-playground',
         route: window.location.pathname
       }
     }
-  });
+  })
 
-  registerDemoCapabilities(client, connection);
+  registerDemoCapabilities(client, connection)
 
   try {
-    await client.connect();
-    client.register();
-    sessions.set(connectionId, { client });
-    connection.status = "connected";
-    connection.detail = copy.value.connectedDetail(targetUrl);
+    await client.connect()
+    client.register()
+    sessions.set(connectionId, { client })
+    connection.status = 'connected'
+    connection.detail = copy.value.connectedDetail(targetUrl)
   } catch (error) {
     try {
-      await client.disconnect();
+      await client.disconnect()
     } catch {
       // Best effort cleanup only.
     }
-    connection.status = "error";
-    connection.detail = normalizeError(error);
+    connection.status = 'error'
+    connection.detail = normalizeError(error)
   }
 }
 
-async function disconnectConnection(connectionId: string, silent = false): Promise<void> {
-  const connection = findConnection(connectionId);
-  const session = sessions.get(connectionId);
+async function disconnectConnection(
+  connectionId: string,
+  silent = false
+): Promise<void> {
+  const connection = findConnection(connectionId)
+  const session = sessions.get(connectionId)
 
   if (!connection) {
-    return;
+    return
   }
 
   if (!session) {
-    connection.status = "idle";
-    connection.detail = silent ? copy.value.idleDetail : copy.value.disconnectedDetail;
-    return;
+    connection.status = 'idle'
+    connection.detail = silent
+      ? copy.value.idleDetail
+      : copy.value.disconnectedDetail
+    return
   }
 
-  connection.status = "disconnecting";
-  connection.detail = copy.value.disconnectingDetail;
+  connection.status = 'disconnecting'
+  connection.detail = copy.value.disconnectingDetail
 
   try {
-    await session.client.disconnect();
-    connection.status = "idle";
-    connection.detail = silent ? copy.value.idleDetail : copy.value.disconnectedDetail;
+    await session.client.disconnect()
+    connection.status = 'idle'
+    connection.detail = silent
+      ? copy.value.idleDetail
+      : copy.value.disconnectedDetail
   } catch (error) {
-    connection.status = "error";
-    connection.detail = normalizeError(error);
+    connection.status = 'error'
+    connection.detail = normalizeError(error)
   } finally {
-    sessions.delete(connectionId);
+    sessions.delete(connectionId)
   }
 }
 
 function collectDocsPageEntries(): DocsPageEntry[] {
-  const entries: DocsPageEntry[] = [];
-  const seen = new Set<string>();
+  const entries: DocsPageEntry[] = []
+  const seen = new Set<string>()
 
-  const addEntry = (title: string, path: string, section: string | null): void => {
-    const normalizedPath = normalizeDocsPath(path);
+  const addEntry = (
+    title: string,
+    path: string,
+    section: string | null
+  ): void => {
+    const normalizedPath = normalizeDocsPath(path)
 
     if (!normalizedPath || seen.has(normalizedPath)) {
-      return;
+      return
     }
 
-    seen.add(normalizedPath);
+    seen.add(normalizedPath)
     entries.push({
       title,
       path: normalizedPath,
       section
-    });
-  };
+    })
+  }
 
   const walk = (value: unknown, section: string | null = null): void => {
     if (Array.isArray(value)) {
-      value.forEach((item) => walk(item, section));
-      return;
+      value.forEach((item) => walk(item, section))
+      return
     }
 
-    if (!value || typeof value !== "object") {
-      return;
+    if (!value || typeof value !== 'object') {
+      return
     }
 
     const record = value as {
-      text?: string;
-      link?: string;
-      items?: unknown[];
-    };
-
-    if (typeof record.link === "string" && !EXTERNAL_URL_RE.test(record.link)) {
-      addEntry(record.text || record.link, record.link, section);
+      text?: string
+      link?: string
+      items?: unknown[]
     }
 
-    const nextSection =
-      typeof record.text === "string" && !record.link ? record.text : section;
+    if (typeof record.link === 'string' && !EXTERNAL_URL_RE.test(record.link)) {
+      addEntry(record.text || record.link, record.link, section)
+    }
+
+    const nextSection = typeof record.text === 'string' && !record.link
+      ? record.text
+      : section
 
     if (Array.isArray(record.items)) {
-      walk(record.items, nextSection);
+      walk(record.items, nextSection)
     }
-  };
-
-  walk(theme.value.nav);
-
-  const sidebar = theme.value.sidebar;
-  if (sidebar && typeof sidebar === "object") {
-    Object.values(sidebar as Record<string, unknown>).forEach((group) => walk(group));
   }
 
-  return entries;
+  walk(theme.value.nav)
+
+  const sidebar = theme.value.sidebar
+  if (sidebar && typeof sidebar === 'object') {
+    Object.values(sidebar as Record<string, unknown>).forEach((group) =>
+      walk(group)
+    )
+  }
+
+  return entries
 }
 
 function normalizeDocsPath(value: string): string {
-  const trimmed = value.trim();
+  const trimmed = value.trim()
 
   if (!trimmed || EXTERNAL_URL_RE.test(trimmed)) {
-    return trimmed;
+    return trimmed
   }
 
-  const withLeadingSlash = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-  const withoutHash = withLeadingSlash.replace(/[?#].*$/, "");
+  const withLeadingSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+  const withoutHash = withLeadingSlash.replace(/[?#].*$/, '')
   const normalized = withoutHash
-    .replace(/\/index(?:\.html)?$/i, "/")
-    .replace(/\.html$/i, "")
-    .replace(/\/{2,}/g, "/");
+    .replace(/\/index(?:\.html)?$/i, '/')
+    .replace(/\.html$/i, '')
+    .replace(/\/{2,}/g, '/')
 
-  if (normalized === "/") {
-    return normalized;
+  if (normalized === '/') {
+    return normalized
   }
 
-  return normalized.endsWith("/") ? normalized.slice(0, -1) : normalized;
+  return normalized.endsWith('/') ? normalized.slice(0, -1) : normalized
 }
 
 function resolveDocsPath(input: string): string {
-  const normalized = normalizeDocsPath(input);
+  const normalized = normalizeDocsPath(input)
 
   if (!normalized) {
-    throw new Error("Path is required.");
+    throw new Error('Path is required.')
   }
 
   if (EXTERNAL_URL_RE.test(normalized)) {
-    return normalized;
+    return normalized
   }
 
-  const localeCandidate =
-    currentLocalePrefix.value &&
-    !normalized.startsWith(`${currentLocalePrefix.value}/`) &&
-    normalized !== currentLocalePrefix.value
-      ? `${currentLocalePrefix.value}${normalized === "/" ? "" : normalized}`
-      : normalized;
+  const localeCandidate = currentLocalePrefix.value &&
+      !normalized.startsWith(`${currentLocalePrefix.value}/`) &&
+      normalized !== currentLocalePrefix.value
+    ? `${currentLocalePrefix.value}${normalized === '/' ? '' : normalized}`
+    : normalized
 
-  const knownPaths = docsPageEntries.value.map((entry) => entry.path);
+  const knownPaths = docsPageEntries.value.map((entry) => entry.path)
   const targetPath =
-    typeof localeCandidate === "string" && knownPaths.includes(localeCandidate)
+    typeof localeCandidate === 'string' && knownPaths.includes(localeCandidate)
       ? localeCandidate
-      : normalized;
+      : normalized
 
-  return withBase(targetPath === "/" ? "/" : targetPath);
+  return withBase(targetPath === '/' ? '/' : targetPath)
 }
 
 function resolveDocsPrefix(input?: string): string {
-  const normalized = normalizeDocsPath(input || currentLocalePrefix.value || "/");
+  const normalized = normalizeDocsPath(
+    input || currentLocalePrefix.value || '/'
+  )
 
   if (
     !currentLocalePrefix.value ||
     normalized === currentLocalePrefix.value ||
     normalized.startsWith(`${currentLocalePrefix.value}/`)
   ) {
-    return normalized;
+    return normalized
   }
 
-  const localeCandidate = `${currentLocalePrefix.value}${normalized === "/" ? "" : normalized}`;
+  const localeCandidate = `${currentLocalePrefix.value}${
+    normalized === '/' ? '' : normalized
+  }`
   const hasLocaleMatches = docsPageEntries.value.some(
-    (entry) => entry.path === localeCandidate || entry.path.startsWith(`${localeCandidate}/`)
-  );
+    (entry) =>
+      entry.path === localeCandidate ||
+      entry.path.startsWith(`${localeCandidate}/`)
+  )
 
-  return hasLocaleMatches ? localeCandidate : normalized;
+  return hasLocaleMatches ? localeCandidate : normalized
 }
 
 function getSupportedLanguages(): Array<Record<string, unknown>> {
   return Object.entries(site.value.locales || {}).map(([key, locale]) => {
-    const config = locale && typeof locale === "object" ? (locale as Record<string, unknown>) : {};
-    const link = typeof config.link === "string" ? config.link : key === "root" ? "/" : `/${key}/`;
+    const config = locale && typeof locale === 'object'
+      ? (locale as Record<string, unknown>)
+      : {}
+    const link = typeof config.link === 'string'
+      ? config.link
+      : key === 'root'
+      ? '/'
+      : `/${key}/`
 
     return {
       key,
-      label: typeof config.label === "string" ? config.label : key,
-      lang: typeof config.lang === "string" ? config.lang : site.value.lang,
+      label: typeof config.label === 'string' ? config.label : key,
+      lang: typeof config.lang === 'string' ? config.lang : site.value.lang,
       path: withBase(link),
       active: key === localeIndex.value
-    };
-  });
+    }
+  })
 }
 
 function getThemePreference(): ThemePreference {
-  if (typeof window === "undefined") {
-    return "auto";
+  if (typeof window === 'undefined') {
+    return 'auto'
   }
 
-  const stored = window.localStorage.getItem(APPEARANCE_KEY);
-  return isThemePreference(stored) ? stored : "auto";
+  const stored = window.localStorage.getItem(APPEARANCE_KEY)
+  return isThemePreference(stored) ? stored : 'auto'
 }
 
 function isThemePreference(value: unknown): value is ThemePreference {
-  return typeof value === "string" && THEME_PREFERENCES.includes(value as ThemePreference);
+  return typeof value === 'string' &&
+    THEME_PREFERENCES.includes(value as ThemePreference)
 }
 
 function resolveDarkMode(preference: ThemePreference): boolean {
-  if (preference === "auto") {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  if (preference === 'auto') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
   }
 
-  return preference === "dark";
+  return preference === 'dark'
 }
 
-function applyThemePreference(preference: ThemePreference): Record<string, unknown> {
-  window.localStorage.setItem(APPEARANCE_KEY, preference);
-  const dark = resolveDarkMode(preference);
-  document.documentElement.classList.toggle("dark", dark);
+function applyThemePreference(
+  preference: ThemePreference
+): Record<string, unknown> {
+  window.localStorage.setItem(APPEARANCE_KEY, preference)
+  const dark = resolveDarkMode(preference)
+  document.documentElement.classList.toggle('dark', dark)
 
   return {
     preference,
-    appliedTheme: dark ? "dark" : "light"
-  };
+    appliedTheme: dark ? 'dark' : 'light'
+  }
 }
 
 function getPageContext(): Record<string, unknown> {
@@ -953,167 +1032,173 @@ function getPageContext(): Record<string, unknown> {
     lang: document.documentElement.lang || lang.value,
     locale: localeIndex.value,
     themePreference: getThemePreference(),
-    activeTheme: isDark.value ? "dark" : "light"
-  };
+    activeTheme: isDark.value ? 'dark' : 'light'
+  }
 }
 
-function registerDemoCapabilities(client: PlaygroundClient, connection: PlaygroundConnection): void {
+function registerDemoCapabilities(
+  client: PlaygroundClient,
+  connection: PlaygroundConnection
+): void {
   client.exposeTool(
-    "getPlaygroundInfo",
+    'getPlaygroundInfo',
     async (_args, context) => ({
       page: getPageContext(),
       connection: describeConnection(connection),
-      authToken:
-        context && typeof context === "object" && "auth" in context
-          ? (context as { auth?: { token?: string } }).auth?.token ?? null
-          : null
+      authToken: context && typeof context === 'object' && 'auth' in context
+        ? (context as { auth?: { token?: string } }).auth?.token ?? null
+        : null
     }),
     {
-      description: "Return docs page metadata and the active playground connection config."
+      description:
+        'Return docs page metadata and the active playground connection config.'
     }
-  );
+  )
 
   client.exposeTool(
-    "echoConnectionConfig",
+    'echoConnectionConfig',
     async (args, context) => ({
       args: args ?? null,
       connection: describeConnection(connection),
-      authToken:
-        context && typeof context === "object" && "auth" in context
-          ? (context as { auth?: { token?: string } }).auth?.token ?? null
-          : null
+      authToken: context && typeof context === 'object' && 'auth' in context
+        ? (context as { auth?: { token?: string } }).auth?.token ?? null
+        : null
     }),
     {
-      description: "Echo arbitrary input together with the active playground connection config.",
+      description:
+        'Echo arbitrary input together with the active playground connection config.',
       inputSchema: {
-        type: "object",
+        type: 'object',
         additionalProperties: true
       }
     }
-  );
+  )
 
   client.exposeTool(
-    "navigateToPath",
+    'navigateToPath',
     async (args) => {
-      const requestedPath =
-        args && typeof args === "object" && "path" in args ? (args as { path?: unknown }).path : null;
+      const requestedPath = args && typeof args === 'object' && 'path' in args
+        ? (args as { path?: unknown }).path
+        : null
 
-      if (typeof requestedPath !== "string" || !requestedPath.trim()) {
-        throw new Error("path must be a non-empty string");
+      if (typeof requestedPath !== 'string' || !requestedPath.trim()) {
+        throw new Error('path must be a non-empty string')
       }
 
-      const target = resolveDocsPath(requestedPath);
+      const target = resolveDocsPath(requestedPath)
       window.setTimeout(() => {
-        window.location.assign(target);
-      }, 80);
+        window.location.assign(target)
+      }, 80)
 
       return {
         scheduled: true,
         target
-      };
+      }
     },
     {
-      description: "Navigate the docs site to a target path.",
+      description: 'Navigate the docs site to a target path.',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
           path: {
-            type: "string",
-            description: "Docs path to open, for example /playground or /zh-Hans/guide/introduction"
+            type: 'string',
+            description:
+              'Docs path to open, for example /playground or /zh-Hans/guide/introduction'
           }
         },
-        required: ["path"],
+        required: ['path'],
         additionalProperties: false
       }
     }
-  );
+  )
 
   client.exposeTool(
-    "getSupportedLanguages",
+    'getSupportedLanguages',
     async () => ({
       current: localeIndex.value,
       items: getSupportedLanguages()
     }),
     {
-      description: "Return the language entries configured in the docs site."
+      description: 'Return the language entries configured in the docs site.'
     }
-  );
+  )
 
   client.exposeTool(
-    "setThemePreference",
+    'setThemePreference',
     async (args) => {
-      const requestedTheme =
-        args && typeof args === "object" && "theme" in args
-          ? (args as { theme?: unknown }).theme
-          : null;
+      const requestedTheme = args && typeof args === 'object' && 'theme' in args
+        ? (args as { theme?: unknown }).theme
+        : null
 
       if (!isThemePreference(requestedTheme)) {
-        throw new Error("theme must be one of: light, dark, auto");
+        throw new Error('theme must be one of: light, dark, auto')
       }
 
-      return applyThemePreference(requestedTheme);
+      return applyThemePreference(requestedTheme)
     },
     {
-      description: "Switch the docs appearance preference.",
+      description: 'Switch the docs appearance preference.',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
           theme: {
-            type: "string",
+            type: 'string',
             enum: THEME_PREFERENCES
           }
         },
-        required: ["theme"],
+        required: ['theme'],
         additionalProperties: false
       }
     }
-  );
+  )
 
   client.exposeTool(
-    "listPagesByPath",
+    'listPagesByPath',
     async (args) => {
       const requestedPrefix =
-        args && typeof args === "object" && "prefix" in args
+        args && typeof args === 'object' && 'prefix' in args
           ? (args as { prefix?: unknown }).prefix
-          : undefined;
+          : undefined
       const prefix =
-        typeof requestedPrefix === "string" && requestedPrefix.trim()
+        typeof requestedPrefix === 'string' && requestedPrefix.trim()
           ? resolveDocsPrefix(requestedPrefix)
-          : resolveDocsPrefix();
+          : resolveDocsPrefix()
 
       const items = docsPageEntries.value.filter((entry) => {
-        if (prefix === "/") {
-          return true;
+        if (prefix === '/') {
+          return true
         }
 
-        return entry.path === prefix || entry.path.startsWith(`${prefix}/`);
-      });
+        return entry.path === prefix || entry.path.startsWith(`${prefix}/`)
+      })
 
       return {
         prefix,
         count: items.length,
         items
-      };
+      }
     },
     {
-      description: "List docs pages by path prefix from the current locale navigation tree.",
+      description:
+        'List docs pages by path prefix from the current locale navigation tree.',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
           prefix: {
-            type: "string",
-            description: "Optional docs path prefix, for example /guide or /zh-Hans/reference"
+            type: 'string',
+            description:
+              'Optional docs path prefix, for example /guide or /zh-Hans/reference'
           }
         },
         additionalProperties: false
       }
     }
-  );
+  )
 
   client.exposeResource(
     `playground://connections/${connection.id}`,
     async () => ({
-      mimeType: "application/json",
+      mimeType: 'application/json',
       text: JSON.stringify(
         {
           page: getPageContext(),
@@ -1125,15 +1210,15 @@ function registerDemoCapabilities(client: PlaygroundClient, connection: Playgrou
     }),
     {
       name: `Playground Connection ${connection.name.trim() || connection.id}`,
-      description: "Serialized playground connection snapshot.",
-      mimeType: "application/json"
+      description: 'Serialized playground connection snapshot.',
+      mimeType: 'application/json'
     }
-  );
+  )
 
   client.exposeResource(
-    "playground://site/pages",
+    'playground://site/pages',
     async () => ({
-      mimeType: "application/json",
+      mimeType: 'application/json',
       text: JSON.stringify(
         {
           locale: localeIndex.value,
@@ -1144,14 +1229,16 @@ function registerDemoCapabilities(client: PlaygroundClient, connection: Playgrou
       )
     }),
     {
-      name: "Playground Site Pages",
-      description: "Serialized docs page index for the current locale.",
-      mimeType: "application/json"
+      name: 'Playground Site Pages',
+      description: 'Serialized docs page index for the current locale.',
+      mimeType: 'application/json'
     }
-  );
+  )
 }
 
-function describeConnection(connection: PlaygroundConnection): Record<string, unknown> {
+function describeConnection(
+  connection: PlaygroundConnection
+): Record<string, unknown> {
   return {
     id: connection.id,
     name: connection.name.trim() || copy.value.defaultConnectionName(1),
@@ -1160,28 +1247,30 @@ function describeConnection(connection: PlaygroundConnection): Record<string, un
     url: connection.url.trim() || null,
     resolvedUrl: resolvedUrl(connection),
     tokenConfigured: Boolean(connection.token.trim())
-  };
-}
-
-function assertSupportedUrl(value: string): void {
-  const parsed = new URL(value);
-  const protocol = parsed.protocol.replace(":", "");
-
-  if (!SCHEMAS.includes(protocol as TransportSchema)) {
-    throw new Error(copy.value.invalidUrl);
   }
 }
 
-function findConnection(connectionId: string): PlaygroundConnection | undefined {
-  return connections.value.find((connection) => connection.id === connectionId);
+function assertSupportedUrl(value: string): void {
+  const parsed = new URL(value)
+  const protocol = parsed.protocol.replace(':', '')
+
+  if (!SCHEMAS.includes(protocol as TransportSchema)) {
+    throw new Error(copy.value.invalidUrl)
+  }
+}
+
+function findConnection(
+  connectionId: string
+): PlaygroundConnection | undefined {
+  return connections.value.find((connection) => connection.id === connectionId)
 }
 
 function normalizeError(error: unknown): string {
   if (error instanceof Error) {
-    return error.message;
+    return error.message
   }
 
-  return String(error);
+  return String(error)
 }
 </script>
 
@@ -1210,11 +1299,11 @@ function normalizeError(error: unknown): string {
               <span class="summary-label">{{ copy.ready }}</span>
               <strong class="summary-value">
                 {{
-                  bundleState === "ready"
-                    ? copy.readyValue
-                    : bundleState === "error"
-                      ? copy.errorValue
-                      : copy.loadingValue
+                  bundleState === 'ready'
+                  ? copy.readyValue
+                  : bundleState === 'error'
+                  ? copy.errorValue
+                  : copy.loadingValue
                 }}
               </strong>
             </div>
@@ -1280,28 +1369,31 @@ function normalizeError(error: unknown): string {
                     class="icon-button"
                     :title="copy.remove"
                     :aria-label="copy.remove"
-                    :disabled="connections.length === 1 || !canEdit(connection)"
+                    :disabled="connections.length === 1 ||
+                    !canEdit(connection)"
                     @click="removeConnection(connection.id)"
                   >
                     <UiIcon name="trash" />
                   </button>
                   <label
                     class="switch"
-                    :title="connection.status === 'connected' ? copy.disconnect : copy.connect"
+                    :title="connection.status === 'connected'
+                    ? copy.disconnect
+                    : copy.connect"
                   >
                     <input
                       type="checkbox"
                       :checked="connection.status === 'connected'"
                       :disabled="!canToggleConnection(connection)"
-                      @change="
-                        toggleConnection(
-                          connection.id,
-                          ($event.target as HTMLInputElement).checked
-                        )
-                      "
-                    />
+                      @change="toggleConnection(
+                        connection.id,
+                        ($event
+                          .target as HTMLInputElement)
+                          .checked
+                      )"
+                    >
                     <span class="switch-track">
-                      <span class="switch-thumb"></span>
+                      <span class="switch-thumb" />
                     </span>
                   </label>
                 </div>
@@ -1318,11 +1410,14 @@ function normalizeError(error: unknown): string {
                       type="button"
                       class="schema-trigger"
                       :class="{
-                        'schema-trigger--open': expandedSchemaConnectionId === connection.id
+                        'schema-trigger--open':
+                          expandedSchemaConnectionId ===
+                            connection.id
                       }"
                       :title="`${copy.fieldSchema}: ${connection.schema.toUpperCase()}`"
                       :aria-label="`${copy.fieldSchema}: ${connection.schema.toUpperCase()}`"
-                      :aria-expanded="expandedSchemaConnectionId === connection.id"
+                      :aria-expanded="expandedSchemaConnectionId ===
+                      connection.id"
                       :disabled="!canEdit(connection)"
                       @click="toggleSchemaMenu(connection.id)"
                     >
@@ -1331,21 +1426,30 @@ function normalizeError(error: unknown): string {
                     <div
                       class="schema-options"
                       :class="{
-                        'schema-options--open': expandedSchemaConnectionId === connection.id
+                        'schema-options--open':
+                          expandedSchemaConnectionId ===
+                            connection.id
                       }"
                       :aria-label="copy.fieldSchema"
-                      :aria-hidden="expandedSchemaConnectionId !== connection.id"
+                      :aria-hidden="expandedSchemaConnectionId !==
+                      connection.id"
                     >
                       <button
                         v-for="schema in SCHEMAS"
                         :key="schema"
                         type="button"
                         class="schema-option"
-                        :class="{ 'schema-option--active': connection.schema === schema }"
+                        :class="{
+                          'schema-option--active':
+                            connection.schema === schema
+                        }"
                         :title="schema.toUpperCase()"
                         :aria-label="schema.toUpperCase()"
                         :disabled="!canEdit(connection)"
-                        @click="setSchema(connection.id, schema)"
+                        @click="setSchema(
+                          connection.id,
+                          schema
+                        )"
                       >
                         <UiIcon :name="schemaIcon(schema)" />
                       </button>
@@ -1358,12 +1462,12 @@ function normalizeError(error: unknown): string {
                       :title="copy.fieldHost"
                       :placeholder="copy.hostPlaceholder"
                       :disabled="!canEdit(connection)"
-                      @input="
-                        updateConnection(connection.id, {
-                          host: ($event.target as HTMLInputElement).value
-                        })
-                      "
-                    />
+                      @input="updateConnection(connection.id, {
+                        host: ($event
+                          .target as HTMLInputElement)
+                          .value
+                      })"
+                    >
                   </label>
                 </div>
               </div>
@@ -1375,7 +1479,10 @@ function normalizeError(error: unknown): string {
                       <UiIcon name="sliders" />
                       {{ copy.advanced }}
                     </span>
-                    <span v-if="hasAdvancedConfig(connection)" class="advanced-badge">
+                    <span
+                      v-if="hasAdvancedConfig(connection)"
+                      class="advanced-badge"
+                    >
                       {{ copy.advancedConfigured }}
                     </span>
                     <UiIcon name="chevron" />
@@ -1389,12 +1496,12 @@ function normalizeError(error: unknown): string {
                       :value="connection.url"
                       :placeholder="copy.urlPlaceholder"
                       :disabled="!canEdit(connection)"
-                      @input="
-                        updateConnection(connection.id, {
-                          url: ($event.target as HTMLInputElement).value
-                        })
-                      "
-                    />
+                      @input="updateConnection(connection.id, {
+                        url: ($event
+                          .target as HTMLInputElement)
+                          .value
+                      })"
+                    >
                     <small>{{ copy.fieldUrlHint }}</small>
                   </label>
 
@@ -1404,12 +1511,12 @@ function normalizeError(error: unknown): string {
                       :value="connection.token"
                       :placeholder="copy.tokenPlaceholder"
                       :disabled="!canEdit(connection)"
-                      @input="
-                        updateConnection(connection.id, {
-                          token: ($event.target as HTMLInputElement).value
-                        })
-                      "
-                    />
+                      @input="updateConnection(connection.id, {
+                        token: ($event
+                          .target as HTMLInputElement)
+                          .value
+                      })"
+                    >
                     <small>{{ copy.fieldTokenHint }}</small>
                   </label>
                 </div>
@@ -1424,8 +1531,12 @@ function normalizeError(error: unknown): string {
               <UiIcon name="spark" />
               {{ copy.title }}
             </p>
-            <p class="section-copy">{{ copy.intro }}</p>
-            <p class="sidebar-note">{{ copy.note }}</p>
+            <p class="section-copy">
+              {{ copy.intro }}
+            </p>
+            <p class="sidebar-note">
+              {{ copy.note }}
+            </p>
           </section>
 
           <section class="capabilities panel">
@@ -1434,21 +1545,33 @@ function normalizeError(error: unknown): string {
                 <UiIcon name="spark" />
                 {{ copy.capabilitiesTitle }}
               </p>
-              <span class="capability-count">{{ copy.capabilities.length }}</span>
+              <span class="capability-count">{{
+                copy.capabilities.length
+              }}</span>
             </div>
             <div>
-              <p class="section-copy">{{ copy.capabilitiesIntro }}</p>
+              <p class="section-copy">
+                {{ copy.capabilitiesIntro }}
+              </p>
               <ul class="capability-list">
-                <li v-for="capability in copy.capabilities" :key="capability.name">
+                <li
+                  v-for="capability in copy.capabilities"
+                  :key="capability.name"
+                >
                   <strong class="capability-name">{{ capability.name }}</strong>
-                  <span class="capability-description">{{ capability.description }}</span>
+                  <span class="capability-description">{{
+                    capability.description
+                  }}</span>
                 </li>
               </ul>
             </div>
             <div v-if="bundleState === 'error'" class="capability-warning">
               {{ bundleError || copy.bundleError }}
             </div>
-            <div v-else-if="bundleState === 'loading'" class="capability-status">
+            <div
+              v-else-if="bundleState === 'loading'"
+              class="capability-status"
+            >
               <UiIcon name="bolt" />
               {{ copy.loadingBundle }}
             </div>
@@ -1465,8 +1588,8 @@ function normalizeError(error: unknown): string {
 
 <style scoped>
 .playground-shell {
-  --playground-paper: rgba(255, 255, 255, 0.78);
-  --playground-line: rgba(24, 36, 43, 0.12);
+  --playground-paper: rgba(255, 255, 255, .78);
+  --playground-line: rgba(24, 36, 43, .12);
   --playground-ink: #16252d;
   --playground-muted: #59707a;
   --playground-accent: #0f766e;
@@ -1475,38 +1598,46 @@ function normalizeError(error: unknown): string {
   --playground-danger: #b42318;
   --playground-control-height: 36px;
   --playground-bg:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.18), transparent 32%),
-    radial-gradient(circle at top right, rgba(180, 83, 9, 0.16), transparent 28%),
+    radial-gradient(
+    circle at top left,
+    rgba(15, 118, 110, .18),
+    transparent 32%
+  ),
+    radial-gradient(
+    circle at top right,
+    rgba(180, 83, 9, .16),
+    transparent 28%
+  ),
     linear-gradient(180deg, #f6f2e7 0%, #eef5f4 100%);
-  --playground-panel-shadow: 0 6px 18px rgba(22, 37, 45, 0.04);
-  --playground-card-shadow: 0 2px 8px rgba(22, 37, 45, 0.03);
-  --playground-button-border: rgba(22, 37, 45, 0.14);
-  --playground-button-bg: rgba(255, 255, 255, 0.82);
-  --playground-button-hover-border: rgba(15, 118, 110, 0.28);
-  --playground-section-icon-bg: rgba(15, 118, 110, 0.1);
-  --playground-runtime-ready-border: rgba(15, 118, 110, 0.22);
-  --playground-runtime-error-border: rgba(180, 35, 24, 0.24);
-  --playground-empty-bg: rgba(255, 255, 255, 0.56);
-  --playground-card-border: rgba(22, 37, 45, 0.1);
-  --playground-card-bg: rgba(255, 255, 255, 0.74);
-  --playground-card-connected-border: rgba(15, 118, 110, 0.22);
-  --playground-card-error-border: rgba(180, 35, 24, 0.24);
-  --playground-status-bg: rgba(15, 118, 110, 0.1);
-  --playground-switch-border: rgba(22, 37, 45, 0.16);
-  --playground-switch-bg: rgba(255, 255, 255, 0.8);
+  --playground-panel-shadow: 0 6px 18px rgba(22, 37, 45, .04);
+  --playground-card-shadow: 0 2px 8px rgba(22, 37, 45, .03);
+  --playground-button-border: rgba(22, 37, 45, .14);
+  --playground-button-bg: rgba(255, 255, 255, .82);
+  --playground-button-hover-border: rgba(15, 118, 110, .28);
+  --playground-section-icon-bg: rgba(15, 118, 110, .1);
+  --playground-runtime-ready-border: rgba(15, 118, 110, .22);
+  --playground-runtime-error-border: rgba(180, 35, 24, .24);
+  --playground-empty-bg: rgba(255, 255, 255, .56);
+  --playground-card-border: rgba(22, 37, 45, .1);
+  --playground-card-bg: rgba(255, 255, 255, .74);
+  --playground-card-connected-border: rgba(15, 118, 110, .22);
+  --playground-card-error-border: rgba(180, 35, 24, .24);
+  --playground-status-bg: rgba(15, 118, 110, .1);
+  --playground-switch-border: rgba(22, 37, 45, .16);
+  --playground-switch-bg: rgba(255, 255, 255, .8);
   --playground-switch-thumb-bg: #ffffff;
-  --playground-switch-thumb-shadow: 0 2px 6px rgba(22, 37, 45, 0.14);
-  --playground-switch-checked-bg: rgba(15, 118, 110, 0.18);
-  --playground-switch-checked-border: rgba(15, 118, 110, 0.28);
-  --playground-schema-active-border: rgba(15, 118, 110, 0.26);
-  --playground-schema-active-bg: rgba(15, 118, 110, 0.14);
-  --playground-input-border: rgba(22, 37, 45, 0.14);
-  --playground-input-bg: rgba(255, 255, 255, 0.82);
-  --playground-input-focus-border: rgba(15, 118, 110, 0.5);
-  --playground-input-focus-ring: 0 0 0 4px rgba(15, 118, 110, 0.12);
-  --playground-divider: rgba(22, 37, 45, 0.12);
-  --playground-disabled-bg: rgba(235, 240, 240, 0.72);
-  --playground-disabled-ink: rgba(22, 37, 45, 0.62);
+  --playground-switch-thumb-shadow: 0 2px 6px rgba(22, 37, 45, .14);
+  --playground-switch-checked-bg: rgba(15, 118, 110, .18);
+  --playground-switch-checked-border: rgba(15, 118, 110, .28);
+  --playground-schema-active-border: rgba(15, 118, 110, .26);
+  --playground-schema-active-bg: rgba(15, 118, 110, .14);
+  --playground-input-border: rgba(22, 37, 45, .14);
+  --playground-input-bg: rgba(255, 255, 255, .82);
+  --playground-input-focus-border: rgba(15, 118, 110, .5);
+  --playground-input-focus-ring: 0 0 0 4px rgba(15, 118, 110, .12);
+  --playground-divider: rgba(22, 37, 45, .12);
+  --playground-disabled-bg: rgba(235, 240, 240, .72);
+  --playground-disabled-ink: rgba(22, 37, 45, .62);
   height: calc(100vh - var(--vp-nav-height));
   margin-top: var(--vp-nav-height);
   padding: 12px 18px 18px;
@@ -1533,11 +1664,7 @@ function normalizeError(error: unknown): string {
   flex: none;
   font-size: 18px;
   line-height: 1;
-  font-variation-settings:
-    "FILL" 0,
-    "wght" 400,
-    "GRAD" 0,
-    "opsz" 20;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
 }
 
 .summary-strip {
@@ -1577,10 +1704,10 @@ function normalizeError(error: unknown): string {
 .section-label,
 .field-label,
 .advanced-title {
-  font-family: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
+  font-family: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.72rem;
+  letter-spacing: .12em;
+  font-size: .72rem;
 }
 
 .summary-label,
@@ -1593,7 +1720,7 @@ function normalizeError(error: unknown): string {
   display: block;
   margin-top: 4px;
   font-size: 1.3rem;
-  letter-spacing: -0.04em;
+  letter-spacing: -.04em;
 }
 
 .playground-main {
@@ -1632,7 +1759,7 @@ function normalizeError(error: unknown): string {
 .section-heading h2 {
   margin: 0;
   font-size: 1.2rem;
-  letter-spacing: -0.03em;
+  letter-spacing: -.03em;
 }
 
 .section-heading-icon {
@@ -1668,10 +1795,10 @@ function normalizeError(error: unknown): string {
   color: var(--playground-ink);
   cursor: pointer;
   transition:
-    transform 0.16s ease,
-    border-color 0.16s ease,
-    background-color 0.16s ease,
-    color 0.16s ease;
+    transform .16s ease,
+    border-color .16s ease,
+    background-color .16s ease,
+    color .16s ease;
 }
 
 .icon-button .ui-icon,
@@ -1690,7 +1817,7 @@ function normalizeError(error: unknown): string {
 .icon-button:disabled,
 .schema-trigger:disabled,
 .schema-option:disabled {
-  opacity: 0.45;
+  opacity: .45;
   cursor: not-allowed;
   transform: none;
 }
@@ -1723,7 +1850,7 @@ function normalizeError(error: unknown): string {
 }
 
 .sidebar-note {
-  font-size: 0.88rem;
+  font-size: .88rem;
 }
 
 .capabilities-heading {
@@ -1738,9 +1865,9 @@ function normalizeError(error: unknown): string {
   border-radius: 999px;
   background: var(--playground-status-bg);
   color: var(--playground-accent-strong);
-  font-family: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
+  font-family: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
+  font-size: .72rem;
+  letter-spacing: .08em;
 }
 
 .capability-list {
@@ -1757,19 +1884,19 @@ function normalizeError(error: unknown): string {
   padding: 10px 12px;
   border: 1px solid var(--playground-line);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, .42);
 }
 
 .capability-name {
-  font-family: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
-  font-size: 0.76rem;
+  font-family: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
+  font-size: .76rem;
   line-height: 1.35;
   color: var(--playground-accent-strong);
 }
 
 .capability-description {
   line-height: 1.45;
-  font-size: 0.86rem;
+  font-size: .86rem;
 }
 
 .capability-warning,
@@ -1778,7 +1905,7 @@ function normalizeError(error: unknown): string {
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid var(--playground-line);
-  background: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, .42);
 }
 
 .capability-warning {
@@ -1846,14 +1973,14 @@ function normalizeError(error: unknown): string {
   border-radius: 999px;
   background: var(--playground-status-bg);
   color: var(--playground-accent-strong);
-  font-size: 0.74rem;
+  font-size: .74rem;
   font-weight: 600;
 }
 
 .card-title {
   margin: 0;
-  font-family: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
-  font-size: 0.84rem;
+  font-family: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
+  font-size: .84rem;
   line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
@@ -1887,9 +2014,7 @@ function normalizeError(error: unknown): string {
   border-radius: 999px;
   border: 1px solid var(--playground-switch-border);
   background: var(--playground-switch-bg);
-  transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease;
+  transition: background-color .18s ease, border-color .18s ease;
 }
 
 .switch-thumb {
@@ -1898,7 +2023,7 @@ function normalizeError(error: unknown): string {
   border-radius: 999px;
   background: var(--playground-switch-thumb-bg);
   box-shadow: var(--playground-switch-thumb-shadow);
-  transition: transform 0.18s ease;
+  transition: transform .18s ease;
 }
 
 .switch input:checked + .switch-track {
@@ -1911,7 +2036,7 @@ function normalizeError(error: unknown): string {
 }
 
 .switch input:disabled + .switch-track {
-  opacity: 0.45;
+  opacity: .45;
 }
 
 .endpoint-block {
@@ -1924,7 +2049,7 @@ function normalizeError(error: unknown): string {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.8rem;
+  font-size: .8rem;
   font-weight: 600;
 }
 
@@ -1963,10 +2088,7 @@ function normalizeError(error: unknown): string {
   pointer-events: none;
   transform: translateX(-6px);
   transform-origin: left center;
-  transition:
-    max-width 0.2s ease,
-    opacity 0.16s ease,
-    transform 0.16s ease;
+  transition: max-width .2s ease, opacity .16s ease, transform .16s ease;
 }
 
 .schema-options--open {
@@ -2002,8 +2124,8 @@ function normalizeError(error: unknown): string {
   padding: 0 0 0 10px;
   display: inline-flex;
   align-items: center;
-  font-family: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
-  font-size: 0.8rem;
+  font-family: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
+  font-size: .8rem;
   color: var(--playground-muted);
   white-space: nowrap;
 }
@@ -2016,7 +2138,7 @@ function normalizeError(error: unknown): string {
   outline: none;
   background: transparent;
   color: var(--playground-ink);
-  font-size: 0.92rem;
+  font-size: .92rem;
 }
 
 .host-shell input {
@@ -2045,7 +2167,7 @@ function normalizeError(error: unknown): string {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  font-size: 0.82rem;
+  font-size: .82rem;
   font-weight: 600;
   color: var(--playground-muted);
 }
@@ -2063,13 +2185,13 @@ function normalizeError(error: unknown): string {
   border-radius: 999px;
   background: var(--playground-status-bg);
   color: var(--playground-accent-strong);
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
+  font-size: .7rem;
+  letter-spacing: .08em;
   text-transform: uppercase;
 }
 
 .advanced-summary > .ui-icon:last-child {
-  transition: transform 0.18s ease;
+  transition: transform .18s ease;
 }
 
 .advanced-panel[open] .advanced-summary > .ui-icon:last-child {
@@ -2088,7 +2210,7 @@ function normalizeError(error: unknown): string {
 }
 
 .field span {
-  font-size: 0.82rem;
+  font-size: .82rem;
   font-weight: 600;
 }
 
@@ -2099,9 +2221,7 @@ function normalizeError(error: unknown): string {
   min-height: var(--playground-control-height);
   padding: 0 11px;
   line-height: calc(var(--playground-control-height) - 2px);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: border-color .2s ease, box-shadow .2s ease;
 }
 
 .field input:focus {
@@ -2117,7 +2237,7 @@ function normalizeError(error: unknown): string {
 
 .field small {
   line-height: 1.35;
-  font-size: 0.76rem;
+  font-size: .76rem;
 }
 
 @media (min-width: 720px) {
@@ -2196,8 +2316,8 @@ function normalizeError(error: unknown): string {
 
 <style>
 html.dark .playground-shell {
-  --playground-paper: rgba(15, 23, 28, 0.82);
-  --playground-line: rgba(148, 163, 184, 0.18);
+  --playground-paper: rgba(15, 23, 28, .82);
+  --playground-line: rgba(148, 163, 184, .18);
   --playground-ink: #e5eef0;
   --playground-muted: #9bb0b8;
   --playground-accent: #2dd4bf;
@@ -2205,43 +2325,51 @@ html.dark .playground-shell {
   --playground-warning: #f59e0b;
   --playground-danger: #f87171;
   --playground-bg:
-    radial-gradient(circle at top left, rgba(45, 212, 191, 0.16), transparent 32%),
-    radial-gradient(circle at top right, rgba(245, 158, 11, 0.12), transparent 28%),
+    radial-gradient(
+    circle at top left,
+    rgba(45, 212, 191, .16),
+    transparent 32%
+  ),
+    radial-gradient(
+    circle at top right,
+    rgba(245, 158, 11, .12),
+    transparent 28%
+  ),
     linear-gradient(180deg, #071217 0%, #0b1a20 100%);
-  --playground-panel-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
-  --playground-card-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
-  --playground-button-border: rgba(148, 163, 184, 0.22);
-  --playground-button-bg: rgba(15, 23, 28, 0.88);
-  --playground-button-hover-border: rgba(45, 212, 191, 0.44);
-  --playground-section-icon-bg: rgba(45, 212, 191, 0.14);
-  --playground-runtime-ready-border: rgba(45, 212, 191, 0.32);
-  --playground-runtime-error-border: rgba(248, 113, 113, 0.32);
-  --playground-empty-bg: rgba(10, 19, 24, 0.72);
-  --playground-card-border: rgba(148, 163, 184, 0.16);
-  --playground-card-bg: rgba(11, 26, 32, 0.78);
-  --playground-card-connected-border: rgba(45, 212, 191, 0.28);
-  --playground-card-error-border: rgba(248, 113, 113, 0.3);
-  --playground-status-bg: rgba(45, 212, 191, 0.14);
-  --playground-switch-border: rgba(148, 163, 184, 0.22);
-  --playground-switch-bg: rgba(17, 32, 38, 0.94);
+  --playground-panel-shadow: 0 10px 28px rgba(0, 0, 0, .28);
+  --playground-card-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+  --playground-button-border: rgba(148, 163, 184, .22);
+  --playground-button-bg: rgba(15, 23, 28, .88);
+  --playground-button-hover-border: rgba(45, 212, 191, .44);
+  --playground-section-icon-bg: rgba(45, 212, 191, .14);
+  --playground-runtime-ready-border: rgba(45, 212, 191, .32);
+  --playground-runtime-error-border: rgba(248, 113, 113, .32);
+  --playground-empty-bg: rgba(10, 19, 24, .72);
+  --playground-card-border: rgba(148, 163, 184, .16);
+  --playground-card-bg: rgba(11, 26, 32, .78);
+  --playground-card-connected-border: rgba(45, 212, 191, .28);
+  --playground-card-error-border: rgba(248, 113, 113, .3);
+  --playground-status-bg: rgba(45, 212, 191, .14);
+  --playground-switch-border: rgba(148, 163, 184, .22);
+  --playground-switch-bg: rgba(17, 32, 38, .94);
   --playground-switch-thumb-bg: #dceef0;
-  --playground-switch-thumb-shadow: 0 2px 8px rgba(0, 0, 0, 0.32);
-  --playground-switch-checked-bg: rgba(45, 212, 191, 0.22);
-  --playground-switch-checked-border: rgba(45, 212, 191, 0.42);
-  --playground-schema-active-border: rgba(45, 212, 191, 0.38);
-  --playground-schema-active-bg: rgba(45, 212, 191, 0.18);
-  --playground-input-border: rgba(148, 163, 184, 0.22);
-  --playground-input-bg: rgba(15, 23, 28, 0.88);
-  --playground-input-focus-border: rgba(45, 212, 191, 0.56);
-  --playground-input-focus-ring: 0 0 0 4px rgba(45, 212, 191, 0.16);
-  --playground-divider: rgba(148, 163, 184, 0.16);
-  --playground-disabled-bg: rgba(29, 46, 52, 0.72);
-  --playground-disabled-ink: rgba(229, 238, 240, 0.5);
+  --playground-switch-thumb-shadow: 0 2px 8px rgba(0, 0, 0, .32);
+  --playground-switch-checked-bg: rgba(45, 212, 191, .22);
+  --playground-switch-checked-border: rgba(45, 212, 191, .42);
+  --playground-schema-active-border: rgba(45, 212, 191, .38);
+  --playground-schema-active-bg: rgba(45, 212, 191, .18);
+  --playground-input-border: rgba(148, 163, 184, .22);
+  --playground-input-bg: rgba(15, 23, 28, .88);
+  --playground-input-focus-border: rgba(45, 212, 191, .56);
+  --playground-input-focus-ring: 0 0 0 4px rgba(45, 212, 191, .16);
+  --playground-divider: rgba(148, 163, 184, .16);
+  --playground-disabled-bg: rgba(29, 46, 52, .72);
+  --playground-disabled-ink: rgba(229, 238, 240, .5);
 }
 
 html.dark .playground-shell .capability-list li,
 html.dark .playground-shell .capability-warning,
 html.dark .playground-shell .capability-status {
-  background: rgba(15, 23, 28, 0.46);
+  background: rgba(15, 23, 28, .46);
 }
 </style>

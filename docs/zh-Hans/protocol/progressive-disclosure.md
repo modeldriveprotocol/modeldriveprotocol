@@ -19,24 +19,24 @@ MDP 中的渐进式披露，应该建模成一棵 skill 文档树，而不是一
 
 ```ts
 client.exposeSkill(
-  "workspace/review",
+  'workspace/review',
   () =>
-    "# Workspace Review\n" +
-    "\n" +
-    "Review the workspace root.\n" +
-    "\n" +
-    "You can read `workspace/review/files` for file-level guidance."
-);
+    '# Workspace Review\n' +
+    '\n' +
+    'Review the workspace root.\n' +
+    '\n' +
+    'You can read `workspace/review/files` for file-level guidance.'
+)
 
 client.exposeSkill(
-  "workspace/review/files",
+  'workspace/review/files',
   (query, headers) =>
-    "# Workspace Review Files\n" +
-    "\n" +
-    `Topic: ${query.topic ?? "general"}\n` +
-    "\n" +
-    `Header: ${headers["x-review-scope"] ?? "none"}`
-);
+    '# Workspace Review Files\n' +
+    '\n' +
+    `Topic: ${query.topic ?? 'general'}\n` +
+    '\n' +
+    `Header: ${headers['x-review-scope'] ?? 'none'}`
+)
 ```
 
 渐进式披露的单位，就是 skill 名称本身：

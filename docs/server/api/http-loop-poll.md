@@ -47,12 +47,11 @@ Status `204 No Content`:
 
 ## Error cases
 
-| Status | Shape | When it happens |
-| --- | --- | --- |
-| `404` | empty body | Missing or unknown session ID |
-| `400` | `{ "error": string }` | Malformed HTTP loop request |
+| Status | Shape                 | When it happens               |
+| ------ | --------------------- | ----------------------------- |
+| `404`  | empty body            | Missing or unknown session ID |
+| `400`  | `{ "error": string }` | Malformed HTTP loop request   |
 
 ## Notes
 
 - Each `/poll` request refreshes the session's transport auth and last-seen time.
-

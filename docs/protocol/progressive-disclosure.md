@@ -19,24 +19,24 @@ The recommended JS SDK shape is:
 
 ```ts
 client.exposeSkill(
-  "workspace/review",
+  'workspace/review',
   () =>
-    "# Workspace Review\n" +
-    "\n" +
-    "Review the workspace root.\n" +
-    "\n" +
-    "You can read `workspace/review/files` for file-level guidance."
-);
+    '# Workspace Review\n' +
+    '\n' +
+    'Review the workspace root.\n' +
+    '\n' +
+    'You can read `workspace/review/files` for file-level guidance.'
+)
 
 client.exposeSkill(
-  "workspace/review/files",
+  'workspace/review/files',
   (query, headers) =>
-    "# Workspace Review Files\n" +
-    "\n" +
-    `Topic: ${query.topic ?? "general"}\n` +
-    "\n" +
-    `Header: ${headers["x-review-scope"] ?? "none"}`
-);
+    '# Workspace Review Files\n' +
+    '\n' +
+    `Topic: ${query.topic ?? 'general'}\n` +
+    '\n' +
+    `Header: ${headers['x-review-scope'] ?? 'none'}`
+)
 ```
 
 The progressive-disclosure unit is the skill name itself:

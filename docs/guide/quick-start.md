@@ -40,23 +40,23 @@ For the transport-facing client APIs exposed by the server, see [APIs](/server/a
 For the quick start, use the smallest websocket example:
 
 ```ts
-import { createMdpClient } from "@modeldriveprotocol/client";
+import { createMdpClient } from '@modeldriveprotocol/client'
 
 const client = createMdpClient({
-  serverUrl: "ws://127.0.0.1:7070",
+  serverUrl: 'ws://127.0.0.1:7070',
   client: {
-    id: "browser-01",
-    name: "Browser Client"
+    id: 'browser-01',
+    name: 'Browser Client'
   }
-});
+})
 
-client.exposeTool("searchDom", async ({ query }) => ({
+client.exposeTool('searchDom', async ({ query }) => ({
   query,
   matches: 3
-}));
+}))
 
-await client.connect();
-client.register();
+await client.connect()
+client.register()
 ```
 
 For auth, HTTP loop mode, and browser-global usage, continue with the [JavaScript SDK docs](/sdk/javascript/usage).

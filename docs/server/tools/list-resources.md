@@ -31,4 +31,3 @@ Each resource descriptor includes `clientId`, `clientName`, `uri`, `name`, and o
 
 - the capability is identified by URI instead of by name
 - you need to inspect available resources before calling [readResource](/server/tools/read-resource)
-

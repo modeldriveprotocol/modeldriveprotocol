@@ -8,15 +8,15 @@ status: Draft
 `ping` 是一个双向心跳事件，client 和 server 任意一方都可以用它确认 websocket 会话仍然存活。
 
 | 事件类型 | 事件流向 |
-| --- | --- |
-| `ping` | 双向 |
+| -------- | -------- |
+| `ping`   | 双向     |
 
 ## 数据定义
 
 ```ts
 interface PingMessage {
-  type: "ping";
-  timestamp: number;
+  type: 'ping'
+  timestamp: number
 }
 ```
 

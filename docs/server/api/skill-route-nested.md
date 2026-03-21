@@ -40,14 +40,13 @@ If the resolved skill returns non-string data, the server responds with:
 
 ## Error cases
 
-| Status | Shape | When it happens |
-| --- | --- | --- |
-| `400` | `{ "error": string }` | Invalid skill request |
-| `404` | empty body | Skill descriptor not found |
-| `405` | empty body | Method is not `GET` or `OPTIONS` |
-| `502` | `{ "error": unknown }` | Skill invocation failed on the target client |
+| Status | Shape                  | When it happens                              |
+| ------ | ---------------------- | -------------------------------------------- |
+| `400`  | `{ "error": string }`  | Invalid skill request                        |
+| `404`  | empty body             | Skill descriptor not found                   |
+| `405`  | empty body             | Method is not `GET` or `OPTIONS`             |
+| `502`  | `{ "error": unknown }` | Skill invocation failed on the target client |
 
 ## Notes
 
 - This route is functionally equivalent to [GET /skills/:clientId/*skillPath](/server/api/skill-route-direct).
-

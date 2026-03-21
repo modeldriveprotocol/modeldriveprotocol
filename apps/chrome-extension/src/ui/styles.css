@@ -2,16 +2,16 @@
   color-scheme: light;
   --bg-top: #f6f1e7;
   --bg-bottom: #e7ddce;
-  --panel: rgba(255, 252, 246, 0.84);
-  --panel-border: rgba(32, 28, 20, 0.12);
+  --panel: rgba(255, 252, 246, .84);
+  --panel-border: rgba(32, 28, 20, .12);
   --ink: #211d16;
   --muted: #5e564a;
   --accent: #0f766e;
   --accent-strong: #115e59;
-  --accent-soft: rgba(15, 118, 110, 0.12);
+  --accent-soft: rgba(15, 118, 110, .12);
   --danger: #b42318;
-  --shadow: 0 24px 60px rgba(32, 28, 20, 0.12);
-  font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+  --shadow: 0 24px 60px rgba(32, 28, 20, .12);
+  font-family: 'IBM Plex Sans', 'Avenir Next', 'Segoe UI', sans-serif;
 }
 
 * {
@@ -23,7 +23,11 @@ body {
   min-height: 100vh;
   color: var(--ink);
   background:
-    radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 38%),
+    radial-gradient(
+      circle at top right,
+      rgba(15, 118, 110, .12),
+      transparent 38%
+    ),
     linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
 }
 
@@ -70,7 +74,7 @@ body {
   margin: 0 0 6px;
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: .18em;
   text-transform: uppercase;
   color: var(--accent);
 }
@@ -117,8 +121,8 @@ h2 {
 .field input,
 .field textarea {
   width: 100%;
-  border: 1px solid rgba(33, 29, 22, 0.14);
-  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(33, 29, 22, .14);
+  background: rgba(255, 255, 255, .74);
   color: var(--ink);
   padding: 12px 14px;
   font: inherit;
@@ -127,7 +131,7 @@ h2 {
 
 .field input:focus,
 .field textarea:focus {
-  outline: 2px solid rgba(15, 118, 110, 0.22);
+  outline: 2px solid rgba(15, 118, 110, .22);
   border-color: var(--accent);
 }
 
@@ -146,8 +150,8 @@ h2 {
   gap: 12px;
   min-height: 48px;
   padding: 10px 12px;
-  border: 1px solid rgba(33, 29, 22, 0.1);
-  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(33, 29, 22, .1);
+  background: rgba(255, 255, 255, .58);
 }
 
 .field-toggle input {
@@ -183,35 +187,35 @@ button:hover {
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.58;
-  background: rgba(33, 29, 22, 0.12);
+  opacity: .58;
+  background: rgba(33, 29, 22, .12);
   color: var(--muted);
 }
 
 button:disabled:hover {
-  background: rgba(33, 29, 22, 0.12);
+  background: rgba(33, 29, 22, .12);
 }
 
 .button-secondary {
-  background: rgba(33, 29, 22, 0.1);
+  background: rgba(33, 29, 22, .1);
   color: var(--ink);
 }
 
 .button-secondary:hover {
-  background: rgba(33, 29, 22, 0.16);
+  background: rgba(33, 29, 22, .16);
 }
 
 .subpanel {
   margin-top: 18px;
   padding: 16px;
-  border: 1px solid rgba(33, 29, 22, 0.1);
-  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid rgba(33, 29, 22, .1);
+  background: rgba(255, 255, 255, .56);
 }
 
 .mono-block,
 .mono-list,
 code {
-  font-family: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+  font-family: 'IBM Plex Mono', 'SF Mono', ui-monospace, monospace;
 }
 
 .mono-block {
@@ -232,17 +236,17 @@ code {
 .status {
   margin: 18px 0 0;
   padding: 12px 14px;
-  background: rgba(33, 29, 22, 0.06);
+  background: rgba(33, 29, 22, .06);
   font-size: 14px;
 }
 
-.status[data-state="success"] {
+.status[data-state='success'] {
   background: var(--accent-soft);
 }
 
-.status[data-state="error"] {
+.status[data-state='error'] {
   color: var(--danger);
-  background: rgba(180, 35, 24, 0.1);
+  background: rgba(180, 35, 24, .1);
 }
 
 @media (max-width: 760px) {

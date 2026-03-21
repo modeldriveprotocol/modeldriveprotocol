@@ -1,7 +1,7 @@
-import type { MdpClient } from "@modeldriveprotocol/client";
-import * as vscode from "vscode";
+import type { MdpClient } from '@modeldriveprotocol/client'
+import * as vscode from 'vscode'
 
-import { toJsonCompatible } from "../model.js";
+import { toJsonCompatible } from '../model.js'
 import {
   asObject,
   collectDiagnostics,
@@ -14,29 +14,29 @@ import {
   readString,
   resolveWorkspaceDocument,
   searchWorkspaceText
-} from "./shared.js";
-import type { CapabilityEnvironment } from "./types.js";
+} from './shared.js'
+import type { CapabilityEnvironment } from './types.js'
 
 export function registerWorkspaceTools(
   client: MdpClient,
   environment: CapabilityEnvironment
 ): void {
-  const { config } = environment;
+  const { config } = environment
 
   client.exposeTool(
-    "vscode.getWorkspaceContext",
+    'vscode.getWorkspaceContext',
     async (args) => {
-      const options = asObject(args);
+      const options = asObject(args)
       const textLimit = readPositiveNumber(
         options.textLimit,
         config.resourceTextLimit,
         200_000
-      );
+      )
       const diagnosticLimit = readPositiveNumber(
         options.diagnosticLimit,
         config.diagnosticResultLimit,
         1_000
-      );
+      )
 
       return {
         workspaceFolders: listWorkspaceFolders(),
@@ -50,38 +50,38 @@ export function registerWorkspaceTools(
           severity: readSeverity(options.severity)
         }),
         allowedCommands: config.allowedCommands
-      };
+      }
     },
     {
-      description: "Read the current VSCode workspace, active editor, and diagnostic state.",
+      description: 'Read the current VSCode workspace, active editor, and diagnostic state.',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
-          includeDocumentText: { type: "boolean" },
-          includeSelectionText: { type: "boolean" },
-          textLimit: { type: "number" },
-          diagnosticLimit: { type: "number" },
+          includeDocumentText: { type: 'boolean' },
+          includeSelectionText: { type: 'boolean' },
+          textLimit: { type: 'number' },
+          diagnosticLimit: { type: 'number' },
           severity: {
-            type: "string",
-            enum: ["error", "warning", "information", "hint"]
+            type: 'string',
+            enum: ['error', 'warning', 'information', 'hint']
           }
         }
       }
     }
-  );
+  )
 
   client.exposeTool(
-    "vscode.findWorkspaceFiles",
+    'vscode.findWorkspaceFiles',
     async (args) => {
-      const options = asObject(args);
+      const options = asObject(args)
       const limit = readPositiveNumber(
         options.maxResults,
         config.findFilesMaxResults,
         config.findFilesMaxResults
-      );
-      const include = readString(options.glob) ?? "**/*";
-      const exclude = readString(options.exclude);
-      const uris = await vscode.workspace.findFiles(include, exclude, limit);
+      )
+      const include = readString(options.glob) ?? '**/*'
+      const exclude = readString(options.exclude)
+      const uris = await vscode.workspace.findFiles(include, exclude, limit)
 
       return {
         include,
@@ -91,37 +91,37 @@ export function registerWorkspaceTools(
           uri: uri.toString(),
           relativePath: vscode.workspace.asRelativePath(uri, false)
         }))
-      };
+      }
     },
     {
-      description: "Find files in the current VSCode workspace using glob patterns.",
+      description: 'Find files in the current VSCode workspace using glob patterns.',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
-          glob: { type: "string" },
-          exclude: { type: "string" },
-          maxResults: { type: "number" }
+          glob: { type: 'string' },
+          exclude: { type: 'string' },
+          maxResults: { type: 'number' }
         }
       }
     }
-  );
+  )
 
   client.exposeTool(
-    "vscode.readWorkspaceFile",
+    'vscode.readWorkspaceFile',
     async (args) => {
-      const options = asObject(args);
+      const options = asObject(args)
       const textLimit = readPositiveNumber(
         options.textLimit,
         config.resourceTextLimit,
         200_000
-      );
+      )
       const diagnosticLimit = readPositiveNumber(
         options.diagnosticLimit,
         config.diagnosticResultLimit,
         1_000
-      );
-      const includeDiagnostics = readBoolean(options.includeDiagnostics, true);
-      const document = await resolveWorkspaceDocument(options);
+      )
+      const includeDiagnostics = readBoolean(options.includeDiagnostics, true)
+      const document = await resolveWorkspaceDocument(options)
 
       return {
         ...createDocumentSnapshot(document, {
@@ -130,49 +130,48 @@ export function registerWorkspaceTools(
         }),
         diagnostics: includeDiagnostics
           ? collectDiagnostics({
-              uri: document.uri.toString(),
-              limit: diagnosticLimit
-            })
+            uri: document.uri.toString(),
+            limit: diagnosticLimit
+          })
           : []
-      };
+      }
     },
     {
-      description:
-        "Read a workspace file by relative path, absolute path, or URI and return its text and metadata.",
+      description: 'Read a workspace file by relative path, absolute path, or URI and return its text and metadata.',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
-          path: { type: "string" },
-          uri: { type: "string" },
-          includeDiagnostics: { type: "boolean" },
-          textLimit: { type: "number" },
-          diagnosticLimit: { type: "number" }
+          path: { type: 'string' },
+          uri: { type: 'string' },
+          includeDiagnostics: { type: 'boolean' },
+          textLimit: { type: 'number' },
+          diagnosticLimit: { type: 'number' }
         }
       }
     }
-  );
+  )
 
   client.exposeTool(
-    "vscode.searchWorkspaceText",
+    'vscode.searchWorkspaceText',
     async (args) => {
-      const options = asObject(args);
-      const query = readString(options.query);
+      const options = asObject(args)
+      const query = readString(options.query)
 
       if (!query) {
-        throw new Error('Missing required "query" argument');
+        throw new Error('Missing required "query" argument')
       }
 
       const limit = readPositiveNumber(
         options.maxResults,
         config.textSearchMaxResults,
         config.textSearchMaxResults
-      );
-      const include = readString(options.include);
-      const exclude = readString(options.exclude);
-      const isCaseSensitive = readBoolean(options.isCaseSensitive, false);
-      const isRegExp = readBoolean(options.isRegExp, false);
-      const isWordMatch = readBoolean(options.isWordMatch, false);
-      const previewChars = readPositiveNumber(options.previewChars, 160, 1_000);
+      )
+      const include = readString(options.include)
+      const exclude = readString(options.exclude)
+      const isCaseSensitive = readBoolean(options.isCaseSensitive, false)
+      const isRegExp = readBoolean(options.isRegExp, false)
+      const isWordMatch = readBoolean(options.isWordMatch, false)
+      const previewChars = readPositiveNumber(options.previewChars, 160, 1_000)
       const search = await searchWorkspaceText({
         query,
         include,
@@ -182,7 +181,7 @@ export function registerWorkspaceTools(
         isRegExp,
         isWordMatch,
         previewChars
-      });
+      })
 
       return {
         query,
@@ -196,104 +195,103 @@ export function registerWorkspaceTools(
         results: search.results,
         resultCount: search.results.length,
         limitHit: search.limitHit
-      };
+      }
     },
     {
-      description: "Search the current VSCode workspace for text matches and preview snippets.",
+      description: 'Search the current VSCode workspace for text matches and preview snippets.',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
-          query: { type: "string" },
-          include: { type: "string" },
-          exclude: { type: "string" },
-          isCaseSensitive: { type: "boolean" },
-          isRegExp: { type: "boolean" },
-          isWordMatch: { type: "boolean" },
-          previewChars: { type: "number" },
-          maxResults: { type: "number" }
+          query: { type: 'string' },
+          include: { type: 'string' },
+          exclude: { type: 'string' },
+          isCaseSensitive: { type: 'boolean' },
+          isRegExp: { type: 'boolean' },
+          isWordMatch: { type: 'boolean' },
+          previewChars: { type: 'number' },
+          maxResults: { type: 'number' }
         },
-        required: ["query"]
+        required: ['query']
       }
     }
-  );
+  )
 
   client.exposeTool(
-    "vscode.getDiagnostics",
+    'vscode.getDiagnostics',
     async (args) => {
-      const options = asObject(args);
+      const options = asObject(args)
       const limit = readPositiveNumber(
         options.maxResults,
         config.diagnosticResultLimit,
         config.diagnosticResultLimit
-      );
-      const uri = readString(options.uri);
+      )
+      const uri = readString(options.uri)
       const diagnostics = collectDiagnostics({
         ...(uri ? { uri } : {}),
         limit,
         severity: readSeverity(options.severity)
-      });
+      })
 
       return {
         uri: uri ?? null,
         diagnostics
-      };
+      }
     },
     {
-      description: "Read diagnostics from the current VSCode workspace or a specific document.",
+      description: 'Read diagnostics from the current VSCode workspace or a specific document.',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
-          uri: { type: "string" },
+          uri: { type: 'string' },
           severity: {
-            type: "string",
-            enum: ["error", "warning", "information", "hint"]
+            type: 'string',
+            enum: ['error', 'warning', 'information', 'hint']
           },
-          maxResults: { type: "number" }
+          maxResults: { type: 'number' }
         }
       }
     }
-  );
+  )
 
   client.exposeTool(
-    "vscode.executeCommand",
+    'vscode.executeCommand',
     async (args) => {
-      const options = asObject(args);
-      const command = readString(options.command);
+      const options = asObject(args)
+      const command = readString(options.command)
 
       if (!command) {
-        throw new Error('Missing required "command" argument');
+        throw new Error('Missing required "command" argument')
       }
 
       if (!config.allowedCommands.includes(command)) {
         throw new Error(
           `Command "${command}" is not allowed. Configure mdp.allowedCommands to opt in.`
-        );
+        )
       }
 
       const commandArgs = Array.isArray(options.arguments)
         ? options.arguments
-        : [];
-      const result = await vscode.commands.executeCommand(command, ...commandArgs);
+        : []
+      const result = await vscode.commands.executeCommand(command, ...commandArgs)
 
       return {
         command,
         arguments: commandArgs,
         result: toJsonCompatible(result)
-      };
+      }
     },
     {
-      description:
-        config.allowedCommands.length > 0
-          ? `Run an allowlisted VSCode command. Allowed commands: ${config.allowedCommands.join(", ")}`
-          : "Run an allowlisted VSCode command. No commands are currently allowlisted.",
+      description: config.allowedCommands.length > 0
+        ? `Run an allowlisted VSCode command. Allowed commands: ${config.allowedCommands.join(', ')}`
+        : 'Run an allowlisted VSCode command. No commands are currently allowlisted.',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
-          command: { type: "string" },
-          arguments: { type: "array" }
+          command: { type: 'string' },
+          arguments: { type: 'array' }
         },
-        required: ["command"]
+        required: ['command']
       }
     }
-  );
+  )
 }

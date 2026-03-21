@@ -32,4 +32,3 @@ Each tool descriptor includes `clientId`, `clientName`, `name`, and optional `de
 - you already know you need tools, not prompts or resources
 - you want to filter one client's tool catalog
 - you need input schema hints before calling [callTools](/server/tools/call-tools)
-

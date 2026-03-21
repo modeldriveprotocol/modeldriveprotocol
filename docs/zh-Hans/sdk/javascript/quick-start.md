@@ -10,31 +10,31 @@ status: MVP
 ## 1. 创建 client
 
 ```ts
-import { createMdpClient } from "@modeldriveprotocol/client";
+import { createMdpClient } from '@modeldriveprotocol/client'
 
 const client = createMdpClient({
-  serverUrl: "ws://127.0.0.1:7070",
+  serverUrl: 'ws://127.0.0.1:7070',
   client: {
-    id: "browser-01",
-    name: "Browser Client"
+    id: 'browser-01',
+    name: 'Browser Client'
   }
-});
+})
 ```
 
 ## 2. 暴露一个 tool
 
 ```ts
-client.exposeTool("searchDom", async ({ query }) => ({
+client.exposeTool('searchDom', async ({ query }) => ({
   query,
-  matches: document.body.innerText.includes(String(query ?? "")) ? 1 : 0
-}));
+  matches: document.body.innerText.includes(String(query ?? '')) ? 1 : 0
+}))
 ```
 
 ## 3. 建连并注册
 
 ```ts
-await client.connect();
-client.register();
+await client.connect()
+client.register()
 ```
 
 ## 4. 通过 server 调用

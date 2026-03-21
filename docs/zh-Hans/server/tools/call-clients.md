@@ -64,4 +64,3 @@ status: MVP
 - 需要一个通用入口
 - 同名能力可能同时存在于多个 client
 - 希望由 server 负责 fan-out
-
