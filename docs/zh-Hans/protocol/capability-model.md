@@ -9,7 +9,7 @@ status: Draft
 
 `prompts` 是由 client 暴露的 prompt 模板或 prompt builder。
 
-`skills` 是更高层的工作流，通常会封装多个内部步骤。
+`skills` 是具名的技能文档。推荐做法是用 Markdown 编写，并用 `topic`、`topic/detail` 这类路径化名字组织，这样 host 可以先读摘要 skill，再按需继续读取更深节点。
 
 `resources` 是可读取的运行时对象，例如文档、当前选区、状态快照或可安全承载二进制内容的对象。
 

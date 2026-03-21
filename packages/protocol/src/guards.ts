@@ -7,9 +7,12 @@ import type {
   ClientAuthSource,
   ClientConnectionMode,
   ClientDescriptor,
-  ResourceDescriptor
+  ResourceDescriptor,
+  SkillDescriptor
 } from "./models.js";
 import type { MdpMessage } from "./messages.js";
+
+const SKILL_PATH_PATTERN = /^[a-z0-9](?:[a-z0-9_-]*)(?:\/[a-z0-9](?:[a-z0-9_-]*))*$/;
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
@@ -61,6 +64,14 @@ function isNamedDescriptor(value: unknown): value is { name: string } {
   return hasString(value, "name");
 }
 
+export function isSkillPath(value: unknown): value is string {
+  return typeof value === "string" && SKILL_PATH_PATTERN.test(value);
+}
+
+function isSkillDescriptor(value: unknown): value is SkillDescriptor {
+  return isNamedDescriptor(value) && isSkillPath(value.name);
+}
+
 export function isClientDescriptor(value: unknown): value is ClientDescriptor {
   if (!hasString(value, "id") || !hasString(value, "name")) {
     return false;
@@ -77,7 +88,7 @@ export function isClientDescriptor(value: unknown): value is ClientDescriptor {
     Array.isArray(prompts) &&
     prompts.every(isNamedDescriptor) &&
     Array.isArray(skills) &&
-    skills.every(isNamedDescriptor) &&
+    skills.every(isSkillDescriptor) &&
     Array.isArray(resources) &&
     resources.every(isResourceDescriptor)
   );
@@ -116,11 +127,20 @@ export function isMdpMessage(value: unknown): value is MdpMessage {
     case "unregisterClient":
       return hasString(value, "clientId");
     case "callClient":
+      if (
+        !hasString(object, "requestId") ||
+        !hasString(object, "clientId") ||
+        !isCapabilityKind(isJsonObject(object) ? object.kind : undefined) ||
+        ("auth" in object && !isAuthContext(object.auth))
+      ) {
+        return false;
+      }
+
+      if (object.kind === "skill") {
+        return hasString(object, "name") && isSkillPath(object.name);
+      }
+
       return (
-        hasString(object, "requestId") &&
-        hasString(object, "clientId") &&
-        isCapabilityKind(isJsonObject(object) ? object.kind : undefined) &&
-        (!("auth" in object) || isAuthContext(object.auth)) &&
         ((hasString(object, "name") && !("uri" in object && object.uri !== undefined)) ||
           (hasString(object, "uri") && !("name" in object && object.name !== undefined)) ||
           (hasString(object, "name") && hasString(object, "uri")))

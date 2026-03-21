@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { createSerializedError, isStringRecord, parseMessage } from "../src/index.js";
+import {
+  createSerializedError,
+  isSkillPath,
+  isStringRecord,
+  parseMessage
+} from "../src/index.js";
 
 const clientDescriptor = {
   id: "client-01",
@@ -40,6 +45,38 @@ describe("protocol guards", () => {
     });
   });
 
+  it("preserves skill content metadata on descriptors", () => {
+    const message = parseMessage(
+      JSON.stringify({
+        type: "registerClient",
+        client: {
+          ...clientDescriptor,
+          skills: [
+            {
+              name: "workspace/review",
+              description: "Review the workspace root.",
+              contentType: "text/markdown"
+            }
+          ]
+        }
+      })
+    );
+
+    expect(message).toEqual({
+      type: "registerClient",
+      client: {
+        ...clientDescriptor,
+        skills: [
+          {
+            name: "workspace/review",
+            description: "Review the workspace root.",
+            contentType: "text/markdown"
+          }
+        ]
+      }
+    });
+  });
+
   it("rejects callClient messages without a name or uri target", () => {
     expect(() =>
       parseMessage(
@@ -48,6 +85,42 @@ describe("protocol guards", () => {
           requestId: "req-01",
           clientId: "client-01",
           kind: "tool"
+        })
+      )
+    ).toThrow("Invalid MDP message");
+  });
+
+  it("rejects invalid skill paths", () => {
+    expect(isSkillPath("workspace/review")).toBe(true);
+    expect(isSkillPath("/workspace/review")).toBe(false);
+    expect(isSkillPath("workspace//review")).toBe(false);
+    expect(isSkillPath("workspace/../review")).toBe(false);
+    expect(isSkillPath("workspace/review?topic=mdp")).toBe(false);
+
+    expect(() =>
+      parseMessage(
+        JSON.stringify({
+          type: "registerClient",
+          client: {
+            ...clientDescriptor,
+            skills: [
+              {
+                name: "workspace/../review"
+              }
+            ]
+          }
+        })
+      )
+    ).toThrow("Invalid MDP message");
+
+    expect(() =>
+      parseMessage(
+        JSON.stringify({
+          type: "callClient",
+          requestId: "req-04",
+          clientId: "client-01",
+          kind: "skill",
+          name: "workspace/review?topic=mdp"
         })
       )
     ).toThrow("Invalid MDP message");

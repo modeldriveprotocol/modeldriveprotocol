@@ -18,7 +18,9 @@ import type {
   ExposeSkillOptions,
   ExposeToolOptions,
   MdpClientOptions,
-  ClientTransport
+  ClientTransport,
+  SkillDefinition,
+  SkillResolver
 } from "./types.js";
 import { WebSocketClientTransport } from "./ws-client.js";
 
@@ -69,12 +71,33 @@ export class MdpClient {
     return this;
   }
 
+  exposeSkill(name: string, content: string, options?: ExposeSkillOptions): this;
   exposeSkill(
     name: string,
     handler: CapabilityHandler,
     options?: ExposeSkillOptions
+  ): this;
+  exposeSkill(
+    name: string,
+    resolver: SkillResolver,
+    options?: ExposeSkillOptions
+  ): this;
+  exposeSkill(
+    name: string,
+    definition: SkillDefinition,
+    options?: ExposeSkillOptions
   ): this {
-    this.registry.exposeSkill(name, handler, options);
+    if (typeof definition === "string") {
+      this.registry.exposeSkill(name, definition, options);
+      return this;
+    }
+
+    if (options?.inputSchema === undefined) {
+      this.registry.exposeSkill(name, definition as SkillResolver, options);
+      return this;
+    }
+
+    this.registry.exposeSkill(name, definition as CapabilityHandler, options);
     return this;
   }
 

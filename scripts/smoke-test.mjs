@@ -59,7 +59,7 @@ mdpClient
       }
     ]
   }))
-  .exposeSkill("pageReview", async () => ({
+  .exposeSkill("page/review", async () => ({
     findings: ["No issues found"]
   }))
   .exposeResource("webpage://active-tab/selection", async () => ({

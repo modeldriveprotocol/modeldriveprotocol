@@ -22,6 +22,23 @@ The server exposes a fixed MCP bridge surface. It does not generate one MCP tool
 | `readResource` | Invocation | You know the exact client and resource URI | `clientId`, `uri`, `args?`, `auth?` | `ok`, `data` |
 | `callClients` | Invocation | You want one generic entry point or fan-out routing | `kind`, `clientIds?`, `name?`, `uri?`, `args?`, `auth?` | `results` |
 
+## Direct HTTP skill reads
+
+Skill documents can also be read directly over HTTP:
+
+```bash
+curl 'http://127.0.0.1:7070/skills/client-01/workspace/review'
+curl 'http://127.0.0.1:7070/client-01/skills/workspace/review/files?topic=mdp' \
+  -H 'x-review-scope: focused'
+```
+
+Those routes:
+
+- resolve one exact skill node by client ID and skill path
+- pass URL query parameters to the skill resolver
+- pass request headers to the skill resolver
+- return the skill body directly, commonly as `text/markdown`
+
 ## How tool results are returned
 
 Each bridge tool returns JSON in `structuredContent`. The same JSON is also mirrored as a text block in the MCP response body.
@@ -134,7 +151,7 @@ The server forwards that payload to the target client as `callClient.auth`.
 | `metadata` | `Record<string, unknown>` | No | Optional client-defined metadata. |
 | `tools` | `ToolDescriptor[]` | Yes | Tool descriptors currently registered by the client. |
 | `prompts` | `PromptDescriptor[]` | Yes | Prompt descriptors currently registered by the client. |
-| `skills` | `SkillDescriptor[]` | Yes | Skill descriptors currently registered by the client. |
+| `skills` | `SkillDescriptor[]` | Yes | Skill descriptors currently registered by the client. Static skill documents typically expose `contentType: "text/markdown"`. |
 | `resources` | `ResourceDescriptor[]` | Yes | Resource descriptors currently registered by the client. |
 | `status` | `"online"` | Yes | Current implementation only lists online clients. |
 | `connectedAt` | `string` | Yes | ISO-8601 timestamp for initial connection time. |
@@ -219,7 +236,7 @@ Skill descriptor:
 {
   "clientId": "browser-01",
   "clientName": "Browser Client",
-  "name": "pageReview",
+  "name": "page/review",
   "description": "Run a page review workflow",
   "inputSchema": {
     "type": "object"
@@ -378,7 +395,7 @@ Output:
 
 | Output field | Type | Description |
 | --- | --- | --- |
-| `skills` | `IndexedSkillDescriptor[]` | Indexed skill descriptors with `clientId` and `clientName`. |
+| `skills` | `IndexedSkillDescriptor[]` | Indexed skill descriptors with `clientId` and `clientName`. Hierarchical skill names can be used for progressive disclosure. |
 
 ### `listResources`
 
@@ -499,7 +516,7 @@ Success output:
 | --- | --- | --- | --- |
 | `clientId` | `string` | Yes | Target client ID. |
 | `skillName` | `string` | Yes | Target skill name. |
-| `args` | `Record<string, unknown>` | No | Arguments passed to the skill handler. |
+| `args` | `Record<string, unknown>` | No | Arguments passed to the skill handler. Static Markdown skills usually ignore this field. |
 | `auth` | `AuthContext` | No | Auth context forwarded as `callClient.auth`. |
 
 Input:
@@ -507,10 +524,7 @@ Input:
 ```json
 {
   "clientId": "browser-01",
-  "skillName": "pageReview",
-  "args": {
-    "severity": "medium"
-  }
+  "skillName": "workspace/review"
 }
 ```
 
@@ -519,16 +533,14 @@ Success output:
 ```json
 {
   "ok": true,
-  "data": {
-    "findings": []
-  }
+  "data": "# Workspace Review\n\nReview the workspace root.\n\nYou can read `workspace/review/files` for file-level guidance."
 }
 ```
 
 | Output field | Type | Description |
 | --- | --- | --- |
 | `ok` | `boolean` | `true` on success, `false` on failure. |
-| `data` | `unknown` | Payload returned by the skill handler. |
+| `data` | `unknown` | Payload returned by the skill handler. For static skill documents this is commonly Markdown text. |
 | `error` | `SerializedError` | Present only on failure. |
 
 ### `readResource`
@@ -711,12 +723,12 @@ Use `readResource` when the target is identified by URI rather than capability n
 }
 ```
 
-### 5. Ask for a prompt or workflow rather than a direct function
+### 5. Ask for a prompt or skill document rather than a direct function
 
 Use:
 
 - `getPrompt` for prompt templates or prompt builders
-- `callSkills` for workflow-shaped capabilities
+- `callSkills` for skill documents or dynamic skill resolvers
 
 Those tools still return the client-defined payload in `data`.
 

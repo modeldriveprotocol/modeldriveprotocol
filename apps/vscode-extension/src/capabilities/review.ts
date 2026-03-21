@@ -47,7 +47,7 @@ export function registerReviewCapabilities(
   );
 
   client.exposeSkill(
-    "vscode.reviewActiveEditor",
+    "vscode/review-active-editor",
     async (args) => {
       const options = asObject(args);
       const textLimit = readPositiveNumber(

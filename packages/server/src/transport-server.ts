@@ -40,6 +40,11 @@ interface HttpLoopSessionEntry {
   transport: HttpLoopSessionTransport;
 }
 
+interface SkillHttpTarget {
+  clientId: string;
+  skillName: string;
+}
+
 export interface MdpTransportServerOptions {
   host?: string;
   port?: number;
@@ -227,6 +232,19 @@ export class MdpTransportServer {
       return;
     }
 
+    const skillTarget = parseSkillHttpTarget(url.pathname);
+
+    if (skillTarget) {
+      try {
+        await this.handleSkillHttpRequest(request, response, url, skillTarget);
+      } catch (error) {
+        this.writeJson(response, 400, {
+          error: error instanceof Error ? error.message : "Invalid skill request"
+        });
+      }
+      return;
+    }
+
     if (!url.pathname.startsWith(this.httpLoopPath)) {
       response.statusCode = 404;
       response.end();
@@ -306,6 +324,60 @@ export class MdpTransportServer {
         error: error instanceof Error ? error.message : "Invalid auth request"
       });
     }
+  }
+
+  private async handleSkillHttpRequest(
+    request: IncomingMessage,
+    response: ServerResponse,
+    url: URL,
+    target: SkillHttpTarget
+  ): Promise<void> {
+    this.applyCors(request, response);
+
+    if (request.method === "OPTIONS") {
+      response.statusCode = 204;
+      response.end();
+      return;
+    }
+
+    if (request.method !== "GET") {
+      response.statusCode = 405;
+      response.setHeader("allow", "GET, OPTIONS");
+      response.end();
+      return;
+    }
+
+    const descriptor = this.runtime.capabilityIndex.getSkill(
+      target.clientId,
+      target.skillName
+    );
+    const requestAuth = this.extractTransportAuth(request);
+
+    if (!descriptor) {
+      response.statusCode = 404;
+      response.end();
+      return;
+    }
+
+    const result = await this.runtime.invoke({
+      clientId: target.clientId,
+      kind: "skill",
+      name: target.skillName,
+      args: {
+        query: readQueryParams(url),
+        headers: readRequestHeaders(request)
+      },
+      ...(requestAuth ? { auth: requestAuth } : {})
+    });
+
+    if (!result.ok) {
+      this.writeJson(response, 502, {
+        error: result.error ?? { message: "Unknown skill error" }
+      });
+      return;
+    }
+
+    this.writeSkillResponse(response, descriptor.contentType, result.data);
   }
 
   private async handleHttpLoopConnect(
@@ -467,6 +539,26 @@ export class MdpTransportServer {
     response.statusCode = statusCode;
     response.setHeader("content-type", "application/json");
     response.end(JSON.stringify(payload));
+  }
+
+  private writeSkillResponse(
+    response: ServerResponse,
+    contentType: string | undefined,
+    payload: unknown
+  ): void {
+    if (typeof payload === "string") {
+      response.statusCode = 200;
+      response.setHeader(
+        "content-type",
+        contentType ?? "text/plain; charset=utf-8"
+      );
+      response.end(payload);
+      return;
+    }
+
+    this.writeJson(response, 200, {
+      data: payload
+    });
   }
 
   private applyCors(
@@ -760,6 +852,78 @@ function clampWaitMs(candidate: number, fallback: number): number {
   }
 
   return Math.min(candidate, 60_000);
+}
+
+function parseSkillHttpTarget(pathname: string): SkillHttpTarget | undefined {
+  const normalized = trimTrailingSlash(pathname);
+  const directPrefix = "/skills/";
+  const nestedMarker = "/skills/";
+
+  if (normalized.startsWith(directPrefix)) {
+    const parts = normalized.slice(directPrefix.length).split("/");
+
+    if (parts.length < 2) {
+      return undefined;
+    }
+
+    return {
+      clientId: decodePathPart(parts[0] ?? ""),
+      skillName: decodeSkillPath(parts.slice(1))
+    };
+  }
+
+  const markerIndex = normalized.indexOf(nestedMarker);
+
+  if (markerIndex <= 0) {
+    return undefined;
+  }
+
+  const clientId = normalized.slice(1, markerIndex);
+  const remainder = normalized.slice(markerIndex + nestedMarker.length);
+
+  if (!clientId || !remainder) {
+    return undefined;
+  }
+
+  return {
+    clientId: decodePathPart(clientId),
+    skillName: decodeSkillPath(remainder.split("/"))
+  };
+}
+
+function decodeSkillPath(parts: string[]): string {
+  return parts.map((part) => decodePathPart(part)).join("/");
+}
+
+function decodePathPart(value: string): string {
+  return decodeURIComponent(value);
+}
+
+function readQueryParams(url: URL): Record<string, string> {
+  const query: Record<string, string> = {};
+
+  for (const [key, value] of url.searchParams.entries()) {
+    query[key] = value;
+  }
+
+  return query;
+}
+
+function readRequestHeaders(request: IncomingMessage): Record<string, string> {
+  const headers: Record<string, string> = {};
+
+  for (const [name, value] of Object.entries(request.headers)) {
+    if (typeof value === "string") {
+      headers[name] = value;
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      headers[name] = value.join(", ");
+    }
+  }
+
+  return headers;
 }
 
 function trimTrailingSlash(value: string): string {

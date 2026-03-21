@@ -33,6 +33,7 @@ status: Draft
 
 - [概览](/zh-Hans/protocol/overview)
 - [能力模型](/zh-Hans/protocol/capability-model)
+- [渐进式披露](/zh-Hans/protocol/progressive-disclosure)
 - [传输](/zh-Hans/protocol/transport)
 - [生命周期](/zh-Hans/protocol/lifecycle)
 - [消息模型](/zh-Hans/protocol/message-schema)

@@ -16,6 +16,6 @@ export function registerCapabilities(
   registerCapabilityResources(client, environment);
 
   environment.log(
-    "Registered VSCode capabilities: getWorkspaceContext, findWorkspaceFiles, readWorkspaceFile, searchWorkspaceText, getDiagnostics, executeCommand, reviewSelection, reviewActiveEditor, and 3 resources."
+    "Registered VSCode capabilities: getWorkspaceContext, findWorkspaceFiles, readWorkspaceFile, searchWorkspaceText, getDiagnostics, executeCommand, reviewSelection, vscode/review-active-editor, and 3 resources."
   );
 }

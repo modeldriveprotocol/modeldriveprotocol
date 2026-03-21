@@ -4,6 +4,7 @@ import type {
   ClientDescriptor,
   IndexedPromptDescriptor,
   IndexedResourceDescriptor,
+  SkillDescriptor,
   IndexedSkillDescriptor,
   IndexedToolDescriptor,
   ListedClient
@@ -78,6 +79,10 @@ export class CapabilityIndex {
         ...resource
       }))
     );
+  }
+
+  getSkill(clientId: string, skillName: string): SkillDescriptor | undefined {
+    return this.findClient(clientId)?.skills.find((skill) => skill.name === skillName);
   }
 
   hasTarget(target: CapabilityTarget): boolean {

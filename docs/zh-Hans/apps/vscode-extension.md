@@ -38,7 +38,7 @@ status: Draft
 - `vscode.getDiagnostics`
 - 带 allowlist 的 `vscode.executeCommand`
 - 作为 prompt 的 `vscode.reviewSelection`
-- 作为 skill 的 `vscode.reviewActiveEditor`
+- 作为 skill 的 `vscode/review-active-editor`
 - 当前文档、选区和工作区目录 resources
 
 如果你要让 VSCode 运行时把能力注册到 MDP server，这个 app 现在就是默认起点。

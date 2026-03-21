@@ -198,7 +198,7 @@ server 可以发送：
 | `metadata` | `Record<string, unknown>` | 否 | client 自定义元数据。 |
 | `tools` | `ToolDescriptor[]` | 是 | 已注册的 tool 描述。 |
 | `prompts` | `PromptDescriptor[]` | 是 | 已注册的 prompt 描述。 |
-| `skills` | `SkillDescriptor[]` | 是 | 已注册的 skill 描述。 |
+| `skills` | `SkillDescriptor[]` | 是 | 已注册的 skill 描述。静态 Markdown skill 通常会带 `contentType: "text/markdown"`。 |
 | `resources` | `ResourceDescriptor[]` | 是 | 已注册的 resource 描述。 |
 
 ### `callClient`

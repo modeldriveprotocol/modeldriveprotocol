@@ -33,6 +33,7 @@ The detailed protocol pages remain the source of truth:
 
 - [Overview](/protocol/overview)
 - [Capability Model](/protocol/capability-model)
+- [Progressive Disclosure](/protocol/progressive-disclosure)
 - [Transport](/protocol/transport)
 - [Lifecycle](/protocol/lifecycle)
 - [Message Schema](/protocol/message-schema)

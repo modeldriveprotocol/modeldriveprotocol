@@ -227,6 +227,87 @@ describe("MdpClient", () => {
     });
   });
 
+  it("registers markdown skill documents", async () => {
+    const transport = new FakeTransport();
+    const client = createMdpClient({
+      serverUrl: "ws://127.0.0.1:7070",
+      client: {
+        id: "browser-01",
+        name: "Browser Client"
+      },
+      transport
+    });
+
+    client.exposeSkill(
+      "workspace/review",
+      "# Workspace Review\n\nReview the workspace root.\n\nYou can read `workspace/review/files` for file-level guidance."
+    );
+
+    await client.connect();
+    client.register();
+
+    expect(transport.sent[0]).toEqual({
+      type: "registerClient",
+      client: {
+        id: "browser-01",
+        name: "Browser Client",
+        tools: [],
+        prompts: [],
+        skills: [
+          {
+            name: "workspace/review",
+            description: "Review the workspace root.",
+            contentType: "text/markdown"
+          }
+        ],
+        resources: []
+      }
+    });
+  });
+
+  it("routes skill resolvers with query params and headers", async () => {
+    const transport = new FakeTransport();
+    const client = createMdpClient({
+      serverUrl: "ws://127.0.0.1:7070",
+      client: {
+        id: "browser-01",
+        name: "Browser Client"
+      },
+      transport
+    });
+
+    client.exposeSkill("workspace/review", async (query, headers) =>
+      `# Workspace Review\n\nq=${query.q}\nheader=${headers["x-test-header"]}`
+    );
+
+    transport.emit({
+      type: "callClient",
+      requestId: "req-skill-01",
+      clientId: "browser-01",
+      kind: "skill",
+      name: "workspace/review",
+      args: {
+        query: {
+          q: "focus"
+        },
+        headers: {
+          "x-test-header": "present"
+        }
+      }
+    });
+
+    await vi.waitFor(() => {
+      expect(transport.sent).toEqual([
+        {
+          type: "callClientResult",
+          requestId: "req-skill-01",
+          ok: true,
+          data: "# Workspace Review\n\nq=focus\nheader=present"
+        }
+      ]);
+    });
+  });
+
   it("bootstraps cookie auth before websocket connect when auth is provided", async () => {
     const transport = new FakeTransport();
     const fetch = vi.fn(async () => new Response(null, { status: 204 }));

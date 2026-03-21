@@ -24,3 +24,4 @@ MDP 当前定义四类能力：
 - `resources`
 
 每一类都可以描述不同类型的运行时本地能力或只读表面。
+其中 `skills` 特别适合做渐进式披露：client 可以把它们注册成 `topic`、`topic/detail` 这类分层 Markdown 文档。

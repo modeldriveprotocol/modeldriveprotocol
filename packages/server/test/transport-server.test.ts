@@ -353,6 +353,117 @@ describe("MdpTransportServer", () => {
     socket.close();
     await waitForClose(socket);
   });
+
+  it("serves skill content over HTTP routes with query params and headers", async () => {
+    const runtime = new MdpServerRuntime();
+    const server = new MdpTransportServer(runtime, {
+      host: "127.0.0.1",
+      port: 0,
+      longPollTimeoutMs: 50
+    });
+    servers.push(server);
+    await server.start();
+
+    const sessionId = await connectHttpLoopClient(server);
+    await sendHttpLoopMessage(server, sessionId, {
+      type: "registerClient",
+      client: {
+        ...registeredClient,
+        skills: [
+          {
+            name: "docs/root/child",
+            description: "Child skill",
+            contentType: "text/markdown"
+          }
+        ]
+      }
+    });
+
+    const nestedRouteResponsePromise = fetch(
+      `${server.endpoints.httpLoop.replace("/mdp/http-loop", "")}/client-01/skills/docs/root/child?a=1`,
+      {
+        headers: {
+          "x-test-header": "nested"
+        }
+      }
+    );
+
+    const nestedInvocation = await pollHttpLoopMessage(server, sessionId);
+
+    expect(nestedInvocation).toEqual(
+      expect.objectContaining({
+        type: "callClient",
+        kind: "skill",
+        name: "docs/root/child",
+        args: expect.objectContaining({
+          query: {
+            a: "1"
+          },
+          headers: expect.objectContaining({
+            "x-test-header": "nested"
+          })
+        })
+      })
+    );
+
+    await sendHttpLoopMessage(server, sessionId, {
+      type: "callClientResult",
+      requestId: nestedInvocation.requestId,
+      ok: true,
+      data: "# Child Skill\n\nNested route."
+    });
+
+    const nestedRouteResponse = await nestedRouteResponsePromise;
+
+    expect(nestedRouteResponse.status).toBe(200);
+    expect(nestedRouteResponse.headers.get("content-type")).toContain(
+      "text/markdown"
+    );
+    await expect(nestedRouteResponse.text()).resolves.toBe(
+      "# Child Skill\n\nNested route."
+    );
+
+    const directRouteResponsePromise = fetch(
+      `${server.endpoints.httpLoop.replace("/mdp/http-loop", "")}/skills/client-01/docs/root/child?topic=mdp`,
+      {
+        headers: {
+          "x-test-header": "direct"
+        }
+      }
+    );
+
+    const directInvocation = await pollHttpLoopMessage(server, sessionId);
+
+    expect(directInvocation).toEqual(
+      expect.objectContaining({
+        type: "callClient",
+        kind: "skill",
+        name: "docs/root/child",
+        args: expect.objectContaining({
+          query: {
+            topic: "mdp"
+          },
+          headers: expect.objectContaining({
+            "x-test-header": "direct"
+          })
+        })
+      })
+    );
+
+    await sendHttpLoopMessage(server, sessionId, {
+      type: "callClientResult",
+      requestId: directInvocation.requestId,
+      ok: true,
+      data: "# Child Skill\n\nDirect route."
+    });
+
+    const directRouteResponse = await directRouteResponsePromise;
+
+    expect(directRouteResponse.status).toBe(200);
+    await expect(directRouteResponse.text()).resolves.toBe(
+      "# Child Skill\n\nDirect route."
+    );
+  });
 });
 
 async function waitForOpen(socket: WebSocket): Promise<void> {
@@ -376,4 +487,59 @@ function readSetCookieHeader(response: Response): string {
       : undefined;
 
   return fromSpecializedAccessor ?? response.headers.get("set-cookie") ?? "";
+}
+
+async function connectHttpLoopClient(server: MdpTransportServer): Promise<string> {
+  const connectResponse = await fetch(`${server.endpoints.httpLoop}/connect`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json"
+    },
+    body: "{}"
+  });
+  const connectPayload = (await connectResponse.json()) as { sessionId: string };
+  return connectPayload.sessionId;
+}
+
+async function sendHttpLoopMessage(
+  server: MdpTransportServer,
+  sessionId: string,
+  message: Record<string, unknown>
+): Promise<void> {
+  await fetch(`${server.endpoints.httpLoop}/send`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-mdp-session-id": sessionId
+    },
+    body: JSON.stringify({
+      message
+    })
+  });
+}
+
+async function pollHttpLoopMessage(
+  server: MdpTransportServer,
+  sessionId: string
+): Promise<{
+  requestId: string;
+  type: "callClient";
+  kind: "skill" | "tool" | "prompt" | "resource";
+  name?: string;
+  args?: Record<string, unknown>;
+}> {
+  const response = await fetch(
+    `${server.endpoints.httpLoop}/poll?sessionId=${sessionId}&waitMs=100`
+  );
+  const payload = (await response.json()) as {
+    message: {
+      requestId: string;
+      type: "callClient";
+      kind: "skill" | "tool" | "prompt" | "resource";
+      name?: string;
+      args?: Record<string, unknown>;
+    };
+  };
+
+  return payload.message;
 }

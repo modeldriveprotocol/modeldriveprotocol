@@ -24,3 +24,4 @@ MDP capability categories:
 - `resources`
 
 Each category can describe a different kind of runtime-local procedure or read-only surface.
+`skills` are especially useful for progressive disclosure when a client exposes them as hierarchical Markdown documents such as `topic` and `topic/detail`.

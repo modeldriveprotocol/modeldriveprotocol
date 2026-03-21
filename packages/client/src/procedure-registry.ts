@@ -6,12 +6,17 @@ import type {
   SkillDescriptor,
   ToolDescriptor
 } from "@modeldriveprotocol/protocol";
+import { isSkillPath } from "@modeldriveprotocol/protocol";
 
 import type {
   CapabilityHandler,
   ClientInfo,
   ExposePromptOptions,
   ExposeResourceOptions,
+  SkillHeaders,
+  SkillDefinition,
+  SkillQuery,
+  SkillResolver,
   ExposeSkillOptions,
   ExposeToolOptions
 } from "./types.js";
@@ -61,18 +66,44 @@ export class ProcedureRegistry {
     return this;
   }
 
+  exposeSkill(name: string, content: string, options?: ExposeSkillOptions): this;
   exposeSkill(
     name: string,
     handler: CapabilityHandler,
+    options?: ExposeSkillOptions
+  ): this;
+  exposeSkill(
+    name: string,
+    resolver: SkillResolver,
+    options?: ExposeSkillOptions
+  ): this;
+  exposeSkill(
+    name: string,
+    definition: SkillDefinition,
     options: ExposeSkillOptions = {}
   ): this {
+    assertSkillPath(name);
+
+    const isStaticSkill = typeof definition === "string";
+    const isResolverSkill =
+      typeof definition === "function" && options.inputSchema === undefined;
+    const description =
+      options.description ??
+      (isStaticSkill
+        ? deriveSkillDescription(definition)
+        : undefined);
+    const contentType =
+      options.contentType ??
+      (isStaticSkill || isResolverSkill ? "text/markdown" : undefined);
+
     this.skills.set(name, {
       descriptor: {
         name,
-        ...(options.description ? { description: options.description } : {}),
+        ...(description ? { description } : {}),
+        ...(contentType ? { contentType } : {}),
         ...(options.inputSchema ? { inputSchema: options.inputSchema } : {})
       },
-      handler
+      handler: toSkillHandler(definition)
     });
 
     return this;
@@ -152,4 +183,106 @@ export class ProcedureRegistry {
       ...(message.auth ? { auth: message.auth } : {})
     });
   }
+}
+
+function toSkillHandler(definition: SkillDefinition): CapabilityHandler {
+  if (typeof definition === "string") {
+    return async () => definition;
+  }
+
+  return async (args, context) => {
+    if (isSkillResolverDefinition(definition, args)) {
+      const { query, headers } = readSkillRequest(args);
+      return (definition as SkillResolver)(query, headers, context);
+    }
+
+    return (definition as CapabilityHandler)(args, context);
+  };
+}
+
+function deriveSkillDescription(content: string): string | undefined {
+  const lines = content.split(/\r?\n/).map((line) => line.trim());
+  const paragraph: string[] = [];
+
+  for (const line of lines) {
+    if (!line) {
+      if (paragraph.length > 0) {
+        break;
+      }
+
+      continue;
+    }
+
+    if (line.startsWith("#")) {
+      continue;
+    }
+
+    paragraph.push(line);
+  }
+
+  return paragraph.length > 0 ? paragraph.join(" ") : undefined;
+}
+
+function assertSkillPath(name: string): void {
+  if (!isSkillPath(name)) {
+    throw new Error(
+      `Invalid skill path "${name}". Expected slash-separated lowercase segments using only a-z, 0-9, "-" and "_".`
+    );
+  }
+}
+
+function isSkillResolverDefinition(
+  definition: Exclude<SkillDefinition, string>,
+  args: unknown
+): boolean {
+  if (definition.length >= 3) {
+    return true;
+  }
+
+  if (definition.length <= 1) {
+    return false;
+  }
+
+  return !isPlainObject(args) || "query" in args || "headers" in args;
+}
+
+function readSkillRequest(
+  args: unknown
+): {
+  query: SkillQuery;
+  headers: SkillHeaders;
+} {
+  if (!isPlainObject(args)) {
+    return {
+      query: {},
+      headers: {}
+    };
+  }
+
+  return {
+    query: readStringRecord(args.query),
+    headers: readStringRecord(args.headers)
+  };
+}
+
+function readStringRecord(value: unknown): Record<string, string> {
+  if (!isPlainObject(value)) {
+    return {};
+  }
+
+  const result: Record<string, string> = {};
+
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry === "string") {
+      result[key] = entry;
+    }
+  }
+
+  return result;
+}
+
+function isPlainObject(
+  value: unknown
+): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

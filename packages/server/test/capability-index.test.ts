@@ -96,4 +96,34 @@ describe("CapabilityIndex", () => {
       })
     ).toEqual(["client-01", "client-02"]);
   });
+
+  it("preserves skill content metadata in indexed skills", () => {
+    const index = new CapabilityIndex(() => [
+      createSnapshot("client-01", "Browser Client", {
+        skills: [
+          {
+            name: "workspace/review",
+            description: "Review the workspace root.",
+            contentType: "text/markdown"
+          }
+        ]
+      })
+    ]);
+
+    expect(index.listSkills()).toEqual([
+      {
+        clientId: "client-01",
+        clientName: "Browser Client",
+        name: "workspace/review",
+        description: "Review the workspace root.",
+        contentType: "text/markdown"
+      }
+    ]);
+
+    expect(index.getSkill("client-01", "workspace/review")).toEqual({
+      name: "workspace/review",
+      description: "Review the workspace root.",
+      contentType: "text/markdown"
+    });
+  });
 });

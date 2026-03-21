@@ -11,7 +11,7 @@ This app runs an MDP client inside the VSCode extension host and exposes editor 
 - `vscode.getDiagnostics`
 - `vscode.executeCommand` with a configuration allowlist
 - `vscode.reviewSelection` prompt
-- `vscode.reviewActiveEditor` skill
+- `vscode/review-active-editor` skill
 - active document, selection, and workspace folder resources
 
 ## Configuration

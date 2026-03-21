@@ -198,7 +198,7 @@ The server may send:
 | `metadata` | `Record<string, unknown>` | No | Client-defined metadata. |
 | `tools` | `ToolDescriptor[]` | Yes | Registered tool descriptors. |
 | `prompts` | `PromptDescriptor[]` | Yes | Registered prompt descriptors. |
-| `skills` | `SkillDescriptor[]` | Yes | Registered skill descriptors. |
+| `skills` | `SkillDescriptor[]` | Yes | Registered skill descriptors. Static Markdown skills typically advertise `contentType: "text/markdown"`. |
 | `resources` | `ResourceDescriptor[]` | Yes | Registered resource descriptors. |
 
 ### `callClient`

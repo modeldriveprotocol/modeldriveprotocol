@@ -38,6 +38,17 @@ export type CapabilityHandler<TResult = unknown> = (
   context: CapabilityInvocationContext
 ) => TResult | Promise<TResult>;
 
+export type SkillQuery = Record<string, string>;
+export type SkillHeaders = Record<string, string>;
+
+export type SkillResolver<TResult = string> = (
+  query: SkillQuery,
+  headers: SkillHeaders,
+  context: CapabilityInvocationContext
+) => TResult | Promise<TResult>;
+
+export type SkillDefinition = string | SkillResolver | CapabilityHandler;
+
 export interface ExposeToolOptions {
   description?: string;
   inputSchema?: JsonSchema;
@@ -50,6 +61,7 @@ export interface ExposePromptOptions {
 
 export interface ExposeSkillOptions {
   description?: string;
+  contentType?: string;
   inputSchema?: JsonSchema;
 }
 

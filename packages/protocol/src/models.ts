@@ -47,6 +47,7 @@ export interface PromptDescriptor {
 export interface SkillDescriptor {
   name: string;
   description?: string;
+  contentType?: string;
   inputSchema?: JsonSchema;
 }
 

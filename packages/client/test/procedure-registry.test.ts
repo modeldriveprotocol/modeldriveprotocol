@@ -13,7 +13,10 @@ describe("ProcedureRegistry", () => {
       .exposePrompt("summarizeSelection", async () => ({
         messages: [{ role: "user", content: "Summarize" }]
       }))
-      .exposeSkill("pageReview", async () => ({ findings: [] }))
+      .exposeSkill(
+        "page/review",
+        "# Page Review\n\nReview the active page.\n\nYou can read `page/review/evidence` for deeper context."
+      )
       .exposeResource("webpage://selection", async () => ({
         mimeType: "text/plain",
         text: "Hello"
@@ -40,7 +43,9 @@ describe("ProcedureRegistry", () => {
     ]);
     expect(descriptor.skills).toEqual([
       {
-        name: "pageReview"
+        name: "page/review",
+        description: "Review the active page.",
+        contentType: "text/markdown"
       }
     ]);
     expect(descriptor.resources).toEqual([
@@ -58,6 +63,8 @@ describe("ProcedureRegistry", () => {
       matches: 3,
       authToken: context.auth?.token
     }));
+    const skillMarkdown =
+      "# Page Review\n\nReview the active page.\n\nYou can read `page/review/evidence` for deeper context.";
     const resourceHandler = vi.fn(async () => ({
       mimeType: "text/plain",
       text: "Selected text"
@@ -65,6 +72,7 @@ describe("ProcedureRegistry", () => {
     const registry = new ProcedureRegistry();
 
     registry.exposeTool("searchDom", toolHandler);
+    registry.exposeSkill("page/review", skillMarkdown);
     registry.exposeResource("webpage://selection", resourceHandler, {
       name: "Selection"
     });
@@ -89,6 +97,14 @@ describe("ProcedureRegistry", () => {
       registry.invoke({
         requestId: "req-02",
         clientId: "client-01",
+        kind: "skill",
+        name: "page/review"
+      })
+    ).resolves.toEqual(skillMarkdown);
+    await expect(
+      registry.invoke({
+        requestId: "req-015",
+        clientId: "client-01",
         kind: "resource",
         uri: "webpage://selection"
       })
@@ -112,6 +128,45 @@ describe("ProcedureRegistry", () => {
     expect(resourceHandler).toHaveBeenCalledOnce();
   });
 
+  it("invokes skill resolvers with query params and headers", async () => {
+    const registry = new ProcedureRegistry();
+    const skillResolver = vi.fn(async (query, headers) =>
+      `# Query Skill\n\nquery=${query.q}\nheader=${headers["x-test-header"]}`
+    );
+
+    registry.exposeSkill("docs/query", skillResolver);
+
+    await expect(
+      registry.invoke({
+        requestId: "req-20",
+        clientId: "client-01",
+        kind: "skill",
+        name: "docs/query",
+        args: {
+          query: {
+            q: "mdp"
+          },
+          headers: {
+            "x-test-header": "present"
+          }
+        }
+      })
+    ).resolves.toBe("# Query Skill\n\nquery=mdp\nheader=present");
+
+    expect(skillResolver).toHaveBeenCalledWith(
+      {
+        q: "mdp"
+      },
+      {
+        "x-test-header": "present"
+      },
+      expect.objectContaining({
+        clientId: "client-01",
+        name: "docs/query"
+      })
+    );
+  });
+
   it("throws when the target key is missing or unknown", async () => {
     const registry = new ProcedureRegistry();
 
@@ -131,5 +186,15 @@ describe("ProcedureRegistry", () => {
         name: "missingTool"
       })
     ).rejects.toThrow('Unknown tool "missingTool"');
+  });
+
+  it("rejects invalid skill paths at registration time", () => {
+    const registry = new ProcedureRegistry();
+
+    expect(() =>
+      registry.exposeSkill("workspace/../review", "# Invalid")
+    ).toThrow(
+      'Invalid skill path "workspace/../review". Expected slash-separated lowercase segments using only a-z, 0-9, "-" and "_".'
+    );
   });
 });

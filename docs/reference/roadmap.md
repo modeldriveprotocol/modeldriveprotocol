@@ -56,6 +56,7 @@ Turn the current message model from a working MVP contract into a versioned prot
   - whether `client.id` is caller-supplied only
   - whether the server may assign or namespace identities
 - define capability metadata minimums vs optional fields
+- standardize Markdown skill documents and hierarchical naming for progressive disclosure
 
 ### Why this comes first
 
@@ -226,6 +227,7 @@ The highest-signal next tickets are:
 - implement automatic browser bootstrap from `attr-mdp-*`
 - define capability update semantics after registration
 - introduce structured logging around session lifecycle and invocation outcomes
+- document a stable hierarchy-based contract for progressive skill disclosure
 
 ## What Should Not Happen Yet
 
