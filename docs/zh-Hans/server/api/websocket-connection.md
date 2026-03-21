@@ -20,14 +20,14 @@ websocket 端点收发的是 JSON 编码的 MDP message。
 
 websocket transport 通过 `type` 字段区分事件类型。
 
-| 事件类型 | 方向 | 分类 | 作用 |
-| --- | --- | --- | --- |
-| `registerClient` | Client -> Server | 生命周期 | 注册一个 client 及其 capability 元数据 |
-| `unregisterClient` | Client -> Server | 生命周期 | 注销一个已注册 client |
-| `callClient` | Server -> Client | 调用 | 把路由后的 capability 调用下发给 client |
-| `callClientResult` | Client -> Server | 调用 | 回传一次路由调用的执行结果 |
-| `ping` | 双向 | 心跳 | 保持连接存活 |
-| `pong` | 双向 | 心跳 | 确认一次心跳 |
+| 事件类型           | 方向             | 分类     | 作用                                    |
+| ------------------ | ---------------- | -------- | --------------------------------------- |
+| `registerClient`   | Client -> Server | 生命周期 | 注册一个 client 及其 capability 元数据  |
+| `unregisterClient` | Client -> Server | 生命周期 | 注销一个已注册 client                   |
+| `callClient`       | Server -> Client | 调用     | 把路由后的 capability 调用下发给 client |
+| `callClientResult` | Client -> Server | 调用     | 回传一次路由调用的执行结果              |
+| `ping`             | 双向             | 心跳     | 保持连接存活                            |
+| `pong`             | 双向             | 心跳     | 确认一次心跳                            |
 
 ## 按方向查看
 
@@ -55,6 +55,34 @@ server 发给 client 的事件：
 4. client 回传 `callClientResult`
 5. 会话期间双向收发 `ping` 与 `pong`
 6. 断开前可选发送 `unregisterClient`
+
+## 时序图
+
+```mermaid
+sequenceDiagram
+  participant Client as MDP Client
+  participant Server as MDP Server
+  participant Host as MCP Host
+
+  Client->>Server: 打开 WebSocket
+  Client->>Server: registerClient
+  Server-->>Client: 注册在这条 socket 上保持生效
+
+  Host->>Server: 发起路由到该 client 的 tool 或 skill 调用
+  Server->>Client: callClient
+  Client->>Server: callClientResult
+  Server-->>Host: 返回调用结果
+
+  loop 会话存活期间
+    Server->>Client: ping
+    Client->>Server: pong
+  end
+
+  opt 优雅关闭
+    Client->>Server: unregisterClient
+    Client-xServer: 关闭 WebSocket
+  end
+```
 
 ## 每类事件是干什么的
 

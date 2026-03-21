@@ -20,14 +20,14 @@ The websocket endpoint accepts JSON-encoded MDP messages.
 
 The websocket transport uses the `type` field as the event discriminator.
 
-| Event type | Direction | Category | Purpose |
-| --- | --- | --- | --- |
-| `registerClient` | Client -> Server | Lifecycle | Register one client and its capability metadata |
-| `unregisterClient` | Client -> Server | Lifecycle | Remove one registered client |
-| `callClient` | Server -> Client | Invocation | Deliver routed capability work to the client |
-| `callClientResult` | Client -> Server | Invocation | Return the result of a routed invocation |
-| `ping` | Both directions | Heartbeat | Keep the session alive |
-| `pong` | Both directions | Heartbeat | Acknowledge a heartbeat |
+| Event type         | Direction        | Category   | Purpose                                         |
+| ------------------ | ---------------- | ---------- | ----------------------------------------------- |
+| `registerClient`   | Client -> Server | Lifecycle  | Register one client and its capability metadata |
+| `unregisterClient` | Client -> Server | Lifecycle  | Remove one registered client                    |
+| `callClient`       | Server -> Client | Invocation | Deliver routed capability work to the client    |
+| `callClientResult` | Client -> Server | Invocation | Return the result of a routed invocation        |
+| `ping`             | Both directions  | Heartbeat  | Keep the session alive                          |
+| `pong`             | Both directions  | Heartbeat  | Acknowledge a heartbeat                         |
 
 ## By direction
 
@@ -55,6 +55,34 @@ The normal websocket sequence is:
 4. send `callClientResult`
 5. exchange `ping` and `pong` while the session stays alive
 6. optionally send `unregisterClient` before disconnecting
+
+## Sequence diagram
+
+```mermaid
+sequenceDiagram
+  participant Client as MDP Client
+  participant Server as MDP Server
+  participant Host as MCP Host
+
+  Client->>Server: Open WebSocket
+  Client->>Server: registerClient
+  Server-->>Client: Registration stays active on this socket
+
+  Host->>Server: call tool or skill routed to this client
+  Server->>Client: callClient
+  Client->>Server: callClientResult
+  Server-->>Host: Return invocation result
+
+  loop While the session stays alive
+    Server->>Client: ping
+    Client->>Server: pong
+  end
+
+  opt Graceful shutdown
+    Client->>Server: unregisterClient
+    Client-xServer: Close WebSocket
+  end
+```
 
 ## What each event is for
 
