@@ -452,21 +452,42 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
         ]
       },
       {
-        text: copy.nav.blog,
-        link: localePath(prefix, '/blog/why-i-created-this-project'),
-        activeMatch: createActiveMatch(prefix, ['blog']),
+        text: copy.nav.ecosystem,
+        link: localePath(prefix, '/sdk/javascript/quick-start'),
+        activeMatch: createActiveMatch(prefix, ['sdk', 'apps', 'client', 'examples']),
         items: [
           {
-            text: copy.sections.blog,
+            text: copy.sections.sdks,
             items: [
               {
-                text: copy.pages.whyICreatedThisProject,
-                link: localePath(prefix, '/blog/why-i-created-this-project')
+                text: `${copy.sections.javaScript} / ${copy.pages.jsQuickStart}`,
+                link: localePath(prefix, '/sdk/javascript/quick-start')
+              },
+              {
+                text: `${copy.sections.javaScript} / ${copy.pages.jsUsage}`,
+                link: localePath(prefix, '/sdk/javascript/usage')
+              },
+              {
+                text: `${copy.sections.javaScript} / ${copy.pages.jsMcpDefinitions}`,
+                link: localePath(prefix, '/sdk/javascript/mcp-definitions')
+              },
+              {
+                text: `${copy.sections.javaScript} / ${copy.pages.jsSkillsDefinitions}`,
+                link: localePath(prefix, '/sdk/javascript/skills-definitions')
               }
+            ]
+          },
+          {
+            text: copy.sections.apps,
+            items: [
+              { text: copy.pages.chromeExtension, link: localePath(prefix, '/apps/chrome-extension') },
+              { text: copy.pages.vscodeExtension, link: localePath(prefix, '/apps/vscode-extension') },
+              { text: copy.pages.jetbrainsPlugin, link: localePath(prefix, '/apps/jetbrains-plugin') }
             ]
           }
         ]
       },
+      { text: copy.nav.playground, link: localePath(prefix, '/playground/') },
       {
         text: copy.nav.contributing,
         link: localePath(prefix, '/contributing/'),
@@ -510,42 +531,21 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
         ]
       },
       {
-        text: copy.nav.ecosystem,
-        link: localePath(prefix, '/sdk/javascript/quick-start'),
-        activeMatch: createActiveMatch(prefix, ['sdk', 'apps', 'client', 'examples']),
+        text: copy.nav.blog,
+        link: localePath(prefix, '/blog/why-i-created-this-project'),
+        activeMatch: createActiveMatch(prefix, ['blog']),
         items: [
           {
-            text: copy.sections.sdks,
+            text: copy.sections.blog,
             items: [
               {
-                text: `${copy.sections.javaScript} / ${copy.pages.jsQuickStart}`,
-                link: localePath(prefix, '/sdk/javascript/quick-start')
-              },
-              {
-                text: `${copy.sections.javaScript} / ${copy.pages.jsUsage}`,
-                link: localePath(prefix, '/sdk/javascript/usage')
-              },
-              {
-                text: `${copy.sections.javaScript} / ${copy.pages.jsMcpDefinitions}`,
-                link: localePath(prefix, '/sdk/javascript/mcp-definitions')
-              },
-              {
-                text: `${copy.sections.javaScript} / ${copy.pages.jsSkillsDefinitions}`,
-                link: localePath(prefix, '/sdk/javascript/skills-definitions')
+                text: copy.pages.whyICreatedThisProject,
+                link: localePath(prefix, '/blog/why-i-created-this-project')
               }
-            ]
-          },
-          {
-            text: copy.sections.apps,
-            items: [
-              { text: copy.pages.chromeExtension, link: localePath(prefix, '/apps/chrome-extension') },
-              { text: copy.pages.vscodeExtension, link: localePath(prefix, '/apps/vscode-extension') },
-              { text: copy.pages.jetbrainsPlugin, link: localePath(prefix, '/apps/jetbrains-plugin') }
             ]
           }
         ]
-      },
-      { text: copy.nav.playground, link: localePath(prefix, '/playground/') }
+      }
     ],
     sidebar: {
       [localePath(prefix, '/guide/')]: docsSidebar,
