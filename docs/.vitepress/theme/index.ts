@@ -1,8 +1,9 @@
 import DefaultTheme from "vitepress/theme";
 import { inBrowser, useData } from "vitepress";
-import { onMounted, onUnmounted, watch } from "vue";
+import { h, onMounted, onUnmounted, watch } from "vue";
 import MdpPlaygroundLayout from "./components/MdpPlaygroundLayout.vue";
 import MermaidDiagram from "./components/MermaidDiagram.vue";
+import SidebarDirectorySearch from "./components/SidebarDirectorySearch.vue";
 import "./custom.css";
 
 function setPagedHomeClass(enabled: boolean) {
@@ -16,6 +17,11 @@ function setPagedHomeClass(enabled: boolean) {
 
 export default {
   extends: DefaultTheme,
+  Layout() {
+    return h(DefaultTheme.Layout, null, {
+      "sidebar-nav-before": () => h(SidebarDirectorySearch)
+    });
+  },
   enhanceApp({ app }) {
     app.component("MdpPlaygroundLayout", MdpPlaygroundLayout);
     app.component("MermaidDiagram", MermaidDiagram);
