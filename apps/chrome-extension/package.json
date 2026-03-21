@@ -1,0 +1,18 @@
+{
+  "name": "@modeldriveprotocol/chrome-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit -p tsconfig.json --pretty false && node ./scripts/build.mjs",
+    "clean": "node ../../scripts/clean.mjs",
+    "test": "pnpm -C ../.. exec vitest run --config vitest.config.ts apps/chrome-extension/test",
+    "typecheck": "tsc --noEmit -p tsconfig.json --pretty false"
+  },
+  "dependencies": {
+    "@modeldriveprotocol/client": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.38"
+  }
+}

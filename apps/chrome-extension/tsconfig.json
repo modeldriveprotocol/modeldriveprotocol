@@ -1,0 +1,36 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "incremental": false,
+    "declaration": false,
+    "declarationMap": false,
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable",
+      "WebWorker"
+    ],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": true,
+    "types": [
+      "chrome"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@modeldriveprotocol/client": [
+        "../../packages/client/src/index.ts"
+      ],
+      "@modeldriveprotocol/protocol": [
+        "../../packages/protocol/src/index.ts"
+      ]
+    },
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo"
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "test/**/*.ts"
+  ]
+}

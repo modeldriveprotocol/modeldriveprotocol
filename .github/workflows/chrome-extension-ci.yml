@@ -1,0 +1,93 @@
+name: Chrome Extension CI
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/chrome-extension-ci.yml"
+      - ".github/workflows/chrome-extension-release.yml"
+      - "apps/chrome-extension/**"
+      - "packages/client/**"
+      - "packages/protocol/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.base.json"
+      - "vitest.config.ts"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/chrome-extension-ci.yml"
+      - ".github/workflows/chrome-extension-release.yml"
+      - "apps/chrome-extension/**"
+      - "packages/client/**"
+      - "packages/protocol/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.base.json"
+      - "vitest.config.ts"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chrome-extension-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Read extension version
+        id: version
+        run: |
+          VERSION=$(node -p "JSON.parse(require('fs').readFileSync('apps/chrome-extension/src/manifest.json', 'utf8')).version")
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "archive=apps/chrome-extension/mdp-chrome-extension-v$VERSION.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Typecheck extension
+        run: pnpm --filter @modeldriveprotocol/chrome-extension typecheck
+
+      - name: Test extension
+        run: pnpm --filter @modeldriveprotocol/chrome-extension test
+
+      - name: Build extension
+        run: pnpm --filter @modeldriveprotocol/chrome-extension build
+
+      - name: Package extension
+        env:
+          ARCHIVE_PATH: ${{ steps.version.outputs.archive }}
+        run: |
+          rm -f "$ARCHIVE_PATH"
+          cd apps/chrome-extension/dist
+          zip -r "../$(basename "$ARCHIVE_PATH")" .
+
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdp-chrome-extension-v${{ steps.version.outputs.value }}
+          path: ${{ steps.version.outputs.archive }}
+          if-no-files-found: error
+          retention-days: 14
