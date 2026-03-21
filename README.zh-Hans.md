@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./icon.svg" alt="MDP 图标" width="96" height="96" />
+</p>
+
 # Model Drive Protocol（模型驱动协议）
 
 | [en-US](./README.md) | zh-Hans |

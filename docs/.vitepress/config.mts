@@ -146,6 +146,7 @@ export default defineConfig({
   cleanUrls: true,
   lastUpdated: true,
   appearance: true,
+  head: [["link", { rel: "icon", type: "image/svg+xml", href: "/icon.svg" }]],
   locales: {
     root: {
       label: "en-US",
@@ -170,6 +171,7 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
   const ecosystemSidebar = createEcosystemSidebar(prefix, copy);
 
   return {
+    logo: "/icon.svg",
     nav: [
       {
         text: copy.nav.docs,

@@ -25,13 +25,15 @@
       <rect x="512" y="518.4" width="256" height="128" />
     </clipPath>
   </defs>
-  <g transform="rotate(45 512 512)">
-    <circle cx="384" cy="505.6" r="128" fill="url(#left-gradient)" clip-path="url(#left-top)" />
-    <circle cx="640" cy="505.6" r="128" fill="url(#right-top-gradient)" clip-path="url(#right-top)" />
-    <circle cx="640" cy="518.4" r="128" fill="url(#right-bottom-gradient)" clip-path="url(#right-bottom)" />
-    <rect x="256" y="505.6" width="512" height="12.8" fill="#FFFFFF" />
-    <path d="M256 505.6A128 128 0 0 1 512 505.6" stroke="#F5DAD5" stroke-opacity="0.42" stroke-width="18" stroke-linecap="round" />
-    <path d="M512 505.6A128 128 0 0 1 768 505.6" stroke="#F4E8C7" stroke-opacity="0.4" stroke-width="18" stroke-linecap="round" />
-    <path d="M512 518.4A128 128 0 0 0 768 518.4" stroke="#D6EDF4" stroke-opacity="0.44" stroke-width="18" stroke-linecap="round" />
+  <g transform="translate(512 512) scale(1.82) translate(-512 -512)">
+    <g transform="rotate(45 512 512)">
+      <circle cx="384" cy="505.6" r="128" fill="url(#left-gradient)" clip-path="url(#left-top)" />
+      <circle cx="640" cy="505.6" r="128" fill="url(#right-top-gradient)" clip-path="url(#right-top)" />
+      <circle cx="640" cy="518.4" r="128" fill="url(#right-bottom-gradient)" clip-path="url(#right-bottom)" />
+      <rect x="256" y="505.6" width="512" height="12.8" fill="#FFFFFF" />
+      <path d="M256 505.6A128 128 0 0 1 512 505.6" stroke="#F5DAD5" stroke-opacity="0.42" stroke-width="18" stroke-linecap="round" />
+      <path d="M512 505.6A128 128 0 0 1 768 505.6" stroke="#F4E8C7" stroke-opacity="0.4" stroke-width="18" stroke-linecap="round" />
+      <path d="M512 518.4A128 128 0 0 0 768 518.4" stroke="#D6EDF4" stroke-opacity="0.44" stroke-width="18" stroke-linecap="round" />
+    </g>
   </g>
 </svg>
