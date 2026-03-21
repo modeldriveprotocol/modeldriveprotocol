@@ -35,5 +35,5 @@ Today, the closest reference implementations are:
 If you are prototyping first in JavaScript or another local runtime, the SDK and protocol pages are the right references:
 
 - [JavaScript Usage](/sdk/javascript/usage)
-- [Server Tools](/server/tools)
-- [Protocol](/server/protocol)
+- [Server Tools](/server/tools/)
+- [Protocol Reference](/server/protocol)

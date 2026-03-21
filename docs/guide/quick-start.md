@@ -33,7 +33,7 @@ In an MCP-capable tool, point the MCP server entry at the CLI:
 }
 ```
 
-For the transport endpoints exposed by the server, see [APIs](/server/api). For TLS and secure deployment, see [Security](/server/security).
+For the transport-facing client APIs exposed by the server, see [APIs](/server/api/). For TLS and secure deployment, see [Security](/server/security).
 
 ## 2. Start One Client
 
@@ -66,4 +66,4 @@ If you prefer starting from a packaged runtime integration, see [Chrome Extensio
 
 After the MCP server is configured in your tool and the client is registered, open a chat with your agent and ask it to try the related tools.
 
-For example, ask the agent to list available clients or call the tool you just exposed. If you want the full bridge surface, see [Tools](/server/tools).
+For example, ask the agent to list available clients or call the tool you just exposed. If you want the full bridge surface, see [Tools](/server/tools/).

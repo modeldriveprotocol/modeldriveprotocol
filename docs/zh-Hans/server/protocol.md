@@ -1,9 +1,9 @@
 ---
-title: protocol
+title: 协议标准
 status: Draft
 ---
 
-# protocol
+# 协议标准
 
 站在 server 视角，MDP 其实就是一组很小的生命周期与路由消息。
 

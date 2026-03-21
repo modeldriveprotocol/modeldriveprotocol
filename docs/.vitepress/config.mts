@@ -5,13 +5,22 @@ type LocalePrefix = "" | "/zh-Hans";
 interface LocaleCopy {
   nav: {
     docs: string;
+    contributing: string;
     ecosystem: string;
     playground: string;
   };
   sections: {
     gettingStarted: string;
     aboutMdp: string;
+    contributing: string;
+    howToContribute: string;
+    howToRelease: string;
     server: string;
+    tools: string;
+    apis: string;
+    connection: string;
+    messageEvents: string;
+    externalInterfaces: string;
     sdks: string;
     javaScript: string;
     apps: string;
@@ -21,10 +30,54 @@ interface LocaleCopy {
     quickStart: string;
     whatIsMdp: string;
     architecture: string;
-    serverTools: string;
-    serverApis: string;
+    serverOverview: string;
+    toolsOverview: string;
+    listClients: string;
+    listTools: string;
+    listPrompts: string;
+    listSkills: string;
+    listResources: string;
+    callTools: string;
+    getPrompt: string;
+    callSkills: string;
+    readResource: string;
+    callClients: string;
+    apisOverview: string;
+    websocketConnection: string;
+    httpLoopConnection: string;
+    authBootstrap: string;
+    httpLoopConnect: string;
+    httpLoopSend: string;
+    httpLoopPoll: string;
+    httpLoopDisconnect: string;
+    authIssue: string;
+    authDelete: string;
+    skillRouteDirect: string;
+    skillRouteNested: string;
+    registerClient: string;
+    unregisterClient: string;
+    callClient: string;
+    callClientResult: string;
+    ping: string;
+    pong: string;
     serverSecurity: string;
     serverProtocol: string;
+    contributingOverview: string;
+    contributingArchitecture: string;
+    contributingModules: string;
+    contributingSetup: string;
+    contributingSetupOverview: string;
+    contributingSetupNodeJs: string;
+    contributingProtocol: string;
+    contributingServer: string;
+    contributingSdks: string;
+    contributingJavaScriptSdk: string;
+    contributingApps: string;
+    contributingChromeExtension: string;
+    contributingVsCodeExtension: string;
+    contributingReleasingOverview: string;
+    contributingReleasingPackages: string;
+    contributingReleasingApps: string;
     jsQuickStart: string;
     jsUsage: string;
     jsMcpDefinitions: string;
@@ -45,6 +98,25 @@ interface LocaleCopy {
   sidebarMenuLabel: string;
   returnToTopLabel: string;
   langMenuLabel: string;
+  search: {
+    buttonText: string;
+    buttonAriaLabel: string;
+    noResultsText: string;
+    resetButtonTitle: string;
+    backButtonTitle: string;
+    displayDetails: string;
+    footer: {
+      selectText: string;
+      selectKeyAriaLabel: string;
+      navigateText: string;
+      navigateUpKeyAriaLabel: string;
+      navigateDownKeyAriaLabel: string;
+      closeText: string;
+      closeKeyAriaLabel: string;
+    };
+    sidebarPlaceholder: string;
+    sidebarNoResults: string;
+  };
 }
 
 const base = resolveGitHubPagesBase();
@@ -52,13 +124,22 @@ const base = resolveGitHubPagesBase();
 const enUS: LocaleCopy = {
   nav: {
     docs: "Docs",
+    contributing: "Contributing",
     ecosystem: "Ecosystem",
     playground: "Playground"
   },
   sections: {
     gettingStarted: "Getting Started",
     aboutMdp: "About MDP",
+    contributing: "Contributing",
+    howToContribute: "How to Contribute",
+    howToRelease: "How to Release",
     server: "Server",
+    tools: "Tools",
+    apis: "APIs",
+    connection: "Connection Setup",
+    messageEvents: "Message Events",
+    externalInterfaces: "External Interfaces",
     sdks: "SDKs",
     javaScript: "JavaScript",
     apps: "Apps",
@@ -68,10 +149,54 @@ const enUS: LocaleCopy = {
     quickStart: "Quick Start",
     whatIsMdp: "What Is MDP?",
     architecture: "Architecture",
-    serverTools: "Tools",
-    serverApis: "APIs",
+    serverOverview: "Overview",
+    toolsOverview: "Overview",
+    listClients: "listClients",
+    listTools: "listTools",
+    listPrompts: "listPrompts",
+    listSkills: "listSkills",
+    listResources: "listResources",
+    callTools: "callTools",
+    getPrompt: "getPrompt",
+    callSkills: "callSkills",
+    readResource: "readResource",
+    callClients: "callClients",
+    apisOverview: "Overview",
+    websocketConnection: "WebSocket",
+    httpLoopConnection: "HTTP Loop",
+    authBootstrap: "Auth Bootstrap",
+    httpLoopConnect: "POST /mdp/http-loop/connect",
+    httpLoopSend: "POST /mdp/http-loop/send",
+    httpLoopPoll: "GET /mdp/http-loop/poll",
+    httpLoopDisconnect: "POST /mdp/http-loop/disconnect",
+    authIssue: "POST /mdp/auth",
+    authDelete: "DELETE /mdp/auth",
+    skillRouteDirect: "GET /skills/:clientId/*skillPath",
+    skillRouteNested: "GET /:clientId/skills/*skillPath",
+    registerClient: "registerClient",
+    unregisterClient: "unregisterClient",
+    callClient: "callClient",
+    callClientResult: "callClientResult",
+    ping: "ping",
+    pong: "pong",
     serverSecurity: "Security",
-    serverProtocol: "Protocol",
+    serverProtocol: "Protocol Reference",
+    contributingOverview: "Contributing",
+    contributingArchitecture: "Project Architecture",
+    contributingModules: "Modules",
+    contributingSetup: "Environment Setup",
+    contributingSetupOverview: "Environment Overview",
+    contributingSetupNodeJs: "Node.js",
+    contributingProtocol: "Protocol",
+    contributingServer: "Server",
+    contributingSdks: "SDKs",
+    contributingJavaScriptSdk: "JavaScript SDK",
+    contributingApps: "Apps",
+    contributingChromeExtension: "Chrome Extension Guide",
+    contributingVsCodeExtension: "VSCode Extension Guide",
+    contributingReleasingOverview: "Releasing Overview",
+    contributingReleasingPackages: "NPM Packages",
+    contributingReleasingApps: "Apps",
     jsQuickStart: "Quick Start",
     jsUsage: "Usage",
     jsMcpDefinitions: "MCP Definitions",
@@ -91,19 +216,47 @@ const enUS: LocaleCopy = {
   darkModeSwitchTitle: "Switch to dark theme",
   sidebarMenuLabel: "Menu",
   returnToTopLabel: "Return to top",
-  langMenuLabel: "Change language"
+  langMenuLabel: "Change language",
+  search: {
+    buttonText: "Search",
+    buttonAriaLabel: "Search docs",
+    noResultsText: "No relevant pages found",
+    resetButtonTitle: "Clear search",
+    backButtonTitle: "Close search",
+    displayDetails: "Display detailed list",
+    footer: {
+      selectText: "Select",
+      selectKeyAriaLabel: "Enter key",
+      navigateText: "Navigate",
+      navigateUpKeyAriaLabel: "Up arrow key",
+      navigateDownKeyAriaLabel: "Down arrow key",
+      closeText: "Close",
+      closeKeyAriaLabel: "Escape key"
+    },
+    sidebarPlaceholder: "Filter this section",
+    sidebarNoResults: "No sidebar entries matched"
+  }
 };
 
 const zhHans: LocaleCopy = {
   nav: {
     docs: "文档",
+    contributing: "共建",
     ecosystem: "生态",
     playground: "Playground"
   },
   sections: {
     gettingStarted: "起步",
     aboutMdp: "关于 MDP",
-    server: "Server",
+    contributing: "共建",
+    howToContribute: "如何共建",
+    howToRelease: "如何发布",
+    server: "服务端",
+    tools: "工具集",
+    apis: "对外接口",
+    connection: "建立链接",
+    messageEvents: "消息事件",
+    externalInterfaces: "外部接口",
     sdks: "SDKs",
     javaScript: "JavaScript",
     apps: "Apps",
@@ -113,10 +266,54 @@ const zhHans: LocaleCopy = {
     quickStart: "快速使用",
     whatIsMdp: "什么是 MDP？",
     architecture: "架构",
-    serverTools: "Tools",
-    serverApis: "APIs",
+    serverOverview: "总览",
+    toolsOverview: "总览",
+    listClients: "listClients",
+    listTools: "listTools",
+    listPrompts: "listPrompts",
+    listSkills: "listSkills",
+    listResources: "listResources",
+    callTools: "callTools",
+    getPrompt: "getPrompt",
+    callSkills: "callSkills",
+    readResource: "readResource",
+    callClients: "callClients",
+    apisOverview: "总览",
+    websocketConnection: "WebSocket 建立链接",
+    httpLoopConnection: "HTTP Loop 建立链接",
+    authBootstrap: "鉴权引导",
+    httpLoopConnect: "POST /mdp/http-loop/connect",
+    httpLoopSend: "POST /mdp/http-loop/send",
+    httpLoopPoll: "GET /mdp/http-loop/poll",
+    httpLoopDisconnect: "POST /mdp/http-loop/disconnect",
+    authIssue: "POST /mdp/auth",
+    authDelete: "DELETE /mdp/auth",
+    skillRouteDirect: "GET /skills/:clientId/*skillPath",
+    skillRouteNested: "GET /:clientId/skills/*skillPath",
+    registerClient: "registerClient",
+    unregisterClient: "unregisterClient",
+    callClient: "callClient",
+    callClientResult: "callClientResult",
+    ping: "ping",
+    pong: "pong",
     serverSecurity: "安全",
-    serverProtocol: "protocol",
+    serverProtocol: "协议标准",
+    contributingOverview: "共建指南",
+    contributingArchitecture: "项目架构",
+    contributingModules: "模块",
+    contributingSetup: "环境准备",
+    contributingSetupOverview: "环境介绍",
+    contributingSetupNodeJs: "Node.js",
+    contributingProtocol: "协议",
+    contributingServer: "服务端",
+    contributingSdks: "SDKs",
+    contributingJavaScriptSdk: "JavaScript SDK",
+    contributingApps: "应用",
+    contributingChromeExtension: "Chrome 插件开发指南",
+    contributingVsCodeExtension: "VSCode 插件开发指南",
+    contributingReleasingOverview: "发布总览",
+    contributingReleasingPackages: "NPM 包发布",
+    contributingReleasingApps: "应用发布",
     jsQuickStart: "简易上手",
     jsUsage: "如何使用",
     jsMcpDefinitions: "MCP 定义",
@@ -136,7 +333,26 @@ const zhHans: LocaleCopy = {
   darkModeSwitchTitle: "切换到暗色主题",
   sidebarMenuLabel: "目录",
   returnToTopLabel: "返回顶部",
-  langMenuLabel: "切换语言"
+  langMenuLabel: "切换语言",
+  search: {
+    buttonText: "搜索",
+    buttonAriaLabel: "搜索文档",
+    noResultsText: "没有找到相关页面",
+    resetButtonTitle: "清除搜索",
+    backButtonTitle: "关闭搜索",
+    displayDetails: "显示详细列表",
+    footer: {
+      selectText: "选择",
+      selectKeyAriaLabel: "回车键",
+      navigateText: "切换",
+      navigateUpKeyAriaLabel: "上方向键",
+      navigateDownKeyAriaLabel: "下方向键",
+      closeText: "关闭",
+      closeKeyAriaLabel: "Esc 键"
+    },
+    sidebarPlaceholder: "筛选当前目录",
+    sidebarNoResults: "目录中没有匹配项"
+  }
 };
 
 export default defineConfig({
@@ -146,6 +362,11 @@ export default defineConfig({
   cleanUrls: true,
   lastUpdated: true,
   appearance: true,
+  themeConfig: {
+    search: {
+      provider: "local"
+    }
+  },
   markdown: {
     config(md) {
       const defaultFence = md.renderer.rules.fence;
@@ -186,6 +407,7 @@ export default defineConfig({
 
 function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme.Config {
   const docsSidebar = createDocsSidebar(prefix, copy);
+  const contributingSidebar = createContributingSidebar(prefix, copy);
   const ecosystemSidebar = createEcosystemSidebar(prefix, copy);
 
   return {
@@ -205,17 +427,58 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
           },
           {
             text: copy.sections.aboutMdp,
-            items: [
-              { text: copy.pages.architecture, link: localePath(prefix, "/guide/architecture") }
-            ]
+            items: [{ text: copy.pages.architecture, link: localePath(prefix, "/guide/architecture") }]
           },
           {
             text: copy.sections.server,
             items: [
-              { text: copy.pages.serverTools, link: localePath(prefix, "/server/tools") },
-              { text: copy.pages.serverApis, link: localePath(prefix, "/server/api") },
+              { text: copy.pages.serverOverview, link: localePath(prefix, "/server/overview") },
+              { text: copy.sections.tools, link: localePath(prefix, "/server/tools/") },
+              { text: copy.sections.apis, link: localePath(prefix, "/server/api/") },
               { text: copy.pages.serverSecurity, link: localePath(prefix, "/server/security") },
               { text: copy.pages.serverProtocol, link: localePath(prefix, "/server/protocol") }
+            ]
+          }
+        ]
+      },
+      {
+        text: copy.nav.contributing,
+        link: localePath(prefix, "/contributing/"),
+        activeMatch: createActiveMatch(prefix, ["contributing"]),
+        items: [
+          {
+            text: copy.sections.howToContribute,
+            items: [
+              { text: copy.pages.contributingOverview, link: localePath(prefix, "/contributing/") },
+              {
+                text: copy.pages.contributingArchitecture,
+                link: localePath(prefix, "/contributing/architecture")
+              },
+              {
+                text: copy.pages.contributingSetup,
+                link: localePath(prefix, "/contributing/setup/")
+              },
+              {
+                text: copy.pages.contributingModules,
+                link: localePath(prefix, "/contributing/modules/protocol")
+              }
+            ]
+          },
+          {
+            text: copy.sections.howToRelease,
+            items: [
+              {
+                text: copy.pages.contributingReleasingOverview,
+                link: localePath(prefix, "/contributing/releasing")
+              },
+              {
+                text: copy.pages.contributingReleasingPackages,
+                link: localePath(prefix, "/contributing/releasing-packages")
+              },
+              {
+                text: copy.pages.contributingReleasingApps,
+                link: localePath(prefix, "/contributing/releasing-apps")
+              }
             ]
           }
         ]
@@ -249,18 +512,9 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
           {
             text: copy.sections.apps,
             items: [
-              {
-                text: copy.pages.chromeExtension,
-                link: localePath(prefix, "/apps/chrome-extension")
-              },
-              {
-                text: copy.pages.vscodeExtension,
-                link: localePath(prefix, "/apps/vscode-extension")
-              },
-              {
-                text: copy.pages.jetbrainsPlugin,
-                link: localePath(prefix, "/apps/jetbrains-plugin")
-              }
+              { text: copy.pages.chromeExtension, link: localePath(prefix, "/apps/chrome-extension") },
+              { text: copy.pages.vscodeExtension, link: localePath(prefix, "/apps/vscode-extension") },
+              { text: copy.pages.jetbrainsPlugin, link: localePath(prefix, "/apps/jetbrains-plugin") }
             ]
           }
         ]
@@ -271,6 +525,7 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
       [localePath(prefix, "/guide/")]: docsSidebar,
       [localePath(prefix, "/server/")]: docsSidebar,
       [localePath(prefix, "/protocol/")]: docsSidebar,
+      [localePath(prefix, "/contributing/")]: contributingSidebar,
       [localePath(prefix, "/sdk/")]: ecosystemSidebar,
       [localePath(prefix, "/apps/")]: ecosystemSidebar,
       [localePath(prefix, "/client/")]: ecosystemSidebar,
@@ -295,6 +550,24 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
     footer: {
       message: copy.footerMessage
     },
+    search: {
+      provider: "local",
+      options: {
+        translations: {
+          button: {
+            buttonText: copy.search.buttonText,
+            buttonAriaLabel: copy.search.buttonAriaLabel
+          },
+          modal: {
+            noResultsText: copy.search.noResultsText,
+            resetButtonTitle: copy.search.resetButtonTitle,
+            backButtonTitle: copy.search.backButtonTitle,
+            displayDetails: copy.search.displayDetails,
+            footer: copy.search.footer
+          }
+        }
+      }
+    },
     sidebarMenuLabel: copy.sidebarMenuLabel,
     returnToTopLabel: copy.returnToTopLabel,
     langMenuLabel: copy.langMenuLabel
@@ -305,6 +578,7 @@ function createDocsSidebar(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
   return [
     {
       text: copy.sections.gettingStarted,
+      collapsed: true,
       items: [
         { text: copy.pages.quickStart, link: localePath(prefix, "/guide/quick-start") },
         { text: copy.pages.whatIsMdp, link: localePath(prefix, "/guide/introduction") }
@@ -312,15 +586,209 @@ function createDocsSidebar(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
     },
     {
       text: copy.sections.aboutMdp,
+      collapsed: true,
       items: [{ text: copy.pages.architecture, link: localePath(prefix, "/guide/architecture") }]
     },
     {
       text: copy.sections.server,
+      collapsed: true,
       items: [
-        { text: copy.pages.serverTools, link: localePath(prefix, "/server/tools") },
-        { text: copy.pages.serverApis, link: localePath(prefix, "/server/api") },
+        { text: copy.pages.serverOverview, link: localePath(prefix, "/server/overview") },
+        {
+          text: copy.sections.tools,
+          collapsed: true,
+          items: [
+            { text: copy.pages.toolsOverview, link: localePath(prefix, "/server/tools/") },
+            { text: copy.pages.listClients, link: localePath(prefix, "/server/tools/list-clients") },
+            { text: copy.pages.listTools, link: localePath(prefix, "/server/tools/list-tools") },
+            { text: copy.pages.listPrompts, link: localePath(prefix, "/server/tools/list-prompts") },
+            { text: copy.pages.listSkills, link: localePath(prefix, "/server/tools/list-skills") },
+            { text: copy.pages.listResources, link: localePath(prefix, "/server/tools/list-resources") },
+            { text: copy.pages.callTools, link: localePath(prefix, "/server/tools/call-tools") },
+            { text: copy.pages.getPrompt, link: localePath(prefix, "/server/tools/get-prompt") },
+            { text: copy.pages.callSkills, link: localePath(prefix, "/server/tools/call-skills") },
+            { text: copy.pages.readResource, link: localePath(prefix, "/server/tools/read-resource") },
+            { text: copy.pages.callClients, link: localePath(prefix, "/server/tools/call-clients") }
+          ]
+        },
+        {
+          text: copy.sections.apis,
+          collapsed: true,
+          items: [
+            { text: copy.pages.apisOverview, link: localePath(prefix, "/server/api/") },
+            {
+              text: copy.sections.connection,
+              collapsed: true,
+              items: [
+                {
+                  text: copy.pages.websocketConnection,
+                  link: localePath(prefix, "/server/api/websocket-connection")
+                },
+                {
+                  text: copy.pages.httpLoopConnection,
+                  link: localePath(prefix, "/server/api/http-loop-connection")
+                },
+                {
+                  text: copy.pages.authBootstrap,
+                  link: localePath(prefix, "/server/api/auth-bootstrap")
+                }
+              ]
+            },
+            {
+              text: copy.sections.messageEvents,
+              collapsed: true,
+              items: [
+                {
+                  text: copy.pages.registerClient,
+                  link: localePath(prefix, "/server/api/register-client")
+                },
+                {
+                  text: copy.pages.unregisterClient,
+                  link: localePath(prefix, "/server/api/unregister-client")
+                },
+                {
+                  text: copy.pages.callClient,
+                  link: localePath(prefix, "/server/api/call-client")
+                },
+                {
+                  text: copy.pages.callClientResult,
+                  link: localePath(prefix, "/server/api/call-client-result")
+                },
+                { text: copy.pages.ping, link: localePath(prefix, "/server/api/ping") },
+                { text: copy.pages.pong, link: localePath(prefix, "/server/api/pong") }
+              ]
+            },
+            {
+              text: copy.sections.externalInterfaces,
+              collapsed: true,
+              items: [
+                {
+                  text: copy.pages.httpLoopConnect,
+                  link: localePath(prefix, "/server/api/http-loop-connect")
+                },
+                {
+                  text: copy.pages.httpLoopSend,
+                  link: localePath(prefix, "/server/api/http-loop-send")
+                },
+                {
+                  text: copy.pages.httpLoopPoll,
+                  link: localePath(prefix, "/server/api/http-loop-poll")
+                },
+                {
+                  text: copy.pages.httpLoopDisconnect,
+                  link: localePath(prefix, "/server/api/http-loop-disconnect")
+                },
+                {
+                  text: copy.pages.authIssue,
+                  link: localePath(prefix, "/server/api/auth-issue")
+                },
+                {
+                  text: copy.pages.authDelete,
+                  link: localePath(prefix, "/server/api/auth-delete")
+                },
+                {
+                  text: copy.pages.skillRouteDirect,
+                  link: localePath(prefix, "/server/api/skill-route-direct")
+                },
+                {
+                  text: copy.pages.skillRouteNested,
+                  link: localePath(prefix, "/server/api/skill-route-nested")
+                }
+              ]
+            }
+          ]
+        },
         { text: copy.pages.serverSecurity, link: localePath(prefix, "/server/security") },
         { text: copy.pages.serverProtocol, link: localePath(prefix, "/server/protocol") }
+      ]
+    }
+  ];
+}
+
+function createContributingSidebar(
+  prefix: LocalePrefix,
+  copy: LocaleCopy
+): DefaultTheme.SidebarItem[] {
+  return [
+    {
+      text: copy.sections.howToContribute,
+      collapsed: true,
+      items: [
+        { text: copy.pages.contributingOverview, link: localePath(prefix, "/contributing/") },
+        {
+          text: copy.pages.contributingArchitecture,
+          link: localePath(prefix, "/contributing/architecture")
+        },
+        {
+          text: copy.pages.contributingSetup,
+          collapsed: true,
+          items: [
+            {
+              text: copy.pages.contributingSetupOverview,
+              link: localePath(prefix, "/contributing/setup/")
+            },
+            {
+              text: copy.pages.contributingSetupNodeJs,
+              link: localePath(prefix, "/contributing/setup/nodejs")
+            }
+          ]
+        },
+        {
+          text: copy.pages.contributingModules,
+          collapsed: true,
+          items: [
+            {
+              text: copy.pages.contributingProtocol,
+              link: localePath(prefix, "/contributing/modules/protocol")
+            },
+            {
+              text: copy.pages.contributingServer,
+              link: localePath(prefix, "/contributing/modules/server")
+            },
+            {
+              text: copy.pages.contributingSdks,
+              collapsed: true,
+              items: [
+                {
+                  text: copy.pages.contributingJavaScriptSdk,
+                  link: localePath(prefix, "/contributing/modules/sdks/javascript")
+                }
+              ]
+            },
+            {
+              text: copy.pages.contributingApps,
+              collapsed: true,
+              items: [
+                {
+                  text: copy.pages.contributingChromeExtension,
+                  link: localePath(prefix, "/contributing/modules/apps/chrome-extension")
+                },
+                {
+                  text: copy.pages.contributingVsCodeExtension,
+                  link: localePath(prefix, "/contributing/modules/apps/vscode-extension")
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      text: copy.sections.howToRelease,
+      collapsed: true,
+      items: [
+        {
+          text: copy.pages.contributingReleasingOverview,
+          link: localePath(prefix, "/contributing/releasing")
+        },
+        {
+          text: copy.pages.contributingReleasingPackages,
+          link: localePath(prefix, "/contributing/releasing-packages")
+        },
+        {
+          text: copy.pages.contributingReleasingApps,
+          link: localePath(prefix, "/contributing/releasing-apps")
+        }
       ]
     }
   ];
@@ -333,9 +801,11 @@ function createEcosystemSidebar(
   return [
     {
       text: copy.sections.sdks,
+      collapsed: true,
       items: [
         {
           text: copy.sections.javaScript,
+          collapsed: true,
           items: [
             { text: copy.pages.jsQuickStart, link: localePath(prefix, "/sdk/javascript/quick-start") },
             { text: copy.pages.jsUsage, link: localePath(prefix, "/sdk/javascript/usage") },
@@ -353,6 +823,7 @@ function createEcosystemSidebar(
     },
     {
       text: copy.sections.apps,
+      collapsed: true,
       items: [
         { text: copy.pages.chromeExtension, link: localePath(prefix, "/apps/chrome-extension") },
         { text: copy.pages.vscodeExtension, link: localePath(prefix, "/apps/vscode-extension") },

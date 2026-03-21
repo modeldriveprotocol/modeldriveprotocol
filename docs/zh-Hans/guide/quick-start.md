@@ -33,7 +33,7 @@ npx @modeldriveprotocol/server --port 7070
 }
 ```
 
-server 实际暴露的 transport 端点可以继续阅读 [APIs](/zh-Hans/server/api)。如果要启用 TLS 和安全端点，继续阅读 [安全](/zh-Hans/server/security)。
+server 实际暴露的 client transport 接口可以继续阅读 [对外接口](/zh-Hans/server/api/)。如果要启用 TLS 和安全端点，继续阅读 [安全](/zh-Hans/server/security)。
 
 ## 2. 启动一个 Client
 
@@ -66,4 +66,4 @@ client.register();
 
 当 MCP 配置生效、client 也注册完成后，直接在你配置了 MCP 的工具里和 Agent 对话，试着调用相关工具看看。
 
-例如，可以让 Agent 先列出可用 client，或者直接调用你刚刚暴露的那个 tool。完整的 bridge surface 可继续阅读 [Tools](/zh-Hans/server/tools)。
+例如，可以让 Agent 先列出可用 client，或者直接调用你刚刚暴露的那个 tool。完整的 bridge surface 可继续阅读 [工具集](/zh-Hans/server/tools/)。

@@ -74,7 +74,7 @@ flowchart LR
 ## 先选一条入口
 
 - 如果你想先用最短路径跑通链路，从 [快速开始](./docs/zh-Hans/guide/quick-start.md) 开始。
-- 如果你已经理解模型，只想看精确的工具与接口数据格式，直接看 [Server / Tools](./docs/zh-Hans/server/tools.md) 和 [Server / APIs](./docs/zh-Hans/server/api.md)。
+- 如果你已经理解模型，只想看精确的工具与接口数据格式，直接看 [工具集](./docs/zh-Hans/server/tools/index.md) 和 [对外接口](./docs/zh-Hans/server/api/index.md)。
 - 如果你要把 MDP 接进浏览器页面、本地进程或自定义运行时，优先看 [JavaScript SDK / 简易上手](./docs/zh-Hans/sdk/javascript/quick-start.md)。
 - 如果你更想直接从现成集成开始，优先看 [Chrome 插件](./docs/zh-Hans/apps/chrome-extension.md) 和 [VSCode 插件](./docs/zh-Hans/apps/vscode-extension.md)。
 
@@ -94,13 +94,13 @@ flowchart LR
 - [快速开始](./docs/zh-Hans/guide/quick-start.md)
 - [什么是 MDP？](./docs/zh-Hans/guide/introduction.md)
 - [架构](./docs/zh-Hans/guide/architecture.md)
-- [Server / Tools](./docs/zh-Hans/server/tools.md)
-- [Server / APIs](./docs/zh-Hans/server/api.md)
+- [工具集](./docs/zh-Hans/server/tools/index.md)
+- [对外接口](./docs/zh-Hans/server/api/index.md)
 - [JavaScript SDK / 简易上手](./docs/zh-Hans/sdk/javascript/quick-start.md)
 - [Chrome 插件](./docs/zh-Hans/apps/chrome-extension.md)
 - [VSCode 插件](./docs/zh-Hans/apps/vscode-extension.md)
 - [Playground](./docs/zh-Hans/playground/index.md)
 
-## 开发者说明
+## 共建说明
 
-贡献流程、发布自动化和维护者配置请查看 [DEVELOPING.md](./DEVELOPING.md)。
+贡献流程、发布自动化、维护者配置和 CI 说明请查看 [CONTRIBUTING.md](./CONTRIBUTING.md) 和 [docs/zh-Hans/contributing](./docs/zh-Hans/contributing/index.md)。

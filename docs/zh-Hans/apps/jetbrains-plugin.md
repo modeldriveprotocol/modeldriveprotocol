@@ -35,5 +35,5 @@ status: Draft
 如果你现在只是先验证链路，优先看这些页面：
 
 - [JavaScript / 如何使用](/zh-Hans/sdk/javascript/usage)
-- [Server / Tools](/zh-Hans/server/tools)
-- [Server / protocol](/zh-Hans/server/protocol)
+- [工具集](/zh-Hans/server/tools/)
+- [协议标准](/zh-Hans/server/protocol)

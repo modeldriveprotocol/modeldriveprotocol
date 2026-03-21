@@ -1,9 +1,9 @@
 ---
-title: Protocol
+title: Protocol Reference
 status: Draft
 ---
 
-# Protocol
+# Protocol Reference
 
 From the server's point of view, MDP is a small set of lifecycle and routing messages.
 

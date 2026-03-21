@@ -21,20 +21,20 @@ hero:
 
 features:
   - icon: '<svg class="mdp-home-feature-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="6.5" r="2.5"/><circle cx="12" cy="17.5" r="2.5"/><path d="M8.5 8.3 10.6 11.5"/><path d="M15.5 8.3 13.4 11.5"/><path d="M12 15v0"/></svg>'
-    title: "统一 Bridge Surface"
-    details: "Host 只接一套稳定的 MCP bridge，不跟着 client 上下线重建 tools。"
-    link: /zh-Hans/server/tools
-    linkText: "查看 bridge tools"
+    title: "工具集按单页拆开"
+    details: "每个 bridge 工具都有独立文档页，不再把所有内容堆在一个长页面里。"
+    link: /zh-Hans/server/tools/
+    linkText: "查看工具集"
   - icon: '<svg class="mdp-home-feature-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 19 7v10l-7 4-7-4V7l7-4Z"/><path d="M5 7l7 4 7-4"/><path d="M12 11v10"/></svg>'
-    title: "能力归运行时所有"
-    details: "能力由 client 注册和执行，server 只负责索引与路由。"
-    link: /zh-Hans/protocol/overview
-    linkText: "查看协议模型"
+    title: "对外接口分层阅读"
+    details: "先看建立链接，再看每个外部接口的独立说明，定位更直接。"
+    link: /zh-Hans/server/api/
+    linkText: "查看对外接口"
   - icon: '<svg class="mdp-home-feature-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 15 15.5 8.5c1.5-1.5 3.3-2.6 5.3-3-.4 2-1.5 3.8-3 5.3L11.3 17H7l2-2Z"/><path d="M13.5 10.5 16.5 13.5"/><path d="M7.5 16.5c-.1 1.4-.7 2.6-1.8 3.7 1.1-1.1 2.3-1.7 3.7-1.8"/></svg>'
-    title: "可直接落地到真实运行时"
-    details: "可用 JavaScript SDK 自行接入，也可从现成集成直接开始。"
-    link: /zh-Hans/sdk/javascript/quick-start
-    linkText: "开始接入"
+    title: "协议标准单独成组"
+    details: "从服务端视角切入，再跳转到底层协议页，路径更清楚。"
+    link: /zh-Hans/server/protocol
+    linkText: "查看协议标准"
 ---
 
 <section class="mdp-home-screen mdp-home-screen--band">
@@ -75,15 +75,20 @@ features:
       <h3>快速使用</h3>
       <p>最快跑通一条端到端链路。</p>
     </a>
-    <a class="mdp-home-card" href="/zh-Hans/server/tools">
+    <a class="mdp-home-card" href="/zh-Hans/server/tools/">
       <span class="mdp-home-card-kicker">精确接入</span>
-      <h3>Server / Tools</h3>
-      <p>看 bridge tools 的列表、入参和出参。</p>
+      <h3>工具集</h3>
+      <p>按工具逐个查看 bridge 工具的作用、入参和出参。</p>
     </a>
-    <a class="mdp-home-card" href="/zh-Hans/server/api">
+    <a class="mdp-home-card" href="/zh-Hans/server/api/">
       <span class="mdp-home-card-kicker">理解接口</span>
-      <h3>Server / APIs</h3>
-      <p>看 WebSocket、HTTP loop 和认证接口。</p>
+      <h3>对外接口</h3>
+      <p>先看建立链接，再看每一个外部接口的单页说明。</p>
+    </a>
+    <a class="mdp-home-card" href="/zh-Hans/server/protocol">
+      <span class="mdp-home-card-kicker">理解协议</span>
+      <h3>协议标准</h3>
+      <p>从服务端实现关心的协议元素继续深入到底层协议页。</p>
     </a>
     <a class="mdp-home-card" href="/zh-Hans/sdk/javascript/quick-start">
       <span class="mdp-home-card-kicker">嵌入运行时</span>
@@ -145,6 +150,6 @@ features:
     <div class="mdp-home-fit">需要被 MCP 访问的本地 agent 或后端流程</div>
   </div>
   <div class="mdp-home-note">
-    需要精确格式时，直接看 <a href="/zh-Hans/server/tools">Server / Tools</a>、<a href="/zh-Hans/server/api">Server / APIs</a>，或去 <a href="/zh-Hans/playground/">Playground</a>。
+    需要精确格式时，直接看 <a href="/zh-Hans/server/tools/">工具集</a>、<a href="/zh-Hans/server/api/">对外接口</a>、<a href="/zh-Hans/server/protocol">协议标准</a>，或去 <a href="/zh-Hans/playground/">Playground</a>。
   </div>
 </section>

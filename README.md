@@ -74,7 +74,7 @@ flowchart LR
 ## Pick A Path
 
 - Use [Quick Start](./docs/guide/quick-start.md) if you want the shortest path from zero to a working client plus MCP bridge.
-- Use [Server Tools](./docs/server/tools.md) and [Server APIs](./docs/server/api.md) if you already understand the model and need exact data formats.
+- Use [Server Tools](./docs/server/tools/index.md) and [Server APIs](./docs/server/api/index.md) if you already understand the model and need exact data formats.
 - Use [JavaScript SDK Quick Start](./docs/sdk/javascript/quick-start.md) if you want to embed MDP into a browser page, local process, or custom runtime.
 - Use [Chrome Extension](./docs/apps/chrome-extension.md) or [VSCode Extension](./docs/apps/vscode-extension.md) if you want a packaged runtime integration instead of wiring the SDK yourself.
 
@@ -94,13 +94,13 @@ Use the docs for getting started, exact tool and API formats, and packaged integ
 - [Quick Start](./docs/guide/quick-start.md)
 - [What Is MDP?](./docs/guide/introduction.md)
 - [Architecture](./docs/guide/architecture.md)
-- [Server Tools](./docs/server/tools.md)
-- [Server APIs](./docs/server/api.md)
+- [Server Tools](./docs/server/tools/index.md)
+- [Server APIs](./docs/server/api/index.md)
 - [JavaScript SDK Quick Start](./docs/sdk/javascript/quick-start.md)
 - [Chrome Extension](./docs/apps/chrome-extension.md)
 - [VSCode Extension](./docs/apps/vscode-extension.md)
 - [Playground](./docs/playground/index.md)
 
-## Development
+## Contributing
 
-For contributor workflow, release automation, and maintainer setup, see [DEVELOPING.md](./DEVELOPING.md).
+For contributor workflow, release automation, maintainer setup, and CI internals, see [CONTRIBUTING.md](./CONTRIBUTING.md) and [docs/contributing](./docs/contributing/index.md).
