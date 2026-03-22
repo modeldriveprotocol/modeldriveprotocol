@@ -90,11 +90,45 @@ export interface CookieTransportAuthOptions {
 
 export type ClientTransportAuthOptions = CookieTransportAuthOptions
 
+export type MdpClientReconnectEvent =
+  | {
+    type: 'disconnected'
+  }
+  | {
+    type: 'reconnectScheduled'
+    attempt: number
+    delayMs: number
+    error?: Error
+  }
+  | {
+    type: 'reconnectAttempt'
+    attempt: number
+  }
+  | {
+    type: 'reconnected'
+    attempt: number
+  }
+  | {
+    type: 'reconnectStopped'
+    attempt: number
+    error: Error
+  }
+
+export interface MdpClientReconnectOptions {
+  enabled?: boolean
+  initialDelayMs?: number
+  maxDelayMs?: number
+  multiplier?: number
+  maxAttempts?: number
+  onEvent?: (event: MdpClientReconnectEvent) => void
+}
+
 export interface MdpClientOptions {
   serverUrl: string
   client: ClientInfo
   auth?: AuthContext
   transportAuth?: ClientTransportAuthOptions
+  reconnect?: boolean | MdpClientReconnectOptions
   transport?: ClientTransport
 }
 

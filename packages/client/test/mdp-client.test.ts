@@ -280,6 +280,81 @@ describe('MdpClient', () => {
     ])
   })
 
+  it('reconnects and re-registers after an unexpected disconnect', async () => {
+    vi.useFakeTimers()
+
+    try {
+      const transport = new FakeTransport()
+      const client = createMdpClient({
+        serverUrl: 'ws://127.0.0.1:7070',
+        client: {
+          id: 'browser-01',
+          name: 'Browser Client'
+        },
+        reconnect: {
+          enabled: true,
+          initialDelayMs: 10,
+          maxDelayMs: 10
+        },
+        transport
+      })
+
+      client.exposeTool('searchDom', async () => ({ matches: 1 }))
+
+      await client.connect()
+      client.register()
+      transport.emitClose()
+
+      await vi.advanceTimersByTimeAsync(10)
+
+      await vi.waitFor(() => {
+        expect(transport.connect).toHaveBeenCalledTimes(2)
+        expect(
+          transport.sent.filter((message) => message.type === 'registerClient')
+        ).toHaveLength(2)
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not reconnect after an explicit disconnect', async () => {
+    vi.useFakeTimers()
+
+    try {
+      const transport = new FakeTransport()
+      transport.close = vi.fn(async () => {
+        transport.emitClose()
+      })
+
+      const client = createMdpClient({
+        serverUrl: 'ws://127.0.0.1:7070',
+        client: {
+          id: 'browser-01',
+          name: 'Browser Client'
+        },
+        reconnect: {
+          enabled: true,
+          initialDelayMs: 10,
+          maxDelayMs: 10
+        },
+        transport
+      })
+
+      await client.connect()
+      client.register()
+      await client.disconnect()
+      await vi.advanceTimersByTimeAsync(50)
+
+      expect(transport.connect).toHaveBeenCalledOnce()
+      expect(
+        transport.sent.filter((message) => message.type === 'registerClient')
+      ).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('requires registration before syncing capabilities', async () => {
     const transport = new FakeTransport()
     const client = createMdpClient({

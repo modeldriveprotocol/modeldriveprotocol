@@ -2,9 +2,13 @@ import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import type { ClientToServerMessage, ServerToClientMessage } from '@modeldriveprotocol/protocol'
+import type { ClientTransport } from '@modeldriveprotocol/client'
 
 import {
+  bootNodejsSimpleMdpClient,
   getNodejsRuntimeInfo,
   listWorkspaceSubpackages,
   readWorkspacePackageManifest,
@@ -168,6 +172,31 @@ describe('nodejs simple mdp client', () => {
     })
   })
 
+  it('enables reconnect by default when booting the node client', async () => {
+    vi.useFakeTimers()
+
+    try {
+      const transport = new FakeTestTransport()
+      const client = await bootNodejsSimpleMdpClient({
+        transport
+      })
+
+      transport.emitClose()
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      await vi.waitFor(() => {
+        expect(transport.connectCalls).toBe(2)
+        expect(
+          transport.sent.filter((message) => message.type === 'registerClient')
+        ).toHaveLength(2)
+      })
+
+      await client.disconnect()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   async function createWorkspaceFixture(): Promise<string> {
     const workspaceRoot = await mkdtemp(path.join(tmpdir(), 'mdp-nodejs-simple-'))
     tempDirectories.push(workspaceRoot)
@@ -249,5 +278,35 @@ function createFakeClient() {
     },
     async connect() {},
     register() {}
+  }
+}
+
+class FakeTestTransport implements ClientTransport {
+  readonly sent: ClientToServerMessage[] = []
+  connectCalls = 0
+
+  private messageHandler?: (message: ServerToClientMessage) => void
+  private closeHandler?: () => void
+
+  async connect(): Promise<void> {
+    this.connectCalls += 1
+  }
+
+  send(message: ClientToServerMessage): void {
+    this.sent.push(message)
+  }
+
+  async close(): Promise<void> {}
+
+  onMessage(handler: (message: ServerToClientMessage) => void): void {
+    this.messageHandler = handler
+  }
+
+  onClose(handler: () => void): void {
+    this.closeHandler = handler
+  }
+
+  emitClose(): void {
+    this.closeHandler?.()
   }
 }

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import {
   createMdpClient,
   type ClientInfo,
+  type MdpClientReconnectOptions,
   type ClientTransport,
   type MdpClient
 } from '@modeldriveprotocol/client'
@@ -56,6 +57,7 @@ export interface NodejsSimpleClientOptions {
   workspaceRoot?: string
   skillsDir?: string
   client?: Partial<ClientInfo>
+  reconnect?: boolean | MdpClientReconnectOptions
   transport?: ClientTransport
 }
 
@@ -176,6 +178,7 @@ export function createNodejsSimpleMdpClient(
   const client = createMdpClient({
     serverUrl: options.serverUrl ?? DEFAULT_SERVER_URL,
     client: buildClientInfo(options.client, options.workspaceRoot),
+    reconnect: options.reconnect ?? true,
     ...(options.transport ? { transport: options.transport } : {})
   })
 

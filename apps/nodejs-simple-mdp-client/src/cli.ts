@@ -3,6 +3,7 @@
 import process from 'node:process'
 
 import { bootNodejsSimpleMdpClient } from './index.js'
+import type { MdpClientReconnectEvent } from '@modeldriveprotocol/client'
 
 interface CliOptions {
   helpRequested: boolean
@@ -23,6 +24,12 @@ async function main(): Promise<void> {
   const client = await bootNodejsSimpleMdpClient({
     ...(options.serverUrl ? { serverUrl: options.serverUrl } : {}),
     ...(options.workspaceRoot ? { workspaceRoot: options.workspaceRoot } : {}),
+    reconnect: {
+      enabled: true,
+      onEvent: (event) => {
+        writeReconnectLog(event, options.serverUrl ?? 'ws://127.0.0.1:47372')
+      }
+    },
     client: {
       ...(options.clientId ? { id: options.clientId } : {}),
       ...(options.clientName ? { name: options.clientName } : {})
@@ -116,6 +123,30 @@ function renderHelpText(): string {
     '  --client-name <name>      Client display name override',
     '  -h, --help                Show help text'
   ].join('\n')
+}
+
+function writeReconnectLog(event: MdpClientReconnectEvent, serverUrl: string): void {
+  switch (event.type) {
+    case 'disconnected':
+      process.stderr.write(`connection to ${serverUrl} lost\n`)
+      return
+    case 'reconnectScheduled':
+      process.stderr.write(
+        `reconnect attempt ${event.attempt} scheduled in ${event.delayMs}ms\n`
+      )
+      return
+    case 'reconnectAttempt':
+      process.stderr.write(`reconnecting to ${serverUrl} (attempt ${event.attempt})\n`)
+      return
+    case 'reconnected':
+      process.stderr.write(`reconnected to ${serverUrl} on attempt ${event.attempt}\n`)
+      return
+    case 'reconnectStopped':
+      process.stderr.write(
+        `stopped reconnecting to ${serverUrl} after attempt ${event.attempt}: ${event.error.message}\n`
+      )
+      return
+  }
 }
 
 void main().catch((error: unknown) => {

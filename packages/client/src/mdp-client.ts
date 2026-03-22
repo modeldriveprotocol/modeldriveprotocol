@@ -6,10 +6,15 @@ import {
   createSerializedError
 } from '@modeldriveprotocol/protocol'
 
-import { HttpLoopClientTransport } from './http-loop-client.js'
-import { ProcedureRegistry } from './procedure-registry.js'
+import {
+  createDefaultTransport,
+  hasCapabilityUpdate,
+  resolveServerUrl
+} from './transport/client-connection.js'
+import { ProcedureRegistry } from './runtime/procedure-registry.js'
+import { MdpClientReconnectController } from './runtime/reconnect-controller.js'
+import { authenticateTransport } from './transport/transport-auth.js'
 import type {
-  BrowserScriptClientAttributes,
   CapabilityHandler,
   ClientDescriptorOverride,
   ClientInfo,
@@ -23,7 +28,6 @@ import type {
   SkillDefinition,
   SkillResolver
 } from './types.js'
-import { WebSocketClientTransport } from './ws-client.js'
 
 export class MdpClient {
   private readonly serverUrl: string
@@ -33,9 +37,11 @@ export class MdpClient {
   private readonly registry = new ProcedureRegistry()
   private readonly transport: ClientTransport
   private readonly transportAuth: ClientTransportAuthOptions | undefined
+  private readonly reconnectController: MdpClientReconnectController
   private auth: AuthContext | undefined
   private connected = false
   private registered = false
+  private restoreRegistrationOnReconnect = false
 
   constructor(options: MdpClientOptions) {
     this.serverUrl = options.serverUrl
@@ -45,12 +51,28 @@ export class MdpClient {
     this.auth = options.auth
     this.transportAuth = options.transportAuth
     this.transport = options.transport ?? createDefaultTransport(options.serverUrl)
+    this.reconnectController = new MdpClientReconnectController({
+      serverUrl: this.serverUrl,
+      reconnect: options.reconnect,
+      reconnectTransport: async () => {
+        await this.openTransport()
+
+        if (this.reconnectController.isDisconnectRequested()) {
+          await this.transport.close()
+          return
+        }
+
+        if (this.restoreRegistrationOnReconnect) {
+          this.sendRegisterMessage()
+          this.registered = true
+        }
+      }
+    })
     this.transport.onMessage((message) => {
       void this.handleMessage(message)
     })
     this.transport.onClose(() => {
-      this.connected = false
-      this.registered = false
+      void this.handleTransportClose()
     })
   }
 
@@ -132,9 +154,8 @@ export class MdpClient {
   }
 
   async connect(): Promise<void> {
-    await this.authenticateTransport()
-    await this.transport.connect()
-    this.connected = true
+    this.reconnectController.beginConnect()
+    await this.openTransport()
   }
 
   setAuth(auth?: AuthContext): this {
@@ -143,28 +164,13 @@ export class MdpClient {
   }
 
   async authenticateTransport(auth: AuthContext | undefined = this.auth): Promise<void> {
-    const effectiveTransportAuth = this.transportAuth ??
-      (this.usesDefaultTransport &&
-          auth &&
-          isWebSocketProtocol(this.serverProtocol)
-        ? ({
-          mode: 'cookie'
-        } satisfies ClientTransportAuthOptions)
-        : undefined)
-
-    if (!effectiveTransportAuth) {
-      return
-    }
-
-    switch (effectiveTransportAuth.mode) {
-      case 'cookie':
-        await bootstrapCookieTransportAuth(
-          this.serverUrl,
-          effectiveTransportAuth,
-          effectiveTransportAuth.auth ?? auth
-        )
-        return
-    }
+    await authenticateTransport({
+      serverUrl: this.serverUrl,
+      serverProtocol: this.serverProtocol,
+      usesDefaultTransport: this.usesDefaultTransport,
+      transportAuth: this.transportAuth,
+      auth
+    })
   }
 
   register(overrides: ClientDescriptorOverride = {}): void {
@@ -174,15 +180,14 @@ export class MdpClient {
       ...overrides
     }
 
-    this.transport.send({
-      type: 'registerClient',
-      client: this.registry.describe(this.clientInfo),
-      ...(this.auth ? { auth: this.auth } : {})
-    })
+    this.sendRegisterMessage()
     this.registered = true
   }
 
   async disconnect(): Promise<void> {
+    this.restoreRegistrationOnReconnect = false
+    this.reconnectController.beginDisconnect()
+
     if (this.connected && this.registered) {
       this.transport.send({
         type: 'unregisterClient',
@@ -290,94 +295,39 @@ export class MdpClient {
       throw new Error('MDP client is not registered')
     }
   }
+
+  private async openTransport(): Promise<void> {
+    await this.authenticateTransport()
+    await this.transport.connect()
+    this.connected = true
+  }
+
+  private sendRegisterMessage(): void {
+    this.transport.send({
+      type: 'registerClient',
+      client: this.registry.describe(this.clientInfo),
+      ...(this.auth ? { auth: this.auth } : {})
+    })
+  }
+
+  private async handleTransportClose(): Promise<void> {
+    const wasConnected = this.connected
+    const wasRegistered = this.registered
+
+    this.connected = false
+    this.registered = false
+
+    if (!wasConnected) {
+      return
+    }
+
+    this.restoreRegistrationOnReconnect ||= wasRegistered
+    this.reconnectController.handleUnexpectedClose()
+  }
 }
 
 export function createMdpClient(options: MdpClientOptions): MdpClient {
   return new MdpClient(options)
 }
 
-function createDefaultTransport(serverUrl: string): ClientTransport {
-  const protocol = new URL(serverUrl).protocol
-
-  switch (protocol) {
-    case 'ws:':
-    case 'wss:':
-      return new WebSocketClientTransport(serverUrl)
-    case 'http:':
-    case 'https:':
-      return new HttpLoopClientTransport(serverUrl)
-    default:
-      throw new Error(`Unsupported MDP transport protocol: ${protocol}`)
-  }
-}
-
-function isWebSocketProtocol(protocol: string): boolean {
-  return protocol === 'ws:' || protocol === 'wss:'
-}
-
-function hasCapabilityUpdate(capabilities: ClientCapabilityUpdate): boolean {
-  return (
-    capabilities.tools !== undefined ||
-    capabilities.prompts !== undefined ||
-    capabilities.skills !== undefined ||
-    capabilities.resources !== undefined
-  )
-}
-
-const DEFAULT_COOKIE_AUTH_ENDPOINT = '/mdp/auth'
-
-async function bootstrapCookieTransportAuth(
-  serverUrl: string,
-  options: Extract<ClientTransportAuthOptions, { mode: 'cookie' }>,
-  auth: AuthContext | undefined
-): Promise<void> {
-  if (!auth) {
-    throw new Error('Cookie transport auth requires an auth context')
-  }
-
-  const fetchImpl = options.fetch ?? globalThis.fetch
-
-  if (!fetchImpl) {
-    throw new Error('No fetch implementation is available in this runtime')
-  }
-
-  const response = await fetchImpl(resolveTransportAuthEndpoint(serverUrl, options.endpoint), {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...options.headers
-    },
-    body: JSON.stringify({
-      auth
-    }),
-    credentials: options.credentials ?? 'include'
-  })
-
-  if (!response.ok) {
-    throw new Error(`Unable to bootstrap websocket auth for ${serverUrl}`)
-  }
-}
-
-function resolveTransportAuthEndpoint(serverUrl: string, endpoint?: string): string {
-  const baseUrl = new URL(serverUrl)
-
-  if (baseUrl.protocol === 'ws:') {
-    baseUrl.protocol = 'http:'
-  } else if (baseUrl.protocol === 'wss:') {
-    baseUrl.protocol = 'https:'
-  }
-
-  return new URL(endpoint ?? DEFAULT_COOKIE_AUTH_ENDPOINT, baseUrl).toString()
-}
-
-export function resolveServerUrl(attributes: BrowserScriptClientAttributes): string {
-  if (attributes.serverUrl) {
-    return attributes.serverUrl
-  }
-
-  const protocol = attributes.serverProtocol ?? 'ws'
-  const host = attributes.serverHost ?? '127.0.0.1'
-  const port = attributes.serverPort ?? 47372
-
-  return `${protocol}://${host}:${port}`
-}
+export { resolveServerUrl } from './transport/client-connection.js'
