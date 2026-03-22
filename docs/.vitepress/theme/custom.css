@@ -50,6 +50,52 @@
   letter-spacing: -.02em;
 }
 
+.VPDoc .content-container {
+  position: relative;
+}
+
+.mdp-markdown-tools {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+}
+
+.mdp-markdown-tools .markdown-copy-buttons {
+  width: auto;
+  margin: 0;
+}
+
+.mdp-markdown-tools .markdown-copy-buttons-inner {
+  margin: 0;
+  align-items: center;
+}
+
+.mdp-markdown-tools .dropdown-trigger,
+.mdp-markdown-tools .download-btn {
+  height: 40px;
+}
+
+.mdp-markdown-tools .copy-page,
+.mdp-markdown-tools .chevron-wrapper {
+  min-height: 40px;
+}
+
+.mdp-markdown-tools .copy-page {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.mdp-markdown-tools .download-btn {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.VPDoc .content-container .mdp-markdown-tools + .main .vp-doc > h1 {
+  padding-right: 244px;
+  min-height: 40px;
+}
+
 .VPDoc .mdp-mermaid {
   margin: 24px 0;
   padding: 18px;
@@ -209,9 +255,23 @@
 }
 
 @media (max-width: 959px) {
+  .mdp-markdown-tools {
+    position: static;
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 0 12px;
+  }
+
   .mdp-sidebar-filter {
     margin-top: 0;
     padding-top: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .VPDoc .content-container .mdp-markdown-tools + .main .vp-doc > h1 {
+    padding-right: 0;
+    min-height: 0;
   }
 }
 

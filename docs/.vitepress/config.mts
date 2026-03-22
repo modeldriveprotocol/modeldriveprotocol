@@ -1,4 +1,5 @@
 import { type DefaultTheme, defineConfig } from 'vitepress'
+import llmstxt from 'vitepress-plugin-llms'
 
 type LocalePrefix = '' | '/zh-Hans'
 
@@ -91,6 +92,7 @@ interface LocaleCopy {
     playground: string
   }
   footerMessage: string
+  editLinkText: string
   outlineLabel: string
   lastUpdatedText: string
   docFooterPrev: string
@@ -123,6 +125,7 @@ interface LocaleCopy {
 }
 
 const base = resolveGitHubPagesBase()
+const repositoryUrl = resolveRepositoryUrl()
 
 const enUS: LocaleCopy = {
   nav: {
@@ -213,6 +216,7 @@ const enUS: LocaleCopy = {
     playground: 'Playground'
   },
   footerMessage: 'Model Drive Protocol',
+  editLinkText: 'Edit this page on GitHub',
   outlineLabel: 'On this page',
   lastUpdatedText: 'Last updated',
   docFooterPrev: 'Previous page',
@@ -333,6 +337,7 @@ const zhHans: LocaleCopy = {
     playground: 'Playground'
   },
   footerMessage: '模型驱动协议',
+  editLinkText: '在 GitHub 上编辑此页',
   outlineLabel: '本页导航',
   lastUpdatedText: '最后更新',
   docFooterPrev: '上一页',
@@ -371,6 +376,9 @@ export default defineConfig({
   cleanUrls: true,
   lastUpdated: true,
   appearance: true,
+  vite: {
+    plugins: [llmstxt()]
+  },
   themeConfig: {
     search: {
       provider: 'local'
@@ -564,7 +572,11 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
         }
       ]
     },
-    socialLinks: [{ icon: 'github', link: 'https://github.com/NWYLZW/mdp' }],
+    socialLinks: [{ icon: 'github', link: repositoryUrl }],
+    editLink: {
+      pattern: `${repositoryUrl}/edit/main/docs/:path`,
+      text: copy.editLinkText
+    },
     outline: { label: copy.outlineLabel },
     lastUpdated: { text: copy.lastUpdatedText },
     docFooter: {
@@ -916,4 +928,14 @@ function normalizeBase(value: string): string {
   }
 
   return normalized
+}
+
+function resolveRepositoryUrl(): string {
+  const repository = process.env.GITHUB_REPOSITORY
+
+  if (repository) {
+    return `https://github.com/${repository}`
+  }
+
+  return 'https://github.com/modeldriveprotocol/modeldriveprotocol'
 }

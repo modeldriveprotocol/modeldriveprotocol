@@ -1,6 +1,7 @@
 import { inBrowser, useData } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
 import { h, onMounted, onUnmounted, watch } from 'vue'
+import MarkdownPageTools from './components/MarkdownPageTools.vue'
 import MdpPlaygroundLayout from './components/MdpPlaygroundLayout.vue'
 import MermaidDiagram from './components/MermaidDiagram.vue'
 import SidebarDirectorySearch from './components/SidebarDirectorySearch.vue'
@@ -19,6 +20,7 @@ export default {
   extends: DefaultTheme,
   Layout() {
     return h(DefaultTheme.Layout, null, {
+      'doc-before': () => h(MarkdownPageTools),
       'sidebar-nav-before': () => h(SidebarDirectorySearch)
     })
   },
