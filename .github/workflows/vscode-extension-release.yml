@@ -20,6 +20,7 @@ jobs:
       version: ${{ steps.version.outputs.value }}
       archive_file: mdp-vscode-extension-v${{ steps.version.outputs.value }}.vsix
       artifact_name: mdp-vscode-extension-v${{ steps.version.outputs.value }}
+      publisher: ${{ steps.version.outputs.publisher }}
 
     steps:
       - name: Checkout repository
@@ -36,11 +37,7 @@ jobs:
         run: |
           PACKAGE_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('apps/vscode-extension/package.json', 'utf8')).version")
           TAG_VERSION="${TAG_NAME#vscode-extension-v}"
-
-          if [ -z "$VSCODE_EXTENSION_PUBLISHER" ]; then
-            echo "Missing repository variable VSCODE_EXTENSION_PUBLISHER." >&2
-            exit 1
-          fi
+          PUBLISHER="${VSCODE_EXTENSION_PUBLISHER:-localdev}"
 
           if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
             echo "Tag version ($TAG_VERSION) does not match VSCode extension version ($PACKAGE_VERSION)." >&2
@@ -50,6 +47,7 @@ jobs:
           echo "value=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
           echo "file=mdp-vscode-extension-v$PACKAGE_VERSION.vsix" >> "$GITHUB_OUTPUT"
           echo "archive=apps/vscode-extension/mdp-vscode-extension-v$PACKAGE_VERSION.vsix" >> "$GITHUB_OUTPUT"
+          echo "publisher=$PUBLISHER" >> "$GITHUB_OUTPUT"
 
       - name: Typecheck extension
         run: pnpm --filter @modeldriveprotocol/vscode-extension typecheck
@@ -65,7 +63,7 @@ jobs:
 
       - name: Package VSIX
         env:
-          VSCODE_EXTENSION_PUBLISHER: ${{ vars.VSCODE_EXTENSION_PUBLISHER }}
+          VSCODE_EXTENSION_PUBLISHER: ${{ steps.version.outputs.publisher }}
           ARCHIVE_FILE: ${{ steps.version.outputs.file }}
         run: pnpm --filter @modeldriveprotocol/vscode-extension package:vsix -- --out "$ARCHIVE_FILE"
 
@@ -100,7 +98,13 @@ jobs:
           VSCODE_EXTENSION_PUBLISHER: ${{ vars.VSCODE_EXTENSION_PUBLISHER }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
           ARCHIVE_FILE: dist/${{ needs.build.outputs.archive_file }}
-        run: pnpm --filter @modeldriveprotocol/vscode-extension publish:vsix -- --packagePath "$ARCHIVE_FILE"
+        run: |
+          if [ -z "$VSCODE_EXTENSION_PUBLISHER" ] || [ -z "$VSCE_PAT" ]; then
+            echo "Skipping VS Code Marketplace publish because VSCODE_EXTENSION_PUBLISHER or VSCE_PAT is not configured."
+            exit 0
+          fi
+
+          pnpm --filter @modeldriveprotocol/vscode-extension publish:vsix -- --packagePath "$ARCHIVE_FILE"
 
       - name: Create or update GitHub release
         env:
