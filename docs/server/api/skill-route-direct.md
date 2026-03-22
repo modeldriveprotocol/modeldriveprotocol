@@ -30,11 +30,13 @@ GET /skills/client-01/docs/root/child?topic=mdp
 
 ## Response
 
-Status `200 OK` with text payload:
+Status `200 OK` with UTF-8 text payload:
 
 ```md
 # Child Skill
 ```
+
+The response `Content-Type` follows the skill descriptor content type. For Markdown skills that means `text/markdown; charset=utf-8`.
 
 If the resolved skill returns non-string data, the server responds with JSON:
 

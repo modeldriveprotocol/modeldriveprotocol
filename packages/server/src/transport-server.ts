@@ -529,10 +529,10 @@ export class MdpTransportServer {
   private writeJson(
     response: ServerResponse,
     statusCode: number,
-    payload: Record<string, unknown>
+    payload: unknown
   ): void {
     response.statusCode = statusCode
-    response.setHeader('content-type', 'application/json')
+    response.setHeader('content-type', 'application/json; charset=utf-8')
     response.end(JSON.stringify(payload))
   }
 
@@ -545,7 +545,7 @@ export class MdpTransportServer {
       response.statusCode = 200
       response.setHeader(
         'content-type',
-        contentType ?? 'text/plain; charset=utf-8'
+        normalizeTextContentType(contentType)
       )
       response.end(payload)
       return
@@ -926,6 +926,24 @@ function trimTrailingSlash(value: string): string {
 
 function defaultCorsAllowedHeaders(authHeaders: string[]): string {
   return ['content-type', SESSION_HEADER, ...authHeaders].join(', ')
+}
+
+function normalizeTextContentType(contentType: string | undefined): string {
+  const normalized = contentType?.trim()
+
+  if (!normalized) {
+    return 'text/plain; charset=utf-8'
+  }
+
+  if (!/^text\//i.test(normalized)) {
+    return normalized
+  }
+
+  if (/;\s*charset=/i.test(normalized)) {
+    return normalized
+  }
+
+  return `${normalized}; charset=utf-8`
 }
 
 function appendVaryHeader(response: ServerResponse, value: string): void {

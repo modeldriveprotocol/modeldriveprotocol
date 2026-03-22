@@ -30,11 +30,13 @@ GET /skills/client-01/docs/root/child?topic=mdp
 
 ## 响应
 
-状态码 `200 OK`，文本返回：
+状态码 `200 OK`，返回 UTF-8 文本：
 
 ```md
 # Child Skill
 ```
+
+响应头里的 `Content-Type` 会沿用 skill descriptor 的内容类型。对 Markdown skill 来说，就是 `text/markdown; charset=utf-8`。
 
 如果 skill 返回的不是字符串，server 会返回 JSON：
 

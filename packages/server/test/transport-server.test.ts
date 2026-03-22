@@ -412,17 +412,17 @@ describe('MdpTransportServer', () => {
       type: 'callClientResult',
       requestId: nestedInvocation.requestId,
       ok: true,
-      data: '# Child Skill\n\nNested route.'
+      data: '# 子技能\n\n嵌套路由。'
     })
 
     const nestedRouteResponse = await nestedRouteResponsePromise
 
     expect(nestedRouteResponse.status).toBe(200)
-    expect(nestedRouteResponse.headers.get('content-type')).toContain(
-      'text/markdown'
+    expect(nestedRouteResponse.headers.get('content-type')).toBe(
+      'text/markdown; charset=utf-8'
     )
     await expect(nestedRouteResponse.text()).resolves.toBe(
-      '# Child Skill\n\nNested route.'
+      '# 子技能\n\n嵌套路由。'
     )
 
     const directRouteResponsePromise = fetch(
@@ -456,14 +456,17 @@ describe('MdpTransportServer', () => {
       type: 'callClientResult',
       requestId: directInvocation.requestId,
       ok: true,
-      data: '# Child Skill\n\nDirect route.'
+      data: '# 子技能\n\n直接路由。'
     })
 
     const directRouteResponse = await directRouteResponsePromise
 
     expect(directRouteResponse.status).toBe(200)
+    expect(directRouteResponse.headers.get('content-type')).toBe(
+      'text/markdown; charset=utf-8'
+    )
     await expect(directRouteResponse.text()).resolves.toBe(
-      '# Child Skill\n\nDirect route.'
+      '# 子技能\n\n直接路由。'
     )
   })
 })
