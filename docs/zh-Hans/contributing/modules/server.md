@@ -91,8 +91,6 @@ node packages/server/dist/cli.js \
   --server-id edge-02
 ```
 
-在这个拓扑下，运行时本地 clients 通常应该连接 edge server，而不是直接连 hub。hub 继续承担面向 MCP 的 bridge surface。
-
 如果要看完整的参数列表和 `--help` 输出形式，继续阅读 [CLI 参数](/zh-Hans/server/cli)。
 
 ## 调试开发回路

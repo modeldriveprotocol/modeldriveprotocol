@@ -91,8 +91,6 @@ node packages/server/dist/cli.js \
   --server-id edge-02
 ```
 
-In this setup, runtime-local clients normally connect to the edge server, not directly to the hub. The hub remains the MCP-facing bridge surface.
-
 For the complete flag list and `--help` output shape, see [CLI Reference](/server/cli).
 
 ## Debugging workflow

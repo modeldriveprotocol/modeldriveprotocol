@@ -107,7 +107,3 @@ sequenceDiagram
 - 运行时能稳定持有 socket
 - 希望降低双向消息延迟
 - 不想自己维护 long-poll session
-
-## 多 server 说明
-
-如果你的部署里同时存在 hub server 和一个或多个 edge server，websocket client 应该连接哪个 server，应该由部署策略决定，而不是靠盲试端口。可以通过 `/mdp/meta` 或显式配置来判断：当前运行时应该注册到一个 standalone hub，还是注册到一个会向上 proxy 的本地 edge。

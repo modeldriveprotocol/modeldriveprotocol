@@ -9,12 +9,6 @@ The server can run either as one isolated registry or as one cluster participant
 
 The default CLI startup mode is `auto` on port `47372`.
 
-The intended rule is simple:
-
-- hosts talk to one hub-facing bridge surface
-- runtime-local clients usually talk to the nearest edge
-- the choice between hub and edge is deployment policy, not client guesswork
-
 ## Standalone
 
 Use standalone mode when one server owns the local registry and bridge surface.
@@ -179,34 +173,6 @@ When one server decides whether to proxy into another, it should treat `protocol
 The extra quorum fields are there for diagnostics: `knownMemberCount` is the sticky in-memory member set, `reachableMemberCount` is the node-local live reachability view, and `hasQuorum` tells you whether that node currently sees a majority.
 
 For the exact CLI flags and startup syntax, see [CLI Reference](/server/cli).
-
-## Recommended Topology
-
-For a layered local setup, prefer:
-
-1. one hub on a known port such as `47372`
-2. one or more edges on their own ports or ephemeral ports
-3. runtime-local clients registering with the edge nearest to them
-4. MCP hosts talking only to the hub
-
-```mermaid
-flowchart LR
-  host["MCP Host"] <-->|"bridge tools"| hub["Hub Server"]
-  hub <-->|"mirrored registrations<br/>proxied invocations"| edge["Edge Server"]
-  edge <-->|"client sessions"| client["Runtime Client"]
-```
-
-## Client Choice
-
-Clients should not blindly scan ports and guess which server to use.
-
-Instead, do one of these:
-
-- configure the correct `serverUrl` explicitly
-- connect to the local edge chosen by deployment
-- use `/mdp/meta` in bootstrap code before opening the transport
-
-If a runtime is expected to reach a local edge, keep that choice outside the capability client itself whenever possible.
 
 Two important boundaries remain:
 

@@ -107,7 +107,3 @@ sequenceDiagram
 - the runtime can hold a stable socket
 - you want lower-latency push in both directions
 - you do not want to implement long-poll session management
-
-## Multi-server note
-
-If your deployment has both a hub server and one or more edge servers, the websocket client should connect to the server chosen by deployment policy, not by blind trial-and-error. Use `/mdp/meta` or explicit configuration to decide whether this runtime should register with a standalone hub or with a local edge that proxies upward.
