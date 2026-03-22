@@ -11,6 +11,7 @@ apps/*/*.vsix
 coverage/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
+docs/public/examples/
 docs/public/assets/mdp-client.global.js
 docs/public/assets/mdp-client.global.js.map
 docs/public/assets/modeldriveprotocol-client.global.js

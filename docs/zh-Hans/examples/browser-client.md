@@ -48,7 +48,7 @@ status: MVP
         });
 
         const client = MDP.createMdpClient({
-          serverUrl: "ws://127.0.0.1:7070",
+          serverUrl: "ws://127.0.0.1:47070",
           auth: {
             token: "browser-session-token"
           },
@@ -106,7 +106,7 @@ status: MVP
         });
 
         const client = MDP.createMdpClient({
-          serverUrl: "http://127.0.0.1:7070",
+          serverUrl: "http://127.0.0.1:47070",
           auth: {
             token: "browser-session-token"
           },
@@ -136,5 +136,6 @@ status: MVP
 这个示例会先暴露 `getPageInfo`，这样 host 可以先拿到页面标题和 URL，再决定是否调用更具体的工具。
 
 可直接查看[部署在 Pages 上的浏览器示例](/examples/browser/index.html)作为启动模板。
+如果你想看浏览器 runtime 如何接到 Pi 风格的 agent loop，可继续看 [Pi Agent Assistant](/zh-Hans/examples/pi-agent-assistant)。
 如果你想要打包好的浏览器集成，优先使用 [Chrome 插件](/zh-Hans/apps/chrome-extension)。
 如果你需要一个直接运行在文档站里的多连接配置界面，可使用顶层入口 [Playground](/zh-Hans/playground/)。

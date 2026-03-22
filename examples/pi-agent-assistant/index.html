@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MDP Pi Agent Inbox Runtime</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f3efe4;
+        --panel: rgba(255, 252, 245, 0.88);
+        --panel-strong: rgba(255, 255, 255, 0.96);
+        --text: #231f17;
+        --muted: #6b6256;
+        --line: rgba(35, 31, 23, 0.14);
+        --accent: #0f766e;
+        --accent-soft: rgba(15, 118, 110, 0.12);
+        --warning: #b45309;
+        --shadow: 0 24px 64px rgba(49, 40, 28, 0.12);
+        font-family: 'Avenir Next', 'Segoe UI', 'IBM Plex Sans', sans-serif;
+        background:
+          radial-gradient(circle at top left, rgba(217, 119, 6, 0.18), transparent 30%),
+          radial-gradient(circle at top right, rgba(15, 118, 110, 0.16), transparent 28%),
+          linear-gradient(180deg, #f6f2e9 0%, #ece4d5 100%);
+        color: var(--text);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+      }
+
+      .shell {
+        width: min(1320px, calc(100vw - 32px));
+        margin: 24px auto 40px;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .hero-card {
+        padding: 28px;
+        border-radius: 28px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        margin-top: 16px;
+        font-size: clamp(32px, 4vw, 58px);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+        max-width: 12ch;
+      }
+
+      .hero-copy p {
+        margin-top: 16px;
+        max-width: 60ch;
+        font-size: 16px;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+
+      .hero-notes {
+        display: grid;
+        gap: 12px;
+        margin-top: 22px;
+      }
+
+      .hero-note {
+        padding: 14px 16px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: var(--panel-strong);
+      }
+
+      .hero-note strong {
+        display: block;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      .hero-note code,
+      .meta code,
+      .log code {
+        font-family: 'IBM Plex Mono', 'SF Mono', ui-monospace, monospace;
+        font-size: 12px;
+      }
+
+      .meta {
+        display: grid;
+        gap: 14px;
+        padding: 24px;
+        border-radius: 28px;
+      }
+
+      .status-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        font-size: 14px;
+        font-weight: 700;
+        width: fit-content;
+      }
+
+      .status-chip::before {
+        content: '';
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: currentColor;
+      }
+
+      .status-chip[data-status='connected'] {
+        background: rgba(15, 118, 110, 0.14);
+        color: var(--accent);
+      }
+
+      .status-chip[data-status='connecting'] {
+        background: rgba(180, 83, 9, 0.14);
+        color: var(--warning);
+      }
+
+      .meta-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .meta-item {
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: var(--panel-strong);
+      }
+
+      .meta-item strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.08fr);
+        gap: 20px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 20px;
+      }
+
+      .card {
+        padding: 22px;
+        border-radius: 24px;
+      }
+
+      .card-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .card-head span {
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .ticket-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .ticket {
+        width: 100%;
+        text-align: left;
+        padding: 16px;
+        border: 1px solid var(--line);
+        background: var(--panel-strong);
+        border-radius: 18px;
+        cursor: pointer;
+        transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+      }
+
+      .ticket:hover,
+      .ticket:focus-visible {
+        transform: translateY(-2px);
+        border-color: rgba(15, 118, 110, 0.32);
+        box-shadow: 0 14px 28px rgba(49, 40, 28, 0.08);
+        outline: none;
+      }
+
+      .ticket[data-selected='true'] {
+        border-color: rgba(15, 118, 110, 0.5);
+        background: rgba(15, 118, 110, 0.08);
+      }
+
+      .ticket-top,
+      .message-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .ticket h3 {
+        font-size: 18px;
+        line-height: 1.2;
+      }
+
+      .pill-row,
+      .capability-list,
+      .meta-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        background: rgba(35, 31, 23, 0.06);
+        color: var(--muted);
+      }
+
+      .pill.priority-urgent {
+        background: rgba(185, 28, 28, 0.12);
+        color: #b91c1c;
+      }
+
+      .pill.priority-medium {
+        background: rgba(180, 83, 9, 0.14);
+        color: #b45309;
+      }
+
+      .pill.priority-low {
+        background: rgba(37, 99, 235, 0.12);
+        color: #2563eb;
+      }
+
+      .ticket p,
+      .detail-copy p,
+      .log li,
+      .capability-item,
+      .playbook,
+      .sample-prompt {
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .detail-grid {
+        display: grid;
+        gap: 18px;
+      }
+
+      .detail-copy {
+        padding: 18px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: var(--panel-strong);
+      }
+
+      .thread {
+        display: grid;
+        gap: 12px;
+      }
+
+      .message {
+        padding: 16px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: var(--panel-strong);
+      }
+
+      .message p {
+        margin-top: 10px;
+      }
+
+      .message small,
+      .draft-note small {
+        color: var(--muted);
+      }
+
+      .draft-note {
+        padding: 18px;
+        border-radius: 18px;
+        border: 1px dashed rgba(15, 118, 110, 0.38);
+        background: rgba(15, 118, 110, 0.08);
+      }
+
+      .playbook,
+      .sample-prompt {
+        padding: 16px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: var(--panel-strong);
+        white-space: pre-wrap;
+      }
+
+      .capability-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .capability-item {
+        padding: 16px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: var(--panel-strong);
+      }
+
+      .capability-item strong {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text);
+      }
+
+      .log {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 10px;
+      }
+
+      .log li {
+        padding: 14px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: var(--panel-strong);
+      }
+
+      @media (max-width: 1040px) {
+        .hero,
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .shell {
+          width: min(100vw - 20px, 1320px);
+          margin: 10px auto 24px;
+        }
+
+        .hero-card,
+        .meta,
+        .card {
+          padding: 18px;
+          border-radius: 22px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <section class="hero">
+        <article class="panel hero-card hero-copy">
+          <span class="eyebrow">Pi Agent + MDP</span>
+          <h1>Inbox runtime owned by the browser.</h1>
+          <p>
+            This page is the runtime half of the example app. It keeps local ticket state in the
+            browser, registers tools through MDP, and lets a Pi agent read the queue, consult the
+            reply playbook, and save a draft back into this page.
+          </p>
+          <div class="hero-notes">
+            <div class="hero-note">
+              <strong>Runtime client</strong>
+              <div><code>clientId = pi-inbox-runtime</code></div>
+            </div>
+            <div class="hero-note">
+              <strong>Agent prompt to try</strong>
+              <div>Review open tickets, read the playbook, and save a calm reply draft for the most urgent unresolved ticket.</div>
+            </div>
+          </div>
+        </article>
+
+        <aside class="panel meta">
+          <div class="status-chip" id="connection-status" data-status="connecting">Connecting</div>
+          <div class="meta-grid">
+            <div class="meta-item">
+              <strong>Server URL</strong>
+              <code id="server-url"></code>
+            </div>
+            <div class="meta-item">
+              <strong>Browser Route</strong>
+              <code>/examples/pi-agent-assistant/index.html</code>
+            </div>
+            <div class="meta-item">
+              <strong>How the agent reaches this page</strong>
+              <div>
+                Pi agent -> MCP client -> MDP bridge -> this browser runtime
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="workspace">
+        <div class="stack">
+          <article class="panel card">
+            <div class="card-head">
+              <div>
+                <span>Runtime Data</span>
+                <h2>Support Queue</h2>
+              </div>
+              <div class="pill-row" id="ticket-stats"></div>
+            </div>
+            <div class="ticket-list" id="ticket-list"></div>
+          </article>
+
+          <article class="panel card">
+            <div class="card-head">
+              <div>
+                <span>Capability Surface</span>
+                <h2>Registered With MDP</h2>
+              </div>
+            </div>
+            <div class="capability-grid" id="capability-grid"></div>
+          </article>
+        </div>
+
+        <div class="stack">
+          <article class="panel card">
+            <div class="card-head">
+              <div>
+                <span>Selected Ticket</span>
+                <h2 id="detail-title"></h2>
+              </div>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-copy" id="detail-summary"></div>
+              <div class="thread" id="thread"></div>
+              <div class="draft-note" id="draft-note"></div>
+            </div>
+          </article>
+
+          <article class="panel card">
+            <div class="card-head">
+              <div>
+                <span>MDP Resource</span>
+                <h2>Reply Playbook</h2>
+              </div>
+            </div>
+            <div class="playbook" id="playbook"></div>
+          </article>
+
+          <article class="panel card">
+            <div class="card-head">
+              <div>
+                <span>Runtime Prompt</span>
+                <h2>Suggested Agent Ask</h2>
+              </div>
+            </div>
+            <div class="sample-prompt" id="sample-prompt"></div>
+          </article>
+
+          <article class="panel card">
+            <div class="card-head">
+              <div>
+                <span>Invocation Log</span>
+                <h2>What the agent called</h2>
+              </div>
+            </div>
+            <ol class="log" id="event-log"></ol>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js"></script>
+    <script>
+      const params = new URLSearchParams(window.location.search)
+      const serverUrl = params.get('serverUrl') ?? 'ws://127.0.0.1:7070'
+      const authToken = params.get('authToken') ?? undefined
+
+      const playbook = [
+        '# Support reply playbook',
+        '',
+        '1. Acknowledge the user issue in the first sentence.',
+        '2. State the next action and owner clearly.',
+        '3. Avoid refund or SLA promises unless the ticket already contains approval.',
+        '4. Keep the tone calm, specific, and human.',
+        '5. End with one concrete follow-up expectation.'
+      ].join('\n')
+
+      const replyPrompt = 'Review the open queue, identify the highest-priority ticket, and draft a reply that follows the playbook. Save the final reply with the saveDraft tool before finishing.'
+
+      const state = {
+        connected: false,
+        tickets: [
+          {
+            id: 'T-102',
+            subject: 'Payment retries are looping and the customer is locked out',
+            priority: 'urgent',
+            status: 'open',
+            sentiment: 'frustrated',
+            account: 'Northwind Health',
+            owner: 'billing-ops',
+            updatedAt: '2026-03-22T09:12:00Z',
+            summary: 'A finance admin cannot regain access after repeated failed card retries. Renewal deadline is tomorrow.',
+            draft: '',
+            thread: [
+              {
+                author: 'Customer',
+                timestamp: '2026-03-22T08:58:00Z',
+                text: 'Our card failed once, then the portal started looping us back to the payment page. We need access restored today.'
+              },
+              {
+                author: 'Billing Bot',
+                timestamp: '2026-03-22T09:01:00Z',
+                text: 'We detected repeated retry failures and temporarily paused self-service retries.'
+              }
+            ]
+          },
+          {
+            id: 'T-104',
+            subject: 'SSO setup is blocked after certificate rotation',
+            priority: 'medium',
+            status: 'open',
+            sentiment: 'anxious',
+            account: 'Maple Legal',
+            owner: 'identity-team',
+            updatedAt: '2026-03-22T07:40:00Z',
+            summary: 'IT rotated certificates overnight and needs confirmation about which metadata fields to update.',
+            draft: '',
+            thread: [
+              {
+                author: 'Customer',
+                timestamp: '2026-03-22T07:15:00Z',
+                text: 'We rotated our certs and now logins fail. Can someone confirm the metadata fields we should update?'
+              }
+            ]
+          },
+          {
+            id: 'T-099',
+            subject: 'Question about exporting monthly usage reports',
+            priority: 'low',
+            status: 'open',
+            sentiment: 'neutral',
+            account: 'Pine Studio',
+            owner: 'success-team',
+            updatedAt: '2026-03-21T18:25:00Z',
+            summary: 'Customer is asking where to find CSV exports in the dashboard.',
+            draft: '',
+            thread: [
+              {
+                author: 'Customer',
+                timestamp: '2026-03-21T18:25:00Z',
+                text: 'Where can I download monthly usage as CSV?'
+              }
+            ]
+          }
+        ],
+        selectedTicketId: 'T-102',
+        events: []
+      }
+
+      const nodes = {
+        connectionStatus: document.getElementById('connection-status'),
+        serverUrl: document.getElementById('server-url'),
+        ticketStats: document.getElementById('ticket-stats'),
+        ticketList: document.getElementById('ticket-list'),
+        capabilityGrid: document.getElementById('capability-grid'),
+        detailTitle: document.getElementById('detail-title'),
+        detailSummary: document.getElementById('detail-summary'),
+        thread: document.getElementById('thread'),
+        draftNote: document.getElementById('draft-note'),
+        playbook: document.getElementById('playbook'),
+        samplePrompt: document.getElementById('sample-prompt'),
+        eventLog: document.getElementById('event-log')
+      }
+
+      nodes.serverUrl.textContent = serverUrl
+      nodes.playbook.textContent = playbook
+      nodes.samplePrompt.textContent = replyPrompt
+
+      const client = MDP.createMdpClient({
+        serverUrl,
+        ...(authToken
+          ? {
+              auth: {
+                token: authToken
+              }
+            }
+          : {}),
+        client: {
+          id: 'pi-inbox-runtime',
+          name: 'Pi Inbox Runtime',
+          description: 'Browser-owned inbox state for the Pi agent + MDP example.',
+          platform: 'web'
+        }
+      })
+
+      client.exposeTool(
+        'listTickets',
+        async ({ status } = {}, context) => {
+          const normalized = typeof status === 'string' ? status : 'open'
+          const tickets = state.tickets
+            .filter((ticket) => normalized === 'all' ? true : ticket.status === normalized)
+            .map((ticket) => ({
+              id: ticket.id,
+              subject: ticket.subject,
+              priority: ticket.priority,
+              status: ticket.status,
+              sentiment: ticket.sentiment,
+              account: ticket.account,
+              updatedAt: ticket.updatedAt,
+              hasDraft: Boolean(ticket.draft)
+            }))
+
+          pushEvent(`tool:listTickets status=${normalized}`, context.auth?.token)
+          return {
+            tickets,
+            count: tickets.length
+          }
+        },
+        {
+          description: 'List local support tickets currently held inside the browser runtime.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              status: {
+                type: 'string',
+                enum: ['open', 'closed', 'all'],
+                description: 'Optional ticket status filter.'
+              }
+            }
+          }
+        }
+      )
+
+      client.exposeTool(
+        'getTicket',
+        async ({ ticketId } = {}, context) => {
+          const ticket = findTicket(ticketId)
+          pushEvent(`tool:getTicket ${ticket.id}`, context.auth?.token)
+          return ticket
+        },
+        {
+          description: 'Read the full ticket thread, summary, and current draft for one ticket.',
+          inputSchema: {
+            type: 'object',
+            required: ['ticketId'],
+            properties: {
+              ticketId: {
+                type: 'string',
+                description: 'Ticket ID like T-102.'
+              }
+            }
+          }
+        }
+      )
+
+      client.exposeTool(
+        'saveDraft',
+        async ({ ticketId, draft, author } = {}, context) => {
+          const ticket = findTicket(ticketId)
+
+          if (typeof draft !== 'string' || draft.trim().length === 0) {
+            throw new Error('saveDraft requires a non-empty draft string')
+          }
+
+          ticket.draft = draft.trim()
+          ticket.draftAuthor = typeof author === 'string' && author ? author : 'unknown'
+          state.selectedTicketId = ticket.id
+          render()
+          pushEvent(`tool:saveDraft ${ticket.id}`, context.auth?.token)
+
+          return {
+            ticketId: ticket.id,
+            saved: true,
+            author: ticket.draftAuthor,
+            preview: ticket.draft
+          }
+        },
+        {
+          description: 'Save a reply draft back into the browser runtime so a human can review it.',
+          inputSchema: {
+            type: 'object',
+            required: ['ticketId', 'draft'],
+            properties: {
+              ticketId: {
+                type: 'string',
+                description: 'Ticket ID like T-102.'
+              },
+              draft: {
+                type: 'string',
+                description: 'Reply draft to save.'
+              },
+              author: {
+                type: 'string',
+                description: 'Optional author label for the saved draft.'
+              }
+            }
+          }
+        }
+      )
+
+      client.exposePrompt(
+        'replyTicket',
+        async ({ ticketId } = {}) => {
+          const ticket = findTicket(ticketId)
+          return {
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  `Draft a reply for ticket ${ticket.id}.`,
+                  `Subject: ${ticket.subject}`,
+                  `Summary: ${ticket.summary}`,
+                  '',
+                  playbook
+                ].join('\n')
+              }
+            ]
+          }
+        },
+        {
+          description: 'Return a ready-to-use prompt for drafting one support reply.',
+          arguments: [
+            {
+              name: 'ticketId',
+              description: 'Ticket ID like T-102.',
+              required: true
+            }
+          ]
+        }
+      )
+
+      client.exposeSkill(
+        'support/reply-workflow',
+        [
+          '# Reply workflow',
+          '',
+          '1. List open tickets.',
+          '2. Read the ticket you want to handle.',
+          '3. Read inbox://support/playbook.',
+          '4. Draft the reply.',
+          '5. Save the draft back into the runtime.',
+          '6. Tell the human operator why that ticket was prioritized.'
+        ].join('\n'),
+        {
+          description: 'Step-by-step workflow for triaging and drafting one support reply.',
+          contentType: 'text/markdown'
+        }
+      )
+
+      client.exposeResource(
+        'inbox://support/playbook',
+        async () => ({
+          mimeType: 'text/markdown',
+          text: playbook
+        }),
+        {
+          name: 'Support Reply Playbook',
+          description: 'Local support-team drafting rules.',
+          mimeType: 'text/markdown'
+        }
+      )
+
+      client.exposeResource(
+        'inbox://support/open-queue',
+        async () => ({
+          mimeType: 'application/json',
+          text: JSON.stringify(
+            state.tickets.filter((ticket) => ticket.status === 'open').map(({ thread, ...ticket }) => ticket),
+            null,
+            2
+          )
+        }),
+        {
+          name: 'Open Queue Snapshot',
+          description: 'Compact JSON snapshot of the currently open tickets.',
+          mimeType: 'application/json'
+        }
+      )
+
+      renderCapabilities()
+      render()
+      void connectWithRetry()
+
+      function render() {
+        renderStats()
+        renderTickets()
+        renderSelectedTicket()
+        renderLog()
+      }
+
+      function renderStats() {
+        const openCount = state.tickets.filter((ticket) => ticket.status === 'open').length
+        const draftCount = state.tickets.filter((ticket) => ticket.draft).length
+        nodes.ticketStats.innerHTML = ''
+        ;[
+          `${openCount} open`,
+          `${draftCount} drafted`,
+          `${state.tickets.filter((ticket) => ticket.priority === 'urgent').length} urgent`
+        ].forEach((value) => {
+          const pill = document.createElement('span')
+          pill.className = 'pill'
+          pill.textContent = value
+          nodes.ticketStats.appendChild(pill)
+        })
+      }
+
+      function renderTickets() {
+        nodes.ticketList.innerHTML = ''
+
+        for (const ticket of state.tickets) {
+          const button = document.createElement('button')
+          button.type = 'button'
+          button.className = 'ticket'
+          button.dataset.selected = String(ticket.id === state.selectedTicketId)
+          button.addEventListener('click', () => {
+            state.selectedTicketId = ticket.id
+            render()
+          })
+
+          button.innerHTML = `
+            <div class="ticket-top">
+              <h3>${escapeHtml(ticket.subject)}</h3>
+              <span class="pill priority-${ticket.priority}">${ticket.priority}</span>
+            </div>
+            <p>${escapeHtml(ticket.summary)}</p>
+            <div class="pill-row">
+              <span class="pill">${ticket.id}</span>
+              <span class="pill">${ticket.account}</span>
+              <span class="pill">${ticket.sentiment}</span>
+              <span class="pill">${ticket.draft ? 'draft saved' : 'no draft yet'}</span>
+            </div>
+          `
+
+          nodes.ticketList.appendChild(button)
+        }
+      }
+
+      function renderCapabilities() {
+        const descriptor = client.describe()
+        const sections = [
+          {
+            label: 'Tools',
+            items: descriptor.tools.map((tool) => `${tool.name}${tool.description ? `: ${tool.description}` : ''}`)
+          },
+          {
+            label: 'Prompts',
+            items: descriptor.prompts.map((prompt) => prompt.name)
+          },
+          {
+            label: 'Skills',
+            items: descriptor.skills.map((skill) => skill.name)
+          },
+          {
+            label: 'Resources',
+            items: descriptor.resources.map((resource) => resource.uri)
+          }
+        ]
+
+        nodes.capabilityGrid.innerHTML = ''
+
+        for (const section of sections) {
+          const article = document.createElement('article')
+          article.className = 'capability-item'
+          article.innerHTML = `
+            <strong>${section.label}</strong>
+            <div class="capability-list">${section.items.map((item) => `<span class="pill">${escapeHtml(item)}</span>`).join('')}</div>
+          `
+          nodes.capabilityGrid.appendChild(article)
+        }
+      }
+
+      function renderSelectedTicket() {
+        const ticket = state.tickets.find((entry) => entry.id === state.selectedTicketId) ?? state.tickets[0]
+        state.selectedTicketId = ticket.id
+        nodes.detailTitle.textContent = `${ticket.id} · ${ticket.subject}`
+        nodes.detailSummary.innerHTML = `
+          <div class="meta-list">
+            <span class="pill priority-${ticket.priority}">${ticket.priority}</span>
+            <span class="pill">${ticket.account}</span>
+            <span class="pill">${ticket.owner}</span>
+            <span class="pill">${ticket.sentiment}</span>
+          </div>
+          <p>${escapeHtml(ticket.summary)}</p>
+        `
+
+        nodes.thread.innerHTML = ''
+
+        for (const item of ticket.thread) {
+          const article = document.createElement('article')
+          article.className = 'message'
+          article.innerHTML = `
+            <div class="message-top">
+              <strong>${escapeHtml(item.author)}</strong>
+              <small>${escapeHtml(formatDate(item.timestamp))}</small>
+            </div>
+            <p>${escapeHtml(item.text)}</p>
+          `
+          nodes.thread.appendChild(article)
+        }
+
+        if (ticket.draft) {
+          nodes.draftNote.innerHTML = `
+            <strong>Saved draft</strong>
+            <p>${escapeHtml(ticket.draft)}</p>
+            <small>Saved by ${escapeHtml(ticket.draftAuthor ?? 'unknown')}</small>
+          `
+        } else {
+          nodes.draftNote.innerHTML = `
+            <strong>No saved draft yet</strong>
+            <p>When the Pi agent calls <code>saveDraft</code>, the draft will appear here.</p>
+          `
+        }
+      }
+
+      function renderLog() {
+        nodes.eventLog.innerHTML = ''
+
+        for (const event of state.events) {
+          const item = document.createElement('li')
+          item.innerHTML = `
+            <div class="message-top">
+              <strong>${escapeHtml(event.label)}</strong>
+              <small>${escapeHtml(event.time)}</small>
+            </div>
+            <p>${escapeHtml(event.detail)}</p>
+          `
+          nodes.eventLog.appendChild(item)
+        }
+      }
+
+      async function connectWithRetry() {
+        setConnectionState('connecting', `Trying ${serverUrl}. Start the Pi agent runner or the MDP server if it is not up yet.`)
+
+        while (!state.connected) {
+          try {
+            await client.connect()
+            client.register()
+            state.connected = true
+            setConnectionState('connected', `Connected to ${serverUrl} as pi-inbox-runtime.`)
+            pushEvent('runtime:register', authToken ?? 'none')
+          } catch (error) {
+            setConnectionState('connecting', String(error))
+            await wait(2500)
+          }
+        }
+      }
+
+      function setConnectionState(status, detail) {
+        nodes.connectionStatus.dataset.status = status
+        nodes.connectionStatus.textContent = status === 'connected' ? 'Connected' : 'Connecting'
+        if (detail) {
+          pushEvent(`connection:${status}`, detail, true)
+        }
+      }
+
+      function pushEvent(label, detail, dedupe = false) {
+        const entry = {
+          label,
+          detail: detail ? `detail=${detail}` : 'detail=none',
+          time: new Intl.DateTimeFormat('en', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          }).format(new Date())
+        }
+
+        if (
+          dedupe &&
+          state.events[0] &&
+          state.events[0].label === entry.label &&
+          state.events[0].detail === entry.detail
+        ) {
+          return
+        }
+
+        state.events.unshift(entry)
+        state.events = state.events.slice(0, 8)
+        renderLog()
+      }
+
+      function findTicket(ticketId) {
+        const ticket = state.tickets.find((entry) => entry.id === ticketId)
+
+        if (!ticket) {
+          throw new Error(`Unknown ticket: ${ticketId}`)
+        }
+
+        return ticket
+      }
+
+      function formatDate(value) {
+        return new Date(value).toLocaleString('en-US', {
+          dateStyle: 'medium',
+          timeStyle: 'short'
+        })
+      }
+
+      function wait(ms) {
+        return new Promise((resolve) => {
+          setTimeout(resolve, ms)
+        })
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#39;')
+      }
+    </script>
+  </body>
+</html>

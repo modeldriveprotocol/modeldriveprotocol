@@ -48,7 +48,7 @@ This is the simplest path for proving the bridge model end to end.
         });
 
         const client = MDP.createMdpClient({
-          serverUrl: "ws://127.0.0.1:7070",
+          serverUrl: "ws://127.0.0.1:47070",
           auth: {
             token: "browser-session-token"
           },
@@ -106,7 +106,7 @@ This is the simplest path for proving the bridge model end to end.
         });
 
         const client = MDP.createMdpClient({
-          serverUrl: "http://127.0.0.1:7070",
+          serverUrl: "http://127.0.0.1:47070",
           auth: {
             token: "browser-session-token"
           },
@@ -136,5 +136,6 @@ For browser websocket auth, passing `auth` is enough. The client will bootstrap 
 The example starts by exposing `getPageInfo`, so the host can retrieve page title and URL before calling more specific tools.
 
 See [the Pages-hosted browser example](/examples/browser/index.html) for a concrete starter file.
+If you want the browser runtime to be consumed by a Pi-hosted agent, see [Pi Agent Assistant](/examples/pi-agent-assistant).
 For a packaged browser integration, use [Chrome Extension](/apps/chrome-extension).
 For a docs-native configuration surface that can manage multiple connections, use the top-level [Playground](/playground/).

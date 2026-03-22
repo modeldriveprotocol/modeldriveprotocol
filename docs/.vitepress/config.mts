@@ -14,6 +14,7 @@ interface LocaleCopy {
   sections: {
     gettingStarted: string
     aboutMdp: string
+    examples: string
     blog: string
     contributing: string
     howToContribute: string
@@ -33,8 +34,12 @@ interface LocaleCopy {
     quickStart: string
     whatIsMdp: string
     architecture: string
+    browserClientExample: string
+    piAgentAssistantExample: string
     whyICreatedThisProject: string
     serverOverview: string
+    serverDeployment: string
+    serverCli: string
     toolsOverview: string
     listClients: string
     listTools: string
@@ -59,6 +64,7 @@ interface LocaleCopy {
     skillRouteDirect: string
     skillRouteNested: string
     registerClient: string
+    updateClientCapabilities: string
     unregisterClient: string
     callClient: string
     callClientResult: string
@@ -138,6 +144,7 @@ const enUS: LocaleCopy = {
   sections: {
     gettingStarted: 'Getting Started',
     aboutMdp: 'About MDP',
+    examples: 'Examples',
     blog: 'Blog',
     contributing: 'Contributing',
     howToContribute: 'How to Contribute',
@@ -157,8 +164,12 @@ const enUS: LocaleCopy = {
     quickStart: 'Quick Start',
     whatIsMdp: 'What Is MDP?',
     architecture: 'Architecture',
+    browserClientExample: 'Browser Client',
+    piAgentAssistantExample: 'Pi Agent Assistant',
     whyICreatedThisProject: 'Why I Created This Project',
     serverOverview: 'Overview',
+    serverDeployment: 'Deployment Modes',
+    serverCli: 'CLI Reference',
     toolsOverview: 'Overview',
     listClients: 'listClients',
     listTools: 'listTools',
@@ -183,6 +194,7 @@ const enUS: LocaleCopy = {
     skillRouteDirect: 'GET /skills/:clientId/*skillPath',
     skillRouteNested: 'GET /:clientId/skills/*skillPath',
     registerClient: 'registerClient',
+    updateClientCapabilities: 'updateClientCapabilities',
     unregisterClient: 'unregisterClient',
     callClient: 'callClient',
     callClientResult: 'callClientResult',
@@ -259,6 +271,7 @@ const zhHans: LocaleCopy = {
   sections: {
     gettingStarted: '起步',
     aboutMdp: '关于 MDP',
+    examples: '示例',
     blog: '博客',
     contributing: '共建',
     howToContribute: '如何共建',
@@ -278,8 +291,12 @@ const zhHans: LocaleCopy = {
     quickStart: '快速使用',
     whatIsMdp: '什么是 MDP？',
     architecture: '架构',
+    browserClientExample: '浏览器客户端',
+    piAgentAssistantExample: 'Pi Agent Assistant',
     whyICreatedThisProject: '我为什么创建了这个项目',
     serverOverview: '总览',
+    serverDeployment: '部署模式',
+    serverCli: 'CLI 参数',
     toolsOverview: '总览',
     listClients: 'listClients',
     listTools: 'listTools',
@@ -304,6 +321,7 @@ const zhHans: LocaleCopy = {
     skillRouteDirect: 'GET /skills/:clientId/*skillPath',
     skillRouteNested: 'GET /:clientId/skills/*skillPath',
     registerClient: 'registerClient',
+    updateClientCapabilities: 'updateClientCapabilities',
     unregisterClient: 'unregisterClient',
     callClient: 'callClient',
     callClientResult: 'callClientResult',
@@ -424,6 +442,7 @@ export default defineConfig({
 
 function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme.Config {
   const docsSidebar = createDocsSidebar(prefix, copy)
+  const examplesSidebar = createExamplesSidebar(prefix, copy)
   const blogSidebar = createBlogSidebar(prefix, copy)
   const contributingSidebar = createContributingSidebar(prefix, copy)
   const ecosystemSidebar = createEcosystemSidebar(prefix, copy)
@@ -434,7 +453,7 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
       {
         text: copy.nav.docs,
         link: localePath(prefix, '/guide/quick-start'),
-        activeMatch: createActiveMatch(prefix, ['guide', 'server', 'protocol']),
+        activeMatch: createActiveMatch(prefix, ['guide', 'server', 'protocol', 'examples']),
         items: [
           {
             text: copy.sections.gettingStarted,
@@ -448,9 +467,24 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
             items: [{ text: copy.pages.architecture, link: localePath(prefix, '/guide/architecture') }]
           },
           {
+            text: copy.sections.examples,
+            items: [
+              {
+                text: copy.pages.browserClientExample,
+                link: localePath(prefix, '/examples/browser-client')
+              },
+              {
+                text: copy.pages.piAgentAssistantExample,
+                link: localePath(prefix, '/examples/pi-agent-assistant')
+              }
+            ]
+          },
+          {
             text: copy.sections.server,
             items: [
               { text: copy.pages.serverOverview, link: localePath(prefix, '/server/overview') },
+              { text: copy.pages.serverDeployment, link: localePath(prefix, '/server/deployment') },
+              { text: copy.pages.serverCli, link: localePath(prefix, '/server/cli') },
               { text: copy.sections.tools, link: localePath(prefix, '/server/tools/') },
               { text: copy.sections.apis, link: localePath(prefix, '/server/api/') },
               { text: copy.pages.serverSecurity, link: localePath(prefix, '/server/security') },
@@ -462,7 +496,7 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
       {
         text: copy.nav.ecosystem,
         link: localePath(prefix, '/sdk/javascript/quick-start'),
-        activeMatch: createActiveMatch(prefix, ['sdk', 'apps', 'client', 'examples']),
+        activeMatch: createActiveMatch(prefix, ['sdk', 'apps', 'client']),
         items: [
           {
             text: copy.sections.sdks,
@@ -564,7 +598,7 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
       [localePath(prefix, '/sdk/')]: ecosystemSidebar,
       [localePath(prefix, '/apps/')]: ecosystemSidebar,
       [localePath(prefix, '/client/')]: ecosystemSidebar,
-      [localePath(prefix, '/examples/')]: ecosystemSidebar,
+      [localePath(prefix, '/examples/')]: docsSidebar,
       [localePath(prefix, '/playground/')]: [
         {
           text: copy.sections.playground,
@@ -648,6 +682,8 @@ function createDocsSidebar(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
       collapsed: true,
       items: [
         { text: copy.pages.serverOverview, link: localePath(prefix, '/server/overview') },
+        { text: copy.pages.serverDeployment, link: localePath(prefix, '/server/deployment') },
+        { text: copy.pages.serverCli, link: localePath(prefix, '/server/cli') },
         {
           text: copy.sections.tools,
           collapsed: true,
@@ -695,6 +731,10 @@ function createDocsSidebar(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
                 {
                   text: copy.pages.registerClient,
                   link: localePath(prefix, '/server/api/register-client')
+                },
+                {
+                  text: copy.pages.updateClientCapabilities,
+                  link: localePath(prefix, '/server/api/update-client-capabilities')
                 },
                 {
                   text: copy.pages.unregisterClient,
@@ -754,6 +794,39 @@ function createDocsSidebar(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
         },
         { text: copy.pages.serverSecurity, link: localePath(prefix, '/server/security') },
         { text: copy.pages.serverProtocol, link: localePath(prefix, '/server/protocol') }
+      ]
+    },
+    {
+      text: copy.sections.examples,
+      collapsed: true,
+      items: [
+        {
+          text: copy.pages.browserClientExample,
+          link: localePath(prefix, '/examples/browser-client')
+        },
+        {
+          text: copy.pages.piAgentAssistantExample,
+          link: localePath(prefix, '/examples/pi-agent-assistant')
+        }
+      ]
+    }
+  ]
+}
+
+function createExamplesSidebar(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme.SidebarItem[] {
+  return [
+    {
+      text: copy.sections.examples,
+      collapsed: true,
+      items: [
+        {
+          text: copy.pages.browserClientExample,
+          link: localePath(prefix, '/examples/browser-client')
+        },
+        {
+          text: copy.pages.piAgentAssistantExample,
+          link: localePath(prefix, '/examples/pi-agent-assistant')
+        }
       ]
     }
   ]

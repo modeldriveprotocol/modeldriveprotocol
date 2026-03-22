@@ -1,0 +1,14 @@
+{
+  "name": "mdp-pi-agent-assistant-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start:agent": "node ./agent-runner.mjs",
+    "start:web": "python3 -m http.server 4173"
+  },
+  "dependencies": {
+    "@mariozechner/pi-agent-core": "^0.61.1",
+    "@mariozechner/pi-ai": "^0.61.1",
+    "@modelcontextprotocol/sdk": "^1.27.1"
+  }
+}
