@@ -1,0 +1,34 @@
+{
+  "name": "@modeldriveprotocol/nodejs-simple-mdp-client",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "nodejs-simple-mdp-client": "./dist/cli.js"
+  },
+  "imports": {
+    "#~/*.js": "./src/*.ts"
+  },
+  "files": [
+    "dist",
+    "skills"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NWYLZW/mdp.git",
+    "directory": "apps/nodejs-simple-mdp-client"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "dependencies": {
+    "@modeldriveprotocol/client": "workspace:*"
+  },
+  "scripts": {
+    "build": "node ./scripts/build.mjs",
+    "clean": "node ../../scripts/clean.mjs",
+    "start": "node ./dist/cli.js",
+    "test": "pnpm --dir ../.. exec vitest run apps/nodejs-simple-mdp-client/test"
+  }
+}
