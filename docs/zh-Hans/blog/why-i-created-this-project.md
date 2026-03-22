@@ -100,12 +100,9 @@ flowchart TD
 
 ### 简化路径
 
-```mermaid
-flowchart TD
-    A["用户想让 AI 控制某个应用"] --> B["在对应 Agent App 中安装 MDP MCP"]
-    B --> C["打开一个已经支持 MDP 的应用"]
-    C --> D["AI 直接控制支持 MDP 的应用"]
-```
+在系统层面，这条被简化后的路径会收敛到同一套稳定的 MDP 架构：
+
+<SharedMermaidDiagram name="architecture/overview" />
 
 这里的变化在于，用户不再需要先研究某个应用有没有独立的 server、应该怎么配置 transport、配置文件应该写在哪里，也不需要先把复杂的接线过程自己走一遍。对用户来说，路径被压缩成了几个足够直接的动作：在 Agent App 里安装 MDP MCP，打开支持 MDP 的应用，然后直接让 AI 去控制它。
 

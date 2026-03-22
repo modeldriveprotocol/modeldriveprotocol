@@ -13,46 +13,7 @@ status: Draft
 4. 一个或多个 `从 mdp server` 与这个主 server 保持连接。
 5. `MDP clients` 从具体运行时暴露本地能力，并且只连接主 server。
 
-```mermaid
-flowchart LR
-  user["用户"]
-
-  subgraph agents["Agent UI"]
-    claude["Claude Code"]
-    codex["Codex"]
-    cursor["Cursor"]
-  end
-
-  subgraph servers["MDP Server Federation"]
-    primary["主 MDP Server"]
-    secondaryB["从 MDP Server B"]
-    secondaryC["从 MDP Server C"]
-  end
-
-  clients["MDP Clients"]
-  tools["Tools"]
-  skills["Skills"]
-  prompts["Prompts"]
-  resources["Resources"]
-
-  user --> claude
-  user --> codex
-  user --> cursor
-
-  claude <-->|"本地主机链路"| secondaryB
-  codex <-->|"本地主机链路"| primary
-  cursor <-->|"本地主机链路"| secondaryC
-
-  primary <-->|"主从联邦"| secondaryB
-  primary <-->|"主从联邦"| secondaryC
-  secondaryB <-->|"主从联邦"| secondaryC
-
-  primary <-->|"client 会话"| clients
-  clients --> tools
-  clients --> skills
-  clients --> prompts
-  clients --> resources
-```
+<SharedMermaidDiagram name="architecture/overview" />
 
 ## 调用路径
 

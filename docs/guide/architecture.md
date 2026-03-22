@@ -13,46 +13,7 @@ The end-to-end system has five roles:
 4. One or more `secondary mdp servers` stay connected to that primary.
 5. `MDP clients` expose concrete runtime-local capabilities and connect only to the primary.
 
-```mermaid
-flowchart LR
-  user["User"]
-
-  subgraph agents["Agent UI"]
-    claude["Claude Code"]
-    codex["Codex"]
-    cursor["Cursor"]
-  end
-
-  subgraph servers["MDP Server Federation"]
-    primary["Primary MDP Server"]
-    secondaryB["Secondary MDP Server B"]
-    secondaryC["Secondary MDP Server C"]
-  end
-
-  clients["MDP Clients"]
-  tools["Tools"]
-  skills["Skills"]
-  prompts["Prompts"]
-  resources["Resources"]
-
-  user --> claude
-  user --> codex
-  user --> cursor
-
-  claude <-->|"local host link"| secondaryB
-  codex <-->|"local host link"| primary
-  cursor <-->|"local host link"| secondaryC
-
-  primary <-->|"federation"| secondaryB
-  primary <-->|"federation"| secondaryC
-  secondaryB <-->|"federation"| secondaryC
-
-  primary <-->|"client sessions"| clients
-  clients --> tools
-  clients --> skills
-  clients --> prompts
-  clients --> resources
-```
+<SharedMermaidDiagram name="architecture/overview" />
 
 ## Invocation Path
 

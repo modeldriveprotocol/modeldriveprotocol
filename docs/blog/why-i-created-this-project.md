@@ -100,12 +100,9 @@ I want capability providers to expose capabilities closer to their real runtime,
 
 ### Simplified Path
 
-```mermaid
-flowchart TD
-    A["User wants AI to control an application"] --> B["Install MDP MCP in the target agent app"]
-    B --> C["Open an application that already supports MDP"]
-    C --> D["AI directly controls the MDP-enabled application"]
-```
+At the system level, that simplified path converges on the same stable MDP architecture:
+
+<SharedMermaidDiagram name="architecture/overview" />
 
 The change is that users no longer need to research whether an application has its own server, how transport should be configured, where configuration files live, or how to manually walk through the whole wiring process. From the user's point of view, the path becomes a few direct actions: install MDP MCP in the agent app, open an application that supports MDP, and let AI control it.
 

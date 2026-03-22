@@ -4,6 +4,7 @@ import { h, onMounted, onUnmounted, watch } from 'vue'
 import MarkdownPageTools from './components/MarkdownPageTools.vue'
 import MdpPlaygroundLayout from './components/MdpPlaygroundLayout.vue'
 import MermaidDiagram from './components/MermaidDiagram.vue'
+import SharedMermaidDiagram from './components/SharedMermaidDiagram.vue'
 import SidebarDirectorySearch from './components/SidebarDirectorySearch.vue'
 import './custom.css'
 
@@ -27,6 +28,7 @@ export default {
   enhanceApp({ app }) {
     app.component('MdpPlaygroundLayout', MdpPlaygroundLayout)
     app.component('MermaidDiagram', MermaidDiagram)
+    app.component('SharedMermaidDiagram', SharedMermaidDiagram)
   },
   setup() {
     if (!inBrowser) {
