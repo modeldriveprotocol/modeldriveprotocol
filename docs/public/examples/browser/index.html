@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MDP Browser Client Example</title>
+    <title>MDP Browser Simple Client</title>
     <style>
     :root {
       color-scheme: light;
@@ -41,88 +41,36 @@
   </head>
   <body>
     <main>
-      <h1>MDP Browser Client Example</h1>
+      <h1>MDP Browser Simple Client</h1>
       <p>
-        This page exposes one tool and one resource to a running MDP server.
+        This page auto-registers the simple browser MDP client bundle.
       </p>
       <pre><code id="status">Booting…</code></pre>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js">
-    </script>
+    <script src="/assets/modeldriveprotocol-client.global.js"></script>
     <script>
     const status = document.getElementById('status')
-    const params = new URLSearchParams(window.location.search)
-    const serverUrl = params.get('serverUrl') ?? 'ws://127.0.0.1:7070'
-    const authToken = params.get('authToken') ??
-      (serverUrl.startsWith('http') ? 'browser-example-token' : undefined)
-    const readPageInfo = () => ({
-      title: document.title,
-      url: window.location.href,
-      lang: document.documentElement.lang || navigator.language,
-      heading: document.querySelector('h1')?.textContent?.trim() ?? ''
+
+    window.addEventListener('mdp:simple-browser-client:ready', (event) => {
+      const client = event.detail?.client
+
+      status.textContent =
+        `Connected and registered as ${client?.name ?? 'Browser Simple Client'}. ` +
+        'Available tools: browser.getPageBasics, browser.clickElement, browser.alertMessage. ' +
+        'Available skills: browser-simple/overview, browser-simple/tools, browser-simple/examples.'
     })
 
-    const client = MDP.createMdpClient({
-      serverUrl,
-      ...(authToken
-        ? {
-          auth: {
-            token: authToken
-          }
-        }
-        : {}),
-      client: {
-        id: 'browser-example',
-        name: document.title || 'Browser Example Client',
-        description: `Static example page for ${window.location.hostname}`
-      }
-    })
-
-    client.exposeTool('getPageInfo', async (_args, context) => ({
-      ...readPageInfo(),
-      authToken: context.auth?.token
-    }))
-
-    client.exposeTool('searchDom', async ({ query }, context) => ({
-      query,
-      matches: document.body.innerText.includes(query) ? 1 : 0,
-      title: document.title,
-      url: window.location.href,
-      authToken: context.auth?.token
-    }))
-
-    client.exposeResource(
-      'webpage://example/page-info',
-      async () => ({
-        mimeType: 'application/json',
-        text: JSON.stringify(readPageInfo(), null, 2)
-      }),
-      {
-        name: 'Example Page Info',
-        mimeType: 'application/json'
-      }
-    )
-
-    client.exposeResource(
-      'webpage://example/body',
-      async () => ({
-        mimeType: 'text/plain',
-        text: document.body.innerText
-      }),
-      {
-        name: 'Example Page Body',
-        mimeType: 'text/plain'
-      }
-    )
-    ;(async () => {
-      await client.connect()
-      client.register()
-      status.textContent = `Connected to ${serverUrl}. ` +
-        'Use ?serverUrl=ws://127.0.0.1:7070&authToken=browser-example-token or ?serverUrl=http://127.0.0.1:7070.'
-    })().catch((error) => {
-      status.textContent = String(error)
+    window.addEventListener('mdp:simple-browser-client:error', (event) => {
+      status.textContent = String(event.detail?.message ?? 'Unknown error')
     })
     </script>
+    <script
+      src="/assets/browser-simple-mdp-client.global.js"
+      attr-mdp-server-url="ws://127.0.0.1:47372"
+      attr-mdp-client-id="browser-simple-example"
+      attr-mdp-client-name="Browser Simple Client"
+      attr-mdp-client-description="Minimal browser MDP client for page inspection and interaction"
+    ></script>
   </body>
 </html>

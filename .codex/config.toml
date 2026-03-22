@@ -1,0 +1,7 @@
+[mcp_servers.ChromeDevtools]
+enabled = false
+
+[mcp_servers.mdp]
+command = "npx"
+args = ["-y", "@modeldriveprotocol/server"]
+startup_timeout_sec = 20
