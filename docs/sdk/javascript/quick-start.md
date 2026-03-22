@@ -13,7 +13,7 @@ The JavaScript SDK is the fastest way to expose MDP capabilities from a browser,
 import { createMdpClient } from '@modeldriveprotocol/client'
 
 const client = createMdpClient({
-  serverUrl: 'ws://127.0.0.1:47070',
+  serverUrl: 'ws://127.0.0.1:47372',
   client: {
     id: 'browser-01',
     name: 'Browser Client'

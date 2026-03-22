@@ -43,7 +43,7 @@ That script runs the esbuild watcher for `apps/vscode-extension`.
 The extension defaults to:
 
 ```text
-ws://127.0.0.1:7070
+ws://127.0.0.1:47372
 ```
 
 You can override it with the `mdp.serverUrl` setting inside the Extension Development Host.

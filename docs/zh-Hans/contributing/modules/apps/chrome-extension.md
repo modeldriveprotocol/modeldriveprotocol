@@ -49,7 +49,7 @@ apps/chrome-extension/dist
 在 options 页面里设置 `MDP Server URL`，通常使用：
 
 ```text
-ws://127.0.0.1:7070
+ws://127.0.0.1:47372
 ```
 
 同时配置需要注入的目标 match patterns。

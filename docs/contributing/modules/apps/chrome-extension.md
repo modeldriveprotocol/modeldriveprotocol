@@ -49,7 +49,7 @@ After code changes, rebuild and reload the unpacked extension in Chrome.
 Open the extension options page and set `MDP Server URL`, typically:
 
 ```text
-ws://127.0.0.1:7070
+ws://127.0.0.1:47372
 ```
 
 Also configure any target match patterns the extension should inject into.

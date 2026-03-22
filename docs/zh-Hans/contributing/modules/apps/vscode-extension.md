@@ -43,7 +43,7 @@ pnpm --filter @modeldriveprotocol/vscode-extension dev
 插件默认连接：
 
 ```text
-ws://127.0.0.1:7070
+ws://127.0.0.1:47372
 ```
 
 你可以在 Extension Development Host 里通过 `mdp.serverUrl` 覆盖它。

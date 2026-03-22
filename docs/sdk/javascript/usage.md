@@ -35,7 +35,7 @@ For browser websocket auth, passing `auth` is enough. `connect()` will bootstrap
 
 ```ts
 const client = createMdpClient({
-  serverUrl: 'wss://127.0.0.1:47070',
+  serverUrl: 'wss://127.0.0.1:47372',
   auth: {
     token: 'client-session-token'
   },

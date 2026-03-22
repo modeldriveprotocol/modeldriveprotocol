@@ -7,7 +7,7 @@ import { resolveServerUrl } from '../src/mdp-client.js'
 
 describe('browser entry', () => {
   it('uses the default browser server URL when attributes are missing', () => {
-    expect(resolveServerUrl({})).toBe('ws://127.0.0.1:7070')
+    expect(resolveServerUrl({})).toBe('ws://127.0.0.1:47372')
   })
 
   it('creates a browser client from script attributes', () => {

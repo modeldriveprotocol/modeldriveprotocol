@@ -23,7 +23,7 @@ The server exposes transport-facing APIs for MDP clients. This section is split 
 
 | Surface                                       | Entry point              | Notes                                                 |
 | --------------------------------------------- | ------------------------ | ----------------------------------------------------- |
-| [WebSocket](/server/api/websocket-connection) | `ws://127.0.0.1:47070`    | Bidirectional JSON MDP messages                       |
+| [WebSocket](/server/api/websocket-connection) | `ws://127.0.0.1:47372`    | Bidirectional JSON MDP messages                       |
 | [HTTP Loop](/server/api/http-loop-connection) | `/mdp/http-loop/connect` | Session-based long-poll transport                     |
 | [Auth Bootstrap](/server/api/auth-bootstrap)  | `/mdp/auth`              | Cookie bootstrap mainly for browser websocket clients |
 | [Metadata Probe](/server/api/meta)            | `/mdp/meta`              | Identify an MDP server and read discovery hints       |

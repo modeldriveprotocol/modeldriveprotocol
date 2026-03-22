@@ -9,8 +9,8 @@ Use the websocket transport when the client can keep a long-lived bidirectional 
 
 ## Endpoint
 
-- `ws://127.0.0.1:47070`
-- with TLS enabled: `wss://127.0.0.1:47070`
+- `ws://127.0.0.1:47372`
+- with TLS enabled: `wss://127.0.0.1:47372`
 
 ## Message model
 

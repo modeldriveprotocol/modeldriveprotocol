@@ -23,7 +23,7 @@ status: Draft
 
 | 方式                                                           | 入口                     | 说明                                         |
 | -------------------------------------------------------------- | ------------------------ | -------------------------------------------- |
-| [WebSocket 建立链接](/zh-Hans/server/api/websocket-connection) | `ws://127.0.0.1:47070`    | 双向 JSON MDP 消息                           |
+| [WebSocket 建立链接](/zh-Hans/server/api/websocket-connection) | `ws://127.0.0.1:47372`    | 双向 JSON MDP 消息                           |
 | [HTTP Loop 建立链接](/zh-Hans/server/api/http-loop-connection) | `/mdp/http-loop/connect` | 基于 session 的 long-poll transport          |
 | [鉴权引导](/zh-Hans/server/api/auth-bootstrap)                 | `/mdp/auth`              | 主要给浏览器 websocket client 做 cookie 引导 |
 | [元数据探针](/zh-Hans/server/api/meta)                         | `/mdp/meta`              | 识别一个 MDP server 并读取发现提示           |

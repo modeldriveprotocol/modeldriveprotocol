@@ -96,8 +96,8 @@ Discovery tools return named arrays such as `clients`, `tools`, `prompts`, `skil
 Skill documents can also be read directly over HTTP:
 
 ```bash
-curl 'http://127.0.0.1:7070/skills/client-01/workspace/review'
-curl 'http://127.0.0.1:7070/client-01/skills/workspace/review/files?topic=mdp'
+curl 'http://127.0.0.1:47372/skills/client-01/workspace/review'
+curl 'http://127.0.0.1:47372/client-01/skills/workspace/review/files?topic=mdp'
 ```
 
 Those routes resolve one exact skill node and return the skill body directly, commonly as `text/markdown`.

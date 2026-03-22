@@ -377,7 +377,7 @@ export function resolveServerUrl(attributes: BrowserScriptClientAttributes): str
 
   const protocol = attributes.serverProtocol ?? 'ws'
   const host = attributes.serverHost ?? '127.0.0.1'
-  const port = attributes.serverPort ?? 47070
+  const port = attributes.serverPort ?? 47372
 
   return `${protocol}://${host}:${port}`
 }

@@ -48,7 +48,7 @@ status: MVP
         });
 
         const client = MDP.createMdpClient({
-          serverUrl: "ws://127.0.0.1:47070",
+          serverUrl: "ws://127.0.0.1:47372",
           auth: {
             token: "browser-session-token"
           },
@@ -106,7 +106,7 @@ status: MVP
         });
 
         const client = MDP.createMdpClient({
-          serverUrl: "http://127.0.0.1:47070",
+          serverUrl: "http://127.0.0.1:47372",
           auth: {
             token: "browser-session-token"
           },
