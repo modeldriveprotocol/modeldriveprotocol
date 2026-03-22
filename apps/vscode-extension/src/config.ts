@@ -15,7 +15,7 @@ export interface WorkspaceConfigurationLike {
 }
 
 export const DEFAULT_EXTENSION_CONFIGURATION: ExtensionConfiguration = {
-  serverUrl: 'ws://127.0.0.1:7070',
+  serverUrl: 'ws://127.0.0.1:47372',
   autoConnect: true,
   autoReconnect: true,
   reconnectDelayMs: 3_000,

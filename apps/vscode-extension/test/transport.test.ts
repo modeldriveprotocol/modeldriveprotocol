@@ -68,10 +68,10 @@ describe('vscode extension transport', () => {
 
   it('selects websocket and http loop transports by URL scheme', () => {
     expect(
-      createDefaultClientTransport('ws://127.0.0.1:7070').constructor.name
+      createDefaultClientTransport('ws://127.0.0.1:47372').constructor.name
     ).toBe('WebSocketClientTransport')
     expect(
-      createDefaultClientTransport('https://127.0.0.1:7070').constructor.name
+      createDefaultClientTransport('https://127.0.0.1:47372').constructor.name
     ).toBe('HttpLoopClientTransport')
   })
 

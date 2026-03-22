@@ -30,7 +30,7 @@ async function main(): Promise<void> {
   })
 
   process.stdout.write(
-    `registered ${client.describe().name} (${client.describe().id}) against ${options.serverUrl ?? 'ws://127.0.0.1:7070'}\n`
+    `registered ${client.describe().name} (${client.describe().id}) against ${options.serverUrl ?? 'ws://127.0.0.1:47372'}\n`
   )
 
   const shutdown = async () => {
@@ -104,7 +104,7 @@ function renderHelpText(): string {
     'Usage: nodejs-simple-mdp-client [options]',
     '',
     'Options:',
-    '  --server-url <url>        MDP server URL (default: ws://127.0.0.1:7070)',
+    '  --server-url <url>        MDP server URL (default: ws://127.0.0.1:47372)',
     '  --workspace-root <path>   Workspace root override',
     '  --client-id <id>          Client identifier override',
     '  --client-name <name>      Client display name override',

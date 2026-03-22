@@ -127,7 +127,7 @@ export interface UpdatePackageManifestResult extends ReadPackageManifestResult {
   }
 }
 
-const DEFAULT_SERVER_URL = 'ws://127.0.0.1:7070'
+const DEFAULT_SERVER_URL = 'ws://127.0.0.1:47372'
 const DEFAULT_SKILLS_DIR = fileURLToPath(new URL('../skills', import.meta.url))
 const WORKSPACE_CONFIG_FILE = 'pnpm-workspace.yaml'
 const PACKAGE_MANIFEST_FILE = 'package.json'

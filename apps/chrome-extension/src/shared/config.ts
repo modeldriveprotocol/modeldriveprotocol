@@ -15,7 +15,7 @@ export interface ExtensionConfig {
 export const STORAGE_KEY = 'extensionConfig'
 
 export const DEFAULT_EXTENSION_CONFIG: ExtensionConfig = {
-  serverUrl: 'ws://127.0.0.1:7070',
+  serverUrl: 'ws://127.0.0.1:47372',
   clientId: 'mdp-chrome-extension',
   clientName: 'MDP Chrome Extension',
   clientDescription: 'Chrome extension bridge that exposes extension and page capabilities through MDP.',

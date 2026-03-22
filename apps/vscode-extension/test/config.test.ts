@@ -25,7 +25,7 @@ describe('vscode extension config', () => {
     expect(
       readExtensionConfiguration(
         createConfiguration({
-          serverUrl: '  http://127.0.0.1:7070  ',
+          serverUrl: '  http://127.0.0.1:47372  ',
           autoConnect: false,
           autoReconnect: false,
           reconnectDelayMs: 9_999.8,
@@ -40,7 +40,7 @@ describe('vscode extension config', () => {
         })
       )
     ).toEqual({
-      serverUrl: 'http://127.0.0.1:7070',
+      serverUrl: 'http://127.0.0.1:47372',
       autoConnect: false,
       autoReconnect: false,
       reconnectDelayMs: 9999,
@@ -56,7 +56,7 @@ describe('vscode extension config', () => {
   })
 
   it('validates supported server URL schemes', () => {
-    expect(isValidServerUrl('ws://127.0.0.1:7070')).toBe(true)
+    expect(isValidServerUrl('ws://127.0.0.1:47372')).toBe(true)
     expect(isValidServerUrl('https://example.com')).toBe(true)
     expect(isValidServerUrl('ftp://example.com')).toBe(false)
     expect(isValidServerUrl('not-a-url')).toBe(false)

@@ -43,7 +43,7 @@
       "properties": {
         "mdp.serverUrl": {
           "type": "string",
-          "default": "ws://127.0.0.1:7070",
+          "default": "ws://127.0.0.1:47372",
           "description": "MDP server URL. ws/wss use the websocket transport, http/https use HTTP loop mode."
         },
         "mdp.autoConnect": {
