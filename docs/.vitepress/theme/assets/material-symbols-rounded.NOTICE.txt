@@ -1,0 +1,6 @@
+Material Symbols Rounded font
+Source: https://fonts.google.com/icons
+Downloaded from:
+https://fonts.gstatic.com/s/materialsymbolsrounded/v323/syl0-zNym6YjUruM-QrEh7-nyTnjDwKNJ_190FjpZIvDmUSVOK7BDB_Qb9vUSzq3wzLK-P0J-V_Zs-QtQth3-jOcDTCVpeRL2w5rwZu2rIelXxeJKJBiCa8.woff2
+License: Apache License 2.0
+License text: https://www.apache.org/licenses/LICENSE-2.0
