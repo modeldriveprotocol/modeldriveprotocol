@@ -12,7 +12,13 @@ const port = await allocatePort()
 const serverUrl = `http://127.0.0.1:${port}`
 const transport = new StdioClientTransport({
   command: process.execPath,
-  args: ['packages/server/dist/cli.js', '--port', String(port)],
+  args: [
+    'packages/server/dist/cli.js',
+    '--cluster-mode',
+    'standalone',
+    '--port',
+    String(port)
+  ],
   cwd: process.cwd(),
   stderr: 'pipe'
 })
@@ -26,7 +32,7 @@ transport.stderr?.on('data', (chunk) => {
 const mcpClient = new Client(
   {
     name: 'modeldriveprotocol-smoke-test',
-    version: '0.1.0'
+    version: '1.0.0'
   },
   {
     capabilities: {}

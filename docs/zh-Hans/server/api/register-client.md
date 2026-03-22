@@ -101,7 +101,7 @@ interface RegisterClientMessage {
   "client": {
     "id": "vscode-01",
     "name": "VSCode Client",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "platform": "desktop",
     "metadata": {
       "workspaceCount": 2

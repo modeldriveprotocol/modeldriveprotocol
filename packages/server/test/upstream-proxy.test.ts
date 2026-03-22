@@ -61,8 +61,8 @@ function createMetaResponse(overrides: Partial<{
 }> = {}): Response {
   return new Response(JSON.stringify({
     protocol: 'mdp',
-    protocolVersion: overrides.protocolVersion ?? '0.1.0',
-    supportedProtocolRanges: overrides.supportedProtocolRanges ?? ['^0.1.0'],
+    protocolVersion: overrides.protocolVersion ?? '1.0.0',
+    supportedProtocolRanges: overrides.supportedProtocolRanges ?? ['^1.0.0'],
     serverId: overrides.serverId ?? 'hub',
     endpoints: overrides.endpoints ?? {
       ws: 'ws://127.0.0.1:47372',
@@ -123,8 +123,8 @@ describe('upstream discovery and proxying', () => {
     await expect(
       discoverUpstreamMdpServer({
         host: '127.0.0.1',
-        startPort: port - 1,
-        attempts: 2
+        startPort: port,
+        attempts: 1
       })
     ).resolves.toEqual(
       expect.objectContaining({
@@ -164,19 +164,19 @@ describe('upstream discovery and proxying', () => {
 
   it('accepts upstream servers whose semver ranges satisfy the required protocol version', async () => {
     const fetch = vi.fn(async () => createMetaResponse({
-      protocolVersion: '0.1.2',
-      supportedProtocolRanges: ['^0.1.0']
+      protocolVersion: '1.0.2',
+      supportedProtocolRanges: ['^1.0.0']
     }))
 
     await expect(probeMdpServer('ws://127.0.0.1:47372', {
       fetch,
-      requiredProtocolVersion: '0.1.5'
+      requiredProtocolVersion: '1.0.5'
     })).resolves.toEqual(
       expect.objectContaining({
         url: 'ws://127.0.0.1:47372',
         meta: expect.objectContaining({
           serverId: 'hub',
-          supportedProtocolRanges: ['^0.1.0']
+          supportedProtocolRanges: ['^1.0.0']
         })
       })
     )
@@ -213,7 +213,7 @@ describe('upstream discovery and proxying', () => {
     await expect(probeMdpServer('ws://127.0.0.1:47372', {
       fetch
     })).rejects.toThrow(
-      'MDP server at ws://127.0.0.1:47372 does not support protocol version 0.1.0.'
+      'MDP server at ws://127.0.0.1:47372 does not support protocol version 1.0.0.'
     )
   })
 

@@ -30,7 +30,7 @@ pnpm --dir examples/vercel-ai-cli-agent start -- get-package-version
 输出类似：
 
 ```text
-版本是 0.1.0。
+版本是 1.0.0。
 ```
 
 也支持下面这种关键词形式：
@@ -52,4 +52,4 @@ mdp-test get-package-version
 - MDP client 复用了仓库里的 `nodejs-simple-mdp-client`
 - 通过 `mcpClient.tools()` 直接自动发现 MDP MCP tools，没有在示例里额外定义本地 tool schema
 - 最终调用的是 MDP bridge 的 `callTools`，目标 client tool 是 `workspace.readPackageManifest`
-- 示例默认读取的是 `packages/server/package.json` 的版本号，所以可以稳定得到 `0.1.0` 这类结果
+- 示例默认读取的是 `packages/server/package.json` 的版本号，所以可以稳定得到 `1.0.0` 这类结果

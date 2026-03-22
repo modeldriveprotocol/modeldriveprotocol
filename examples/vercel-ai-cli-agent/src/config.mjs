@@ -21,6 +21,6 @@ export const defaults = {
   runtimeClientId: process.env.MDP_RUNTIME_CLIENT_ID ?? 'mdp-test-runtime',
   mcpServer: {
     name: 'mdp',
-    version: '0.1.0'
+    version: '1.0.0'
   }
 }

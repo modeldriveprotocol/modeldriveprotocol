@@ -22,7 +22,7 @@ status: Draft
 
 1. 更新 `apps/chrome-extension/src/manifest.json` 中的版本号。
 2. 保持 `apps/chrome-extension/package.json` 版本一致。
-3. 创建并推送类似 `chrome-extension-v0.1.0` 的 tag。
+3. 创建并推送类似 `chrome-extension-v1.0.0` 的 tag。
 4. GitHub Actions 会触发 `.github/workflows/chrome-extension-release.yml`。
 
 ### workflow 会先校验什么
@@ -46,7 +46,7 @@ status: Draft
 ### 操作步骤
 
 1. 更新 `apps/vscode-extension/package.json` 里的版本号。
-2. 创建并推送类似 `vscode-extension-v0.1.0` 的 tag。
+2. 创建并推送类似 `vscode-extension-v1.0.0` 的 tag。
 3. GitHub Actions 会触发 `.github/workflows/vscode-extension-release.yml`。
 
 ### workflow 会先校验什么

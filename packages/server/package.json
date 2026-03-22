@@ -1,14 +1,26 @@
 {
   "name": "@modeldriveprotocol/server",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
+  "description": "MDP server runtime and fixed MCP bridge for Model Drive Protocol.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "homepage": "https://github.com/modeldriveprotocol/modeldriveprotocol#readme",
+  "bugs": {
+    "url": "https://github.com/modeldriveprotocol/modeldriveprotocol/issues"
+  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NWYLZW/mdp.git",
+    "url": "git+https://github.com/modeldriveprotocol/modeldriveprotocol.git",
     "directory": "packages/server"
   },
+  "keywords": [
+    "mdp",
+    "mcp",
+    "server",
+    "bridge",
+    "agent"
+  ],
   "bin": {
     "modeldriveprotocol-server": "./dist/cli.js",
     "mdp": "./dist/cli.js"

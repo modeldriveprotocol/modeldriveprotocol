@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
-const repositoryUrl = 'git+https://github.com/NWYLZW/mdp.git'
+const repositoryUrl = 'git+https://github.com/modeldriveprotocol/modeldriveprotocol.git'
 const repositoryDirectory = 'apps/vscode-extension'
 
 export function getAppRoot() {

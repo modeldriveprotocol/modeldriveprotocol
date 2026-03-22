@@ -22,7 +22,7 @@ Use this path when you want a packaged Chrome extension zip attached to a GitHub
 
 1. Update the version in `apps/chrome-extension/src/manifest.json`.
 2. Keep `apps/chrome-extension/package.json` on the same version.
-3. Create and push a tag like `chrome-extension-v0.1.0`.
+3. Create and push a tag like `chrome-extension-v1.0.0`.
 4. GitHub Actions runs `.github/workflows/chrome-extension-release.yml`.
 
 ### What the workflow checks
@@ -46,7 +46,7 @@ Use this path when you want to publish a VSIX to the VS Code Marketplace and als
 ### Operator steps
 
 1. Update `apps/vscode-extension/package.json` to the release version.
-2. Create and push a tag like `vscode-extension-v0.1.0`.
+2. Create and push a tag like `vscode-extension-v1.0.0`.
 3. GitHub Actions runs `.github/workflows/vscode-extension-release.yml`.
 
 ### What the workflow checks

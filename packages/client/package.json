@@ -1,14 +1,26 @@
 {
   "name": "@modeldriveprotocol/client",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
+  "description": "JavaScript client SDK and browser bundle for Model Drive Protocol.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "homepage": "https://github.com/modeldriveprotocol/modeldriveprotocol#readme",
+  "bugs": {
+    "url": "https://github.com/modeldriveprotocol/modeldriveprotocol/issues"
+  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NWYLZW/mdp.git",
+    "url": "git+https://github.com/modeldriveprotocol/modeldriveprotocol.git",
     "directory": "packages/client"
   },
+  "keywords": [
+    "mdp",
+    "mcp",
+    "client",
+    "sdk",
+    "browser"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MDP Chrome Extension",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Expose Chrome extension abilities and page-local injected tools through Model Drive Protocol.",
   "permissions": [
     "storage",

@@ -32,8 +32,8 @@ apps/chrome-extension/dist
 Example release tag:
 
 ```bash
-git tag chrome-extension-v0.1.0
-git push origin chrome-extension-v0.1.0
+git tag chrome-extension-v1.0.0
+git push origin chrome-extension-v1.0.0
 ```
 
 ## Load In Chrome
