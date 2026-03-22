@@ -84,6 +84,9 @@ jobs:
     timeout-minutes: 20
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
       - name: Download packaged extension
         uses: actions/download-artifact@v4
         with:
