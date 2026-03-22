@@ -17,54 +17,34 @@ npx mdp setup
 npx @modeldriveprotocol/server setup
 ```
 
-默认情况下，`setup` 会尽量帮你配置几个常见的 MCP host：
+如果你想让常见 MCP host 先自动配置起来，直接用上面的 `setup` 命令即可。
 
-- Claude Code：通过 `claude mcp add`
-- Codex：写入 `~/.codex/config.toml`
-- Cursor：写入 `~/.cursor/mcp.json`
-
-常见变体：
-
-```bash
-npx mdp setup --claude
-npx mdp setup --cursor --scope project
-npx mdp setup --dry-run
-```
-
-如果你不想使用 `setup`，而是希望显式地只配置某一个 host，直接看对应的手动安装文档：
-
-- [Claude Code 手动安装](/zh-Hans/guide/manual-install-claude-code)
-- [Codex 手动安装](/zh-Hans/guide/manual-install-codex)
-- [Cursor 手动安装](/zh-Hans/guide/manual-install-cursor)
-
-server 实际暴露的 client transport 接口可以继续阅读 [对外接口](/zh-Hans/server/api/)。如果要启用 TLS 和安全端点，继续阅读 [安全](/zh-Hans/server/security)。
-如果你想集中了解 standalone、auto 和 proxy-required 这几种拓扑，继续阅读 [部署模式](/zh-Hans/server/deployment)。
+如果你要自己逐个 host 配置，继续阅读 [手动安装](/zh-Hans/guide/manual-install)。
+如果你要看 server 实际暴露出来的 transport 接口，继续阅读 [对外接口](/zh-Hans/server/api/)。
+如果你要启用 TLS 或理解安全端点，继续阅读 [安全](/zh-Hans/server/security)。
+如果你要集中了解 standalone、auto 和 proxy-required 这几种拓扑，继续阅读 [部署模式](/zh-Hans/server/deployment)。
 
 ## 2. 启动一个 Client
 
-快速开始里先用最小的 websocket 例子即可：
+如果你走浏览器路径，最快能跑起来的 client 就是下面这两段 CDN 脚本：
 
-```ts
-import { createMdpClient } from '@modeldriveprotocol/client'
-
-const client = createMdpClient({
-  serverUrl: 'ws://127.0.0.1:47372',
-  client: {
-    id: 'browser-01',
-    name: 'Browser Client'
-  }
-})
-
-client.exposeTool('searchDom', async ({ query }) => ({
-  query,
-  matches: 3
-}))
-
-await client.connect()
-client.register()
+```html
+<script src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js"></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/browser-simple-mdp-client@latest/dist/browser-simple-mdp-client.global.js"
+  attr-mdp-server-url="ws://127.0.0.1:47372"
+  attr-mdp-client-id="browser-simple-01"
+  attr-mdp-client-name="Browser Simple Client"
+  attr-mdp-client-description="最小浏览器 MDP client"
+></script>
 ```
 
-如果你要看 auth、HTTP loop、浏览器全局 bundle 等接入方式，继续阅读[生态 > SDKs > JavaScript](/zh-Hans/sdk/javascript/usage)。
+第一个脚本加载浏览器 SDK bundle。第二个脚本加载预构建好的 `browser-simple-mdp-client` app，它会自动连接并注册一组最小浏览器能力。
+
+如果你想看这个包本身的说明、内置能力和使用方式，继续阅读 [Browser Simple MDP Client](/zh-Hans/apps/browser-simple-mdp-client)。
+
+如果你想直接看这个仓库里部署出来的页面示例，可以打开 [Browser Client](/examples/browser/index.html)。
+如果你要看 auth、HTTP loop、浏览器全局 bundle 等更灵活的接入方式，继续阅读[生态 > SDKs > JavaScript](/zh-Hans/sdk/javascript/usage)。
 如果你更希望直接从现成运行时集成起步，也可以直接看 [Chrome 插件](/zh-Hans/apps/chrome-extension) 或 [VSCode 插件](/zh-Hans/apps/vscode-extension)。
 
 ## 3. 在 Agent 里试试看

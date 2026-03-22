@@ -12,6 +12,8 @@ This repository currently ships two app release types:
 - Chrome extension zip
 - VSCode extension VSIX
 
+If the target is `@modeldriveprotocol/browser-simple-mdp-client`, do not use this page. That app is published through the npm package release track instead of a dedicated artifact-release workflow.
+
 ## Chrome extension
 
 Use this path when you want a packaged Chrome extension zip attached to a GitHub release.

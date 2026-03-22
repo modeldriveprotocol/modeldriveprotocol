@@ -1,4 +1,9 @@
 import {
+  DEFAULT_CLUSTER_DISCOVERY_INTERVAL_MS,
+  DEFAULT_CLUSTER_ELECTION_TIMEOUT_MAX_MS,
+  DEFAULT_CLUSTER_ELECTION_TIMEOUT_MIN_MS,
+  DEFAULT_CLUSTER_HEARTBEAT_INTERVAL_MS,
+  DEFAULT_CLUSTER_LEASE_DURATION_MS,
   DEFAULT_CLUSTER_MODE,
   DEFAULT_DISCOVERY_ATTEMPTS,
   DEFAULT_DISCOVERY_HOST,
@@ -106,6 +111,16 @@ const optionDefinitions: CliOptionDefinition[] = [
     }
   },
   {
+    flags: ['--cluster-id'],
+    valueName: '<id>',
+    category: 'cluster',
+    helpDescription: 'Logical cluster identity (default: derived from discovery host/start port)',
+    markdownDescription: {
+      en: 'Logical cluster identity. Default: derived from `--discover-host` and `--discover-start-port`. Peers from a different cluster id are ignored.',
+      'zh-Hans': '逻辑 cluster identity。默认根据 `--discover-host` 和 `--discover-start-port` 推导。不同 cluster id 的 peer 会被忽略。'
+    }
+  },
+  {
     flags: ['--upstream-url'],
     valueName: '<ws-url>',
     category: 'cluster',
@@ -113,6 +128,16 @@ const optionDefinitions: CliOptionDefinition[] = [
     markdownDescription: {
       en: 'Skip discovery and connect to one explicit upstream hub.',
       'zh-Hans': '跳过发现流程，直接连接一个显式指定的上游 hub。'
+    }
+  },
+  {
+    flags: ['--cluster-members'],
+    valueName: '<id,id,...>',
+    category: 'cluster',
+    helpDescription: 'Static cluster member ids used for quorum and peer admission',
+    markdownDescription: {
+      en: 'Optional comma-separated server ids for a static cluster membership. Unknown peers are ignored for quorum and server-to-server control traffic.',
+      'zh-Hans': '可选的逗号分隔 server id 列表，用来声明静态 cluster 成员集合。未知 peer 不会进入 quorum，也不会参与 server-to-server 控制面通信。'
     }
   },
   {
@@ -144,6 +169,56 @@ const optionDefinitions: CliOptionDefinition[] = [
       en: `Number of consecutive ports to probe. Default: \`${DEFAULT_DISCOVERY_ATTEMPTS}\`.`,
       'zh-Hans': `最多连续探测多少个端口。默认：\`${DEFAULT_DISCOVERY_ATTEMPTS}\`。`
     }
+  },
+  {
+    flags: ['--cluster-heartbeat-interval-ms'],
+    valueName: '<ms>',
+    category: 'cluster',
+    helpDescription: `Leader heartbeat interval in milliseconds (default: ${DEFAULT_CLUSTER_HEARTBEAT_INTERVAL_MS})`,
+    markdownDescription: {
+      en: `Leader heartbeat interval in milliseconds. Default: \`${DEFAULT_CLUSTER_HEARTBEAT_INTERVAL_MS}\`.`,
+      'zh-Hans': `主节点发送心跳的毫秒间隔。默认：\`${DEFAULT_CLUSTER_HEARTBEAT_INTERVAL_MS}\`。`
+    }
+  },
+  {
+    flags: ['--cluster-lease-duration-ms'],
+    valueName: '<ms>',
+    category: 'cluster',
+    helpDescription: `Leader lease duration in milliseconds (default: ${DEFAULT_CLUSTER_LEASE_DURATION_MS})`,
+    markdownDescription: {
+      en: `Follower lease duration before triggering a new election. Default: \`${DEFAULT_CLUSTER_LEASE_DURATION_MS}\`.`,
+      'zh-Hans': `从节点等待主节点续租的时长，超时后会触发新一轮选主。默认：\`${DEFAULT_CLUSTER_LEASE_DURATION_MS}\`。`
+    }
+  },
+  {
+    flags: ['--cluster-election-timeout-min-ms'],
+    valueName: '<ms>',
+    category: 'cluster',
+    helpDescription: `Minimum randomized election timeout (default: ${DEFAULT_CLUSTER_ELECTION_TIMEOUT_MIN_MS})`,
+    markdownDescription: {
+      en: `Minimum randomized election timeout in milliseconds. Default: \`${DEFAULT_CLUSTER_ELECTION_TIMEOUT_MIN_MS}\`.`,
+      'zh-Hans': `随机选主超时的最小毫秒值。默认：\`${DEFAULT_CLUSTER_ELECTION_TIMEOUT_MIN_MS}\`。`
+    }
+  },
+  {
+    flags: ['--cluster-election-timeout-max-ms'],
+    valueName: '<ms>',
+    category: 'cluster',
+    helpDescription: `Maximum randomized election timeout (default: ${DEFAULT_CLUSTER_ELECTION_TIMEOUT_MAX_MS})`,
+    markdownDescription: {
+      en: `Maximum randomized election timeout in milliseconds. Default: \`${DEFAULT_CLUSTER_ELECTION_TIMEOUT_MAX_MS}\`.`,
+      'zh-Hans': `随机选主超时的最大毫秒值。默认：\`${DEFAULT_CLUSTER_ELECTION_TIMEOUT_MAX_MS}\`。`
+    }
+  },
+  {
+    flags: ['--cluster-discovery-interval-ms'],
+    valueName: '<ms>',
+    category: 'cluster',
+    helpDescription: `Peer rediscovery interval (default: ${DEFAULT_CLUSTER_DISCOVERY_INTERVAL_MS})`,
+    markdownDescription: {
+      en: `How often to refresh the discovered peer set in milliseconds. Default: \`${DEFAULT_CLUSTER_DISCOVERY_INTERVAL_MS}\`.`,
+      'zh-Hans': `重新发现 cluster peer 的毫秒间隔。默认：\`${DEFAULT_CLUSTER_DISCOVERY_INTERVAL_MS}\`。`
+    }
   }
 ]
 
@@ -168,6 +243,13 @@ const cliExamples: CliExampleDefinition[] = [
       'zh-Hans': '要求存在一个显式上游 hub：'
     },
     command: `modeldriveprotocol-server --cluster-mode proxy-required --upstream-url ws://${DEFAULT_SERVER_HOST}:${DEFAULT_MDP_PORT}`
+  },
+  {
+    title: {
+      en: 'Run one fixed three-node cluster:',
+      'zh-Hans': '启动一个固定三节点 cluster：'
+    },
+    command: 'modeldriveprotocol-server --cluster-mode auto --server-id node-a --cluster-members node-a,node-b,node-c'
   }
 ]
 

@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 
 import { readFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
 import { renderHelpText } from './cli-reference.js'
+import { MdpClusterManager, type ClusterManagerState } from './cluster-manager.js'
 import {
+  DEFAULT_CLUSTER_DISCOVERY_INTERVAL_MS,
+  DEFAULT_CLUSTER_ELECTION_TIMEOUT_MAX_MS,
+  DEFAULT_CLUSTER_ELECTION_TIMEOUT_MIN_MS,
+  DEFAULT_CLUSTER_HEARTBEAT_INTERVAL_MS,
+  DEFAULT_CLUSTER_LEASE_DURATION_MS,
   DEFAULT_CLUSTER_MODE,
   DEFAULT_DISCOVERY_ATTEMPTS,
   DEFAULT_DISCOVERY_HOST,
@@ -16,11 +21,7 @@ import {
 import { createMcpBridge } from './mcp-bridge.js'
 import { MdpServerRuntime } from './mdp-server.js'
 import { type MdpTransportServerOptions, MdpTransportServer } from './transport-server.js'
-import {
-  discoverUpstreamMdpServer,
-  type DiscoveredMdpServer,
-  probeMdpServer
-} from './upstream-discovery.js'
+import { discoverMdpServers, probeMdpServer } from './upstream-discovery.js'
 import { MdpUpstreamProxy } from './upstream-proxy.js'
 import { parseSetupArgs, renderSetupHelpText, runSetupCommand } from './setup.js'
 
@@ -33,10 +34,17 @@ export interface CliOptions {
   tlsCertPath?: string
   tlsCaPath?: string
   clusterMode: ClusterMode
+  clusterId: string
+  clusterMembers?: string[]
   upstreamUrl?: string
   discoverHost: string
   discoverStartPort: number
   discoverAttempts: number
+  clusterHeartbeatIntervalMs: number
+  clusterLeaseDurationMs: number
+  clusterElectionTimeoutMinMs: number
+  clusterElectionTimeoutMaxMs: number
+  clusterDiscoveryIntervalMs: number
   serverId?: string
 }
 
@@ -81,10 +89,16 @@ export async function runCli(
     return
   }
 
-  const options = parsed.options
-  const upstream = await resolveUpstream(options)
-  const effectiveOptions = finalizeCliOptions(options, parsed.portProvided, upstream)
+  const baseOptions = parsed.options
+  const effectiveOptions = await finalizeCliOptions(baseOptions, parsed.portProvided)
+  const serverId = resolveServerId(effectiveOptions)
+
   let upstreamProxy: MdpUpstreamProxy | undefined
+  let transportServer: MdpTransportServer
+  let clusterManager: MdpClusterManager | undefined
+  let reconcileProxyPromise = Promise.resolve()
+  let activeLeader: ClusterManagerState | undefined
+
   const runtime = new MdpServerRuntime({
     onClientRegistered: ({ client }) => {
       void upstreamProxy?.syncClient(client)
@@ -93,63 +107,144 @@ export async function runCli(
       void upstreamProxy?.removeClient(client.id)
     }
   })
-  const transportServer = new MdpTransportServer(runtime, await toServerOptions(effectiveOptions))
   const mcpServer = createMcpBridge(runtime)
   const transport = new StdioServerTransport()
-  const serverId = resolveServerId(effectiveOptions, parsed.portProvided, upstream)
 
-  if (upstream) {
-    upstreamProxy = new MdpUpstreamProxy({
-      runtime,
-      upstreamUrl: upstream.url,
-      serverId,
-      onUpstreamUnavailable: ({ upstreamUrl, error }) => {
-        io.error(
-          `MDP upstream proxy lost connection to ${upstreamUrl}: ${error.message}`
+  const queueProxyReconcile = (state: ClusterManagerState): void => {
+    reconcileProxyPromise = reconcileProxyPromise
+      .catch(() => {})
+      .then(async () => {
+        const nextLeaderKey = state.role === 'leader'
+          ? `${serverId}@${state.term}`
+          : `${state.leaderId ?? 'none'}@${state.term}`
+        const previousLeaderKey = activeLeader
+          ? (
+              activeLeader.role === 'leader'
+                ? `${serverId}@${activeLeader.term}`
+                : `${activeLeader.leaderId ?? 'none'}@${activeLeader.term}`
+            )
+          : undefined
+
+        activeLeader = state
+
+        if (state.role === 'leader' || !state.leaderUrl || !state.leaderId) {
+          if (upstreamProxy) {
+            await upstreamProxy.close()
+            upstreamProxy = undefined
+          }
+
+          if (previousLeaderKey !== nextLeaderKey) {
+            io.error(`MDP cluster primary is ${serverId} for term ${state.term}`)
+          }
+          return
+        }
+
+        if (
+          upstreamProxy &&
+          activeLeader?.leaderId === state.leaderId &&
+          activeLeader?.leaderUrl === state.leaderUrl &&
+          previousLeaderKey === nextLeaderKey
+        ) {
+          return
+        }
+
+        const nextProxy = new MdpUpstreamProxy({
+          runtime,
+          upstreamUrl: state.leaderUrl,
+          serverId
+        })
+
+        await nextProxy.start()
+        await Promise.allSettled(
+          runtime.listClients().map((client) => nextProxy.syncClient(client))
         )
-        io.error(
-          'MDP upstream proxy promoted this server to primary mode'
-        )
-        upstreamProxy = undefined
-      }
-    })
 
-    try {
-      await upstreamProxy.start()
-    } catch (error) {
-      if (options.clusterMode === 'proxy-required') {
-        throw error
-      }
+        const previousProxy = upstreamProxy
+        upstreamProxy = nextProxy
 
-      io.error(
-        `MDP upstream proxy could not establish a control connection: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      )
-      io.error('MDP upstream proxy promoted this server to primary mode')
-      upstreamProxy = undefined
-    }
+        await previousProxy?.close()
+        io.error(`MDP cluster following primary ${state.leaderId} at ${state.leaderUrl} for term ${state.term}`)
+      })
   }
 
-  await transportServer.start()
-  await mcpServer.connect(transport)
+  if (effectiveOptions.clusterMode !== 'standalone') {
+    clusterManager = new MdpClusterManager({
+      serverId,
+      clusterId: effectiveOptions.clusterId,
+      clusterMode: effectiveOptions.clusterMode,
+      ...(effectiveOptions.clusterMembers
+        ? { clusterMembers: effectiveOptions.clusterMembers }
+        : {}),
+      discoverHost: effectiveOptions.discoverHost,
+      discoverStartPort: effectiveOptions.discoverStartPort,
+      discoverAttempts: effectiveOptions.discoverAttempts,
+      seedUrls: effectiveOptions.upstreamUrl ? [effectiveOptions.upstreamUrl] : [],
+      heartbeatIntervalMs: effectiveOptions.clusterHeartbeatIntervalMs,
+      leaseDurationMs: effectiveOptions.clusterLeaseDurationMs,
+      electionTimeoutMinMs: effectiveOptions.clusterElectionTimeoutMinMs,
+      electionTimeoutMaxMs: effectiveOptions.clusterElectionTimeoutMaxMs,
+      discoveryIntervalMs: effectiveOptions.clusterDiscoveryIntervalMs,
+      getSelfEndpoints: () => ({
+        ws: transportServer.endpoints.ws,
+        cluster: transportServer.endpoints.cluster
+      }),
+      onStateChange: ({ state, roleChanged, leaderChanged }) => {
+        if (roleChanged || leaderChanged) {
+          queueProxyReconcile(state)
+        }
+      }
+    })
+  }
+
+  transportServer = new MdpTransportServer(runtime, await toServerOptions(
+    effectiveOptions,
+    serverId,
+    clusterManager
+  ))
+
+  try {
+    await transportServer.start()
+    await mcpServer.connect(transport)
+    await clusterManager?.start()
+    if (clusterManager) {
+      queueProxyReconcile(clusterManager.state)
+      await reconcileProxyPromise
+    }
+  } catch (error) {
+    await Promise.allSettled([
+      clusterManager?.close() ?? Promise.resolve(),
+      mcpServer.close(),
+      transportServer.stop()
+    ])
+    throw error
+  }
 
   const endpoints = transportServer.endpoints
   io.error(`MDP server listening on ${endpoints.ws}`)
   io.error(`MDP HTTP loop endpoint listening on ${endpoints.httpLoop}`)
   io.error(`MDP auth endpoint listening on ${endpoints.auth}`)
   io.error(`MDP meta endpoint listening on ${endpoints.meta}`)
+  io.error(`MDP cluster endpoint listening on ${endpoints.cluster}`)
 
-  if (upstream) {
-    io.error(`MDP upstream proxy connected to ${upstream.meta.serverId} at ${upstream.url}`)
+  if (clusterManager) {
+    const state = clusterManager.state
+    if (state.role === 'leader') {
+      io.error(`MDP cluster primary is ${serverId} for term ${state.term}`)
+    } else if (state.leaderId && state.leaderUrl) {
+      io.error(`MDP cluster following primary ${state.leaderId} at ${state.leaderUrl} for term ${state.term}`)
+    } else {
+      io.error('MDP cluster started without a settled primary yet')
+    }
   } else {
-    io.error('MDP server running without upstream proxy')
+    io.error('MDP server running without cluster control')
   }
 
   const shutdown = async () => {
     await Promise.allSettled([
-      mcpServer.close(),
+      clusterManager?.close() ?? Promise.resolve(),
       upstreamProxy?.close() ?? Promise.resolve(),
+      reconcileProxyPromise,
+      mcpServer.close(),
       transportServer.stop()
     ])
     process.exit(0)
@@ -169,12 +264,19 @@ export function parseArgs(argv: string[]): CliParseResult {
     host: DEFAULT_SERVER_HOST,
     port: DEFAULT_MDP_PORT,
     clusterMode: DEFAULT_CLUSTER_MODE,
+    clusterId: defaultClusterId(DEFAULT_DISCOVERY_HOST, DEFAULT_MDP_PORT),
     discoverHost: DEFAULT_DISCOVERY_HOST,
     discoverStartPort: DEFAULT_MDP_PORT,
-    discoverAttempts: DEFAULT_DISCOVERY_ATTEMPTS
+    discoverAttempts: DEFAULT_DISCOVERY_ATTEMPTS,
+    clusterHeartbeatIntervalMs: DEFAULT_CLUSTER_HEARTBEAT_INTERVAL_MS,
+    clusterLeaseDurationMs: DEFAULT_CLUSTER_LEASE_DURATION_MS,
+    clusterElectionTimeoutMinMs: DEFAULT_CLUSTER_ELECTION_TIMEOUT_MIN_MS,
+    clusterElectionTimeoutMaxMs: DEFAULT_CLUSTER_ELECTION_TIMEOUT_MAX_MS,
+    clusterDiscoveryIntervalMs: DEFAULT_CLUSTER_DISCOVERY_INTERVAL_MS
   }
   let helpRequested = false
   let portProvided = false
+  let clusterIdProvided = false
 
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]
@@ -240,9 +342,24 @@ export function parseArgs(argv: string[]): CliParseResult {
       continue
     }
 
+    if (value === '--cluster-id') {
+      const nextValue = requireOptionValue(argv, index)
+      options.clusterId = nextValue
+      clusterIdProvided = true
+      index += 1
+      continue
+    }
+
     if (value === '--upstream-url') {
       const nextValue = requireOptionValue(argv, index)
       options.upstreamUrl = nextValue
+      index += 1
+      continue
+    }
+
+    if (value === '--cluster-members') {
+      const nextValue = requireOptionValue(argv, index)
+      options.clusterMembers = parseClusterMembersOptionValue(nextValue)
       index += 1
       continue
     }
@@ -268,6 +385,41 @@ export function parseArgs(argv: string[]): CliParseResult {
       continue
     }
 
+    if (value === '--cluster-heartbeat-interval-ms') {
+      const nextValue = requireOptionValue(argv, index)
+      options.clusterHeartbeatIntervalMs = parsePositiveIntegerOptionValue('--cluster-heartbeat-interval-ms', nextValue)
+      index += 1
+      continue
+    }
+
+    if (value === '--cluster-lease-duration-ms') {
+      const nextValue = requireOptionValue(argv, index)
+      options.clusterLeaseDurationMs = parsePositiveIntegerOptionValue('--cluster-lease-duration-ms', nextValue)
+      index += 1
+      continue
+    }
+
+    if (value === '--cluster-election-timeout-min-ms') {
+      const nextValue = requireOptionValue(argv, index)
+      options.clusterElectionTimeoutMinMs = parsePositiveIntegerOptionValue('--cluster-election-timeout-min-ms', nextValue)
+      index += 1
+      continue
+    }
+
+    if (value === '--cluster-election-timeout-max-ms') {
+      const nextValue = requireOptionValue(argv, index)
+      options.clusterElectionTimeoutMaxMs = parsePositiveIntegerOptionValue('--cluster-election-timeout-max-ms', nextValue)
+      index += 1
+      continue
+    }
+
+    if (value === '--cluster-discovery-interval-ms') {
+      const nextValue = requireOptionValue(argv, index)
+      options.clusterDiscoveryIntervalMs = parsePositiveIntegerOptionValue('--cluster-discovery-interval-ms', nextValue)
+      index += 1
+      continue
+    }
+
     if (value === '--server-id') {
       const nextValue = requireOptionValue(argv, index)
       options.serverId = nextValue
@@ -282,6 +434,22 @@ export function parseArgs(argv: string[]): CliParseResult {
     throw new Error(`Unexpected argument: ${value}`)
   }
 
+  if (options.clusterElectionTimeoutMinMs > options.clusterElectionTimeoutMaxMs) {
+    throw new Error('Option --cluster-election-timeout-min-ms cannot be greater than --cluster-election-timeout-max-ms')
+  }
+
+  if (options.clusterLeaseDurationMs <= options.clusterHeartbeatIntervalMs) {
+    throw new Error('Option --cluster-lease-duration-ms must be greater than --cluster-heartbeat-interval-ms')
+  }
+
+  if (!clusterIdProvided) {
+    options.clusterId = defaultClusterId(options.discoverHost, options.discoverStartPort)
+  }
+
+  if (options.clusterMode === 'standalone' && options.clusterMembers) {
+    throw new Error('Option --cluster-members cannot be used with --cluster-mode standalone')
+  }
+
   return {
     helpRequested,
     portProvided,
@@ -290,74 +458,94 @@ export function parseArgs(argv: string[]): CliParseResult {
 }
 
 async function toServerOptions(
-  options: CliOptions
+  options: CliOptions,
+  serverId: string,
+  clusterManager: MdpClusterManager | undefined
 ): Promise<MdpTransportServerOptions> {
   return {
     host: options.host,
     port: options.port,
-    ...(options.serverId ? { serverId: options.serverId } : {}),
+    serverId,
+    clusterId: options.clusterId,
+    ...(clusterManager
+      ? {
+          clusterMetaProvider: () => clusterManager.state,
+          onClusterConnection: (socket) => {
+            clusterManager.handleConnection(socket)
+          }
+        }
+      : {}),
     ...(await loadTlsOptions(options))
   }
 }
 
-async function resolveUpstream(
-  options: CliOptions
-): Promise<DiscoveredMdpServer | undefined> {
-  if (options.clusterMode === 'standalone') {
-    return undefined
+async function finalizeCliOptions(
+  options: CliOptions,
+  portProvided: boolean
+): Promise<CliOptions> {
+  if (portProvided || options.clusterMode === 'standalone') {
+    return options
   }
 
-  if (options.upstreamUrl) {
-    const discovered = await probeMdpServer(options.upstreamUrl)
+  if (await hasExistingClusterPeer(options)) {
+    return {
+      ...options,
+      port: 0
+    }
+  }
 
-    if (!discovered) {
-      throw new Error(`Unable to probe upstream MDP server at ${options.upstreamUrl}`)
+  return options
+}
+
+async function hasExistingClusterPeer(options: CliOptions): Promise<boolean> {
+  if (options.upstreamUrl) {
+    const server = await probeMdpServer(options.upstreamUrl, {
+      requiredClusterId: options.clusterId
+    })
+    if (!server) {
+      return false
     }
 
-    return discovered
+    return isAllowedClusterMember(options.clusterMembers, server.meta.serverId)
   }
 
-  const discovered = await discoverUpstreamMdpServer({
+  const discovered = await discoverMdpServers({
+    requiredClusterId: options.clusterId,
     host: options.discoverHost,
     startPort: options.discoverStartPort,
     attempts: options.discoverAttempts
   })
 
-  if (!discovered && options.clusterMode === 'proxy-required') {
-    throw new Error(
-      `Unable to discover an upstream MDP server from ${options.discoverHost}:${options.discoverStartPort} within ${options.discoverAttempts} ports`
-    )
-  }
-
-  return discovered
+  return discovered.some((server) => isAllowedClusterMember(options.clusterMembers, server.meta.serverId))
 }
 
-function finalizeCliOptions(
-  options: CliOptions,
-  portProvided: boolean,
-  upstream: DiscoveredMdpServer | undefined
-): CliOptions {
-  if (portProvided || !upstream) {
-    return options
-  }
-
-  return {
-    ...options,
-    port: 0
-  }
+function defaultClusterId(discoverHost: string, discoverStartPort: number): string {
+  return `${discoverHost}:${discoverStartPort}`
 }
 
-function resolveServerId(
-  options: CliOptions,
-  portProvided: boolean,
-  upstream: DiscoveredMdpServer | undefined
-): string {
+function parseClusterMembersOptionValue(value: string): string[] {
+  const members = value
+    .split(',')
+    .map((memberId) => memberId.trim())
+    .filter((memberId) => memberId.length > 0)
+
+  if (members.length === 0) {
+    throw new Error('Option --cluster-members requires at least one server id')
+  }
+
+  return [...new Set(members)]
+}
+
+function isAllowedClusterMember(
+  clusterMembers: string[] | undefined,
+  serverId: string
+): boolean {
+  return clusterMembers?.includes(serverId) ?? true
+}
+
+function resolveServerId(options: CliOptions): string {
   if (options.serverId) {
     return options.serverId
-  }
-
-  if (!portProvided && upstream) {
-    return `mdp-edge-${process.pid}`
   }
 
   if (options.port !== 0) {
@@ -424,12 +612,17 @@ function parsePositiveIntegerOptionValue(option: string, value: string): number 
   return parsed
 }
 
-const isCliEntrypoint = process.argv[1] !== undefined &&
-  fileURLToPath(import.meta.url) === process.argv[1]
+const isDirectExecution = (() => {
+  try {
+    return import.meta.url === new URL(process.argv[1]!, 'file:').href
+  } catch {
+    return false
+  }
+})()
 
-if (isCliEntrypoint) {
+if (isDirectExecution) {
   void runCli().catch((error) => {
-    console.error(error)
+    console.error(error instanceof Error ? error.message : String(error))
     process.exit(1)
   })
 }

@@ -14,6 +14,7 @@ The current repository is built around a Node.js workspace. This environment is 
 - `packages/protocol`
 - `packages/client`
 - `packages/server`
+- `apps/browser-simple-mdp-client`
 - `apps/chrome-extension`
 - `apps/vscode-extension`
 - `docs`
@@ -63,6 +64,9 @@ pnpm docs:build
 When you are only touching one app, start with its own commands:
 
 ```bash
+pnpm --filter @modeldriveprotocol/browser-simple-mdp-client test
+pnpm --filter @modeldriveprotocol/browser-simple-mdp-client build
+
 pnpm --filter @modeldriveprotocol/chrome-extension typecheck
 pnpm --filter @modeldriveprotocol/chrome-extension test
 pnpm --filter @modeldriveprotocol/chrome-extension build

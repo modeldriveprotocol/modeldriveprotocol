@@ -13,9 +13,23 @@ export interface MdpServerMeta {
     httpLoop: string
     auth: string
     meta: string
+    cluster: string
   }
   features: {
     upstreamProxy: boolean
+    clusterControl: boolean
+  }
+  cluster: {
+    id: string
+    role: 'leader' | 'follower' | 'candidate'
+    term: number
+    leaderId?: string
+    leaderUrl?: string
+    leaseDurationMs: number
+    knownMemberCount?: number
+    reachableMemberCount?: number
+    quorumSize?: number
+    hasQuorum?: boolean
   }
 }
 
@@ -23,6 +37,7 @@ export interface ProbeMdpServerOptions {
   fetch?: FetchLike
   metaPath?: string
   requiredProtocolVersion?: string
+  requiredClusterId?: string
 }
 
 export interface DiscoverUpstreamServerOptions extends ProbeMdpServerOptions {
@@ -59,6 +74,20 @@ export class IncompatibleMdpProtocolVersionError extends Error {
         `Advertised protocol version: ${advertisedProtocolVersion}.`,
         `Supported semver ranges: ${supportedProtocolRanges.join(', ') || 'none'}.`
       ].join(' ')
+    )
+  }
+}
+
+export class UnexpectedMdpClusterIdError extends Error {
+  readonly name = 'UnexpectedMdpClusterIdError'
+
+  constructor(
+    readonly serverUrl: string,
+    readonly requiredClusterId: string,
+    readonly advertisedClusterId: string
+  ) {
+    super(
+      `MDP server at ${serverUrl} belongs to cluster ${advertisedClusterId}, expected ${requiredClusterId}.`
     )
   }
 }
@@ -107,31 +136,54 @@ export async function probeMdpServer(
     payload,
     options.requiredProtocolVersion ?? MDP_PROTOCOL_VERSION
   )
+  assertCompatibleClusterId(serverUrl, payload, options.requiredClusterId)
+
+  const resolvedEndpoints = resolveAdvertisedEndpoints(serverUrl, payload.endpoints)
 
   return {
-    url: serverUrl,
-    meta: payload
+    url: resolvedEndpoints.ws,
+    meta: {
+      ...payload,
+      endpoints: resolvedEndpoints
+    }
   }
 }
 
 export async function discoverUpstreamMdpServer(
   options: DiscoverUpstreamServerOptions = {}
 ): Promise<DiscoveredMdpServer | undefined> {
+  const discovered = await discoverMdpServers(options)
+  return chooseDiscoveredPrimary(discovered)
+}
+
+export async function discoverMdpServers(
+  options: DiscoverUpstreamServerOptions = {}
+): Promise<DiscoveredMdpServer[]> {
   const host = options.host ?? DEFAULT_DISCOVERY_HOST
   const protocol = options.protocol ?? 'ws'
   const startPort = options.startPort ?? DEFAULT_MDP_PORT
   const attempts = options.attempts ?? DEFAULT_DISCOVERY_ATTEMPTS
+  const discovered: DiscoveredMdpServer[] = []
 
   for (let offset = 0; offset < attempts; offset += 1) {
     const serverUrl = `${protocol}://${host}:${startPort + offset}`
-    const discovered = await probeMdpServer(serverUrl, options)
+    let server: DiscoveredMdpServer | undefined
 
-    if (discovered) {
-      return discovered
+    try {
+      server = await probeMdpServer(serverUrl, options)
+    } catch (error) {
+      if (error instanceof UnexpectedMdpClusterIdError) {
+        continue
+      }
+      throw error
+    }
+
+    if (server) {
+      discovered.push(server)
     }
   }
 
-  return undefined
+  return discovered
 }
 
 export function resolveMetaUrl(serverUrl: string, metaPath = DEFAULT_META_PATH): string {
@@ -177,6 +229,18 @@ function assertCompatibleProtocolVersion(
   )
 }
 
+function assertCompatibleClusterId(
+  serverUrl: string,
+  meta: MdpServerMeta,
+  requiredClusterId: string | undefined
+): void {
+  if (!requiredClusterId || meta.cluster.id === requiredClusterId) {
+    return
+  }
+
+  throw new UnexpectedMdpClusterIdError(serverUrl, requiredClusterId, meta.cluster.id)
+}
+
 function isMdpServerMeta(value: unknown): value is MdpServerMeta {
   if (!isRecord(value)) {
     return false
@@ -188,7 +252,8 @@ function isMdpServerMeta(value: unknown): value is MdpServerMeta {
     supportedProtocolRanges,
     serverId,
     endpoints,
-    features
+    features,
+    cluster
   } = value
 
   if (
@@ -210,7 +275,7 @@ function isMdpServerMeta(value: unknown): value is MdpServerMeta {
     return false
   }
 
-  if (!isRecord(endpoints) || !isRecord(features)) {
+  if (!isRecord(endpoints) || !isRecord(features) || !isRecord(cluster)) {
     return false
   }
 
@@ -219,10 +284,76 @@ function isMdpServerMeta(value: unknown): value is MdpServerMeta {
     typeof endpoints.httpLoop === 'string' &&
     typeof endpoints.auth === 'string' &&
     typeof endpoints.meta === 'string' &&
-    typeof features.upstreamProxy === 'boolean'
+    typeof endpoints.cluster === 'string' &&
+    typeof features.upstreamProxy === 'boolean' &&
+    typeof features.clusterControl === 'boolean' &&
+    typeof cluster.id === 'string' &&
+    (
+      cluster.role === 'leader' ||
+      cluster.role === 'follower' ||
+      cluster.role === 'candidate'
+    ) &&
+    typeof cluster.term === 'number' &&
+    Number.isInteger(cluster.term) &&
+    cluster.term >= 0 &&
+    (!('leaderId' in cluster) || typeof cluster.leaderId === 'string') &&
+    (!('leaderUrl' in cluster) || typeof cluster.leaderUrl === 'string') &&
+    typeof cluster.leaseDurationMs === 'number' &&
+    Number.isInteger(cluster.leaseDurationMs) &&
+    cluster.leaseDurationMs > 0
   )
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+function chooseDiscoveredPrimary(
+  servers: DiscoveredMdpServer[]
+): DiscoveredMdpServer | undefined {
+  const leaders = servers
+    .filter((server) => server.meta.cluster.role === 'leader')
+    .sort((left, right) => {
+      if (right.meta.cluster.term !== left.meta.cluster.term) {
+        return right.meta.cluster.term - left.meta.cluster.term
+      }
+
+      return left.meta.serverId.localeCompare(right.meta.serverId)
+    })
+
+  return leaders[0] ?? servers[0]
+}
+
+function resolveAdvertisedEndpoints(
+  serverUrl: string,
+  endpoints: MdpServerMeta['endpoints']
+): MdpServerMeta['endpoints'] {
+  return {
+    ws: normalizeAdvertisedUrl(serverUrl, endpoints.ws),
+    httpLoop: normalizeAdvertisedUrl(serverUrl, endpoints.httpLoop),
+    auth: normalizeAdvertisedUrl(serverUrl, endpoints.auth),
+    meta: normalizeAdvertisedUrl(serverUrl, endpoints.meta),
+    cluster: normalizeAdvertisedUrl(serverUrl, endpoints.cluster)
+  }
+}
+
+function normalizeAdvertisedUrl(referenceUrl: string, advertisedUrl: string): string {
+  const reference = new URL(referenceUrl)
+  const advertised = new URL(advertisedUrl)
+
+  if (isWildcardHost(advertised.hostname)) {
+    advertised.hostname = reference.hostname
+  }
+
+  return stripRootTrailingSlash(advertised.toString())
+}
+
+function isWildcardHost(hostname: string): boolean {
+  return hostname === '0.0.0.0' || hostname === '::' || hostname === '[::]'
+}
+
+function stripRootTrailingSlash(url: string): string {
+  return url.endsWith('/') && !url.slice(0, -1).includes('/', url.indexOf('://') + 3)
+    ? url.slice(0, -1)
+    : url
 }

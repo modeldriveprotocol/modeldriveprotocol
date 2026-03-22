@@ -1,5 +1,6 @@
 import { protocolErrorCodes } from './errors.js'
 import { isJsonObject } from './json.js'
+import type { ClusterMessage } from './cluster-messages.js'
 import type { MdpMessage } from './messages.js'
 import { capabilityKinds, clientAuthSources, clientConnectionModes } from './models.js'
 import type {
@@ -203,4 +204,104 @@ export function parseMessage(raw: string): MdpMessage {
 
 export function isStringRecord(value: unknown): value is Record<string, string> {
   return isJsonObject(value) && isStringArray(Object.values(value))
+}
+
+export function isClusterMessage(value: unknown): value is ClusterMessage {
+  if (!isJsonObject(value) || typeof value.type !== 'string') {
+    return false
+  }
+
+  const object = value
+
+  switch (object.type) {
+    case 'clusterHello':
+      return (
+        hasString(object, 'clusterId') &&
+        hasString(object, 'serverId') &&
+        typeof object.term === 'number' &&
+        Number.isInteger(object.term) &&
+        object.term >= 0 &&
+        (
+          object.role === 'leader' ||
+          object.role === 'follower' ||
+          object.role === 'candidate'
+        ) &&
+        hasString(object, 'wsUrl') &&
+        hasString(object, 'clusterUrl') &&
+        typeof object.timestamp === 'number' &&
+        (!('leaderId' in object) || typeof object.leaderId === 'string') &&
+        (!('leaderUrl' in object) || typeof object.leaderUrl === 'string')
+      )
+    case 'clusterHeartbeat':
+      return (
+        hasString(object, 'clusterId') &&
+        hasString(object, 'serverId') &&
+        typeof object.term === 'number' &&
+        Number.isInteger(object.term) &&
+        object.term >= 0 &&
+        hasString(object, 'leaderId') &&
+        hasString(object, 'leaderUrl') &&
+        typeof object.leaseDurationMs === 'number' &&
+        Number.isInteger(object.leaseDurationMs) &&
+        object.leaseDurationMs > 0 &&
+        typeof object.timestamp === 'number'
+      )
+    case 'clusterHeartbeatAck':
+      return (
+        hasString(object, 'clusterId') &&
+        hasString(object, 'serverId') &&
+        typeof object.term === 'number' &&
+        Number.isInteger(object.term) &&
+        object.term >= 0 &&
+        hasString(object, 'followerId') &&
+        hasString(object, 'leaderId') &&
+        typeof object.timestamp === 'number'
+      )
+    case 'clusterVoteRequest':
+      return (
+        hasString(object, 'clusterId') &&
+        hasString(object, 'serverId') &&
+        typeof object.term === 'number' &&
+        Number.isInteger(object.term) &&
+        object.term >= 0 &&
+        hasString(object, 'candidateId') &&
+        hasString(object, 'candidateUrl') &&
+        typeof object.timestamp === 'number'
+      )
+    case 'clusterVoteResponse':
+      return (
+        hasString(object, 'clusterId') &&
+        hasString(object, 'serverId') &&
+        typeof object.term === 'number' &&
+        Number.isInteger(object.term) &&
+        object.term >= 0 &&
+        hasString(object, 'voterId') &&
+        typeof object.voteGranted === 'boolean' &&
+        typeof object.timestamp === 'number' &&
+        (!('leaderId' in object) || typeof object.leaderId === 'string') &&
+        (!('leaderUrl' in object) || typeof object.leaderUrl === 'string')
+      )
+    case 'clusterLeaderResign':
+      return (
+        hasString(object, 'clusterId') &&
+        hasString(object, 'serverId') &&
+        typeof object.term === 'number' &&
+        Number.isInteger(object.term) &&
+        object.term >= 0 &&
+        hasString(object, 'leaderId') &&
+        typeof object.timestamp === 'number'
+      )
+    default:
+      return false
+  }
+}
+
+export function parseClusterMessage(raw: string): ClusterMessage {
+  const parsed = JSON.parse(raw) as unknown
+
+  if (!isClusterMessage(parsed)) {
+    throw new Error('Invalid MDP cluster message')
+  }
+
+  return parsed
 }

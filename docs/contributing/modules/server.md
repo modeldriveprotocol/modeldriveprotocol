@@ -33,29 +33,74 @@ pnpm build
 pnpm test
 ```
 
+If your change updates shared CLI help or generated documentation blocks, also run:
+
+```bash
+pnpm docs:sync
+pnpm docs:sync:check
+```
+
+`docs:sync` rewrites generated blocks in the CLI reference pages from `packages/server/dist/cli-reference.js`. `docs:sync:check` is the non-writing variant for CI and pre-merge verification. If you add another generated doc page, register it in `scripts/generated-docs.config.mjs`.
+
 ## Start the server locally
 
 For local development, build the package first, then run the generated CLI:
 
 ```bash
 pnpm --filter @modeldriveprotocol/server build
-node packages/server/dist/cli.js --port 7070
+node packages/server/dist/cli.js --port 47372
 ```
 
 The server prints the websocket endpoint, HTTP loop endpoint, and auth endpoint to stderr when it starts.
+It also prints the metadata probe endpoint at `/mdp/meta`.
 
 The default local websocket URL is:
 
 ```text
-ws://127.0.0.1:7070
+ws://127.0.0.1:47372
 ```
+
+## Local layered topology
+
+When you need to debug multi-server behavior locally, use one explicit hub and one edge.
+
+Hub:
+
+```bash
+node packages/server/dist/cli.js --port 47372 --server-id hub
+```
+
+Edge with explicit upstream:
+
+```bash
+node packages/server/dist/cli.js \
+  --port 47170 \
+  --cluster-mode proxy-required \
+  --upstream-url ws://127.0.0.1:47372 \
+  --server-id edge-01
+```
+
+Edge with discovery:
+
+```bash
+node packages/server/dist/cli.js \
+  --cluster-mode auto \
+  --discover-host 127.0.0.1 \
+  --discover-start-port 47372 \
+  --discover-attempts 100 \
+  --server-id edge-02
+```
+
+In this setup, runtime-local clients normally connect to the edge server, not directly to the hub. The hub remains the MCP-facing bridge surface.
+
+For the complete flag list and `--help` output shape, see [CLI Reference](/server/cli).
 
 ## Debugging workflow
 
 The current package does not ship a dedicated `dev` or `watch` script. The common local loop is:
 
 1. rebuild `@modeldriveprotocol/server`
-2. restart `node packages/server/dist/cli.js --port 7070`
+2. restart `node packages/server/dist/cli.js --port 47372`
 3. reconnect the client you are testing against
 
 When debugging routing or registration behavior, keep the server terminal open and use its startup and error output as the first signal.

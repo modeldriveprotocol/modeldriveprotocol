@@ -10,6 +10,8 @@ This repository has two release tracks:
 - npm packages
 - applications
 
+The npm package track includes the core packages under `packages/*` and any publishable workspace package under `apps/*` that ships through npm, such as `@modeldriveprotocol/browser-simple-mdp-client`.
+
 The applications track currently includes:
 
 - Chrome extension zip

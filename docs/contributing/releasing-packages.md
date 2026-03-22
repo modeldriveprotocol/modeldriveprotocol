@@ -7,6 +7,8 @@ status: Draft
 
 Use this path when published `@modeldriveprotocol/*` packages should ship to npm.
 
+That includes the protocol, client, and server packages under `packages/*`, and publishable npm-delivered app packages such as `@modeldriveprotocol/browser-simple-mdp-client`.
+
 ## Operator steps
 
 1. Prepare the package changes with `pnpm changeset`.
@@ -22,6 +24,8 @@ Use this path when published `@modeldriveprotocol/*` packages should ship to npm
 - runs `pnpm build`
 - runs `pnpm test`
 - runs `pnpm publish:packages`
+
+Because the root build and test commands include `@modeldriveprotocol/browser-simple-mdp-client`, the same release workflow now verifies and publishes that package together with the core packages when its version changes.
 
 ## Required repository setup
 

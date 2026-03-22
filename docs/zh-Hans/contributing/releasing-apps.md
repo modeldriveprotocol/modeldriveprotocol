@@ -12,6 +12,8 @@ status: Draft
 - Chrome 扩展 zip
 - VSCode 扩展 VSIX
 
+如果目标是 `@modeldriveprotocol/browser-simple-mdp-client`，不要走这页。这个 app 通过 NPM 包发布链路发版，而不是单独的构件发布 workflow。
+
 ## Chrome 插件发布
 
 当你要产出一个可下载的 Chrome 扩展 zip，并把它挂到 GitHub Release 时，走这条路径。

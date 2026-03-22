@@ -57,19 +57,102 @@ Current transport support includes:
 - `http` / `https` loop mode for long-polling runtimes
 - auth envelopes on client registration and routed invocation messages
 - transport auth via request headers or cookie bootstrap at `/mdp/auth`
+- `GET /mdp/meta` for MDP server probing and optional upstream discovery
+
+MDP servers can also run in a simple layered topology:
+
+- `auto` (default): one server becomes the primary registry for runtime-local clients, and other servers can attach to it as secondaries
+- `standalone`: one server owns the local registry without any inter-server links
+- `proxy-required`: a server must find an upstream primary MDP server during startup or fail fast
+
+In the primary-secondary view, MDP clients connect only to the primary server. Secondary servers stay connected to that primary so each AgentUI can use its own local server while still reaching the same client registry.
 
 ## Architecture
 
-At a high level, MDP sits between MCP hosts and runtime-local capabilities:
+At a high level, one user can work through different agent UIs such as Claude Code, Codex, or Cursor. Each UI talks to its own `mdp server`, those servers form a primary-secondary triangle, and all `mdp clients` connect only to the primary:
 
 ```mermaid
 flowchart LR
-  host["MCP Host"] <-->|"fixed bridge tools"| server["MDP Server<br/>registry + routing"]
-  server <-->|"capability registration<br/>invocation routing"| clients["MDP Clients"]
-  clients --> web["Web App"]
-  clients --> mobile["Mobile App"]
-  clients --> local["Desktop / Device / Local Process"]
+  user["User"]
+
+  subgraph agents["Agent UI"]
+    claude["Claude Code"]
+    codex["Codex"]
+    cursor["Cursor"]
+  end
+
+  subgraph servers["MDP Server Federation"]
+    primary["Primary MDP Server"]
+    secondaryB["Secondary MDP Server B"]
+    secondaryC["Secondary MDP Server C"]
+  end
+
+  clients["MDP Clients"]
+  tools["Tools"]
+  skills["Skills"]
+  prompts["Prompts"]
+  resources["Resources"]
+
+  user --> claude
+  user --> codex
+  user --> cursor
+
+  claude <-->|"local host link"| secondaryB
+  codex <-->|"local host link"| primary
+  cursor <-->|"local host link"| secondaryC
+
+  primary <-->|"federation"| secondaryB
+  primary <-->|"federation"| secondaryC
+  secondaryB <-->|"federation"| secondaryC
+
+  primary <-->|"client sessions"| clients
+  clients --> tools
+  clients --> skills
+  clients --> prompts
+  clients --> resources
 ```
+
+One invocation can go directly to the primary server, or pass through a secondary server when one is present:
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant Agent as AgentUI
+  participant Secondary as Secondary Server
+  participant Primary as Primary Server
+  participant Client as MDP Client
+  participant Runtime as Local Runtime
+
+  User->>Agent: ask for an action
+  opt AgentUI is attached to a secondary server
+    Agent->>Secondary: call local mdp server
+    Secondary->>Primary: federated request
+  end
+  opt AgentUI is attached directly to the primary server
+    Agent->>Primary: call local mdp server
+  end
+  Primary->>Client: route MDP call
+  Client->>Runtime: execute local logic
+  Runtime-->>Client: result
+  Client-->>Primary: callClientResult
+  opt Result returns through a secondary server
+    Primary-->>Secondary: federated result
+    Secondary-->>Agent: tool result
+  end
+  opt Result returns directly to the primary-side AgentUI
+    Primary-->>Agent: tool result
+  end
+  Agent-->>User: answer
+```
+
+Connection setup follows the same structure:
+
+- each user connects to one AgentUI
+- each AgentUI connects to its own colocated MDP server
+- one MDP server becomes or is configured as the primary
+- all runtime-local MDP clients open transports only to that primary server
+- the primary forwards registry updates and routed messages to connected secondary servers
+- if the primary server becomes unavailable, one secondary server should promote itself to the new primary and take over client-facing routing
 
 ## Pick A Path
 

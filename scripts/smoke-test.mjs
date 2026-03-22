@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import net from 'node:net'
 import { setTimeout as delay } from 'node:timers/promises'
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
@@ -7,7 +8,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
 import { createMdpClient } from '../packages/client/dist/index.js'
 
-const port = 7190
+const port = await allocatePort()
 const serverUrl = `http://127.0.0.1:${port}`
 const transport = new StdioClientTransport({
   command: process.execPath,
@@ -79,6 +80,12 @@ try {
 
   await mcpClient.connect(transport)
   await waitForServerReady(stderrChunks, port)
+
+  const metaResponse = await fetch(`${serverUrl}/mdp/meta`)
+  const metaPayload = await metaResponse.json()
+  assert.equal(metaResponse.ok, true)
+  assert.equal(metaPayload.protocol, 'mdp')
+  assert.equal(metaPayload.endpoints.httpLoop, `${serverUrl}/mdp/http-loop`)
 
   await mdpClient.connect()
   mdpClient.register()
@@ -177,4 +184,31 @@ async function waitForServerReady(stderrChunks, expectedPort) {
   }
 
   throw new Error(`Timed out waiting for server startup (${expectedLine})`)
+}
+
+async function allocatePort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer()
+
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address()
+
+      if (!address || typeof address === 'string') {
+        server.close(() => {
+          reject(new Error('Unable to allocate an ephemeral smoke-test port'))
+        })
+        return
+      }
+
+      server.close((error) => {
+        if (error) {
+          reject(error)
+          return
+        }
+
+        resolve(address.port)
+      })
+    })
+  })
 }

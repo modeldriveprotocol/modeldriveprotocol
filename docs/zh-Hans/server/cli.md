@@ -53,15 +53,23 @@ Options:
   --server-id <id>                                 Stable server identity exposed in /mdp/meta
   -h, --help                                       Show this help text
   --cluster-mode <standalone|auto|proxy-required>  Startup topology mode (default: auto)
+  --cluster-id <id>                                Logical cluster identity (default: derived from discovery host/start port)
   --upstream-url <ws-url>                          Explicit upstream hub websocket URL
+  --cluster-members <id,id,...>                    Static cluster member ids used for quorum and peer admission
   --discover-host <host>                           Discovery host (default: 127.0.0.1)
   --discover-start-port <port>                     First port to probe (default: 47372)
   --discover-attempts <count>                      Number of consecutive ports to probe (default: 100)
+  --cluster-heartbeat-interval-ms <ms>             Leader heartbeat interval in milliseconds (default: 1000)
+  --cluster-lease-duration-ms <ms>                 Leader lease duration in milliseconds (default: 4000)
+  --cluster-election-timeout-min-ms <ms>           Minimum randomized election timeout (default: 4500)
+  --cluster-election-timeout-max-ms <ms>           Maximum randomized election timeout (default: 7000)
+  --cluster-discovery-interval-ms <ms>             Peer rediscovery interval (default: 2000)
 
 Examples:
   modeldriveprotocol-server --port 47372 --server-id hub
   modeldriveprotocol-server --cluster-mode auto --server-id edge-01
   modeldriveprotocol-server --cluster-mode proxy-required --upstream-url ws://127.0.0.1:47372
+  modeldriveprotocol-server --cluster-mode auto --server-id node-a --cluster-members node-a,node-b,node-c
   modeldriveprotocol-server setup --cursor
 ```
 <!-- GENERATED:cli-help:end -->
@@ -108,10 +116,17 @@ npx @modeldriveprotocol/server setup
 | 参数 | 作用 |
 | --- | --- |
 | `--cluster-mode <standalone|auto|proxy-required>` | 启动拓扑模式。默认：`auto`。 |
+| `--cluster-id <id>` | 逻辑 cluster identity。默认根据 `--discover-host` 和 `--discover-start-port` 推导。不同 cluster id 的 peer 会被忽略。 |
 | `--upstream-url <ws-url>` | 跳过发现流程，直接连接一个显式指定的上游 hub。 |
+| `--cluster-members <id,id,...>` | 可选的逗号分隔 server id 列表，用来声明静态 cluster 成员集合。未知 peer 不会进入 quorum，也不会参与 server-to-server 控制面通信。 |
 | `--discover-host <host>` | 发现流程使用的 host。默认：`127.0.0.1`。 |
 | `--discover-start-port <port>` | 开始探测的首个端口。默认：`47372`。 |
 | `--discover-attempts <count>` | 最多连续探测多少个端口。默认：`100`。 |
+| `--cluster-heartbeat-interval-ms <ms>` | 主节点发送心跳的毫秒间隔。默认：`1000`。 |
+| `--cluster-lease-duration-ms <ms>` | 从节点等待主节点续租的时长，超时后会触发新一轮选主。默认：`4000`。 |
+| `--cluster-election-timeout-min-ms <ms>` | 随机选主超时的最小毫秒值。默认：`4500`。 |
+| `--cluster-election-timeout-max-ms <ms>` | 随机选主超时的最大毫秒值。默认：`7000`。 |
+| `--cluster-discovery-interval-ms <ms>` | 重新发现 cluster peer 的毫秒间隔。默认：`2000`。 |
 <!-- GENERATED:cluster-options:end -->
 
 ## 模式说明

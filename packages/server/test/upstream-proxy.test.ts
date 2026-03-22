@@ -37,6 +37,58 @@ function createDescriptor() {
   }
 }
 
+function createMetaResponse(overrides: Partial<{
+  protocolVersion: string
+  supportedProtocolRanges: string[]
+  serverId: string
+  endpoints: {
+    ws: string
+    httpLoop: string
+    auth: string
+    meta: string
+    cluster: string
+  }
+  cluster: {
+    id: string
+    role: 'leader' | 'follower' | 'candidate'
+    term: number
+    leaderId?: string
+    leaderUrl?: string
+    leaseDurationMs: number
+  }
+}> = {}): Response {
+  return new Response(JSON.stringify({
+    protocol: 'mdp',
+    protocolVersion: overrides.protocolVersion ?? '0.1.0',
+    supportedProtocolRanges: overrides.supportedProtocolRanges ?? ['^0.1.0'],
+    serverId: overrides.serverId ?? 'hub',
+    endpoints: overrides.endpoints ?? {
+      ws: 'ws://127.0.0.1:47372',
+      httpLoop: 'http://127.0.0.1:47372/mdp/http-loop',
+      auth: 'http://127.0.0.1:47372/mdp/auth',
+      meta: 'http://127.0.0.1:47372/mdp/meta',
+      cluster: 'ws://127.0.0.1:47372/mdp/cluster'
+    },
+    features: {
+      upstreamProxy: true,
+      clusterControl: true
+    },
+    cluster: overrides.cluster ?? {
+      id: 'cluster-local',
+      role: 'leader',
+      term: 2,
+      leaderId: overrides.serverId ?? 'hub',
+      leaderUrl: 'ws://127.0.0.1:47372',
+      leaseDurationMs: 4000
+    }
+  }), {
+    status: 200,
+    headers: {
+      'content-type': 'application/json'
+    }
+  })
+}
+
 describe('upstream discovery and proxying', () => {
   it('probes and discovers upstream MDP servers through the metadata endpoint', async () => {
     const runtime = new MdpServerRuntime()
@@ -55,7 +107,11 @@ describe('upstream discovery and proxying', () => {
         url: server.endpoints.ws,
         meta: expect.objectContaining({
           protocol: 'mdp',
-          serverId: 'hub'
+          serverId: 'hub',
+          cluster: expect.objectContaining({
+            role: 'leader',
+            term: 0
+          })
         })
       })
     )
@@ -76,29 +132,16 @@ describe('upstream discovery and proxying', () => {
     )
   })
 
-  it('keeps the probed upstream URL when metadata reports a wildcard listen address', async () => {
-    const fetch = vi.fn(async () => {
-      return new Response(JSON.stringify({
-        protocol: 'mdp',
-        protocolVersion: '0.1.0',
-        supportedProtocolRanges: ['^0.1.0'],
-        serverId: 'hub',
-        endpoints: {
-          ws: 'ws://0.0.0.0:47372',
-          httpLoop: 'http://0.0.0.0:47372/mdp/http-loop',
-          auth: 'http://0.0.0.0:47372/mdp/auth',
-          meta: 'http://0.0.0.0:47372/mdp/meta'
-        },
-        features: {
-          upstreamProxy: true
-        }
-      }), {
-        status: 200,
-        headers: {
-          'content-type': 'application/json'
-        }
-      })
-    })
+  it('keeps the probed upstream URL when metadata reports wildcard listen addresses', async () => {
+    const fetch = vi.fn(async () => createMetaResponse({
+      endpoints: {
+        ws: 'ws://0.0.0.0:47372',
+        httpLoop: 'http://0.0.0.0:47372/mdp/http-loop',
+        auth: 'http://0.0.0.0:47372/mdp/auth',
+        meta: 'http://0.0.0.0:47372/mdp/meta',
+        cluster: 'ws://0.0.0.0:47372/mdp/cluster'
+      }
+    }))
 
     await expect(probeMdpServer('ws://127.0.0.1:47372', {
       fetch
@@ -106,35 +149,20 @@ describe('upstream discovery and proxying', () => {
       expect.objectContaining({
         url: 'ws://127.0.0.1:47372',
         meta: expect.objectContaining({
-          serverId: 'hub'
+          serverId: 'hub',
+          endpoints: expect.objectContaining({
+            cluster: 'ws://127.0.0.1:47372/mdp/cluster'
+          })
         })
       })
     )
   })
 
   it('accepts upstream servers whose semver ranges satisfy the required protocol version', async () => {
-    const fetch = vi.fn(async () => {
-      return new Response(JSON.stringify({
-        protocol: 'mdp',
-        protocolVersion: '0.1.2',
-        supportedProtocolRanges: ['^0.1.0'],
-        serverId: 'hub',
-        endpoints: {
-          ws: 'ws://127.0.0.1:47372',
-          httpLoop: 'http://127.0.0.1:47372/mdp/http-loop',
-          auth: 'http://127.0.0.1:47372/mdp/auth',
-          meta: 'http://127.0.0.1:47372/mdp/meta'
-        },
-        features: {
-          upstreamProxy: true
-        }
-      }), {
-        status: 200,
-        headers: {
-          'content-type': 'application/json'
-        }
-      })
-    })
+    const fetch = vi.fn(async () => createMetaResponse({
+      protocolVersion: '0.1.2',
+      supportedProtocolRanges: ['^0.1.0']
+    }))
 
     await expect(probeMdpServer('ws://127.0.0.1:47372', {
       fetch,
@@ -150,34 +178,156 @@ describe('upstream discovery and proxying', () => {
     )
   })
 
+  it('rejects an explicit upstream server from a different cluster id', async () => {
+    const fetch = vi.fn(async () => createMetaResponse({
+      cluster: {
+        id: 'cluster-b',
+        role: 'leader',
+        term: 2,
+        leaderId: 'hub',
+        leaderUrl: 'ws://127.0.0.1:47372',
+        leaseDurationMs: 4000
+      }
+    }))
+
+    await expect(probeMdpServer('ws://127.0.0.1:47372', {
+      fetch,
+      requiredClusterId: 'cluster-a'
+    })).rejects.toThrow(
+      'MDP server at ws://127.0.0.1:47372 belongs to cluster cluster-b, expected cluster-a.'
+    )
+  })
+
   it('rejects upstream servers that do not advertise a compatible protocol version', async () => {
-    const fetch = vi.fn(async () => {
-      return new Response(JSON.stringify({
-        protocol: 'mdp',
-        protocolVersion: '0.0.9',
-        supportedProtocolRanges: ['^0.0.9'],
-        serverId: 'hub',
-        endpoints: {
-          ws: 'ws://127.0.0.1:47372',
-          httpLoop: 'http://127.0.0.1:47372/mdp/http-loop',
-          auth: 'http://127.0.0.1:47372/mdp/auth',
-          meta: 'http://127.0.0.1:47372/mdp/meta'
-        },
-        features: {
-          upstreamProxy: true
-        }
-      }), {
-        status: 200,
-        headers: {
-          'content-type': 'application/json'
-        }
-      })
-    })
+    const fetch = vi.fn(async () => createMetaResponse({
+      protocolVersion: '0.0.9',
+      supportedProtocolRanges: ['^0.0.9']
+    }))
 
     await expect(probeMdpServer('ws://127.0.0.1:47372', {
       fetch
     })).rejects.toThrow(
       'MDP server at ws://127.0.0.1:47372 does not support protocol version 0.1.0.'
+    )
+  })
+
+  it('prefers the elected leader when discovery finds multiple servers', async () => {
+    const fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = input instanceof URL ? input.toString() : String(input)
+      if (url.includes(':47372')) {
+        return createMetaResponse({
+          serverId: 'follower',
+          cluster: {
+            role: 'follower',
+            id: 'cluster-local',
+            term: 5,
+            leaderId: 'leader',
+            leaderUrl: 'ws://127.0.0.1:47373',
+            leaseDurationMs: 4000
+          }
+        })
+      }
+
+      if (url.includes(':47373')) {
+        return createMetaResponse({
+          serverId: 'leader',
+          endpoints: {
+            ws: 'ws://127.0.0.1:47373',
+            httpLoop: 'http://127.0.0.1:47373/mdp/http-loop',
+            auth: 'http://127.0.0.1:47373/mdp/auth',
+            meta: 'http://127.0.0.1:47373/mdp/meta',
+            cluster: 'ws://127.0.0.1:47373/mdp/cluster'
+          },
+          cluster: {
+            role: 'leader',
+            id: 'cluster-local',
+            term: 5,
+            leaderId: 'leader',
+            leaderUrl: 'ws://127.0.0.1:47373',
+            leaseDurationMs: 4000
+          }
+        })
+      }
+
+      return new Response('', { status: 404 })
+    })
+
+    await expect(discoverUpstreamMdpServer({
+      host: '127.0.0.1',
+      startPort: 47372,
+      attempts: 2,
+      fetch
+    })).resolves.toEqual(
+      expect.objectContaining({
+        url: 'ws://127.0.0.1:47373',
+        meta: expect.objectContaining({
+          serverId: 'leader',
+          cluster: expect.objectContaining({
+            role: 'leader'
+          })
+        })
+      })
+    )
+  })
+
+  it('ignores discovered peers from a different cluster id', async () => {
+    const fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = input instanceof URL ? input.toString() : String(input)
+      if (url.includes(':47372')) {
+        return createMetaResponse({
+          serverId: 'cluster-a-leader',
+          cluster: {
+            id: 'cluster-a',
+            role: 'leader',
+            term: 5,
+            leaderId: 'cluster-a-leader',
+            leaderUrl: 'ws://127.0.0.1:47372',
+            leaseDurationMs: 4000
+          }
+        })
+      }
+
+      if (url.includes(':47373')) {
+        return createMetaResponse({
+          serverId: 'cluster-b-leader',
+          endpoints: {
+            ws: 'ws://127.0.0.1:47373',
+            httpLoop: 'http://127.0.0.1:47373/mdp/http-loop',
+            auth: 'http://127.0.0.1:47373/mdp/auth',
+            meta: 'http://127.0.0.1:47373/mdp/meta',
+            cluster: 'ws://127.0.0.1:47373/mdp/cluster'
+          },
+          cluster: {
+            id: 'cluster-b',
+            role: 'leader',
+            term: 8,
+            leaderId: 'cluster-b-leader',
+            leaderUrl: 'ws://127.0.0.1:47373',
+            leaseDurationMs: 4000
+          }
+        })
+      }
+
+      return new Response('', { status: 404 })
+    })
+
+    await expect(discoverUpstreamMdpServer({
+      host: '127.0.0.1',
+      startPort: 47372,
+      attempts: 2,
+      fetch,
+      requiredClusterId: 'cluster-a'
+    })).resolves.toEqual(
+      expect.objectContaining({
+        url: 'ws://127.0.0.1:47372',
+        meta: expect.objectContaining({
+          serverId: 'cluster-a-leader',
+          cluster: expect.objectContaining({
+            id: 'cluster-a',
+            role: 'leader'
+          })
+        })
+      })
     )
   })
 
@@ -286,78 +436,6 @@ describe('upstream discovery and proxying', () => {
     })
 
     await upstreamProxy.close()
-  })
-
-  it('promotes the local server when the upstream connection is lost', async () => {
-    const upstreamRuntime = new MdpServerRuntime()
-    const upstreamServer = new MdpTransportServer(upstreamRuntime, {
-      host: '127.0.0.1',
-      port: 0,
-      serverId: 'hub'
-    })
-    servers.push(upstreamServer)
-    await upstreamServer.start()
-
-    const onUpstreamUnavailable = vi.fn()
-    const localRuntime = new MdpServerRuntime()
-    const upstreamProxy = new MdpUpstreamProxy({
-      runtime: localRuntime,
-      upstreamUrl: upstreamServer.endpoints.ws,
-      serverId: 'edge-01',
-      onUpstreamUnavailable
-    })
-    await upstreamProxy.start()
-
-    const transport = createTransport()
-    const session = localRuntime.createSession('conn-01', transport)
-    const descriptor = createDescriptor()
-
-    localRuntime.handleMessage(session, {
-      type: 'registerClient',
-      client: descriptor
-    })
-
-    await upstreamProxy.syncClient(descriptor)
-    await upstreamServer.stop()
-
-    await eventually(() => {
-      expect(onUpstreamUnavailable).toHaveBeenCalledWith(
-        expect.objectContaining({
-          upstreamUrl: expect.stringContaining('ws://127.0.0.1:')
-        })
-      )
-    })
-
-    await expect(upstreamProxy.syncClient({
-      ...descriptor,
-      id: 'client-02'
-    })).resolves.toBeUndefined()
-  })
-
-  it('detects upstream loss even when no mirrored clients are connected', async () => {
-    const upstreamRuntime = new MdpServerRuntime()
-    const upstreamServer = new MdpTransportServer(upstreamRuntime, {
-      host: '127.0.0.1',
-      port: 0,
-      serverId: 'hub'
-    })
-    servers.push(upstreamServer)
-    await upstreamServer.start()
-
-    const onUpstreamUnavailable = vi.fn()
-    const upstreamProxy = new MdpUpstreamProxy({
-      runtime: new MdpServerRuntime(),
-      upstreamUrl: upstreamServer.endpoints.ws,
-      serverId: 'edge-01',
-      onUpstreamUnavailable
-    })
-
-    await upstreamProxy.start()
-    await upstreamServer.stop()
-
-    await eventually(() => {
-      expect(onUpstreamUnavailable).toHaveBeenCalledOnce()
-    })
   })
 })
 

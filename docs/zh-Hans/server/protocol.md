@@ -18,6 +18,8 @@ status: Draft
 5. server 将请求路由成 `callClient`
 6. client 返回 `callClientResult`
 
+在一个可选的分层部署里，edge server 也可以把自己本地接入的 clients 镜像到一个上游 hub。这个过程不会改变 client 侧消息集合。edge server 仍然接收普通的 `registerClient` 和 `callClientResult`，再向上游发出普通的注册和调用。
+
 ## server 真正关心的内容
 
 从运行时实现上，server 主要只关心这些协议元素：
@@ -26,6 +28,8 @@ status: Draft
 - tools、prompts、skills、resources 的 descriptor
 - 可选带 `auth` 的调用 envelope
 - 用于保活的 heartbeat 消息
+
+在 transport 控制平面上，还多了一个 `/mdp/meta` HTTP 元数据探针。它帮助一个 server 判断另一条本地端口上是否已经存在 MDP 服务，以及自己应该向上 proxy，还是作为根 hub 独立运行。
 
 ## 继续深入
 

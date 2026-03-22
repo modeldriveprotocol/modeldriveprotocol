@@ -32,6 +32,7 @@ interface LocaleCopy {
   }
   pages: {
     quickStart: string
+    manualInstall: string
     whatIsMdp: string
     architecture: string
     browserClientExample: string
@@ -92,6 +93,7 @@ interface LocaleCopy {
     jsUsage: string
     jsMcpDefinitions: string
     jsSkillsDefinitions: string
+    browserSimpleMdpClient: string
     chromeExtension: string
     vscodeExtension: string
     jetbrainsPlugin: string
@@ -162,6 +164,7 @@ const enUS: LocaleCopy = {
   },
   pages: {
     quickStart: 'Quick Start',
+    manualInstall: 'Manual Install',
     whatIsMdp: 'What Is MDP?',
     architecture: 'Architecture',
     browserClientExample: 'Browser Client',
@@ -222,6 +225,7 @@ const enUS: LocaleCopy = {
     jsUsage: 'Usage',
     jsMcpDefinitions: 'MCP Definitions',
     jsSkillsDefinitions: 'Skills Definitions',
+    browserSimpleMdpClient: 'Browser Simple MDP Client',
     chromeExtension: 'Chrome Extension',
     vscodeExtension: 'VSCode Extension',
     jetbrainsPlugin: 'JetBrains Plugin',
@@ -289,6 +293,7 @@ const zhHans: LocaleCopy = {
   },
   pages: {
     quickStart: '快速使用',
+    manualInstall: '手动安装',
     whatIsMdp: '什么是 MDP？',
     architecture: '架构',
     browserClientExample: '浏览器客户端',
@@ -349,6 +354,7 @@ const zhHans: LocaleCopy = {
     jsUsage: '如何使用',
     jsMcpDefinitions: 'MCP 定义',
     jsSkillsDefinitions: 'Skills 定义',
+    browserSimpleMdpClient: 'Browser Simple MDP Client',
     chromeExtension: 'Chrome 插件',
     vscodeExtension: 'VSCode 插件',
     jetbrainsPlugin: 'JetBrains 插件',
@@ -457,10 +463,7 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
         items: [
           {
             text: copy.sections.gettingStarted,
-            items: [
-              { text: copy.pages.quickStart, link: localePath(prefix, '/guide/quick-start') },
-              { text: copy.pages.whatIsMdp, link: localePath(prefix, '/guide/introduction') }
-            ]
+            items: createGettingStartedItems(prefix, copy)
           },
           {
             text: copy.sections.aboutMdp,
@@ -522,6 +525,10 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
           {
             text: copy.sections.apps,
             items: [
+              {
+                text: copy.pages.browserSimpleMdpClient,
+                link: localePath(prefix, '/apps/browser-simple-mdp-client')
+              },
               { text: copy.pages.chromeExtension, link: localePath(prefix, '/apps/chrome-extension') },
               { text: copy.pages.vscodeExtension, link: localePath(prefix, '/apps/vscode-extension') },
               { text: copy.pages.jetbrainsPlugin, link: localePath(prefix, '/apps/jetbrains-plugin') }
@@ -662,15 +669,23 @@ function createBlogSidebar(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
   ]
 }
 
+function createGettingStartedItems(
+  prefix: LocalePrefix,
+  copy: LocaleCopy
+): DefaultTheme.SidebarItem[] {
+  return [
+    { text: copy.pages.quickStart, link: localePath(prefix, '/guide/quick-start') },
+    { text: copy.pages.manualInstall, link: localePath(prefix, '/guide/manual-install') },
+    { text: copy.pages.whatIsMdp, link: localePath(prefix, '/guide/introduction') }
+  ]
+}
+
 function createDocsSidebar(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme.SidebarItem[] {
   return [
     {
       text: copy.sections.gettingStarted,
       collapsed: true,
-      items: [
-        { text: copy.pages.quickStart, link: localePath(prefix, '/guide/quick-start') },
-        { text: copy.pages.whatIsMdp, link: localePath(prefix, '/guide/introduction') }
-      ]
+      items: createGettingStartedItems(prefix, copy)
     },
     {
       text: copy.sections.aboutMdp,
@@ -952,6 +967,10 @@ function createEcosystemSidebar(
       text: copy.sections.apps,
       collapsed: true,
       items: [
+        {
+          text: copy.pages.browserSimpleMdpClient,
+          link: localePath(prefix, '/apps/browser-simple-mdp-client')
+        },
         { text: copy.pages.chromeExtension, link: localePath(prefix, '/apps/chrome-extension') },
         { text: copy.pages.vscodeExtension, link: localePath(prefix, '/apps/vscode-extension') },
         { text: copy.pages.jetbrainsPlugin, link: localePath(prefix, '/apps/jetbrains-plugin') }

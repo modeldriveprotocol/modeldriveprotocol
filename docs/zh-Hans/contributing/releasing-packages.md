@@ -7,6 +7,8 @@ status: Draft
 
 当你要把 `@modeldriveprotocol/*` 包发布到 npm 时，走这条路径。
 
+这条路径既覆盖 `packages/*` 下的 protocol、client、server，也覆盖通过 npm 分发的可发布 app package，例如 `@modeldriveprotocol/browser-simple-mdp-client`。
+
 ## 操作步骤
 
 1. 用 `pnpm changeset` 准备要发布的包变更。
@@ -22,6 +24,8 @@ status: Draft
 - 运行 `pnpm build`
 - 运行 `pnpm test`
 - 运行 `pnpm publish:packages`
+
+由于根级 `build` 和 `test` 已经包含 `@modeldriveprotocol/browser-simple-mdp-client`，所以只要它有版本变更，同一个 release workflow 就会一起校验并发布这个包。
 
 ## 仓库前置条件
 

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { createSerializedError, isSkillPath, isStringRecord, parseMessage } from '../src/index.js'
+import {
+  createSerializedError,
+  isSkillPath,
+  isStringRecord,
+  parseClusterMessage,
+  parseMessage
+} from '../src/index.js'
 
 const clientDescriptor = {
   id: 'client-01',
@@ -237,5 +243,42 @@ describe('protocol guards', () => {
         }
       }
     })
+  })
+
+  it('parses cluster control messages', () => {
+    const message = parseClusterMessage(
+      JSON.stringify({
+        type: 'clusterHeartbeatAck',
+        clusterId: 'cluster-local',
+        serverId: 'server-01',
+        term: 2,
+        followerId: 'server-02',
+        leaderId: 'server-01',
+        timestamp: Date.now()
+      })
+    )
+
+    expect(message).toEqual(expect.objectContaining({
+      clusterId: 'cluster-local',
+      type: 'clusterHeartbeatAck',
+      serverId: 'server-01',
+      term: 2,
+      leaderId: 'server-01'
+    }))
+  })
+
+  it('rejects malformed cluster control messages', () => {
+    expect(() =>
+      parseClusterMessage(
+        JSON.stringify({
+          type: 'clusterVoteRequest',
+          serverId: 'server-02',
+          term: '2',
+          candidateId: 'server-02',
+          candidateUrl: 'ws://127.0.0.1:47373',
+          timestamp: Date.now()
+        })
+      )
+    ).toThrow('Invalid MDP cluster message')
   })
 })

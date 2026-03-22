@@ -53,15 +53,23 @@ Options:
   --server-id <id>                                 Stable server identity exposed in /mdp/meta
   -h, --help                                       Show this help text
   --cluster-mode <standalone|auto|proxy-required>  Startup topology mode (default: auto)
+  --cluster-id <id>                                Logical cluster identity (default: derived from discovery host/start port)
   --upstream-url <ws-url>                          Explicit upstream hub websocket URL
+  --cluster-members <id,id,...>                    Static cluster member ids used for quorum and peer admission
   --discover-host <host>                           Discovery host (default: 127.0.0.1)
   --discover-start-port <port>                     First port to probe (default: 47372)
   --discover-attempts <count>                      Number of consecutive ports to probe (default: 100)
+  --cluster-heartbeat-interval-ms <ms>             Leader heartbeat interval in milliseconds (default: 1000)
+  --cluster-lease-duration-ms <ms>                 Leader lease duration in milliseconds (default: 4000)
+  --cluster-election-timeout-min-ms <ms>           Minimum randomized election timeout (default: 4500)
+  --cluster-election-timeout-max-ms <ms>           Maximum randomized election timeout (default: 7000)
+  --cluster-discovery-interval-ms <ms>             Peer rediscovery interval (default: 2000)
 
 Examples:
   modeldriveprotocol-server --port 47372 --server-id hub
   modeldriveprotocol-server --cluster-mode auto --server-id edge-01
   modeldriveprotocol-server --cluster-mode proxy-required --upstream-url ws://127.0.0.1:47372
+  modeldriveprotocol-server --cluster-mode auto --server-id node-a --cluster-members node-a,node-b,node-c
   modeldriveprotocol-server setup --cursor
 ```
 <!-- GENERATED:cli-help:end -->
@@ -108,10 +116,17 @@ The setup command supports:
 | Option | Purpose |
 | --- | --- |
 | `--cluster-mode <standalone|auto|proxy-required>` | Startup topology mode. Default: `auto`. |
+| `--cluster-id <id>` | Logical cluster identity. Default: derived from `--discover-host` and `--discover-start-port`. Peers from a different cluster id are ignored. |
 | `--upstream-url <ws-url>` | Skip discovery and connect to one explicit upstream hub. |
+| `--cluster-members <id,id,...>` | Optional comma-separated server ids for a static cluster membership. Unknown peers are ignored for quorum and server-to-server control traffic. |
 | `--discover-host <host>` | Discovery host. Default: `127.0.0.1`. |
 | `--discover-start-port <port>` | First port to probe. Default: `47372`. |
 | `--discover-attempts <count>` | Number of consecutive ports to probe. Default: `100`. |
+| `--cluster-heartbeat-interval-ms <ms>` | Leader heartbeat interval in milliseconds. Default: `1000`. |
+| `--cluster-lease-duration-ms <ms>` | Follower lease duration before triggering a new election. Default: `4000`. |
+| `--cluster-election-timeout-min-ms <ms>` | Minimum randomized election timeout in milliseconds. Default: `4500`. |
+| `--cluster-election-timeout-max-ms <ms>` | Maximum randomized election timeout in milliseconds. Default: `7000`. |
+| `--cluster-discovery-interval-ms <ms>` | How often to refresh the discovered peer set in milliseconds. Default: `2000`. |
 <!-- GENERATED:cluster-options:end -->
 
 ## Modes

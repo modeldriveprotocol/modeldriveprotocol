@@ -10,6 +10,8 @@ status: Draft
 - NPM 包发布
 - 应用发布
 
+其中 NPM 包发布不仅包含 `packages/*` 下的核心包，也包含通过 npm 分发的可发布 `apps/*` workspace package，例如 `@modeldriveprotocol/browser-simple-mdp-client`。
+
 应用发布目前包含两类产物：
 
 - Chrome 扩展 zip

@@ -25,13 +25,18 @@ import type { RawData } from 'ws'
 import WebSocket, { WebSocketServer } from 'ws'
 
 import { type ClientSessionTransport, ClientSession } from './client-session.js'
-import { DEFAULT_MDP_PORT, DEFAULT_SERVER_HOST } from './defaults.js'
+import {
+  DEFAULT_CLUSTER_LEASE_DURATION_MS,
+  DEFAULT_MDP_PORT,
+  DEFAULT_SERVER_HOST
+} from './defaults.js'
 import { MdpServerRuntime } from './mdp-server.js'
 import type { MdpServerMeta } from './upstream-discovery.js'
 
 const DEFAULT_HTTP_LOOP_PATH = '/mdp/http-loop'
 const DEFAULT_AUTH_PATH = '/mdp/auth'
 const DEFAULT_META_PATH = '/mdp/meta'
+const DEFAULT_CLUSTER_PATH = '/mdp/cluster'
 const DEFAULT_LONG_POLL_TIMEOUT_MS = 25_000
 const DEFAULT_AUTH_HEADERS = ['authorization', 'cookie']
 const DEFAULT_AUTH_COOKIE_NAME = 'mdp_auth'
@@ -56,12 +61,16 @@ export interface MdpTransportServerOptions {
   httpLoopPath?: string
   authPath?: string
   metaPath?: string
+  clusterPath?: string
   longPollTimeoutMs?: number
   tls?: HttpsServerOptions
   authHeaders?: string[]
   authCookieName?: string
   authCookieMaxAgeSeconds?: number
   serverId?: string
+  clusterId?: string
+  clusterMetaProvider?: () => MdpServerMeta['cluster']
+  onClusterConnection?: (socket: WebSocket, request: IncomingMessage) => void
 }
 
 export class MdpTransportServer {
@@ -71,13 +80,18 @@ export class MdpTransportServer {
   private readonly httpLoopPath: string
   private readonly authPath: string
   private readonly metaPath: string
+  private readonly clusterPath: string
   private readonly longPollTimeoutMs: number
   private readonly authHeaders: string[]
   private readonly authCookieName: string
   private readonly authCookieMaxAgeSeconds: number
   private readonly serverId: string | undefined
+  private readonly clusterId: string | undefined
+  private readonly clusterMetaProvider: (() => MdpServerMeta['cluster']) | undefined
+  private readonly onClusterConnection: ((socket: WebSocket, request: IncomingMessage) => void) | undefined
   private readonly httpServer: NodeHttpServer
   private readonly wsServer = new WebSocketServer({ noServer: true })
+  private readonly clusterWsServer = new WebSocketServer({ noServer: true })
   private readonly httpLoopSessions = new Map<string, HttpLoopSessionEntry>()
 
   constructor(
@@ -92,11 +106,15 @@ export class MdpTransportServer {
     )
     this.authPath = trimTrailingSlash(options.authPath ?? DEFAULT_AUTH_PATH)
     this.metaPath = trimTrailingSlash(options.metaPath ?? DEFAULT_META_PATH)
+    this.clusterPath = trimTrailingSlash(options.clusterPath ?? DEFAULT_CLUSTER_PATH)
     this.longPollTimeoutMs = options.longPollTimeoutMs ?? DEFAULT_LONG_POLL_TIMEOUT_MS
     this.authHeaders = (options.authHeaders ?? DEFAULT_AUTH_HEADERS).map((header) => header.toLowerCase())
     this.authCookieName = options.authCookieName ?? DEFAULT_AUTH_COOKIE_NAME
     this.authCookieMaxAgeSeconds = options.authCookieMaxAgeSeconds ?? DEFAULT_AUTH_COOKIE_MAX_AGE_SECONDS
     this.serverId = options.serverId
+    this.clusterId = options.clusterId
+    this.clusterMetaProvider = options.clusterMetaProvider
+    this.onClusterConnection = options.onClusterConnection
 
     const requestHandler = this.handleRequest.bind(this)
 
@@ -125,6 +143,16 @@ export class MdpTransportServer {
     await Promise.all([
       new Promise<void>((resolve, reject) => {
         this.wsServer.close((error?: Error) => {
+          if (error) {
+            reject(error)
+            return
+          }
+
+          resolve()
+        })
+      }),
+      new Promise<void>((resolve, reject) => {
+        this.clusterWsServer.close((error?: Error) => {
           if (error) {
             reject(error)
             return
@@ -163,7 +191,7 @@ export class MdpTransportServer {
     }
   }
 
-  get endpoints(): { ws: string; httpLoop: string; auth: string; meta: string } {
+  get endpoints(): { ws: string; httpLoop: string; auth: string; meta: string; cluster: string } {
     const { host, port } = this.address
     const wsProtocol = this.isSecure ? 'wss' : 'ws'
     const httpProtocol = this.isSecure ? 'https' : 'http'
@@ -172,7 +200,8 @@ export class MdpTransportServer {
       ws: `${wsProtocol}://${host}:${port}`,
       httpLoop: `${httpProtocol}://${host}:${port}${this.httpLoopPath}`,
       auth: `${httpProtocol}://${host}:${port}${this.authPath}`,
-      meta: `${httpProtocol}://${host}:${port}${this.metaPath}`
+      meta: `${httpProtocol}://${host}:${port}${this.metaPath}`,
+      cluster: `${wsProtocol}://${host}:${port}${this.clusterPath}`
     }
   }
 
@@ -185,6 +214,15 @@ export class MdpTransportServer {
     socket: Duplex,
     head: Buffer
   ): Promise<void> {
+    const url = this.requestUrl(request)
+
+    if (url.pathname === this.clusterPath && this.onClusterConnection) {
+      this.clusterWsServer.handleUpgrade(request, socket, head, (webSocket) => {
+        this.onClusterConnection?.(webSocket, request)
+      })
+      return
+    }
+
     if (this.isHttpLoopRequest(request) || this.isAuthRequest(request)) {
       socket.destroy()
       return
@@ -340,14 +378,28 @@ export class MdpTransportServer {
   }
 
   private handleMetaRequest(response: ServerResponse): void {
+    const serverId = this.serverId ?? this.defaultServerId()
     const payload: MdpServerMeta = {
       protocol: 'mdp',
       protocolVersion: MDP_PROTOCOL_VERSION,
       supportedProtocolRanges: [...MDP_SUPPORTED_PROTOCOL_RANGES],
-      serverId: this.serverId ?? this.defaultServerId(),
+      serverId,
       endpoints: this.endpoints,
       features: {
-        upstreamProxy: true
+        upstreamProxy: true,
+        clusterControl: true
+      },
+      cluster: this.clusterMetaProvider?.() ?? {
+        id: this.clusterId ?? `${this.host}:${this.address.port}`,
+        role: 'leader',
+        term: 0,
+        leaderId: serverId,
+        leaderUrl: this.endpoints.ws,
+        leaseDurationMs: DEFAULT_CLUSTER_LEASE_DURATION_MS,
+        knownMemberCount: 1,
+        reachableMemberCount: 1,
+        quorumSize: 1,
+        hasQuorum: true
       }
     }
 

@@ -30,14 +30,15 @@ MDP 默认认为 client 可能暴露本地敏感状态，所以 server 必须把
 如果要暴露安全 transport 端点，可以在启动 CLI 时提供证书和私钥：
 
 ```bash
-npx @modeldriveprotocol/server --port 7070 --tls-key ./certs/server-key.pem --tls-cert ./certs/server-cert.pem
+npx @modeldriveprotocol/server --port 47372 --tls-key ./certs/server-key.pem --tls-cert ./certs/server-cert.pem
 ```
 
 启用 TLS 后，端点会变成：
 
-- `wss://127.0.0.1:7070`
-- `https://127.0.0.1:7070/mdp/http-loop`
-- `https://127.0.0.1:7070/mdp/auth`
+- `wss://127.0.0.1:47372`
+- `https://127.0.0.1:47372/mdp/http-loop`
+- `https://127.0.0.1:47372/mdp/auth`
+- `https://127.0.0.1:47372/mdp/meta`
 
 ## 运行期保护
 
@@ -49,3 +50,4 @@ npx @modeldriveprotocol/server --port 7070 --tls-key ./certs/server-key.pem --tl
 - 发现接口只暴露是否存在 auth，不回显密钥原文
 
 更底层的 transport 细节可以继续阅读 [协议安全](/zh-Hans/protocol/security) 和 [传输](/zh-Hans/protocol/transport)。
+关于分层的 hub / edge 启动方式，继续阅读 [部署模式](/zh-Hans/server/deployment)。

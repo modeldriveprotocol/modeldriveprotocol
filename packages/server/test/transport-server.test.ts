@@ -88,9 +88,20 @@ describe('MdpTransportServer', () => {
       endpoints: {
         ws: string
         meta: string
+        cluster: string
       }
       features: {
         upstreamProxy: boolean
+        clusterControl: boolean
+      }
+      cluster: {
+        id: string
+        role: string
+        term: number
+        knownMemberCount?: number
+        reachableMemberCount?: number
+        quorumSize?: number
+        hasQuorum?: boolean
       }
     }
 
@@ -102,11 +113,22 @@ describe('MdpTransportServer', () => {
       serverId: 'probe-server',
       endpoints: expect.objectContaining({
         ws: server.endpoints.ws,
-        meta: server.endpoints.meta
+        meta: server.endpoints.meta,
+        cluster: server.endpoints.cluster
       }),
       features: {
-        upstreamProxy: true
-      }
+        upstreamProxy: true,
+        clusterControl: true
+      },
+      cluster: expect.objectContaining({
+        id: expect.any(String),
+        role: 'leader',
+        term: 0,
+        knownMemberCount: 1,
+        reachableMemberCount: 1,
+        quorumSize: 1,
+        hasQuorum: true
+      })
     }))
   })
 

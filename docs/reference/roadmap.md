@@ -14,6 +14,7 @@ The current baseline is:
 - `ws` / `wss` plus `http` / `https` loop MDP transports
 - one fixed MCP bridge surface
 - auth envelopes on registration and invocation, transport-carried auth, and server-side authorization hooks
+- `GET /mdp/meta` probing plus optional single-upstream proxy mode for layered local deployments
 - one smoke test proving the end-to-end path
 
 ## Guiding Direction
@@ -89,16 +90,18 @@ Make the current server safe enough for repeated local use and easier to extend 
   - invalid messages
   - multi-client routing
 - tighten CLI ergonomics and configuration loading
+- harden upstream discovery and proxy failure handling
 
 ### Important Non-Goal
 
-Do not add distributed coordination or persistence yet. Keep the runtime local and single-process until the core local behavior is boring and predictable.
+Do not add distributed coordination or persistence yet. A simple hub-plus-edge proxy layout is acceptable, but avoid turning the runtime into a peer mesh, a replicated registry, or a multi-writer distributed control plane before the local lifecycle is boring and predictable.
 
 ### Acceptance Bar
 
 - server failures are diagnosable from logs
 - routing behavior is covered by focused tests, not just the smoke test
 - transport replacement would not require changing capability indexing logic
+- layered hub and edge deployments remain understandable without introducing a new wire-message family
 
 ## Phase 3: Make the Client Model Easier to Embed
 
@@ -236,6 +239,7 @@ The repo should avoid these too early:
 - dynamic MCP tool generation for every client capability
 - persistence before lifecycle semantics settle
 - distributed registry coordination before single-node behavior is solid
+- peer-to-peer server meshes before single-upstream proxy semantics are tightly specified
 - many language SDKs before the protocol contract is stable
 
 The MVP is already enough to prove the thesis. The next goal is to make that thesis durable.

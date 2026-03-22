@@ -30,14 +30,15 @@ These hooks receive session context plus any transport-level or message-level au
 To expose secure transport endpoints, start the CLI with a certificate and key:
 
 ```bash
-npx @modeldriveprotocol/server --port 7070 --tls-key ./certs/server-key.pem --tls-cert ./certs/server-cert.pem
+npx @modeldriveprotocol/server --port 47372 --tls-key ./certs/server-key.pem --tls-cert ./certs/server-cert.pem
 ```
 
 With TLS enabled, the server endpoints become:
 
-- `wss://127.0.0.1:7070`
-- `https://127.0.0.1:7070/mdp/http-loop`
-- `https://127.0.0.1:7070/mdp/auth`
+- `wss://127.0.0.1:47372`
+- `https://127.0.0.1:47372/mdp/http-loop`
+- `https://127.0.0.1:47372/mdp/auth`
+- `https://127.0.0.1:47372/mdp/meta`
 
 ## Operational safeguards
 
@@ -49,3 +50,4 @@ The baseline server behavior also includes:
 - capability discovery that reports auth presence, but not secret values
 
 For transport-level details, see [Security](/protocol/security) and [Transport](/protocol/transport).
+For layered hub and edge startup patterns, see [Deployment Modes](/server/deployment).

@@ -17,54 +17,34 @@ If you do not already have the `mdp` binary available in your environment, run t
 npx @modeldriveprotocol/server setup
 ```
 
-By default, `setup` tries to configure the common MCP-capable hosts:
+If you want common MCP hosts to be configured automatically, the `setup` command is the shortest path.
 
-- Claude Code via `claude mcp add`
-- Codex via `~/.codex/config.toml`
-- Cursor via `~/.cursor/mcp.json`
-
-Useful variants:
-
-```bash
-npx mdp setup --claude
-npx mdp setup --cursor --scope project
-npx mdp setup --dry-run
-```
-
-If you want to configure one host explicitly instead of using `setup`, use the host-specific manual install guides:
-
-- [Manual Install for Claude Code](/guide/manual-install-claude-code)
-- [Manual Install for Codex](/guide/manual-install-codex)
-- [Manual Install for Cursor](/guide/manual-install-cursor)
-
-For the transport-facing client APIs exposed by the server, see [APIs](/server/api/). For TLS and secure deployment, see [Security](/server/security).
-For a focused explanation of standalone, auto, and proxy-required topologies, see [Deployment Modes](/server/deployment).
+If you want to configure hosts explicitly, continue with [Manual Install](/guide/manual-install).
+If you want the transport-facing client APIs exposed by the server, see [APIs](/server/api/).
+If you need TLS or secure endpoint details, see [Security](/server/security).
+If you want a focused explanation of standalone, auto, and proxy-required topologies, see [Deployment Modes](/server/deployment).
 
 ## 2. Start One Client
 
-For the quick start, use the smallest websocket example:
+For the browser path, the fastest working client is these two CDN scripts:
 
-```ts
-import { createMdpClient } from '@modeldriveprotocol/client'
-
-const client = createMdpClient({
-  serverUrl: 'ws://127.0.0.1:47372',
-  client: {
-    id: 'browser-01',
-    name: 'Browser Client'
-  }
-})
-
-client.exposeTool('searchDom', async ({ query }) => ({
-  query,
-  matches: 3
-}))
-
-await client.connect()
-client.register()
+```html
+<script src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/client@latest/dist/modeldriveprotocol-client.global.js"></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/@modeldriveprotocol/browser-simple-mdp-client@latest/dist/browser-simple-mdp-client.global.js"
+  attr-mdp-server-url="ws://127.0.0.1:47372"
+  attr-mdp-client-id="browser-simple-01"
+  attr-mdp-client-name="Browser Simple Client"
+  attr-mdp-client-description="Minimal browser MDP client"
+></script>
 ```
 
-For auth, HTTP loop mode, and browser-global usage, continue with the [JavaScript SDK docs](/sdk/javascript/usage).
+The first script loads the browser SDK bundle. The second script loads the prebuilt `browser-simple-mdp-client` app, which auto-connects and registers a minimal browser capability set.
+
+If you want the package-specific details, built-in capability list, and usage notes, see [Browser Simple MDP Client](/apps/browser-simple-mdp-client).
+
+For a Pages-hosted example in this repo, see [Browser Client](/examples/browser/index.html).
+For auth, HTTP loop mode, and custom browser-global usage, continue with the [JavaScript SDK docs](/sdk/javascript/usage).
 If you prefer starting from a packaged runtime integration, see [Chrome Extension](/apps/chrome-extension) or [VSCode Extension](/apps/vscode-extension).
 
 ## 3. Try It in Your Agent

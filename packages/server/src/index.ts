@@ -1,5 +1,6 @@
 export * from './capability-index.js'
 export * from './cli-reference.js'
+export * from './cluster-manager.js'
 export * from './client-session.js'
 export * from './defaults.js'
 export * from './invocation-router.js'

@@ -18,6 +18,8 @@ The main sequence is:
 5. the server routes the request as `callClient`
 6. the client returns `callClientResult`
 
+In an optional layered deployment, one edge server may mirror its locally connected clients into one upstream hub. That does not change the client-facing message set. The edge server still receives normal `registerClient` and `callClientResult` traffic from its clients and emits normal registrations and invocations toward the upstream hub.
+
 ## What the server cares about
 
 The server runtime only needs a few protocol concepts:
@@ -26,6 +28,8 @@ The server runtime only needs a few protocol concepts:
 - capability descriptors for tools, prompts, skills, and resources
 - invocation envelopes with optional `auth`
 - heartbeat messages for connection liveness
+
+The transport-facing control plane also includes an HTTP metadata probe at `/mdp/meta`. That probe helps one server decide whether another local port is already serving MDP and whether it should proxy upward instead of acting as the root hub.
 
 ## Read deeper
 

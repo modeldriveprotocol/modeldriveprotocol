@@ -14,6 +14,7 @@ status: Draft
 - 一组 `ws` / `wss` 与 `http` / `https loop` 的 MDP transports
 - 一组固定的 MCP bridge surface
 - 注册与调用阶段的 auth envelopes、transport-carried auth，以及 server 侧 authorization hooks
+- `GET /mdp/meta` 探测，以及面向本地分层部署的可选单上游 proxy 模式
 - 一个能验证端到端链路的 smoke test
 
 ## 指导方向
@@ -88,16 +89,18 @@ status: Draft
   - invalid messages
   - multi-client routing
 - 改进 CLI 易用性和配置加载
+- 加固 upstream discovery 和 proxy 失败处理
 
 ### 重要非目标
 
-先不要加入分布式协调和持久化。应先把本地单进程行为打磨到足够无聊、足够可预测。
+先不要加入分布式协调和持久化。允许一个简单的 hub-plus-edge proxy 布局，但不要在本地生命周期行为还不够无聊、还不够可预测前，把系统演化成 peer mesh、复制型 registry 或多写入控制平面。
 
 ### 验收标准
 
 - server 出错时可以从日志里诊断问题
 - routing 行为由聚焦测试覆盖，而不是只靠 smoke test
 - 替换 transport 不需要改 capability index 逻辑
+- 分层的 hub / edge 部署仍然容易理解，且不需要引入新的 wire-message family
 
 ## 第三阶段：降低 client 嵌入门槛
 
@@ -234,6 +237,7 @@ status: Draft
 - 为每个 client capability 动态生成 MCP tools
 - 在生命周期语义稳定前做持久化
 - 在单节点行为还不稳定时做分布式 registry 协调
+- 在单上游 proxy 语义尚未收紧前，过早做 server 间 peer-to-peer mesh
 - 在协议契约还不稳定时同时铺很多语言 SDK
 
 MVP 已经足够证明这件事是成立的。下一步目标是让这件事变得可持续。
