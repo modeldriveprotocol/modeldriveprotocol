@@ -2,6 +2,6 @@
 enabled = false
 
 [mcp_servers.mdp]
-command = "npx"
-args = ["-y", "@modeldriveprotocol/server"]
+command = "node"
+args = ["scripts/run-local-mdp-mcp.mjs"]
 startup_timeout_sec = 20

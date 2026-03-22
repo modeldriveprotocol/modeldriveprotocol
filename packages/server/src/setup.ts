@@ -36,6 +36,11 @@ interface SetupDeps {
   runCommand(command: string, args: string[]): Promise<void>
 }
 
+interface LauncherConfig {
+  command: string
+  args: string[]
+}
+
 const defaultSetupIo: SetupIo = {
   info: (message) => {
     console.log(message)
@@ -195,6 +200,7 @@ async function configureClaude(
   options: SetupOptions,
   deps: SetupDeps
 ): Promise<SetupResult> {
+  const launcher = await resolveLauncherConfig(options.scope, deps)
   const args = [
     'mcp',
     'add',
@@ -202,9 +208,8 @@ async function configureClaude(
     options.scope,
     options.name,
     '--',
-    'npx',
-    '-y',
-    '@modeldriveprotocol/server'
+    launcher.command,
+    ...launcher.args
   ]
 
   if (options.dryRun) {
@@ -239,19 +244,14 @@ async function configureCodex(
   options: SetupOptions,
   deps: SetupDeps
 ): Promise<SetupResult> {
-  if (options.scope === 'project') {
-    return {
-      target: 'codex',
-      status: 'skipped',
-      detail: 'project-scope setup is not supported automatically for Codex; use the manual install guide instead'
-    }
-  }
-
-  const configFilePath = path.join(deps.homeDir, '.codex', 'config.toml')
+  const launcher = await resolveLauncherConfig(options.scope, deps)
+  const configFilePath = options.scope === 'project'
+    ? path.join(deps.cwd, '.codex', 'config.toml')
+    : path.join(deps.homeDir, '.codex', 'config.toml')
   const section = [
     `[mcp_servers.${options.name}]`,
-    'command = "npx"',
-    'args = ["-y", "@modeldriveprotocol/server"]'
+    `command = ${JSON.stringify(launcher.command)}`,
+    `args = ${JSON.stringify(launcher.args)}`
   ].join('\n')
   const nextContent = await updateTomlSection(configFilePath, options.name, section, deps)
 
@@ -277,6 +277,7 @@ async function configureCursor(
   options: SetupOptions,
   deps: SetupDeps
 ): Promise<SetupResult> {
+  const launcher = await resolveLauncherConfig(options.scope, deps)
   const configFilePath = options.scope === 'project'
     ? path.join(deps.cwd, '.cursor', 'mcp.json')
     : path.join(deps.homeDir, '.cursor', 'mcp.json')
@@ -287,8 +288,8 @@ async function configureCursor(
     mcpServers: {
       ...mcpServers,
       [options.name]: {
-        command: 'npx',
-        args: ['-y', '@modeldriveprotocol/server']
+        command: launcher.command,
+        args: launcher.args
       }
     }
   }
@@ -417,5 +418,24 @@ export async function pathExists(filePath: string): Promise<boolean> {
     return true
   } catch {
     return false
+  }
+}
+
+async function resolveLauncherConfig(
+  scope: SetupScope,
+  deps: SetupDeps
+): Promise<LauncherConfig> {
+  const localLauncherPath = path.join(deps.cwd, 'scripts', 'run-local-mdp-mcp.mjs')
+
+  if (await pathExists(localLauncherPath)) {
+    return {
+      command: 'node',
+      args: [scope === 'project' ? path.join('scripts', 'run-local-mdp-mcp.mjs') : localLauncherPath]
+    }
+  }
+
+  return {
+    command: 'npx',
+    args: ['-y', '@modeldriveprotocol/server']
   }
 }

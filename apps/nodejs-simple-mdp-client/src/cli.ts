@@ -34,9 +34,13 @@ async function main(): Promise<void> {
   )
 
   const shutdown = async () => {
+    clearInterval(keepAliveInterval)
     await client.disconnect()
     process.exit(0)
   }
+
+  // Keep the process alive so the registered websocket client stays available for MDP calls.
+  const keepAliveInterval = setInterval(() => {}, 60_000)
 
   process.once('SIGINT', () => {
     void shutdown()
@@ -44,6 +48,8 @@ async function main(): Promise<void> {
   process.once('SIGTERM', () => {
     void shutdown()
   })
+
+  await new Promise<void>(() => {})
 }
 
 function parseCliArgs(argv: string[]): CliOptions {

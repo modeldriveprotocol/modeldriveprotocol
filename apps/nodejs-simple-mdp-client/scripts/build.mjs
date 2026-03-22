@@ -29,9 +29,6 @@ await build({
   platform: 'node',
   sourcemap: true,
   target: 'node18',
-  banner: {
-    js: '#!/usr/bin/env node'
-  },
   alias: {
     '@modeldriveprotocol/client': clientEntry,
     '@modeldriveprotocol/protocol': protocolEntry

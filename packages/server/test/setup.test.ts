@@ -109,7 +109,7 @@ describe('setup command', () => {
     })
   })
 
-  it('writes project-scope Cursor config and skips unsupported automatic Codex project setup', async () => {
+  it('writes project-scope Codex and Cursor config', async () => {
     const sandbox = await createSandbox()
     const runCommand = vi.fn(async () => {})
 
@@ -138,8 +138,8 @@ describe('setup command', () => {
     })
     expect(results[1]).toEqual({
       target: 'codex',
-      status: 'skipped',
-      detail: 'project-scope setup is not supported automatically for Codex; use the manual install guide instead'
+      status: 'configured',
+      detail: `updated ${path.join(sandbox.cwd, '.codex', 'config.toml')}`
     })
     expect(results[2]).toEqual({
       target: 'cursor',
@@ -151,6 +151,10 @@ describe('setup command', () => {
       await readFile(path.join(sandbox.cwd, '.cursor', 'mcp.json'), 'utf8')
     ) as { mcpServers: Record<string, { command: string, args: string[] }> }
     expect(cursorConfig.mcpServers.mdp.args).toEqual(['-y', '@modeldriveprotocol/server'])
+
+    const codexConfig = await readFile(path.join(sandbox.cwd, '.codex', 'config.toml'), 'utf8')
+    expect(codexConfig).toContain('[mcp_servers.mdp]')
+    expect(codexConfig).toContain('command = "npx"')
   })
 
   it('skips Claude when the CLI is missing and still configures file-based hosts', async () => {
@@ -185,9 +189,56 @@ describe('setup command', () => {
     })
     expect(results[1]?.status).toBe('configured')
   })
+
+  it('prefers the local repo launcher when present', async () => {
+    const sandbox = await createSandbox({ withLocalLauncher: true })
+    const runCommand = vi.fn(async () => {})
+
+    const results = await runSetupCommand(
+      {
+        scope: 'project',
+        targets: ['claude', 'codex', 'cursor'],
+        name: 'mdp',
+        dryRun: false
+      },
+      silentIo(),
+      {
+        cwd: sandbox.cwd,
+        homeDir: sandbox.homeDir,
+        readTextFile: async (filePath) => await readFile(filePath, 'utf8'),
+        writeTextFile: sandbox.writeTextFile,
+        ensureDir: sandbox.ensureDir,
+        runCommand
+      }
+    )
+
+    expect(results.map((result) => result.status)).toEqual(['configured', 'configured', 'configured'])
+    expect(runCommand).toHaveBeenCalledWith('claude', [
+      'mcp',
+      'add',
+      '--scope',
+      'project',
+      'mdp',
+      '--',
+      'node',
+      path.join('scripts', 'run-local-mdp-mcp.mjs')
+    ])
+
+    const codexConfig = await readFile(path.join(sandbox.cwd, '.codex', 'config.toml'), 'utf8')
+    expect(codexConfig).toContain('command = "node"')
+    expect(codexConfig).toContain('"scripts/run-local-mdp-mcp.mjs"')
+
+    const cursorConfig = JSON.parse(
+      await readFile(path.join(sandbox.cwd, '.cursor', 'mcp.json'), 'utf8')
+    ) as { mcpServers: Record<string, { command: string, args: string[] }> }
+    expect(cursorConfig.mcpServers.mdp).toEqual({
+      command: 'node',
+      args: [path.join('scripts', 'run-local-mdp-mcp.mjs')]
+    })
+  })
 })
 
-async function createSandbox(): Promise<{
+async function createSandbox(options?: { withLocalLauncher?: boolean }): Promise<{
   cwd: string
   homeDir: string
   ensureDir: (directoryPath: string) => Promise<void>
@@ -201,6 +252,12 @@ async function createSandbox(): Promise<{
     mkdir(cwd, { recursive: true }),
     mkdir(homeDir, { recursive: true })
   ])
+
+  if (options?.withLocalLauncher) {
+    const launcherPath = path.join(cwd, 'scripts', 'run-local-mdp-mcp.mjs')
+    await mkdir(path.dirname(launcherPath), { recursive: true })
+    await writeFile(launcherPath, '#!/usr/bin/env node\n', 'utf8')
+  }
 
   return {
     cwd,
