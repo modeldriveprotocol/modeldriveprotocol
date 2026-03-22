@@ -52,6 +52,14 @@ jobs:
         with:
           registry-url: https://registry.npmjs.org
 
+      - name: Configure npm authentication
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          printf "registry=https://registry.npmjs.org/\n" >> "$NPM_CONFIG_USERCONFIG"
+          printf "always-auth=true\n" >> "$NPM_CONFIG_USERCONFIG"
+          printf "//registry.npmjs.org/:_authToken=%s\n" "$NODE_AUTH_TOKEN" >> "$NPM_CONFIG_USERCONFIG"
+
       - name: Build workspace
         run: pnpm build
 
