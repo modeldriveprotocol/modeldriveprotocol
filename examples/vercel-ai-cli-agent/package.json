@@ -1,0 +1,16 @@
+{
+  "name": "@modeldriveprotocol/vercel-ai-cli-agent-example",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "mdp-test": "./cli.mjs"
+  },
+  "scripts": {
+    "start": "node ./cli.mjs"
+  },
+  "dependencies": {
+    "@ai-sdk/mcp": "^1.0.30",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "ai": "^6.0.134"
+  }
+}
