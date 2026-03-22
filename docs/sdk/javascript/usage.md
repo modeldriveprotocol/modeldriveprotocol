@@ -35,7 +35,7 @@ For browser websocket auth, passing `auth` is enough. `connect()` will bootstrap
 
 ```ts
 const client = createMdpClient({
-  serverUrl: 'wss://127.0.0.1:7070',
+  serverUrl: 'wss://127.0.0.1:47070',
   auth: {
     token: 'client-session-token'
   },
@@ -65,9 +65,32 @@ The main SDK methods are:
 - `exposePrompt`
 - `exposeSkill`
 - `exposeResource`
+- `removeTool`
+- `removePrompt`
+- `removeSkill`
+- `removeResource`
 - `setAuth`
 - `connect`
 - `register`
+- `syncTools`
+- `syncPrompts`
+- `syncSkills`
+- `syncResources`
+- `syncCapabilities`
 - `disconnect`
+
+## Updating capability catalogs
+
+`register()` still sends the initial full descriptor. After that, change the local registry and send only the capability groups that changed.
+
+```ts
+client.exposeTool('inspectSelection', async () => ({
+  text: window.getSelection()?.toString() ?? ''
+}))
+client.syncTools()
+
+client.removeResource('webpage://active-tab/page-info')
+client.syncResources()
+```
 
 For capability metadata details, continue with [MCP Definitions](/sdk/javascript/mcp-definitions) and [Skills Definitions](/sdk/javascript/skills-definitions).

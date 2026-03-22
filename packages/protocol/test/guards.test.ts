@@ -72,6 +72,60 @@ describe('protocol guards', () => {
     })
   })
 
+  it('parses client capability updates', () => {
+    const message = parseMessage(
+      JSON.stringify({
+        type: 'updateClientCapabilities',
+        clientId: 'client-01',
+        capabilities: {
+          tools: [
+            {
+              name: 'searchDom',
+              description: 'Search the current page'
+            }
+          ],
+          resources: [
+            {
+              uri: 'workspace://root/info',
+              name: 'Workspace Info'
+            }
+          ]
+        }
+      })
+    )
+
+    expect(message).toEqual({
+      type: 'updateClientCapabilities',
+      clientId: 'client-01',
+      capabilities: {
+        tools: [
+          {
+            name: 'searchDom',
+            description: 'Search the current page'
+          }
+        ],
+        resources: [
+          {
+            uri: 'workspace://root/info',
+            name: 'Workspace Info'
+          }
+        ]
+      }
+    })
+  })
+
+  it('rejects empty client capability updates', () => {
+    expect(() =>
+      parseMessage(
+        JSON.stringify({
+          type: 'updateClientCapabilities',
+          clientId: 'client-01',
+          capabilities: {}
+        })
+      )
+    ).toThrow('Invalid MDP message')
+  })
+
   it('rejects callClient messages without a name or uri target', () => {
     expect(() =>
       parseMessage(
@@ -98,6 +152,22 @@ describe('protocol guards', () => {
           type: 'registerClient',
           client: {
             ...clientDescriptor,
+            skills: [
+              {
+                name: 'workspace/../review'
+              }
+            ]
+          }
+        })
+      )
+    ).toThrow('Invalid MDP message')
+
+    expect(() =>
+      parseMessage(
+        JSON.stringify({
+          type: 'updateClientCapabilities',
+          clientId: 'client-01',
+          capabilities: {
             skills: [
               {
                 name: 'workspace/../review'

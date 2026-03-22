@@ -7,6 +7,8 @@ status: Draft
 
 `registerClient` is the client-to-server lifecycle event used to publish one client identity plus its current capability catalog.
 
+If the same connected client needs to change only its tools, prompts, skills, or resources later, use [updateClientCapabilities](/server/api/update-client-capabilities) instead of sending a whole new identity document.
+
 | Event Type       | Flow Direction   |
 | ---------------- | ---------------- |
 | `registerClient` | Client -> Server |

@@ -1,6 +1,11 @@
 import type { SerializedError } from './errors.js'
 import type { RpcArguments } from './json.js'
-import type { AuthContext, CapabilityKind, ClientDescriptor } from './models.js'
+import type {
+  AuthContext,
+  CapabilityKind,
+  ClientCapabilityUpdate,
+  ClientDescriptor
+} from './models.js'
 
 export interface RegisterClientMessage {
   type: 'registerClient'
@@ -11,6 +16,12 @@ export interface RegisterClientMessage {
 export interface UnregisterClientMessage {
   type: 'unregisterClient'
   clientId: string
+}
+
+export interface UpdateClientCapabilitiesMessage {
+  type: 'updateClientCapabilities'
+  clientId: string
+  capabilities: ClientCapabilityUpdate
 }
 
 export interface CallClientMessage {
@@ -44,6 +55,7 @@ export interface PongMessage {
 
 export type ClientToServerMessage =
   | RegisterClientMessage
+  | UpdateClientCapabilitiesMessage
   | UnregisterClientMessage
   | CallClientResultMessage
   | PingMessage

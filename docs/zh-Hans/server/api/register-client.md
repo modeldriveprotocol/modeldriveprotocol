@@ -7,6 +7,8 @@ status: Draft
 
 `registerClient` 是一个从 client 发往 server 的生命周期事件，用来上报一个 client 身份以及当前完整的 capability 目录。
 
+如果同一个已连接 client 之后只需要修改 tools、prompts、skills 或 resources，优先使用 [updateClientCapabilities](/zh-Hans/server/api/update-client-capabilities)，而不是重新发送整份身份描述。
+
 | 事件类型         | 事件流向         |
 | ---------------- | ---------------- |
 | `registerClient` | Client -> Server |

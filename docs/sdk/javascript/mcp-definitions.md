@@ -91,4 +91,6 @@ Resource metadata uses:
 
 The server keeps the MCP integration stable by exposing bridge tools such as `listTools`, `callTools`, `listPrompts`, `getPrompt`, `listResources`, and `readResource`.
 
+If your runtime adds or removes descriptors after `register()`, update the local registry with `expose*` / `remove*`, then call `syncTools()`, `syncPrompts()`, `syncSkills()`, `syncResources()`, or `syncCapabilities()` so the server refreshes its indexed catalog.
+
 For the wire model behind those definitions, see [Capability Model](/protocol/capability-model) and [MCP Bridge](/protocol/mcp-bridge).

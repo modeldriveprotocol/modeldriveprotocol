@@ -1,6 +1,7 @@
 import {
   type AuthContext,
   type CallClientMessage,
+  type ClientCapabilityUpdate,
   type ServerToClientMessage,
   createSerializedError
 } from '@modeldriveprotocol/protocol'
@@ -110,6 +111,26 @@ export class MdpClient {
     return this
   }
 
+  removeTool(name: string): this {
+    this.registry.removeTool(name)
+    return this
+  }
+
+  removePrompt(name: string): this {
+    this.registry.removePrompt(name)
+    return this
+  }
+
+  removeSkill(name: string): this {
+    this.registry.removeSkill(name)
+    return this
+  }
+
+  removeResource(uri: string): this {
+    this.registry.removeResource(uri)
+    return this
+  }
+
   async connect(): Promise<void> {
     await this.authenticateTransport()
     await this.transport.connect()
@@ -178,6 +199,46 @@ export class MdpClient {
     return this.registry.describe(this.clientInfo)
   }
 
+  syncCapabilities(
+    capabilities: ClientCapabilityUpdate = this.registry.describeCapabilities()
+  ): void {
+    this.ensureRegistered()
+
+    if (!hasCapabilityUpdate(capabilities)) {
+      throw new Error('Capability sync requires at least one capability group')
+    }
+
+    this.transport.send({
+      type: 'updateClientCapabilities',
+      clientId: this.clientInfo.id,
+      capabilities
+    })
+  }
+
+  syncTools(): void {
+    this.syncCapabilities({
+      tools: this.registry.describeTools()
+    })
+  }
+
+  syncPrompts(): void {
+    this.syncCapabilities({
+      prompts: this.registry.describePrompts()
+    })
+  }
+
+  syncSkills(): void {
+    this.syncCapabilities({
+      skills: this.registry.describeSkills()
+    })
+  }
+
+  syncResources(): void {
+    this.syncCapabilities({
+      resources: this.registry.describeResources()
+    })
+  }
+
   private async handleMessage(message: ServerToClientMessage): Promise<void> {
     switch (message.type) {
       case 'ping':
@@ -221,6 +282,14 @@ export class MdpClient {
       throw new Error('MDP client is not connected')
     }
   }
+
+  private ensureRegistered(): void {
+    this.ensureConnected()
+
+    if (!this.registered) {
+      throw new Error('MDP client is not registered')
+    }
+  }
 }
 
 export function createMdpClient(options: MdpClientOptions): MdpClient {
@@ -244,6 +313,15 @@ function createDefaultTransport(serverUrl: string): ClientTransport {
 
 function isWebSocketProtocol(protocol: string): boolean {
   return protocol === 'ws:' || protocol === 'wss:'
+}
+
+function hasCapabilityUpdate(capabilities: ClientCapabilityUpdate): boolean {
+  return (
+    capabilities.tools !== undefined ||
+    capabilities.prompts !== undefined ||
+    capabilities.skills !== undefined ||
+    capabilities.resources !== undefined
+  )
 }
 
 const DEFAULT_COOKIE_AUTH_ENDPOINT = '/mdp/auth'
@@ -299,7 +377,7 @@ export function resolveServerUrl(attributes: BrowserScriptClientAttributes): str
 
   const protocol = attributes.serverProtocol ?? 'ws'
   const host = attributes.serverHost ?? '127.0.0.1'
-  const port = attributes.serverPort ?? 7070
+  const port = attributes.serverPort ?? 47070
 
   return `${protocol}://${host}:${port}`
 }

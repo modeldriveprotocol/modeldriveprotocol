@@ -6,6 +6,7 @@ import type {
   AuthContext,
   CapabilityKind,
   ClientAuthSource,
+  ClientCapabilityUpdate,
   ClientConnectionMode,
   ClientDescriptor,
   ResourceDescriptor,
@@ -72,26 +73,51 @@ function isSkillDescriptor(value: unknown): value is SkillDescriptor {
   return isNamedDescriptor(value) && isSkillPath(value.name)
 }
 
+function hasDescriptorArray(
+  value: unknown,
+  key: keyof ClientCapabilityUpdate,
+  itemGuard: (item: unknown) => boolean,
+  required: boolean
+): boolean {
+  if (!isJsonObject(value)) {
+    return false
+  }
+
+  if (!(key in value)) {
+    return !required
+  }
+
+  const entry = value[key]
+
+  return Array.isArray(entry) && entry.every(itemGuard)
+}
+
+function hasClientCapabilities(
+  value: unknown,
+  required: boolean
+): boolean {
+  return (
+    hasDescriptorArray(value, 'tools', isNamedDescriptor, required) &&
+    hasDescriptorArray(value, 'prompts', isNamedDescriptor, required) &&
+    hasDescriptorArray(value, 'skills', isSkillDescriptor, required) &&
+    hasDescriptorArray(value, 'resources', isResourceDescriptor, required)
+  )
+}
+
+function isClientCapabilityUpdate(value: unknown): value is ClientCapabilityUpdate {
+  return (
+    isJsonObject(value) &&
+    ('tools' in value || 'prompts' in value || 'skills' in value || 'resources' in value) &&
+    hasClientCapabilities(value, false)
+  )
+}
+
 export function isClientDescriptor(value: unknown): value is ClientDescriptor {
   if (!hasString(value, 'id') || !hasString(value, 'name')) {
     return false
   }
 
-  const tools = isJsonObject(value) ? value.tools : undefined
-  const prompts = isJsonObject(value) ? value.prompts : undefined
-  const skills = isJsonObject(value) ? value.skills : undefined
-  const resources = isJsonObject(value) ? value.resources : undefined
-
-  return (
-    Array.isArray(tools) &&
-    tools.every(isNamedDescriptor) &&
-    Array.isArray(prompts) &&
-    prompts.every(isNamedDescriptor) &&
-    Array.isArray(skills) &&
-    skills.every(isSkillDescriptor) &&
-    Array.isArray(resources) &&
-    resources.every(isResourceDescriptor)
-  )
+  return hasClientCapabilities(value, true)
 }
 
 export function isListedClient(value: unknown): boolean {
@@ -126,6 +152,8 @@ export function isMdpMessage(value: unknown): value is MdpMessage {
       )
     case 'unregisterClient':
       return hasString(value, 'clientId')
+    case 'updateClientCapabilities':
+      return hasString(value, 'clientId') && isClientCapabilityUpdate(value.capabilities)
     case 'callClient':
       if (
         !hasString(object, 'requestId') ||

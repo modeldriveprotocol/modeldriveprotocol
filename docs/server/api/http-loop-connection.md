@@ -43,9 +43,10 @@ Response:
 
 1. `POST /connect`
 2. send [registerClient](/server/api/register-client) through `/send`
-3. `GET /poll` until the server returns [callClient](/server/api/call-client) or `204`
-4. send [callClientResult](/server/api/call-client-result) through `/send`
-5. `POST /disconnect`
+3. optionally send [updateClientCapabilities](/server/api/update-client-capabilities) through `/send` when the local catalog changes
+4. `GET /poll` until the server returns [callClient](/server/api/call-client) or `204`
+5. send [callClientResult](/server/api/call-client-result) through `/send`
+6. `POST /disconnect`
 
 `waitMs` on `/poll` is clamped to `60000`.
 
@@ -60,6 +61,11 @@ sequenceDiagram
   Client->>Server: POST /mdp/http-loop/connect
   Server-->>Client: 200 { sessionId }
   Client->>Server: POST /mdp/http-loop/send registerClient
+
+  opt Capability catalog changes later
+    Client->>Server: POST /mdp/http-loop/send updateClientCapabilities
+    Server-->>Client: 202 { ok: true }
+  end
 
   loop While waiting for routed work
     Client->>Server: GET /mdp/http-loop/poll?waitMs=...

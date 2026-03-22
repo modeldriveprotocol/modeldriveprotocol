@@ -13,7 +13,7 @@ The JavaScript SDK is the fastest way to expose MDP capabilities from a browser,
 import { createMdpClient } from '@modeldriveprotocol/client'
 
 const client = createMdpClient({
-  serverUrl: 'ws://127.0.0.1:7070',
+  serverUrl: 'ws://127.0.0.1:47070',
   client: {
     id: 'browser-01',
     name: 'Browser Client'
@@ -44,6 +44,15 @@ Once the client is registered, an MCP host can use bridge tools such as:
 - `listClients`
 - `listTools`
 - `callTools`
+
+If the runtime changes its catalog later, update the local registry and push the new descriptors:
+
+```ts
+client.exposeTool('inspectSelection', async () => ({
+  text: window.getSelection()?.toString() ?? ''
+}))
+client.syncTools()
+```
 
 If you want transport choices, auth bootstrap, or browser-global usage, continue with [Usage](/sdk/javascript/usage).
 If you want ready-made app integrations instead of wiring the SDK yourself, start with [Chrome Extension](/apps/chrome-extension) or [VSCode Extension](/apps/vscode-extension).

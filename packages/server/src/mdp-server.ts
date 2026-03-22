@@ -1,4 +1,10 @@
-import type { AuthContext, ClientDescriptor, ClientToServerMessage, ListedClient } from '@modeldriveprotocol/protocol'
+import type {
+  AuthContext,
+  ClientCapabilityUpdate,
+  ClientDescriptor,
+  ClientToServerMessage,
+  ListedClient
+} from '@modeldriveprotocol/protocol'
 import { createSerializedError } from '@modeldriveprotocol/protocol'
 
 import { type CapabilityTarget, type RegisteredClientSnapshot, CapabilityIndex } from './capability-index.js'
@@ -18,12 +24,24 @@ export interface InvocationAuthorizationContext extends InvocationRequest {
   transportAuth?: AuthContext
 }
 
+export interface ClientRegisteredContext {
+  session: ClientSession
+  client: ClientDescriptor
+  auth?: AuthContext
+}
+
+export interface ClientRemovedContext extends ClientRegisteredContext {
+  reason: 'disconnect' | 'unregister'
+}
+
 export interface MdpServerOptions {
   heartbeatIntervalMs?: number
   heartbeatTimeoutMs?: number
   invocationTimeoutMs?: number
   authorizeRegistration?: (context: RegistrationAuthorizationContext) => void
   authorizeInvocation?: (context: InvocationAuthorizationContext) => void
+  onClientRegistered?: (context: ClientRegisteredContext) => void
+  onClientRemoved?: (context: ClientRemovedContext) => void
 }
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 30_000
@@ -44,6 +62,12 @@ export class MdpServerRuntime {
   private readonly authorizeInvocation:
     | ((context: InvocationAuthorizationContext) => void)
     | undefined
+  private readonly onClientRegistered:
+    | ((context: ClientRegisteredContext) => void)
+    | undefined
+  private readonly onClientRemoved:
+    | ((context: ClientRemovedContext) => void)
+    | undefined
   private heartbeatTimer: NodeJS.Timeout | undefined
 
   constructor(options: MdpServerOptions = {}) {
@@ -51,6 +75,8 @@ export class MdpServerRuntime {
     this.heartbeatTimeoutMs = options.heartbeatTimeoutMs ?? DEFAULT_HEARTBEAT_TIMEOUT_MS
     this.authorizeRegistration = options.authorizeRegistration
     this.authorizeInvocation = options.authorizeInvocation
+    this.onClientRegistered = options.onClientRegistered
+    this.onClientRemoved = options.onClientRemoved
 
     this.capabilityIndex = new CapabilityIndex(() => this.getRegisteredSnapshots())
     this.invocationRouter = new InvocationRouter(
@@ -79,6 +105,9 @@ export class MdpServerRuntime {
       case 'unregisterClient':
         this.unregisterClient(session, message.clientId)
         return
+      case 'updateClientCapabilities':
+        this.updateClientCapabilities(session, message.clientId, message.capabilities)
+        return
       case 'callClientResult':
         this.invocationRouter.resolve(message)
         return
@@ -101,6 +130,8 @@ export class MdpServerRuntime {
     }
 
     const clientId = session.clientId
+    const descriptor = session.descriptor
+    const registeredAuth = session.registeredAuth
 
     if (clientId && this.sessionsByClientId.get(clientId) === session) {
       this.sessionsByClientId.delete(clientId)
@@ -108,6 +139,15 @@ export class MdpServerRuntime {
         clientId,
         new Error(`Client "${clientId}" disconnected`)
       )
+    }
+
+    if (descriptor) {
+      this.onClientRemoved?.({
+        session,
+        client: descriptor,
+        ...(registeredAuth ? { auth: registeredAuth } : {}),
+        reason: 'disconnect'
+      })
     }
 
     this.sessionsByConnectionId.delete(connectionId)
@@ -203,6 +243,8 @@ export class MdpServerRuntime {
     })
 
     const previousClientId = session.clientId
+    const previousDescriptor = session.descriptor
+    const previousRegisteredAuth = session.registeredAuth
 
     if (
       previousClientId &&
@@ -210,6 +252,19 @@ export class MdpServerRuntime {
       this.sessionsByClientId.get(previousClientId) === session
     ) {
       this.sessionsByClientId.delete(previousClientId)
+      this.invocationRouter.rejectClient(
+        previousClientId,
+        new Error(`Client "${previousClientId}" was re-registered as "${descriptor.id}"`)
+      )
+    }
+
+    if (previousDescriptor && previousClientId && previousClientId !== descriptor.id) {
+      this.onClientRemoved?.({
+        session,
+        client: previousDescriptor,
+        ...(previousRegisteredAuth ? { auth: previousRegisteredAuth } : {}),
+        reason: 'unregister'
+      })
     }
 
     const existing = this.sessionsByClientId.get(descriptor.id)
@@ -221,6 +276,11 @@ export class MdpServerRuntime {
 
     session.register(descriptor, auth)
     this.sessionsByClientId.set(descriptor.id, session)
+    this.onClientRegistered?.({
+      session,
+      client: descriptor,
+      ...(auth ? { auth } : {})
+    })
   }
 
   private unregisterClient(session: ClientSession, clientId: string): void {
@@ -236,7 +296,46 @@ export class MdpServerRuntime {
       )
     }
 
+    const descriptor = session.descriptor
+    const registeredAuth = session.registeredAuth
+
+    if (descriptor) {
+      this.onClientRemoved?.({
+        session,
+        client: descriptor,
+        ...(registeredAuth ? { auth: registeredAuth } : {}),
+        reason: 'unregister'
+      })
+    }
+
     session.unregister()
+  }
+
+  private updateClientCapabilities(
+    session: ClientSession,
+    clientId: string,
+    capabilities: ClientCapabilityUpdate
+  ): void {
+    if (!session.descriptor || session.clientId !== clientId) {
+      throw new Error(`Client "${clientId}" is not registered on this session`)
+    }
+
+    const descriptor = session.descriptor
+    const nextDescriptor: ClientDescriptor = {
+      ...descriptor,
+      ...(capabilities.tools ? { tools: capabilities.tools } : {}),
+      ...(capabilities.prompts ? { prompts: capabilities.prompts } : {}),
+      ...(capabilities.skills ? { skills: capabilities.skills } : {}),
+      ...(capabilities.resources ? { resources: capabilities.resources } : {})
+    }
+
+    session.register(nextDescriptor, session.registeredAuth)
+    this.sessionsByClientId.set(clientId, session)
+    this.onClientRegistered?.({
+      session,
+      client: nextDescriptor,
+      ...(session.registeredAuth ? { auth: session.registeredAuth } : {})
+    })
   }
 
   private getRegisteredSnapshots(): RegisteredClientSnapshot[] {

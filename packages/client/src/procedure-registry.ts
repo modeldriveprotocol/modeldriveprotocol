@@ -1,5 +1,6 @@
 import type {
   CallClientMessage,
+  ClientCapabilities,
   ClientDescriptor,
   PromptDescriptor,
   ResourceDescriptor,
@@ -124,14 +125,52 @@ export class ProcedureRegistry {
     return this
   }
 
+  removeTool(name: string): boolean {
+    return this.tools.delete(name)
+  }
+
+  removePrompt(name: string): boolean {
+    return this.prompts.delete(name)
+  }
+
+  removeSkill(name: string): boolean {
+    return this.skills.delete(name)
+  }
+
+  removeResource(uri: string): boolean {
+    return this.resources.delete(uri)
+  }
+
   describe(client: ClientInfo): ClientDescriptor {
     return {
       ...client,
-      tools: [...this.tools.values()].map(({ descriptor }) => descriptor),
-      prompts: [...this.prompts.values()].map(({ descriptor }) => descriptor),
-      skills: [...this.skills.values()].map(({ descriptor }) => descriptor),
-      resources: [...this.resources.values()].map(({ descriptor }) => descriptor)
+      ...this.describeCapabilities()
     }
+  }
+
+  describeCapabilities(): ClientCapabilities {
+    return {
+      tools: this.describeTools(),
+      prompts: this.describePrompts(),
+      skills: this.describeSkills(),
+      resources: this.describeResources()
+    }
+  }
+
+  describeTools(): ToolDescriptor[] {
+    return [...this.tools.values()].map(({ descriptor }) => descriptor)
+  }
+
+  describePrompts(): PromptDescriptor[] {
+    return [...this.prompts.values()].map(({ descriptor }) => descriptor)
+  }
+
+  describeSkills(): SkillDescriptor[] {
+    return [...this.skills.values()].map(({ descriptor }) => descriptor)
+  }
+
+  describeResources(): ResourceDescriptor[] {
+    return [...this.resources.values()].map(({ descriptor }) => descriptor)
   }
 
   invoke(

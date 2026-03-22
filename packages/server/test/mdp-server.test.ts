@@ -17,9 +17,9 @@ function createTransport(
   }
 }
 
-function createDescriptor(name = 'Browser Client') {
+function createDescriptor(name = 'Browser Client', id = 'client-01') {
   return {
-    id: 'client-01',
+    id,
     name,
     tools: [{ name: 'searchDom' }],
     prompts: [],
@@ -94,6 +94,123 @@ describe('MdpServerRuntime', () => {
     })
 
     expect(runtime.listClients()).toEqual([])
+  })
+
+  it('updates registered capability catalogs in place', () => {
+    const onClientRegistered = vi.fn()
+    const runtime = new MdpServerRuntime({
+      onClientRegistered
+    })
+    const session = runtime.createSession('conn-01', createTransport())
+
+    runtime.handleMessage(session, {
+      type: 'registerClient',
+      client: createDescriptor()
+    })
+    runtime.handleMessage(session, {
+      type: 'updateClientCapabilities',
+      clientId: 'client-01',
+      capabilities: {
+        prompts: [
+          {
+            name: 'summarizeSelection'
+          }
+        ],
+        skills: [
+          {
+            name: 'workspace/review'
+          }
+        ],
+        resources: [
+          {
+            uri: 'workspace://root/info',
+            name: 'Workspace Info'
+          }
+        ]
+      }
+    })
+
+    expect(runtime.listClients()).toEqual([
+      expect.objectContaining({
+        id: 'client-01',
+        tools: [{ name: 'searchDom' }],
+        prompts: [{ name: 'summarizeSelection' }],
+        skills: [{ name: 'workspace/review' }],
+        resources: [{ uri: 'workspace://root/info', name: 'Workspace Info' }]
+      })
+    ])
+    expect(onClientRegistered).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        session,
+        client: expect.objectContaining({
+          id: 'client-01',
+          prompts: [{ name: 'summarizeSelection' }]
+        })
+      })
+    )
+  })
+
+  it('rejects capability updates from a different logical client id', () => {
+    const runtime = new MdpServerRuntime()
+    const session = runtime.createSession('conn-01', createTransport())
+
+    runtime.handleMessage(session, {
+      type: 'registerClient',
+      client: createDescriptor()
+    })
+
+    expect(() =>
+      runtime.handleMessage(session, {
+        type: 'updateClientCapabilities',
+        clientId: 'client-02',
+        capabilities: {
+          tools: []
+        }
+      })
+    ).toThrow('Client "client-02" is not registered on this session')
+  })
+
+  it('treats re-registering with a new client id as removing the old registration', async () => {
+    const onClientRemoved = vi.fn()
+    const runtime = new MdpServerRuntime({
+      onClientRemoved
+    })
+    const transport = createTransport()
+    const session = runtime.createSession('conn-01', transport)
+
+    runtime.handleMessage(session, {
+      type: 'registerClient',
+      client: createDescriptor('First Client', 'client-01')
+    })
+
+    const invocation = runtime.invoke({
+      clientId: 'client-01',
+      kind: 'tool',
+      name: 'searchDom'
+    })
+
+    runtime.handleMessage(session, {
+      type: 'registerClient',
+      client: createDescriptor('Second Client', 'client-02')
+    })
+
+    await expect(invocation).rejects.toThrow('Client "client-01" was re-registered as "client-02"')
+    expect(runtime.listClients()).toEqual([
+      expect.objectContaining({
+        id: 'client-02',
+        name: 'Second Client'
+      })
+    ])
+    expect(onClientRemoved).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session,
+        client: expect.objectContaining({
+          id: 'client-01',
+          name: 'First Client'
+        }),
+        reason: 'unregister'
+      })
+    )
   })
 
   it('disconnects sessions that stop responding to heartbeats', async () => {

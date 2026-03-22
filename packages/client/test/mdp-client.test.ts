@@ -224,6 +224,78 @@ describe('MdpClient', () => {
     })
   })
 
+  it('syncs updated capability groups after registration', async () => {
+    const transport = new FakeTransport()
+    const client = createMdpClient({
+      serverUrl: 'ws://127.0.0.1:7070',
+      client: {
+        id: 'browser-01',
+        name: 'Browser Client'
+      },
+      transport
+    })
+
+    client.exposeTool('searchDom', async () => ({ matches: 1 }))
+
+    await client.connect()
+    client.register()
+
+    client.removeTool('searchDom')
+    client.exposePrompt('summarizeSelection', async () => ({
+      messages: [{ role: 'user', content: 'Summarize the current selection.' }]
+    }))
+    client.syncCapabilities({
+      tools: client.describe().tools,
+      prompts: client.describe().prompts
+    })
+
+    expect(transport.sent).toEqual([
+      {
+        type: 'registerClient',
+        client: {
+          id: 'browser-01',
+          name: 'Browser Client',
+          tools: [
+            {
+              name: 'searchDom'
+            }
+          ],
+          prompts: [],
+          skills: [],
+          resources: []
+        }
+      },
+      {
+        type: 'updateClientCapabilities',
+        clientId: 'browser-01',
+        capabilities: {
+          tools: [],
+          prompts: [
+            {
+              name: 'summarizeSelection'
+            }
+          ]
+        }
+      }
+    ])
+  })
+
+  it('requires registration before syncing capabilities', async () => {
+    const transport = new FakeTransport()
+    const client = createMdpClient({
+      serverUrl: 'ws://127.0.0.1:7070',
+      client: {
+        id: 'browser-01',
+        name: 'Browser Client'
+      },
+      transport
+    })
+
+    await client.connect()
+
+    expect(() => client.syncTools()).toThrow('MDP client is not registered')
+  })
+
   it('registers markdown skill documents', async () => {
     const transport = new FakeTransport()
     const client = createMdpClient({

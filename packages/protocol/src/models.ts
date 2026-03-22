@@ -58,17 +58,27 @@ export interface ResourceDescriptor {
   mimeType?: string
 }
 
-export interface ClientDescriptor {
+export interface ClientCapabilities {
+  tools: ToolDescriptor[]
+  prompts: PromptDescriptor[]
+  skills: SkillDescriptor[]
+  resources: ResourceDescriptor[]
+}
+
+export interface ClientCapabilityUpdate {
+  tools?: ToolDescriptor[]
+  prompts?: PromptDescriptor[]
+  skills?: SkillDescriptor[]
+  resources?: ResourceDescriptor[]
+}
+
+export interface ClientDescriptor extends ClientCapabilities {
   id: string
   name: string
   description?: string
   version?: string
   platform?: string
   metadata?: JsonObject
-  tools: ToolDescriptor[]
-  prompts: PromptDescriptor[]
-  skills: SkillDescriptor[]
-  resources: ResourceDescriptor[]
 }
 
 export interface ListedClient extends ClientDescriptor {

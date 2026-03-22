@@ -34,6 +34,13 @@ Body:
 
 `message` must be a client-to-server message. `callClient` is not accepted here.
 
+Typical messages sent here are:
+
+- `registerClient`
+- `updateClientCapabilities`
+- `unregisterClient`
+- `callClientResult`
+
 ## Response
 
 Status `202 Accepted`:

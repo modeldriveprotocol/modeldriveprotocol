@@ -34,6 +34,13 @@ session 标识：
 
 `message` 必须是 client-to-server 消息，不能是 `callClient`。
 
+常见消息包括：
+
+- `registerClient`
+- `updateClientCapabilities`
+- `unregisterClient`
+- `callClientResult`
+
 ## 响应
 
 状态码 `202 Accepted`：

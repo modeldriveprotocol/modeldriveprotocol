@@ -9,8 +9,8 @@ Use the websocket transport when the client can keep a long-lived bidirectional 
 
 ## Endpoint
 
-- `ws://127.0.0.1:7070`
-- with TLS enabled: `wss://127.0.0.1:7070`
+- `ws://127.0.0.1:47070`
+- with TLS enabled: `wss://127.0.0.1:47070`
 
 ## Message model
 
@@ -23,6 +23,7 @@ The websocket transport uses the `type` field as the event discriminator.
 | Event type         | Direction        | Category   | Purpose                                         |
 | ------------------ | ---------------- | ---------- | ----------------------------------------------- |
 | `registerClient`   | Client -> Server | Lifecycle  | Register one client and its capability metadata |
+| `updateClientCapabilities` | Client -> Server | Lifecycle  | Replace one or more capability catalogs         |
 | `unregisterClient` | Client -> Server | Lifecycle  | Remove one registered client                    |
 | `callClient`       | Server -> Client | Invocation | Deliver routed capability work to the client    |
 | `callClientResult` | Client -> Server | Invocation | Return the result of a routed invocation        |
@@ -34,6 +35,7 @@ The websocket transport uses the `type` field as the event discriminator.
 Client-to-server events:
 
 - [registerClient](/server/api/register-client)
+- [updateClientCapabilities](/server/api/update-client-capabilities)
 - [unregisterClient](/server/api/unregister-client)
 - [callClientResult](/server/api/call-client-result)
 - [ping](/server/api/ping)
@@ -51,10 +53,11 @@ The normal websocket sequence is:
 
 1. open the websocket
 2. send `registerClient`
-3. receive `callClient` when the server routes work
-4. send `callClientResult`
-5. exchange `ping` and `pong` while the session stays alive
-6. optionally send `unregisterClient` before disconnecting
+3. optionally send `updateClientCapabilities` whenever the local capability catalog changes
+4. receive `callClient` when the server routes work
+5. send `callClientResult`
+6. exchange `ping` and `pong` while the session stays alive
+7. optionally send `unregisterClient` before disconnecting
 
 ## Sequence diagram
 
@@ -67,6 +70,11 @@ sequenceDiagram
   Client->>Server: Open WebSocket
   Client->>Server: registerClient
   Server-->>Client: Registration stays active on this socket
+
+  opt Capability catalog changes later
+    Client->>Server: updateClientCapabilities
+    Server-->>Client: Capability index is refreshed in place
+  end
 
   Host->>Server: call tool or skill routed to this client
   Server->>Client: callClient
@@ -87,6 +95,7 @@ sequenceDiagram
 ## What each event is for
 
 - `registerClient`: announces client identity and the current tool, prompt, skill, and resource catalog.
+- `updateClientCapabilities`: replaces one or more already-registered capability arrays without changing the client identity.
 - `unregisterClient`: removes one logical client registration without requiring the whole transport to disappear first.
 - `callClient`: carries one routed invocation with `requestId`, target client, capability kind, and invocation payload.
 - `callClientResult`: closes the routed invocation by returning either `data` or `error`.
@@ -98,3 +107,7 @@ sequenceDiagram
 - the runtime can hold a stable socket
 - you want lower-latency push in both directions
 - you do not want to implement long-poll session management
+
+## Multi-server note
+
+If your deployment has both a hub server and one or more edge servers, the websocket client should connect to the server chosen by deployment policy, not by blind trial-and-error. Use `/mdp/meta` or explicit configuration to decide whether this runtime should register with a standalone hub or with a local edge that proxies upward.

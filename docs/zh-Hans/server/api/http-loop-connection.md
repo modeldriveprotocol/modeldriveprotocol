@@ -43,9 +43,10 @@ HTTP loop 是 websocket 之外的 request-response 传输方式。
 
 1. `POST /connect`
 2. 通过 `/send` 发送 [registerClient](/zh-Hans/server/api/register-client)
-3. 持续 `GET /poll`，直到拿到 [callClient](/zh-Hans/server/api/call-client) 或 `204`
-4. 通过 `/send` 回传 [callClientResult](/zh-Hans/server/api/call-client-result)
-5. `POST /disconnect`
+3. 当本地目录变化时，可选通过 `/send` 发送 [updateClientCapabilities](/zh-Hans/server/api/update-client-capabilities)
+4. 持续 `GET /poll`，直到拿到 [callClient](/zh-Hans/server/api/call-client) 或 `204`
+5. 通过 `/send` 回传 [callClientResult](/zh-Hans/server/api/call-client-result)
+6. `POST /disconnect`
 
 `/poll` 上的 `waitMs` 最大会被限制到 `60000`。
 
@@ -60,6 +61,11 @@ sequenceDiagram
   Client->>Server: POST /mdp/http-loop/connect
   Server-->>Client: 200 { sessionId }
   Client->>Server: POST /mdp/http-loop/send registerClient
+
+  opt 后续 capability 目录发生变化
+    Client->>Server: POST /mdp/http-loop/send updateClientCapabilities
+    Server-->>Client: 202 { ok: true }
+  end
 
   loop 持续等待被路由的任务
     Client->>Server: GET /mdp/http-loop/poll?waitMs=...
