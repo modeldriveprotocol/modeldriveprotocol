@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { renderHelpText } from '../src/cli-reference.js'
-import { parseArgs } from '../src/cli.js'
+import { parseArgs, resolveCliOptions } from '../src/cli.js'
 import { parseSetupArgs, renderSetupHelpText } from '../src/setup.js'
 
 describe('server cli', () => {
@@ -114,6 +114,85 @@ describe('server cli', () => {
     ]).options.clusterId).toBe('cluster-prod')
   })
 
+  it('parses cluster config paths without mutating base defaults', () => {
+    expect(parseArgs([
+      '--cluster-config',
+      '/tmp/mdp-cluster.json'
+    ])).toEqual({
+      helpRequested: false,
+      portProvided: false,
+      clusterConfigPath: '/tmp/mdp-cluster.json',
+      options: {
+        host: '127.0.0.1',
+        port: 47372,
+        clusterMode: 'auto',
+        clusterId: '127.0.0.1:47372',
+        discoverHost: '127.0.0.1',
+        discoverStartPort: 47372,
+        discoverAttempts: 100,
+        clusterHeartbeatIntervalMs: 1000,
+        clusterLeaseDurationMs: 4000,
+        clusterElectionTimeoutMinMs: 4500,
+        clusterElectionTimeoutMaxMs: 7000,
+        clusterDiscoveryIntervalMs: 2000
+      }
+    })
+  })
+
+  it('loads cluster config defaults while keeping explicit CLI overrides authoritative', async () => {
+    await expect(resolveCliOptions([
+      '--cluster-config',
+      '/tmp/mdp-cluster.json',
+      '--cluster-id',
+      'cluster-cli',
+      '--discover-attempts',
+      '12'
+    ], {
+      readTextFile: async () => JSON.stringify({
+        clusterId: 'cluster-manifest',
+        clusterMembers: ['node-a', 'node-b'],
+        discoverHost: '10.0.0.10',
+        discoverStartPort: 49000,
+        discoverAttempts: 7,
+        upstreamUrl: 'ws://10.0.0.10:49000'
+      }),
+      hasExistingClusterPeer: async () => false
+    })).resolves.toEqual({
+      helpRequested: false,
+      portProvided: false,
+      clusterConfigPath: '/tmp/mdp-cluster.json',
+      options: {
+        host: '127.0.0.1',
+        port: 47372,
+        clusterMode: 'auto',
+        clusterId: 'cluster-cli',
+        clusterMembers: ['node-a', 'node-b'],
+        upstreamUrl: 'ws://10.0.0.10:49000',
+        discoverHost: '10.0.0.10',
+        discoverStartPort: 49000,
+        discoverAttempts: 12,
+        clusterHeartbeatIntervalMs: 1000,
+        clusterLeaseDurationMs: 4000,
+        clusterElectionTimeoutMinMs: 4500,
+        clusterElectionTimeoutMaxMs: 7000,
+        clusterDiscoveryIntervalMs: 2000
+      }
+    })
+  })
+
+  it('rejects malformed cluster config files', async () => {
+    await expect(resolveCliOptions([
+      '--cluster-config',
+      '/tmp/mdp-cluster.json'
+    ], {
+      readTextFile: async () => JSON.stringify({
+        clusterMembers: ['node-a', 3]
+      })
+    })).rejects.toThrow(
+      'Cluster config /tmp/mdp-cluster.json field "clusterMembers" must be an array of strings'
+    )
+  })
+
   it('marks help requests without mutating defaults', () => {
     expect(parseArgs(['--help'])).toEqual({
       helpRequested: true,
@@ -147,6 +226,18 @@ describe('server cli', () => {
     expect(() => {
       parseArgs(['--cluster-members', ' , '])
     }).toThrow('Option --cluster-members requires at least one server id')
+
+    expect(() => {
+      parseArgs(['--cluster-config', '   '])
+    }).toThrow('Option --cluster-config requires a non-empty value')
+
+    expect(() => {
+      parseArgs(['--cluster-id', '   '])
+    }).toThrow('Option --cluster-id requires a non-empty value')
+
+    expect(() => {
+      parseArgs(['--server-id', '   '])
+    }).toThrow('Option --server-id requires a non-empty value')
   })
 
   it('rejects invalid numeric option values and invalid cluster timing combinations', () => {
@@ -203,6 +294,7 @@ describe('server cli', () => {
     expect(help).toContain('Configure supported agent and IDE MCP hosts')
     expect(help).toContain('--cluster-mode <standalone|auto|proxy-required>')
     expect(help).toContain('--cluster-id <id>')
+    expect(help).toContain('--cluster-config <path>')
     expect(help).toContain('--upstream-url <ws-url>')
     expect(help).toContain('--cluster-members <id,id,...>')
     expect(help).toContain('--discover-attempts <count>')

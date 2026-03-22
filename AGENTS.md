@@ -20,14 +20,17 @@ If you are new to the project, read files in this order:
 2. [docs/protocol/overview.md](./docs/protocol/overview.md)
 3. [packages/protocol/src/models.ts](./packages/protocol/src/models.ts)
 4. [packages/protocol/src/messages.ts](./packages/protocol/src/messages.ts)
-5. [packages/server/src/mdp-server.ts](./packages/server/src/mdp-server.ts)
-6. [packages/server/src/transport-server.ts](./packages/server/src/transport-server.ts)
-7. [packages/server/src/mcp-bridge.ts](./packages/server/src/mcp-bridge.ts)
-8. [packages/client/src/mdp-client.ts](./packages/client/src/mdp-client.ts)
-9. [scripts/smoke-test.mjs](./scripts/smoke-test.mjs)
-10. [packages/protocol/test/guards.test.ts](./packages/protocol/test/guards.test.ts)
-11. [packages/client/test/mdp-client.test.ts](./packages/client/test/mdp-client.test.ts)
-12. [packages/server/test/invocation-router.test.ts](./packages/server/test/invocation-router.test.ts)
+5. [packages/protocol/src/cluster-messages.ts](./packages/protocol/src/cluster-messages.ts)
+6. [packages/server/src/mdp-server.ts](./packages/server/src/mdp-server.ts)
+7. [packages/server/src/transport-server.ts](./packages/server/src/transport-server.ts)
+8. [packages/server/src/cluster-manager.ts](./packages/server/src/cluster-manager.ts)
+9. [packages/server/src/mcp-bridge.ts](./packages/server/src/mcp-bridge.ts)
+10. [packages/client/src/mdp-client.ts](./packages/client/src/mdp-client.ts)
+11. [scripts/smoke-test.mjs](./scripts/smoke-test.mjs)
+12. [packages/protocol/test/guards.test.ts](./packages/protocol/test/guards.test.ts)
+13. [packages/client/test/mdp-client.test.ts](./packages/client/test/mdp-client.test.ts)
+14. [packages/server/test/invocation-router.test.ts](./packages/server/test/invocation-router.test.ts)
+15. [packages/server/test/cluster-manager.test.ts](./packages/server/test/cluster-manager.test.ts)
 
 That order mirrors the intended abstraction stack:
 
@@ -47,6 +50,7 @@ Pure protocol layer.
 Read here when working on:
 
 - message schema
+- cluster control messages
 - capability descriptors
 - error model
 - guards and validation helpers
@@ -55,6 +59,7 @@ Key files:
 
 - [packages/protocol/src/models.ts](./packages/protocol/src/models.ts)
 - [packages/protocol/src/messages.ts](./packages/protocol/src/messages.ts)
+- [packages/protocol/src/cluster-messages.ts](./packages/protocol/src/cluster-messages.ts)
 - [packages/protocol/src/errors.ts](./packages/protocol/src/errors.ts)
 - [packages/protocol/src/guards.ts](./packages/protocol/src/guards.ts)
 - [packages/protocol/test/guards.test.ts](./packages/protocol/test/guards.test.ts)
@@ -68,6 +73,7 @@ Read here when working on:
 - client registration lifecycle
 - capability indexing
 - invocation routing
+- primary election and server-to-server failover
 - MCP bridge tools
 - WebSocket / HTTP loop transports
 - TLS listener setup
@@ -81,9 +87,11 @@ Key files:
 - [packages/server/src/invocation-router.ts](./packages/server/src/invocation-router.ts)
 - [packages/server/src/mcp-bridge.ts](./packages/server/src/mcp-bridge.ts)
 - [packages/server/src/transport-server.ts](./packages/server/src/transport-server.ts)
+- [packages/server/src/cluster-manager.ts](./packages/server/src/cluster-manager.ts)
 - [packages/server/src/ws-server.ts](./packages/server/src/ws-server.ts)
 - [packages/server/src/cli.ts](./packages/server/src/cli.ts)
 - [packages/server/test/capability-index.test.ts](./packages/server/test/capability-index.test.ts)
+- [packages/server/test/cluster-manager.test.ts](./packages/server/test/cluster-manager.test.ts)
 - [packages/server/test/invocation-router.test.ts](./packages/server/test/invocation-router.test.ts)
 - [packages/server/test/mdp-server.test.ts](./packages/server/test/mdp-server.test.ts)
 - [packages/server/test/transport-server.test.ts](./packages/server/test/transport-server.test.ts)
@@ -283,9 +291,16 @@ As of the current MVP:
 
 - MDP-side transports are `ws` / `wss` and `http` / `https` loop
 - registry is in-memory only
+- cluster leadership is coordinated with term / lease / election over the server control websocket
+- leader isolation must not preserve write leadership indefinitely; the leader should step down when it loses quorum
+- cluster membership is in-memory and sticky by default, but may also be pinned by explicit static member ids; quorum does not shrink automatically during transient discovery loss
+- cluster identity must be treated separately from membership; peers from a different `cluster.id` must not be admitted even if server ids overlap
+- `serverId` uniqueness matters within one cluster; duplicate ids on different endpoints should be rejected, not silently deduplicated
+- `/mdp/meta` exposes node-local quorum diagnostics such as known members, reachable members, and quorum state; keep those semantics aligned with `cluster-manager.ts`
 - MCP-side surface is fixed bridge tools
 - clients are the capability source
 - the server is a registry and invocation router, not the capability owner
+- client sessions are not replicated across servers; after primary failover, clients must reconnect
 - registration and invocation messages may carry auth envelopes
 - transport requests may also carry auth headers for server-side policy
 - browser `ws` / `wss` clients may bootstrap transport auth through `/mdp/auth` cookie issuance

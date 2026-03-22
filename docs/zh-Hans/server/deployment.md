@@ -70,6 +70,7 @@ npx @modeldriveprotocol/server \
 
 设置了 `--cluster-members` 之后，cluster 会用这组显式 server id 来做 quorum 计算和 peer 准入。网络里即使存在别的未知 peer，它们也不会自动进入控制面，更不会被计入选主多数派。
 设置了 `--cluster-id` 之后，discovery 和控制面还会额外校验逻辑 cluster identity。默认值会根据 `--discover-host` 和 `--discover-start-port` 推导出来。
+同一个 cluster 里的每个 `--server-id` 都必须唯一。如果另一个 endpoint 在同一个 `cluster.id` 下宣告了相同的 `serverId`，当前节点会把它当成硬错误，而不是继续猜哪个 peer 才是正确的。
 
 ## Proxy-Required
 
@@ -104,6 +105,33 @@ npx @modeldriveprotocol/server \
 
 这对脚本、测试和固定的本地开发环境是最可预测的方式。完成初次加入后，这个 server 仍会继续参与 term / lease / election。
 
+## Cluster Manifest
+
+如果你希望 cluster identity、成员集合和 discovery 默认值可以跨重启保留下来，而不是每次都写一长串 CLI 参数，可以把它们放进一个 JSON manifest，然后通过 `--cluster-config` 加载。
+
+示例 manifest：
+
+```json
+{
+  "clusterId": "local-dev",
+  "clusterMembers": ["node-a", "node-b", "node-c"],
+  "discoverHost": "127.0.0.1",
+  "discoverStartPort": 47372,
+  "discoverAttempts": 100,
+  "upstreamUrl": "ws://127.0.0.1:47372"
+}
+```
+
+启动方式：
+
+```bash
+npx @modeldriveprotocol/server \
+  --cluster-config ./mdp-cluster.json \
+  --server-id node-a
+```
+
+manifest 只提供默认值。显式 CLI 参数仍然优先生效，所以多个节点可以复用同一份 manifest，只覆盖各自的 `--server-id`、`--port`，或者在需要时覆盖成不同的 `--cluster-id`。
+
 ## 探针接口
 
 发现流程使用的元数据探针是：
@@ -131,6 +159,8 @@ npx @modeldriveprotocol/server \
   },
   "cluster": {
     "id": "127.0.0.1:47372",
+    "membershipMode": "dynamic",
+    "membershipFingerprint": "dynamic",
     "role": "leader",
     "term": 3,
     "leaderId": "127.0.0.1:47372",
@@ -144,7 +174,7 @@ npx @modeldriveprotocol/server \
 }
 ```
 
-这个接口服务于部署控制平面逻辑，不是一个 MDP wire message。一个 server 决定是否向另一个 server 建立 proxy 关系时，应把 `protocolVersion` 视为精确 semver，把 `supportedProtocolRanges` 视为 semver range 列表。`cluster` 这一块则是当前控制面的实时视图，从节点会用它来确认谁是当前主节点。`cluster.id` 是最先要检查的隔离字段，如果它和期望的逻辑 cluster 不一致，这个 peer 就应该被忽略或拒绝。新增的 quorum 字段主要用于诊断：`knownMemberCount` 是 sticky 的内存成员集合大小，`reachableMemberCount` 是当前节点本地看到的可达成员视图，`hasQuorum` 表示这个节点现在是否还能看到多数派。
+这个接口服务于部署控制平面逻辑，不是一个 MDP wire message。一个 server 决定是否向另一个 server 建立 proxy 关系时，应把 `protocolVersion` 视为精确 semver，把 `supportedProtocolRanges` 视为 semver range 列表。`cluster` 这一块则是当前控制面的实时视图，从节点会用它来确认谁是当前主节点。`cluster.id` 是最先要检查的隔离字段，如果它和期望的逻辑 cluster 不一致，这个 peer 就应该被忽略或拒绝。`cluster.membershipMode` 和 `cluster.membershipFingerprint` 是下一层兼容性检查：如果一组静态节点对成员集合的理解不一致，它们会直接拒绝互联，而不是在不同 quorum 规则下继续运行。新增的 quorum 字段主要用于诊断：`knownMemberCount` 是 sticky 的内存成员集合大小，`reachableMemberCount` 是当前节点本地看到的可达成员视图，`hasQuorum` 表示这个节点现在是否还能看到多数派。
 
 如果要看精确的 CLI 参数和启动语法，继续阅读 [CLI 参数](/zh-Hans/server/cli)。
 
@@ -181,5 +211,6 @@ client 不应该靠盲扫端口去猜自己该连哪个 server。
 - cluster 能重新选出新的主节点继续做路由，但不会复制活跃中的 client session。主节点 failover 之后，clients 仍然需要重新连接到新的主节点。
 - membership 在单个进程生命周期内是 sticky 的。某个 peer 一旦进入当前进程的内存成员集合，quorum 不会因为 discovery 暂时看不到它就自动缩小。
 - 如果你希望跨重启和拓扑抖动都维持稳定的 quorum 定义，优先使用 `--cluster-members`，把成员集合显式配置出来，而不是完全交给 discovery 推断。
+- 如果你使用了 `--cluster-members`，同一个逻辑 cluster 里的每个节点都应该使用完全一致的成员集合。静态 membership fingerprint 不一致的节点会互相拒绝。
 - 如果你会在同一台机器或同一网段上跑多个独立的 MDP cluster，显式设置 `--cluster-id`，避免它们意外互联。
 - 之后如果 quorum 又恢复了，cluster 可以重新收敛并选出新的主节点，但这个恢复仍然只覆盖路由状态，不会恢复旧主节点上的活跃 client session。

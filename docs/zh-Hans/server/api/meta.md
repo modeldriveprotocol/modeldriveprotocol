@@ -37,6 +37,8 @@ Accept: application/json
   },
   "cluster": {
     "id": "127.0.0.1:47372",
+    "membershipMode": "dynamic",
+    "membershipFingerprint": "dynamic",
     "role": "leader",
     "term": 3,
     "leaderId": "127.0.0.1:47372",
@@ -60,6 +62,9 @@ Accept: application/json
 - 具备 proxy 能力的 server 在把本地 clients 镜像到上游 hub 之前，应该先确认自己要求的协议版本满足其中某个 range。
 - `endpoints.cluster` 是 server-to-server 控制面 websocket，用来承载 heartbeat、leader resign 和 election。
 - `cluster.id` 是逻辑 cluster identity。discovery 和 server-to-server 控制面在建链前都应该先确认这个值和期望一致。
+- `cluster.membershipMode` 表示当前节点使用的是 discovery 驱动的成员模式（`dynamic`），还是显式配置的静态成员集合（`static`）。
+- `cluster.membershipFingerprint` 是这个 membership 模式的兼容性标识。处于同一个静态 cluster 的节点应该完全一致。
+- `serverId` 在同一个逻辑 cluster 内必须唯一。如果另一个 endpoint 用同一个 `serverId` 对外宣告，会被视为 cluster 配置错误。
 - `cluster.role`、`cluster.term`、`cluster.leaderId` 描述了当前 server 看到的 HA 状态。
 - `cluster.leaseDurationMs` 是从节点等待主节点 heartbeat 续租的窗口。
 - `cluster.knownMemberCount` 表示当前进程已知的成员集合大小。它既可能来自 sticky 的 discovery 状态，也可能来自显式配置的静态成员列表。

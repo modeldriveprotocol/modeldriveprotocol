@@ -3,6 +3,8 @@ export type ClusterRole = 'leader' | 'follower' | 'candidate'
 export interface ClusterHelloMessage {
   type: 'clusterHello'
   clusterId: string
+  membershipMode: 'dynamic' | 'static'
+  membershipFingerprint: string
   serverId: string
   term: number
   role: ClusterRole

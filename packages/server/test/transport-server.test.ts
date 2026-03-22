@@ -96,6 +96,8 @@ describe('MdpTransportServer', () => {
       }
       cluster: {
         id: string
+        membershipMode: string
+        membershipFingerprint: string
         role: string
         term: number
         knownMemberCount?: number
@@ -122,6 +124,8 @@ describe('MdpTransportServer', () => {
       },
       cluster: expect.objectContaining({
         id: expect.any(String),
+        membershipMode: 'dynamic',
+        membershipFingerprint: 'dynamic',
         role: 'leader',
         term: 0,
         knownMemberCount: 1,

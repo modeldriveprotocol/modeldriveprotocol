@@ -54,6 +54,7 @@ Options:
   -h, --help                                       Show this help text
   --cluster-mode <standalone|auto|proxy-required>  Startup topology mode (default: auto)
   --cluster-id <id>                                Logical cluster identity (default: derived from discovery host/start port)
+  --cluster-config <path>                          JSON cluster manifest that provides default cluster settings
   --upstream-url <ws-url>                          Explicit upstream hub websocket URL
   --cluster-members <id,id,...>                    Static cluster member ids used for quorum and peer admission
   --discover-host <host>                           Discovery host (default: 127.0.0.1)
@@ -117,6 +118,7 @@ npx @modeldriveprotocol/server setup
 | --- | --- |
 | `--cluster-mode <standalone|auto|proxy-required>` | 启动拓扑模式。默认：`auto`。 |
 | `--cluster-id <id>` | 逻辑 cluster identity。默认根据 `--discover-host` 和 `--discover-start-port` 推导。不同 cluster id 的 peer 会被忽略。 |
+| `--cluster-config <path>` | 可选的 JSON cluster manifest。它可以为 `clusterId`、`clusterMembers`、discovery 参数和 `upstreamUrl` 提供默认值；显式 CLI 参数仍然优先生效。 |
 | `--upstream-url <ws-url>` | 跳过发现流程，直接连接一个显式指定的上游 hub。 |
 | `--cluster-members <id,id,...>` | 可选的逗号分隔 server id 列表，用来声明静态 cluster 成员集合。未知 peer 不会进入 quorum，也不会参与 server-to-server 控制面通信。 |
 | `--discover-host <host>` | 发现流程使用的 host。默认：`127.0.0.1`。 |

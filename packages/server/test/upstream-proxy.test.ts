@@ -50,6 +50,8 @@ function createMetaResponse(overrides: Partial<{
   }
   cluster: {
     id: string
+    membershipMode: 'dynamic' | 'static'
+    membershipFingerprint: string
     role: 'leader' | 'follower' | 'candidate'
     term: number
     leaderId?: string
@@ -75,6 +77,8 @@ function createMetaResponse(overrides: Partial<{
     },
     cluster: overrides.cluster ?? {
       id: 'cluster-local',
+      membershipMode: 'dynamic',
+      membershipFingerprint: 'dynamic',
       role: 'leader',
       term: 2,
       leaderId: overrides.serverId ?? 'hub',
@@ -182,6 +186,8 @@ describe('upstream discovery and proxying', () => {
     const fetch = vi.fn(async () => createMetaResponse({
       cluster: {
         id: 'cluster-b',
+        membershipMode: 'dynamic',
+        membershipFingerprint: 'dynamic',
         role: 'leader',
         term: 2,
         leaderId: 'hub',
@@ -220,6 +226,8 @@ describe('upstream discovery and proxying', () => {
           cluster: {
             role: 'follower',
             id: 'cluster-local',
+            membershipMode: 'dynamic',
+            membershipFingerprint: 'dynamic',
             term: 5,
             leaderId: 'leader',
             leaderUrl: 'ws://127.0.0.1:47373',
@@ -241,6 +249,8 @@ describe('upstream discovery and proxying', () => {
           cluster: {
             role: 'leader',
             id: 'cluster-local',
+            membershipMode: 'dynamic',
+            membershipFingerprint: 'dynamic',
             term: 5,
             leaderId: 'leader',
             leaderUrl: 'ws://127.0.0.1:47373',
@@ -278,6 +288,8 @@ describe('upstream discovery and proxying', () => {
           serverId: 'cluster-a-leader',
           cluster: {
             id: 'cluster-a',
+            membershipMode: 'dynamic',
+            membershipFingerprint: 'dynamic',
             role: 'leader',
             term: 5,
             leaderId: 'cluster-a-leader',
@@ -299,6 +311,8 @@ describe('upstream discovery and proxying', () => {
           },
           cluster: {
             id: 'cluster-b',
+            membershipMode: 'dynamic',
+            membershipFingerprint: 'dynamic',
             role: 'leader',
             term: 8,
             leaderId: 'cluster-b-leader',

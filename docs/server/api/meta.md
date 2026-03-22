@@ -37,6 +37,8 @@ Accept: application/json
   },
   "cluster": {
     "id": "127.0.0.1:47372",
+    "membershipMode": "dynamic",
+    "membershipFingerprint": "dynamic",
     "role": "leader",
     "term": 3,
     "leaderId": "127.0.0.1:47372",
@@ -60,6 +62,9 @@ Accept: application/json
 - A proxy-capable server should verify that its required protocol version satisfies one of those ranges before mirroring local clients into an upstream hub.
 - `endpoints.cluster` is the server-to-server control websocket used for heartbeats, leader resignation, and elections.
 - `cluster.id` is the logical cluster identity. Discovery and server-to-server control traffic should only join peers that advertise the expected cluster id.
+- `cluster.membershipMode` tells you whether this node is running with discovery-driven membership (`dynamic`) or one explicit configured member set (`static`).
+- `cluster.membershipFingerprint` is the compatibility key for that membership mode. Static peers in one cluster should agree on it exactly.
+- `serverId` must be unique within one logical cluster. A duplicate server id on another endpoint is treated as a cluster configuration error.
 - `cluster.role`, `cluster.term`, and `cluster.leaderId` describe the server's current HA view.
 - `cluster.leaseDurationMs` is the follower lease window for primary heartbeats.
 - `cluster.knownMemberCount` is the membership size known to this process. It may come from sticky discovery state or from an explicit static member list.

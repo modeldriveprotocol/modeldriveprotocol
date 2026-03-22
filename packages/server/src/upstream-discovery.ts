@@ -21,6 +21,8 @@ export interface MdpServerMeta {
   }
   cluster: {
     id: string
+    membershipMode: 'dynamic' | 'static'
+    membershipFingerprint: string
     role: 'leader' | 'follower' | 'candidate'
     term: number
     leaderId?: string
@@ -288,6 +290,8 @@ function isMdpServerMeta(value: unknown): value is MdpServerMeta {
     typeof features.upstreamProxy === 'boolean' &&
     typeof features.clusterControl === 'boolean' &&
     typeof cluster.id === 'string' &&
+    (cluster.membershipMode === 'dynamic' || cluster.membershipMode === 'static') &&
+    typeof cluster.membershipFingerprint === 'string' &&
     (
       cluster.role === 'leader' ||
       cluster.role === 'follower' ||

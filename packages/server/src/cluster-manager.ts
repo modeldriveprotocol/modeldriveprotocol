@@ -26,8 +26,49 @@ import {
   type DiscoveredMdpServer
 } from './upstream-discovery.js'
 
+export class DuplicateClusterServerIdError extends Error {
+  readonly name = 'DuplicateClusterServerIdError'
+
+  constructor(
+    readonly clusterId: string,
+    readonly serverId: string,
+    readonly endpoint: string
+  ) {
+    super(
+      `Discovered duplicate server id ${serverId} at ${endpoint} in cluster ${clusterId}. Server ids must be unique within a cluster.`
+    )
+  }
+}
+
+export class IncompatibleClusterMembershipError extends Error {
+  readonly name = 'IncompatibleClusterMembershipError'
+
+  constructor(
+    readonly clusterId: string,
+    readonly serverId: string,
+    readonly expected: {
+      membershipMode: 'dynamic' | 'static'
+      membershipFingerprint: string
+    },
+    readonly received: {
+      membershipMode: 'dynamic' | 'static'
+      membershipFingerprint: string
+    }
+  ) {
+    super(
+      [
+        `Cluster peer ${serverId} in cluster ${clusterId} advertises incompatible membership settings.`,
+        `Expected ${expected.membershipMode}:${expected.membershipFingerprint}.`,
+        `Received ${received.membershipMode}:${received.membershipFingerprint}.`
+      ].join(' ')
+    )
+  }
+}
+
 export interface ClusterManagerState {
   id: string
+  membershipMode: 'dynamic' | 'static'
+  membershipFingerprint: string
   role: ClusterRole
   term: number
   leaderId?: string
@@ -148,6 +189,8 @@ export class MdpClusterManager {
 
     return {
       id: this.clusterId,
+      membershipMode: this.membershipMode(),
+      membershipFingerprint: this.membershipFingerprint(),
       role: this.role,
       term: this.currentTerm,
       ...(this.leaderId ? { leaderId: this.leaderId } : {}),
@@ -228,13 +271,17 @@ export class MdpClusterManager {
     const discovered = await this.discoverPeers()
 
     for (const server of discovered) {
-      if (server.meta.serverId === this.serverId) {
+      this.assertNoDuplicateServerId(server)
+
+      if (this.isSelfServer(server)) {
         continue
       }
 
       if (!this.isEligibleMember(server.meta.serverId)) {
         continue
       }
+
+      this.assertCompatibleMembership(server)
 
       const peer = this.upsertPeer(server, now)
       if (server.meta.cluster.role === 'leader') {
@@ -255,22 +302,24 @@ export class MdpClusterManager {
     const byServerId = new Map<string, DiscoveredMdpServer>()
 
     for (const server of discovered) {
+      this.assertNoDuplicateServerId(server)
+      this.assertNoPeerServerIdCollision(byServerId, server)
       byServerId.set(server.meta.serverId, server)
     }
 
     for (const seedUrl of this.seedUrls) {
-      const server = await probeMdpServer(seedUrl)
+      const server = await probeMdpServer(seedUrl, {
+        requiredClusterId: this.clusterId
+      })
       if (server) {
-        if (server.meta.cluster.id !== this.clusterId) {
-          throw new Error(
-            `Discovered seed peer ${server.meta.serverId} belongs to cluster ${server.meta.cluster.id}, expected ${this.clusterId}`
-          )
-        }
+        this.assertNoDuplicateServerId(server)
         if (!this.isEligibleMember(server.meta.serverId)) {
           throw new Error(
             `Discovered seed peer ${server.meta.serverId} is not part of the configured cluster membership`
           )
         }
+        this.assertCompatibleMembership(server)
+        this.assertNoPeerServerIdCollision(byServerId, server)
         byServerId.set(server.meta.serverId, server)
       }
     }
@@ -420,6 +469,22 @@ export class MdpClusterManager {
 
     if (message.clusterId !== this.clusterId) {
       link.socket.close(1008, 'Cluster peer belongs to a different cluster')
+      return
+    }
+
+    if (
+      message.type === 'clusterHello' &&
+      !this.isCompatibleMembershipDescriptor({
+        membershipMode: message.membershipMode,
+        membershipFingerprint: message.membershipFingerprint
+      })
+    ) {
+      link.socket.close(1008, 'Cluster peer advertises incompatible membership settings')
+      return
+    }
+
+    if (message.serverId === this.serverId) {
+      link.socket.close(1008, 'Duplicate server id detected in cluster control channel')
       return
     }
 
@@ -844,14 +909,108 @@ export class MdpClusterManager {
     return this.activePeerCount() > 0
   }
 
+  private membershipMode(): 'dynamic' | 'static' {
+    return this.configuredMemberIds ? 'static' : 'dynamic'
+  }
+
+  private membershipFingerprint(): string {
+    if (!this.configuredMemberIds) {
+      return 'dynamic'
+    }
+
+    return JSON.stringify([...this.configuredMemberIds].sort())
+  }
+
   private isEligibleMember(serverId: string): boolean {
     return this.configuredMemberIds?.has(serverId) ?? true
+  }
+
+  private isCompatibleMembershipDescriptor(descriptor: {
+    membershipMode: 'dynamic' | 'static'
+    membershipFingerprint: string
+  }): boolean {
+    return (
+      descriptor.membershipMode === this.membershipMode() &&
+      (
+        descriptor.membershipMode === 'dynamic' ||
+        descriptor.membershipFingerprint === this.membershipFingerprint()
+      )
+    )
+  }
+
+  private isSelfServer(server: DiscoveredMdpServer): boolean {
+    const selfEndpoints = this.getSelfEndpoints()
+
+    return (
+      server.meta.serverId === this.serverId &&
+      (
+        normalizeUrl(server.meta.endpoints.ws) === normalizeUrl(selfEndpoints.ws) ||
+        normalizeUrl(server.meta.endpoints.cluster) === normalizeUrl(selfEndpoints.cluster)
+      )
+    )
+  }
+
+  private assertNoDuplicateServerId(server: DiscoveredMdpServer): void {
+    if (
+      server.meta.serverId === this.serverId &&
+      !this.isSelfServer(server)
+    ) {
+      throw new DuplicateClusterServerIdError(
+        this.clusterId,
+        this.serverId,
+        server.meta.endpoints.ws
+      )
+    }
+  }
+
+  private assertNoPeerServerIdCollision(
+    byServerId: Map<string, DiscoveredMdpServer>,
+    server: DiscoveredMdpServer
+  ): void {
+    const existing = byServerId.get(server.meta.serverId)
+
+    if (!existing) {
+      return
+    }
+
+    if (normalizeUrl(existing.meta.endpoints.ws) === normalizeUrl(server.meta.endpoints.ws)) {
+      return
+    }
+
+    throw new DuplicateClusterServerIdError(
+      this.clusterId,
+      server.meta.serverId,
+      server.meta.endpoints.ws
+    )
+  }
+
+  private assertCompatibleMembership(server: DiscoveredMdpServer): void {
+    const received = {
+      membershipMode: server.meta.cluster.membershipMode,
+      membershipFingerprint: server.meta.cluster.membershipFingerprint
+    } as const
+
+    if (this.isCompatibleMembershipDescriptor(received)) {
+      return
+    }
+
+    throw new IncompatibleClusterMembershipError(
+      this.clusterId,
+      server.meta.serverId,
+      {
+        membershipMode: this.membershipMode(),
+        membershipFingerprint: this.membershipFingerprint()
+      },
+      received
+    )
   }
 
   private sendHello(link: ClusterPeerLink): void {
     this.send(link, {
       type: 'clusterHello',
       clusterId: this.clusterId,
+      membershipMode: this.membershipMode(),
+      membershipFingerprint: this.membershipFingerprint(),
       serverId: this.serverId,
       term: this.currentTerm,
       role: this.role,
@@ -954,4 +1113,8 @@ async function closeLink(link: ClusterPeerLink): Promise<void> {
     })
     link.socket.close()
   })
+}
+
+function normalizeUrl(url: string): string {
+  return url.endsWith('/') ? url.slice(0, -1) : url
 }

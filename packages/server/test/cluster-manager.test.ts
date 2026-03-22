@@ -46,6 +46,8 @@ describe('cluster manager', () => {
         const payload = await response.json() as {
           cluster: {
             id: string
+            membershipMode: string
+            membershipFingerprint: string
             role: string
             term: number
             leaderId?: string
@@ -65,6 +67,8 @@ describe('cluster manager', () => {
         }
 
         expect(payload.cluster.id).toBe('cluster-local')
+        expect(payload.cluster.membershipMode).toBe('dynamic')
+        expect(payload.cluster.membershipFingerprint).toBe('dynamic')
         expect(payload.cluster.term).toBeGreaterThanOrEqual(1)
         expect(payload.cluster.knownMemberCount).toBe(3)
         expect(payload.cluster.quorumSize).toBe(2)
@@ -130,6 +134,8 @@ describe('cluster manager', () => {
       serverId: 'stale-leader',
       clusterMetaProvider: () => ({
         id: 'cluster-local',
+        membershipMode: 'dynamic',
+        membershipFingerprint: 'dynamic',
         role: 'leader',
         term: leader.manager.state.term,
         leaderId: 'stale-leader',
@@ -245,7 +251,7 @@ describe('cluster manager', () => {
     const cluster = await Promise.all([
       startNode('node-a', BASE_PORT, { clusterMembers: configuredMembers }),
       startNode('node-b', BASE_PORT + 1, { clusterMembers: configuredMembers }),
-      startNode('node-outsider', BASE_PORT + 2)
+      startNode('node-outsider', BASE_PORT + 2, { clusterId: 'cluster-outsider' })
     ])
     nodes.push(...cluster)
 
@@ -256,6 +262,7 @@ describe('cluster manager', () => {
       expect(leaders).toHaveLength(1)
 
       for (const node of configuredNodes) {
+        expect(node.manager.state.membershipMode).toBe('static')
         expect(node.manager.state.knownMemberCount).toBe(2)
         expect(node.manager.state.quorumSize).toBe(2)
         expect(node.manager.state.hasQuorum).toBe(true)
@@ -293,6 +300,34 @@ describe('cluster manager', () => {
       expect(clusterB.manager.state.knownMemberCount).toBe(1)
       expect(clusterB.manager.state.quorumSize).toBe(1)
     })
+  })
+
+  it('rejects duplicate server ids within the same cluster', async () => {
+    const leader = await startNode('node-a', BASE_PORT, { clusterId: 'cluster-local' })
+    nodes.push(leader)
+
+    await expect(
+      startNode('node-a', BASE_PORT + 1, { clusterId: 'cluster-local' })
+    ).rejects.toThrow(
+      'Discovered duplicate server id node-a'
+    )
+  })
+
+  it('rejects peers whose static membership set does not match', async () => {
+    const leader = await startNode('node-a', BASE_PORT, {
+      clusterId: 'cluster-local',
+      clusterMembers: ['node-a', 'node-b']
+    })
+    nodes.push(leader)
+
+    await expect(
+      startNode('node-b', BASE_PORT + 1, {
+        clusterId: 'cluster-local',
+        clusterMembers: ['node-a', 'node-b', 'node-c']
+      })
+    ).rejects.toThrow(
+      'advertises incompatible membership settings'
+    )
   })
 
   it('rejects explicit seed peers that are outside the configured membership', async () => {
@@ -380,7 +415,15 @@ async function startNode(serverId: string, port: number, options: StartNodeOptio
   })
 
   await transportServer.start()
-  await manager.start()
+  try {
+    await manager.start()
+  } catch (error) {
+    await Promise.allSettled([
+      manager.close(),
+      transportServer.stop()
+    ])
+    throw error
+  }
 
   return {
     serverId,
@@ -402,6 +445,8 @@ function createNoopManager(): ClusterNode['manager'] {
     get state() {
       return {
         id: 'noop-cluster',
+        membershipMode: 'dynamic',
+        membershipFingerprint: 'dynamic',
         role: 'leader',
         term: 0,
         leaderId: 'noop',

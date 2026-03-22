@@ -52,12 +52,28 @@ export interface CliParseResult {
   helpRequested: boolean
   portProvided: boolean
   options: CliOptions
+  clusterConfigPath?: string
 }
 
 interface CliIo {
   info(message: string): void
   error(message: string): void
 }
+
+interface CliResolveResult extends CliParseResult {
+  providedOptionNames: Set<string>
+}
+
+interface ClusterConfigFile {
+  clusterId?: string
+  clusterMembers?: string[]
+  upstreamUrl?: string
+  discoverHost?: string
+  discoverStartPort?: number
+  discoverAttempts?: number
+}
+
+type ReadTextFile = (filePath: string) => Promise<string>
 
 export async function runCli(
   argv: string[] = process.argv.slice(2),
@@ -82,15 +98,14 @@ export async function runCli(
     return
   }
 
-  const parsed = parseArgs(argv)
+  const parsed = await resolveCliOptions(argv)
 
   if (parsed.helpRequested) {
     io.info(renderHelpText())
     return
   }
 
-  const baseOptions = parsed.options
-  const effectiveOptions = await finalizeCliOptions(baseOptions, parsed.portProvided)
+  const effectiveOptions = parsed.options
   const serverId = resolveServerId(effectiveOptions)
 
   let upstreamProxy: MdpUpstreamProxy | undefined
@@ -260,6 +275,38 @@ export async function runCli(
 }
 
 export function parseArgs(argv: string[]): CliParseResult {
+  const {
+    providedOptionNames: _providedOptionNames,
+    ...parsed
+  } = parseArgsDetailed(argv)
+
+  return parsed
+}
+
+export async function resolveCliOptions(
+  argv: string[],
+  dependencies: {
+    readTextFile?: ReadTextFile
+    hasExistingClusterPeer?: (options: CliOptions) => Promise<boolean>
+  } = {}
+): Promise<CliParseResult> {
+  const parsed = parseArgsDetailed(argv)
+  const merged = await applyClusterConfig(parsed, dependencies.readTextFile ?? defaultReadTextFile)
+  const finalizedOptions = await finalizeCliOptions(
+    merged.options,
+    merged.portProvided,
+    dependencies.hasExistingClusterPeer ?? hasExistingClusterPeer
+  )
+
+  return {
+    helpRequested: merged.helpRequested,
+    portProvided: merged.portProvided,
+    ...(merged.clusterConfigPath ? { clusterConfigPath: merged.clusterConfigPath } : {}),
+    options: finalizedOptions
+  }
+}
+
+function parseArgsDetailed(argv: string[]): CliResolveResult {
   const options: CliOptions = {
     host: DEFAULT_SERVER_HOST,
     port: DEFAULT_MDP_PORT,
@@ -277,6 +324,8 @@ export function parseArgs(argv: string[]): CliParseResult {
   let helpRequested = false
   let portProvided = false
   let clusterIdProvided = false
+  let clusterConfigPath: string | undefined
+  const providedOptionNames = new Set<string>()
 
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]
@@ -301,6 +350,7 @@ export function parseArgs(argv: string[]): CliParseResult {
       const nextValue = requireOptionValue(argv, index)
       options.port = parsePortOptionValue('--port', nextValue)
       portProvided = true
+      providedOptionNames.add('port')
       index += 1
       continue
     }
@@ -338,14 +388,23 @@ export function parseArgs(argv: string[]): CliParseResult {
         throw new Error(`Unsupported cluster mode: ${nextValue}`)
       }
 
+      providedOptionNames.add('clusterMode')
       index += 1
       continue
     }
 
     if (value === '--cluster-id') {
       const nextValue = requireOptionValue(argv, index)
-      options.clusterId = nextValue
+      options.clusterId = parseNonEmptyStringOptionValue('--cluster-id', nextValue)
       clusterIdProvided = true
+      providedOptionNames.add('clusterId')
+      index += 1
+      continue
+    }
+
+    if (value === '--cluster-config') {
+      const nextValue = requireOptionValue(argv, index)
+      clusterConfigPath = parseNonEmptyStringOptionValue('--cluster-config', nextValue)
       index += 1
       continue
     }
@@ -353,6 +412,7 @@ export function parseArgs(argv: string[]): CliParseResult {
     if (value === '--upstream-url') {
       const nextValue = requireOptionValue(argv, index)
       options.upstreamUrl = nextValue
+      providedOptionNames.add('upstreamUrl')
       index += 1
       continue
     }
@@ -360,6 +420,7 @@ export function parseArgs(argv: string[]): CliParseResult {
     if (value === '--cluster-members') {
       const nextValue = requireOptionValue(argv, index)
       options.clusterMembers = parseClusterMembersOptionValue(nextValue)
+      providedOptionNames.add('clusterMembers')
       index += 1
       continue
     }
@@ -367,6 +428,7 @@ export function parseArgs(argv: string[]): CliParseResult {
     if (value === '--discover-host') {
       const nextValue = requireOptionValue(argv, index)
       options.discoverHost = nextValue
+      providedOptionNames.add('discoverHost')
       index += 1
       continue
     }
@@ -374,6 +436,7 @@ export function parseArgs(argv: string[]): CliParseResult {
     if (value === '--discover-start-port') {
       const nextValue = requireOptionValue(argv, index)
       options.discoverStartPort = parsePortOptionValue('--discover-start-port', nextValue)
+      providedOptionNames.add('discoverStartPort')
       index += 1
       continue
     }
@@ -381,6 +444,7 @@ export function parseArgs(argv: string[]): CliParseResult {
     if (value === '--discover-attempts') {
       const nextValue = requireOptionValue(argv, index)
       options.discoverAttempts = parsePositiveIntegerOptionValue('--discover-attempts', nextValue)
+      providedOptionNames.add('discoverAttempts')
       index += 1
       continue
     }
@@ -422,7 +486,7 @@ export function parseArgs(argv: string[]): CliParseResult {
 
     if (value === '--server-id') {
       const nextValue = requireOptionValue(argv, index)
-      options.serverId = nextValue
+      options.serverId = parseNonEmptyStringOptionValue('--server-id', nextValue)
       index += 1
       continue
     }
@@ -453,7 +517,9 @@ export function parseArgs(argv: string[]): CliParseResult {
   return {
     helpRequested,
     portProvided,
-    options
+    ...(clusterConfigPath ? { clusterConfigPath } : {}),
+    options,
+    providedOptionNames
   }
 }
 
@@ -481,13 +547,14 @@ async function toServerOptions(
 
 async function finalizeCliOptions(
   options: CliOptions,
-  portProvided: boolean
+  portProvided: boolean,
+  detectExistingClusterPeer: (options: CliOptions) => Promise<boolean>
 ): Promise<CliOptions> {
   if (portProvided || options.clusterMode === 'standalone') {
     return options
   }
 
-  if (await hasExistingClusterPeer(options)) {
+  if (await detectExistingClusterPeer(options)) {
     return {
       ...options,
       port: 0
@@ -519,8 +586,134 @@ async function hasExistingClusterPeer(options: CliOptions): Promise<boolean> {
   return discovered.some((server) => isAllowedClusterMember(options.clusterMembers, server.meta.serverId))
 }
 
+async function applyClusterConfig(
+  parsed: CliResolveResult,
+  readTextFile: ReadTextFile
+): Promise<CliResolveResult> {
+  if (!parsed.clusterConfigPath) {
+    return parsed
+  }
+
+  const clusterConfig = await loadClusterConfig(parsed.clusterConfigPath, readTextFile)
+  const options: CliOptions = {
+    ...parsed.options
+  }
+
+  if (!parsed.providedOptionNames.has('clusterId') && clusterConfig.clusterId) {
+    options.clusterId = clusterConfig.clusterId
+  }
+
+  if (!parsed.providedOptionNames.has('clusterMembers') && clusterConfig.clusterMembers) {
+    options.clusterMembers = clusterConfig.clusterMembers
+  }
+
+  if (!parsed.providedOptionNames.has('upstreamUrl') && clusterConfig.upstreamUrl) {
+    options.upstreamUrl = clusterConfig.upstreamUrl
+  }
+
+  if (!parsed.providedOptionNames.has('discoverHost') && clusterConfig.discoverHost) {
+    options.discoverHost = clusterConfig.discoverHost
+  }
+
+  if (!parsed.providedOptionNames.has('discoverStartPort') && clusterConfig.discoverStartPort !== undefined) {
+    options.discoverStartPort = clusterConfig.discoverStartPort
+  }
+
+  if (!parsed.providedOptionNames.has('discoverAttempts') && clusterConfig.discoverAttempts !== undefined) {
+    options.discoverAttempts = clusterConfig.discoverAttempts
+  }
+
+  if (!parsed.providedOptionNames.has('clusterId') && !clusterConfig.clusterId) {
+    options.clusterId = defaultClusterId(options.discoverHost, options.discoverStartPort)
+  }
+
+  if (options.clusterMode === 'standalone' && options.clusterMembers) {
+    throw new Error('Option --cluster-members cannot be used with --cluster-mode standalone')
+  }
+
+  return {
+    ...parsed,
+    options
+  }
+}
+
+async function loadClusterConfig(
+  filePath: string,
+  readTextFile: ReadTextFile
+): Promise<ClusterConfigFile> {
+  let payload: unknown
+
+  try {
+    payload = JSON.parse(await readTextFile(filePath))
+  } catch (error) {
+    throw new Error(
+      `Unable to load cluster config ${filePath}: ${error instanceof Error ? error.message : String(error)}`
+    )
+  }
+
+  if (!isRecord(payload)) {
+    throw new Error(`Cluster config ${filePath} must be a JSON object`)
+  }
+
+  const clusterConfig: ClusterConfigFile = {}
+
+  if ('clusterId' in payload) {
+    if (typeof payload.clusterId !== 'string') {
+      throw new Error(`Cluster config ${filePath} field "clusterId" must be a string`)
+    }
+    clusterConfig.clusterId = parseNonEmptyStringOptionValue('cluster config field "clusterId"', payload.clusterId)
+  }
+
+  if ('clusterMembers' in payload) {
+    if (!Array.isArray(payload.clusterMembers) || payload.clusterMembers.some((item) => typeof item !== 'string')) {
+      throw new Error(`Cluster config ${filePath} field "clusterMembers" must be an array of strings`)
+    }
+    clusterConfig.clusterMembers = parseClusterMembersOptionValue(payload.clusterMembers.join(','))
+  }
+
+  if ('upstreamUrl' in payload) {
+    if (typeof payload.upstreamUrl !== 'string') {
+      throw new Error(`Cluster config ${filePath} field "upstreamUrl" must be a string`)
+    }
+    clusterConfig.upstreamUrl = parseNonEmptyStringOptionValue('cluster config field "upstreamUrl"', payload.upstreamUrl)
+  }
+
+  if ('discoverHost' in payload) {
+    if (typeof payload.discoverHost !== 'string') {
+      throw new Error(`Cluster config ${filePath} field "discoverHost" must be a string`)
+    }
+    clusterConfig.discoverHost = parseNonEmptyStringOptionValue('cluster config field "discoverHost"', payload.discoverHost)
+  }
+
+  if ('discoverStartPort' in payload) {
+    if (typeof payload.discoverStartPort !== 'number') {
+      throw new Error(`Cluster config ${filePath} field "discoverStartPort" must be a number`)
+    }
+    clusterConfig.discoverStartPort = parsePortOptionValue(
+      'cluster config field "discoverStartPort"',
+      String(payload.discoverStartPort)
+    )
+  }
+
+  if ('discoverAttempts' in payload) {
+    if (typeof payload.discoverAttempts !== 'number') {
+      throw new Error(`Cluster config ${filePath} field "discoverAttempts" must be a number`)
+    }
+    clusterConfig.discoverAttempts = parsePositiveIntegerOptionValue(
+      'cluster config field "discoverAttempts"',
+      String(payload.discoverAttempts)
+    )
+  }
+
+  return clusterConfig
+}
+
 function defaultClusterId(discoverHost: string, discoverStartPort: number): string {
   return `${discoverHost}:${discoverStartPort}`
+}
+
+async function defaultReadTextFile(filePath: string): Promise<string> {
+  return await readFile(filePath, 'utf8')
 }
 
 function parseClusterMembersOptionValue(value: string): string[] {
@@ -541,6 +734,20 @@ function isAllowedClusterMember(
   serverId: string
 ): boolean {
   return clusterMembers?.includes(serverId) ?? true
+}
+
+function parseNonEmptyStringOptionValue(optionName: string, value: string): string {
+  const normalized = value.trim()
+
+  if (normalized.length === 0) {
+    throw new Error(`Option ${optionName} requires a non-empty value`)
+  }
+
+  return normalized
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }
 
 function resolveServerId(options: CliOptions): string {

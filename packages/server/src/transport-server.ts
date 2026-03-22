@@ -391,6 +391,8 @@ export class MdpTransportServer {
       },
       cluster: this.clusterMetaProvider?.() ?? {
         id: this.clusterId ?? `${this.host}:${this.address.port}`,
+        membershipMode: 'dynamic',
+        membershipFingerprint: 'dynamic',
         role: 'leader',
         term: 0,
         leaderId: serverId,

@@ -121,6 +121,16 @@ const optionDefinitions: CliOptionDefinition[] = [
     }
   },
   {
+    flags: ['--cluster-config'],
+    valueName: '<path>',
+    category: 'cluster',
+    helpDescription: 'JSON cluster manifest that provides default cluster settings',
+    markdownDescription: {
+      en: 'Optional JSON cluster manifest. It can provide defaults for `clusterId`, `clusterMembers`, discovery settings, and `upstreamUrl`. Explicit CLI flags still win.',
+      'zh-Hans': '可选的 JSON cluster manifest。它可以为 `clusterId`、`clusterMembers`、discovery 参数和 `upstreamUrl` 提供默认值；显式 CLI 参数仍然优先生效。'
+    }
+  },
+  {
     flags: ['--upstream-url'],
     valueName: '<ws-url>',
     category: 'cluster',

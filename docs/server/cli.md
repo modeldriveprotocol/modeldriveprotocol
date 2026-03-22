@@ -54,6 +54,7 @@ Options:
   -h, --help                                       Show this help text
   --cluster-mode <standalone|auto|proxy-required>  Startup topology mode (default: auto)
   --cluster-id <id>                                Logical cluster identity (default: derived from discovery host/start port)
+  --cluster-config <path>                          JSON cluster manifest that provides default cluster settings
   --upstream-url <ws-url>                          Explicit upstream hub websocket URL
   --cluster-members <id,id,...>                    Static cluster member ids used for quorum and peer admission
   --discover-host <host>                           Discovery host (default: 127.0.0.1)
@@ -117,6 +118,7 @@ The setup command supports:
 | --- | --- |
 | `--cluster-mode <standalone|auto|proxy-required>` | Startup topology mode. Default: `auto`. |
 | `--cluster-id <id>` | Logical cluster identity. Default: derived from `--discover-host` and `--discover-start-port`. Peers from a different cluster id are ignored. |
+| `--cluster-config <path>` | Optional JSON cluster manifest. It can provide defaults for `clusterId`, `clusterMembers`, discovery settings, and `upstreamUrl`. Explicit CLI flags still win. |
 | `--upstream-url <ws-url>` | Skip discovery and connect to one explicit upstream hub. |
 | `--cluster-members <id,id,...>` | Optional comma-separated server ids for a static cluster membership. Unknown peers are ignored for quorum and server-to-server control traffic. |
 | `--discover-host <host>` | Discovery host. Default: `127.0.0.1`. |

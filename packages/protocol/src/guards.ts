@@ -217,6 +217,8 @@ export function isClusterMessage(value: unknown): value is ClusterMessage {
     case 'clusterHello':
       return (
         hasString(object, 'clusterId') &&
+        (object.membershipMode === 'dynamic' || object.membershipMode === 'static') &&
+        hasString(object, 'membershipFingerprint') &&
         hasString(object, 'serverId') &&
         typeof object.term === 'number' &&
         Number.isInteger(object.term) &&
