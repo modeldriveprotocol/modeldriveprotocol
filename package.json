@@ -18,13 +18,15 @@
     "test:smoke": "node scripts/smoke-test.mjs",
     "test:watch": "vitest",
     "version-packages": "changeset version",
+    "docs:sync": "node scripts/sync-generated-docs.mjs",
+    "docs:sync:check": "node scripts/sync-generated-docs.mjs --check",
     "docs:dev": "node scripts/prepare-docs.mjs && vitepress dev docs",
     "docs:build": "node scripts/prepare-docs.mjs && vitepress build docs",
     "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.30.0",
     "@antfu/eslint-config": "^6.0.0",
+    "@changesets/cli": "^2.30.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@types/node": "^24.0.0",
     "dprint": "^0.50.2",

@@ -13,6 +13,8 @@ import {
 import type { Duplex } from 'node:stream'
 
 import {
+  MDP_PROTOCOL_VERSION,
+  MDP_SUPPORTED_PROTOCOL_RANGES,
   type AuthContext,
   type ClientToServerMessage,
   type ServerToClientMessage,
@@ -23,10 +25,13 @@ import type { RawData } from 'ws'
 import WebSocket, { WebSocketServer } from 'ws'
 
 import { type ClientSessionTransport, ClientSession } from './client-session.js'
+import { DEFAULT_MDP_PORT, DEFAULT_SERVER_HOST } from './defaults.js'
 import { MdpServerRuntime } from './mdp-server.js'
+import type { MdpServerMeta } from './upstream-discovery.js'
 
 const DEFAULT_HTTP_LOOP_PATH = '/mdp/http-loop'
 const DEFAULT_AUTH_PATH = '/mdp/auth'
+const DEFAULT_META_PATH = '/mdp/meta'
 const DEFAULT_LONG_POLL_TIMEOUT_MS = 25_000
 const DEFAULT_AUTH_HEADERS = ['authorization', 'cookie']
 const DEFAULT_AUTH_COOKIE_NAME = 'mdp_auth'
@@ -50,11 +55,13 @@ export interface MdpTransportServerOptions {
   port?: number
   httpLoopPath?: string
   authPath?: string
+  metaPath?: string
   longPollTimeoutMs?: number
   tls?: HttpsServerOptions
   authHeaders?: string[]
   authCookieName?: string
   authCookieMaxAgeSeconds?: number
+  serverId?: string
 }
 
 export class MdpTransportServer {
@@ -63,10 +70,12 @@ export class MdpTransportServer {
   private readonly secure: boolean
   private readonly httpLoopPath: string
   private readonly authPath: string
+  private readonly metaPath: string
   private readonly longPollTimeoutMs: number
   private readonly authHeaders: string[]
   private readonly authCookieName: string
   private readonly authCookieMaxAgeSeconds: number
+  private readonly serverId: string | undefined
   private readonly httpServer: NodeHttpServer
   private readonly wsServer = new WebSocketServer({ noServer: true })
   private readonly httpLoopSessions = new Map<string, HttpLoopSessionEntry>()
@@ -75,17 +84,19 @@ export class MdpTransportServer {
     private readonly runtime: MdpServerRuntime,
     options: MdpTransportServerOptions = {}
   ) {
-    this.host = options.host ?? '127.0.0.1'
-    this.port = options.port ?? 7070
+    this.host = options.host ?? DEFAULT_SERVER_HOST
+    this.port = options.port ?? DEFAULT_MDP_PORT
     this.secure = options.tls !== undefined
     this.httpLoopPath = trimTrailingSlash(
       options.httpLoopPath ?? DEFAULT_HTTP_LOOP_PATH
     )
     this.authPath = trimTrailingSlash(options.authPath ?? DEFAULT_AUTH_PATH)
+    this.metaPath = trimTrailingSlash(options.metaPath ?? DEFAULT_META_PATH)
     this.longPollTimeoutMs = options.longPollTimeoutMs ?? DEFAULT_LONG_POLL_TIMEOUT_MS
     this.authHeaders = (options.authHeaders ?? DEFAULT_AUTH_HEADERS).map((header) => header.toLowerCase())
     this.authCookieName = options.authCookieName ?? DEFAULT_AUTH_COOKIE_NAME
     this.authCookieMaxAgeSeconds = options.authCookieMaxAgeSeconds ?? DEFAULT_AUTH_COOKIE_MAX_AGE_SECONDS
+    this.serverId = options.serverId
 
     const requestHandler = this.handleRequest.bind(this)
 
@@ -152,7 +163,7 @@ export class MdpTransportServer {
     }
   }
 
-  get endpoints(): { ws: string; httpLoop: string; auth: string } {
+  get endpoints(): { ws: string; httpLoop: string; auth: string; meta: string } {
     const { host, port } = this.address
     const wsProtocol = this.isSecure ? 'wss' : 'ws'
     const httpProtocol = this.isSecure ? 'https' : 'http'
@@ -160,7 +171,8 @@ export class MdpTransportServer {
     return {
       ws: `${wsProtocol}://${host}:${port}`,
       httpLoop: `${httpProtocol}://${host}:${port}${this.httpLoopPath}`,
-      auth: `${httpProtocol}://${host}:${port}${this.authPath}`
+      auth: `${httpProtocol}://${host}:${port}${this.authPath}`,
+      meta: `${httpProtocol}://${host}:${port}${this.metaPath}`
     }
   }
 
@@ -225,6 +237,11 @@ export class MdpTransportServer {
 
     if (url.pathname === this.authPath) {
       await this.handleAuthRequest(request, response)
+      return
+    }
+
+    if (url.pathname === this.metaPath) {
+      this.handleMetaRequest(response)
       return
     }
 
@@ -320,6 +337,21 @@ export class MdpTransportServer {
         error: error instanceof Error ? error.message : 'Invalid auth request'
       })
     }
+  }
+
+  private handleMetaRequest(response: ServerResponse): void {
+    const payload: MdpServerMeta = {
+      protocol: 'mdp',
+      protocolVersion: MDP_PROTOCOL_VERSION,
+      supportedProtocolRanges: [...MDP_SUPPORTED_PROTOCOL_RANGES],
+      serverId: this.serverId ?? this.defaultServerId(),
+      endpoints: this.endpoints,
+      features: {
+        upstreamProxy: true
+      }
+    }
+
+    this.writeJson(response, 200, payload)
   }
 
   private async handleSkillHttpRequest(
@@ -598,6 +630,11 @@ export class MdpTransportServer {
 
   private isAuthRequest(request: IncomingMessage): boolean {
     return this.requestUrl(request).pathname === this.authPath
+  }
+
+  private defaultServerId(): string {
+    const { host, port } = this.address
+    return `${host}:${port}`
   }
 
   private isSecureRequest(request: IncomingMessage): boolean {

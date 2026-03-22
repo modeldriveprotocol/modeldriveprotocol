@@ -69,6 +69,47 @@ afterEach(async () => {
 })
 
 describe('MdpTransportServer', () => {
+  it('exposes an MDP metadata probe endpoint', async () => {
+    const runtime = new MdpServerRuntime()
+    const server = new MdpTransportServer(runtime, {
+      host: '127.0.0.1',
+      port: 0,
+      serverId: 'probe-server'
+    })
+    servers.push(server)
+    await server.start()
+
+    const response = await fetch(server.endpoints.meta)
+    const payload = (await response.json()) as {
+      protocol: string
+      protocolVersion: string
+      supportedProtocolRanges: string[]
+      serverId: string
+      endpoints: {
+        ws: string
+        meta: string
+      }
+      features: {
+        upstreamProxy: boolean
+      }
+    }
+
+    expect(response.status).toBe(200)
+    expect(payload).toEqual(expect.objectContaining({
+      protocol: 'mdp',
+      protocolVersion: '0.1.0',
+      supportedProtocolRanges: ['^0.1.0'],
+      serverId: 'probe-server',
+      endpoints: expect.objectContaining({
+        ws: server.endpoints.ws,
+        meta: server.endpoints.meta
+      }),
+      features: {
+        upstreamProxy: true
+      }
+    }))
+  })
+
   it('refreshes HTTP loop auth from send and poll requests', async () => {
     const authorizeRegistration = vi.fn()
     const authorizeInvocation = vi.fn()

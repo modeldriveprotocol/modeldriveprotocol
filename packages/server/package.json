@@ -10,7 +10,8 @@
     "directory": "packages/server"
   },
   "bin": {
-    "modeldriveprotocol-server": "./dist/cli.js"
+    "modeldriveprotocol-server": "./dist/cli.js",
+    "mdp": "./dist/cli.js"
   },
   "exports": {
     ".": {
@@ -26,12 +27,14 @@
     "provenance": true
   },
   "dependencies": {
-    "@modeldriveprotocol/protocol": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.17.4",
+    "@modeldriveprotocol/protocol": "workspace:*",
+    "semver": "^7.7.4",
     "ws": "^8.18.3",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/semver": "^7.7.1",
     "@types/ws": "^8.5.14"
   },
   "scripts": {
