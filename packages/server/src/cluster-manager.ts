@@ -1,14 +1,19 @@
+import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 
 import {
+  createSerializedError,
   type ClusterHeartbeatAckMessage,
   type ClusterHeartbeatMessage,
   type ClusterHelloMessage,
   type ClusterLeaderResignMessage,
   type ClusterMessage,
+  type ClusterRpcRequestMessage,
+  type ClusterRpcResponseMessage,
   type ClusterRole,
   type ClusterVoteRequestMessage,
   type ClusterVoteResponseMessage,
+  type JsonValue,
   parseClusterMessage
 } from '@modeldriveprotocol/protocol'
 import WebSocket from 'ws'
@@ -104,7 +109,13 @@ export interface ClusterManagerOptions {
     ws: string
     cluster: string
   }
+  handleRpcRequest?: (request: ClusterRpcRequest) => Promise<unknown>
   onStateChange?: (event: ClusterManagerStateChangeEvent) => void
+}
+
+export interface ClusterRpcRequest {
+  method: string
+  params?: unknown
 }
 
 interface ClusterPeerState {
@@ -125,6 +136,14 @@ interface ClusterPeerLink {
   peerId?: string
 }
 
+interface PendingRpcRequest {
+  timeout: NodeJS.Timeout
+  resolve: (result: unknown) => void
+  reject: (error: Error) => void
+}
+
+const RPC_TIMEOUT_MS = 15_000
+
 export class MdpClusterManager {
   private readonly serverId: string
   private readonly clusterId: string
@@ -140,10 +159,12 @@ export class MdpClusterManager {
   private readonly electionTimeoutMaxMs: number
   private readonly discoveryIntervalMs: number
   private readonly getSelfEndpoints: ClusterManagerOptions['getSelfEndpoints']
+  private readonly handleRpcRequest: ClusterManagerOptions['handleRpcRequest']
   private readonly onStateChange: ClusterManagerOptions['onStateChange']
   private readonly peers = new Map<string, ClusterPeerState>()
   private readonly memberIds = new Set<string>()
   private readonly links = new Set<ClusterPeerLink>()
+  private readonly pendingRpcRequests = new Map<string, PendingRpcRequest>()
   private currentTerm = 0
   private role: ClusterRole = 'follower'
   private leaderId: string | undefined
@@ -173,6 +194,7 @@ export class MdpClusterManager {
     this.electionTimeoutMaxMs = options.electionTimeoutMaxMs ?? DEFAULT_CLUSTER_ELECTION_TIMEOUT_MAX_MS
     this.discoveryIntervalMs = options.discoveryIntervalMs ?? DEFAULT_CLUSTER_DISCOVERY_INTERVAL_MS
     this.getSelfEndpoints = options.getSelfEndpoints
+    this.handleRpcRequest = options.handleRpcRequest
     this.onStateChange = options.onStateChange
     if (this.configuredMemberIds) {
       for (const memberId of this.configuredMemberIds) {
@@ -226,6 +248,7 @@ export class MdpClusterManager {
     this.closed = true
     this.stopElectionTimer()
     this.stopHeartbeatTimer()
+    this.rejectPendingRpcRequests(new Error('Cluster manager closed'))
 
     if (this.discoveryTimer) {
       clearInterval(this.discoveryTimer)
@@ -250,6 +273,53 @@ export class MdpClusterManager {
     )
     this.links.clear()
     this.peers.clear()
+  }
+
+  async requestLeaderRpc(request: ClusterRpcRequest): Promise<unknown> {
+    const leaderPeer = this.currentLeaderPeer()
+
+    if (!leaderPeer || !this.leaderId || !this.leaderUrl) {
+      throw new Error('No cluster leader is currently available for RPC forwarding')
+    }
+
+    await this.ensurePeerConnection(leaderPeer)
+    const link = this.findOpenLink(leaderPeer)
+
+    if (!link) {
+      throw new Error(`Unable to open a cluster control link to leader ${this.leaderId}`)
+    }
+
+    const requestId = randomUUID()
+
+    return new Promise<unknown>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingRpcRequests.delete(requestId)
+        reject(new Error(`Cluster RPC "${request.method}" timed out while waiting for leader ${this.leaderId}`))
+      }, RPC_TIMEOUT_MS)
+
+      this.pendingRpcRequests.set(requestId, {
+        timeout,
+        resolve,
+        reject
+      })
+
+      try {
+        this.send(link, {
+          type: 'clusterRpcRequest',
+          clusterId: this.clusterId,
+          serverId: this.serverId,
+          term: this.currentTerm,
+          requestId,
+          method: request.method,
+          timestamp: Date.now(),
+          ...(request.params !== undefined ? { params: request.params as JsonValue } : {})
+        } satisfies ClusterRpcRequestMessage)
+      } catch (error) {
+        clearTimeout(timeout)
+        this.pendingRpcRequests.delete(requestId)
+        reject(error instanceof Error ? error : new Error(String(error)))
+      }
+    })
   }
 
   handleConnection(socket: WebSocket): void {
@@ -455,6 +525,12 @@ export class MdpClusterManager {
           peer.outboundOpen = false
         }
       }
+
+      if (peerId === this.leaderId) {
+        this.rejectPendingRpcRequests(
+          new Error(`Cluster control link to leader ${peerId} closed`)
+        )
+      }
     }
   }
 
@@ -528,6 +604,12 @@ export class MdpClusterManager {
         return
       case 'clusterLeaderResign':
         this.handleLeaderResign(message)
+        return
+      case 'clusterRpcRequest':
+        await this.handleRpcRequestMessage(link, message)
+        return
+      case 'clusterRpcResponse':
+        this.handleRpcResponse(message)
         return
     }
   }
@@ -637,6 +719,98 @@ export class MdpClusterManager {
 
     this.clearLeader()
     this.scheduleElection(true)
+  }
+
+  private async handleRpcRequestMessage(
+    link: ClusterPeerLink,
+    message: ClusterRpcRequestMessage
+  ): Promise<void> {
+    if (message.term > this.currentTerm) {
+      this.stepDown(message.term)
+    }
+
+    if (this.role !== 'leader') {
+      this.send(link, {
+        type: 'clusterRpcResponse',
+        clusterId: this.clusterId,
+        serverId: this.serverId,
+        term: this.currentTerm,
+        requestId: message.requestId,
+        ok: false,
+        error: createSerializedError(
+          'not_ready',
+          `Server ${this.serverId} is not the current cluster leader`
+        ),
+        timestamp: Date.now()
+      } satisfies ClusterRpcResponseMessage)
+      return
+    }
+
+    if (!this.handleRpcRequest) {
+      this.send(link, {
+        type: 'clusterRpcResponse',
+        clusterId: this.clusterId,
+        serverId: this.serverId,
+        term: this.currentTerm,
+        requestId: message.requestId,
+        ok: false,
+        error: createSerializedError(
+          'not_ready',
+          `Server ${this.serverId} does not accept forwarded cluster RPC requests`
+        ),
+        timestamp: Date.now()
+      } satisfies ClusterRpcResponseMessage)
+      return
+    }
+
+    try {
+      const result = await this.handleRpcRequest({
+        method: message.method,
+        ...(message.params !== undefined ? { params: message.params } : {})
+      })
+
+      this.send(link, {
+        type: 'clusterRpcResponse',
+        clusterId: this.clusterId,
+        serverId: this.serverId,
+        term: this.currentTerm,
+        requestId: message.requestId,
+        ok: true,
+        ...(result !== undefined ? { result: result as JsonValue } : {}),
+        timestamp: Date.now()
+      } satisfies ClusterRpcResponseMessage)
+    } catch (error) {
+      const normalized = error instanceof Error ? error : new Error(String(error))
+
+      this.send(link, {
+        type: 'clusterRpcResponse',
+        clusterId: this.clusterId,
+        serverId: this.serverId,
+        term: this.currentTerm,
+        requestId: message.requestId,
+        ok: false,
+        error: createSerializedError('handler_error', normalized.message),
+        timestamp: Date.now()
+      } satisfies ClusterRpcResponseMessage)
+    }
+  }
+
+  private handleRpcResponse(message: ClusterRpcResponseMessage): void {
+    const pending = this.pendingRpcRequests.get(message.requestId)
+
+    if (!pending) {
+      return
+    }
+
+    clearTimeout(pending.timeout)
+    this.pendingRpcRequests.delete(message.requestId)
+
+    if (!message.ok) {
+      pending.reject(new Error(message.error?.message ?? 'Cluster RPC failed'))
+      return
+    }
+
+    pending.resolve(message.result ?? null)
   }
 
   private buildVoteResponse(voteGranted: boolean): ClusterVoteResponseMessage {
@@ -905,8 +1079,26 @@ export class MdpClusterManager {
     return this.peers.get(this.leaderId)
   }
 
+  private findOpenLink(peer: ClusterPeerState): ClusterPeerLink | undefined {
+    for (const link of peer.links) {
+      if (link.socket.readyState === WebSocket.OPEN) {
+        return link
+      }
+    }
+
+    return undefined
+  }
+
   private hasRemotePeers(): boolean {
     return this.activePeerCount() > 0
+  }
+
+  private rejectPendingRpcRequests(error: Error): void {
+    for (const [requestId, pending] of this.pendingRpcRequests.entries()) {
+      clearTimeout(pending.timeout)
+      this.pendingRpcRequests.delete(requestId)
+      pending.reject(error)
+    }
   }
 
   private membershipMode(): 'dynamic' | 'static' {
@@ -1061,6 +1253,8 @@ function resolvePeerWsUrl(message: ClusterMessage): string {
     case 'clusterHeartbeatAck':
     case 'clusterVoteResponse':
     case 'clusterLeaderResign':
+    case 'clusterRpcRequest':
+    case 'clusterRpcResponse':
       return ''
   }
 }
@@ -1084,6 +1278,8 @@ function inferPeerRole(
       return 'leader'
     case 'clusterVoteRequest':
       return 'candidate'
+    case 'clusterRpcRequest':
+    case 'clusterRpcResponse':
     default:
       return fallback
   }

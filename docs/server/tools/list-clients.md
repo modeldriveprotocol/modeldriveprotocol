@@ -7,6 +7,8 @@ status: MVP
 
 Use `listClients` to inspect the current registry state and see which MDP clients are online.
 
+In clustered startup modes, the MCP bridge forwards this call to the current leader when needed, so the result reflects the active cluster view instead of only the local node.
+
 ## Input
 
 `listClients` takes no input fields.

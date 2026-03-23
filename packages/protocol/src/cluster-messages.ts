@@ -1,3 +1,6 @@
+import type { SerializedError } from './errors.js'
+import type { JsonValue } from './json.js'
+
 export type ClusterRole = 'leader' | 'follower' | 'candidate'
 
 export interface ClusterHelloMessage {
@@ -67,6 +70,29 @@ export interface ClusterLeaderResignMessage {
   timestamp: number
 }
 
+export interface ClusterRpcRequestMessage {
+  type: 'clusterRpcRequest'
+  clusterId: string
+  serverId: string
+  term: number
+  requestId: string
+  method: string
+  timestamp: number
+  params?: JsonValue
+}
+
+export interface ClusterRpcResponseMessage {
+  type: 'clusterRpcResponse'
+  clusterId: string
+  serverId: string
+  term: number
+  requestId: string
+  ok: boolean
+  timestamp: number
+  result?: JsonValue
+  error?: SerializedError
+}
+
 export type ClusterMessage =
   | ClusterHelloMessage
   | ClusterHeartbeatMessage
@@ -74,3 +100,5 @@ export type ClusterMessage =
   | ClusterVoteRequestMessage
   | ClusterVoteResponseMessage
   | ClusterLeaderResignMessage
+  | ClusterRpcRequestMessage
+  | ClusterRpcResponseMessage

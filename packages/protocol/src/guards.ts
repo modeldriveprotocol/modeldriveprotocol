@@ -1,5 +1,5 @@
 import { protocolErrorCodes } from './errors.js'
-import { isJsonObject } from './json.js'
+import { isJsonObject, isJsonValue } from './json.js'
 import type { ClusterMessage } from './cluster-messages.js'
 import type { MdpMessage } from './messages.js'
 import { capabilityKinds, clientAuthSources, clientConnectionModes } from './models.js'
@@ -292,6 +292,37 @@ export function isClusterMessage(value: unknown): value is ClusterMessage {
         object.term >= 0 &&
         hasString(object, 'leaderId') &&
         typeof object.timestamp === 'number'
+      )
+    case 'clusterRpcRequest':
+      return (
+        hasString(object, 'clusterId') &&
+        hasString(object, 'serverId') &&
+        typeof object.term === 'number' &&
+        Number.isInteger(object.term) &&
+        object.term >= 0 &&
+        hasString(object, 'requestId') &&
+        hasString(object, 'method') &&
+        typeof object.timestamp === 'number' &&
+        (!('params' in object) || isJsonValue(object.params))
+      )
+    case 'clusterRpcResponse':
+      return (
+        hasString(object, 'clusterId') &&
+        hasString(object, 'serverId') &&
+        typeof object.term === 'number' &&
+        Number.isInteger(object.term) &&
+        object.term >= 0 &&
+        hasString(object, 'requestId') &&
+        typeof object.ok === 'boolean' &&
+        typeof object.timestamp === 'number' &&
+        (!('result' in object) || isJsonValue(object.result)) &&
+        (!('error' in object) ||
+          (
+            isJsonObject(object.error) &&
+            isProtocolErrorCode(object.error.code) &&
+            typeof object.error.message === 'string' &&
+            (!('details' in object.error) || isJsonValue(object.error.details))
+          ))
       )
     default:
       return false

@@ -7,6 +7,8 @@ status: MVP
 
 `listClients` 用来查看当前 registry 状态，以及有哪些 MDP client 处于在线状态。
 
+在 cluster 启动模式下，如果当前 MCP bridge 挂在 follower 节点上，这个调用会自动转发到当前 leader，所以返回的是当前 cluster 的有效视图，而不只是本地节点的局部状态。
+
 ## 输入
 
 `listClients` 不接收入参。

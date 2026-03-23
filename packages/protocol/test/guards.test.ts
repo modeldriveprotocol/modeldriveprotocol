@@ -248,22 +248,26 @@ describe('protocol guards', () => {
   it('parses cluster control messages', () => {
     const message = parseClusterMessage(
       JSON.stringify({
-        type: 'clusterHeartbeatAck',
+        type: 'clusterRpcResponse',
         clusterId: 'cluster-local',
         serverId: 'server-01',
         term: 2,
-        followerId: 'server-02',
-        leaderId: 'server-01',
+        requestId: 'rpc-01',
+        ok: true,
+        result: {
+          clients: []
+        },
         timestamp: Date.now()
       })
     )
 
     expect(message).toEqual(expect.objectContaining({
       clusterId: 'cluster-local',
-      type: 'clusterHeartbeatAck',
+      type: 'clusterRpcResponse',
       serverId: 'server-01',
       term: 2,
-      leaderId: 'server-01'
+      requestId: 'rpc-01',
+      ok: true
     }))
   })
 

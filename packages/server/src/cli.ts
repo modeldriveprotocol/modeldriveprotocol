@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
 import { renderHelpText } from './cli-reference.js'
+import { executeBridgeRequest, type BridgeRequest } from './bridge-requests.js'
 import { MdpClusterManager, type ClusterManagerState } from './cluster-manager.js'
 import {
   DEFAULT_CLUSTER_DISCOVERY_INTERVAL_MS,
@@ -122,8 +123,20 @@ export async function runCli(
       void upstreamProxy?.removeClient(client.id)
     }
   })
-  const mcpServer = createMcpBridge(runtime)
   const transport = new StdioServerTransport()
+  const handleBridgeRequest = async (request: BridgeRequest) => {
+    if (
+      clusterManager &&
+      clusterManager.state.role !== 'leader' &&
+      clusterManager.state.leaderId &&
+      clusterManager.state.leaderUrl
+    ) {
+      return clusterManager.requestLeaderRpc(request)
+    }
+
+    return executeBridgeRequest(runtime, request)
+  }
+  const mcpServer = createMcpBridge(handleBridgeRequest)
 
   const queueProxyReconcile = (state: ClusterManagerState): void => {
     reconcileProxyPromise = reconcileProxyPromise
@@ -203,6 +216,7 @@ export async function runCli(
         ws: transportServer.endpoints.ws,
         cluster: transportServer.endpoints.cluster
       }),
+      handleRpcRequest: (request) => executeBridgeRequest(runtime, request as BridgeRequest),
       onStateChange: ({ state, roleChanged, leaderChanged }) => {
         if (roleChanged || leaderChanged) {
           queueProxyReconcile(state)

@@ -1,14 +1,18 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { executeBridgeRequest, type BridgeRequest } from '../src/bridge-requests.js'
+import type { ClientSessionTransport } from '../src/client-session.js'
 import { MdpClusterManager, type ClusterManagerState } from '../src/cluster-manager.js'
 import { MdpServerRuntime } from '../src/mdp-server.js'
 import { MdpTransportServer } from '../src/transport-server.js'
 
 interface ClusterNode {
   serverId: string
+  runtime: MdpServerRuntime
   manager: {
     close(): Promise<void>
     readonly state: ClusterManagerState
+    requestLeaderRpc?(request: { method: string; params?: unknown }): Promise<unknown>
   }
   transportServer: MdpTransportServer
 }
@@ -16,6 +20,7 @@ interface ClusterNode {
 interface StartNodeOptions {
   clusterId?: string
   clusterMembers?: string[]
+  handleRpcRequest?: (request: BridgeRequest) => Promise<unknown>
 }
 
 const nodes: ClusterNode[] = []
@@ -379,6 +384,89 @@ describe('cluster manager', () => {
       'Discovered seed peer node-a is not part of the configured cluster membership'
     )
   })
+
+  it('forwards bridge RPC requests from a follower to the current leader', async () => {
+    const cluster = await Promise.all([
+      startNode('node-a', BASE_PORT),
+      startNode('node-b', BASE_PORT + 1)
+    ])
+    nodes.push(...cluster)
+
+    const leader = await eventually(() => {
+      const leaders = cluster.filter((node) => node.manager.state.role === 'leader')
+      expect(leaders).toHaveLength(1)
+      return leaders[0]!
+    })
+    const follower = cluster.find((node) => node.serverId !== leader.serverId)!
+
+    let leaderSession: ReturnType<MdpServerRuntime['createSession']> | undefined
+    const transport: ClientSessionTransport = {
+      send: vi.fn((message) => {
+        if (message.type !== 'callClient' || !leaderSession) {
+          return
+        }
+
+        leader.runtime.handleMessage(leaderSession, {
+          type: 'callClientResult',
+          requestId: message.requestId,
+          ok: true,
+          data: {
+            echoedTool: message.name ?? 'unknown'
+          }
+        })
+      }),
+      close: vi.fn(),
+      isOpen: vi.fn(() => true),
+      mode: 'ws',
+      secure: false,
+      auth: undefined
+    }
+
+    leaderSession = leader.runtime.createSession('conn-leader-client', transport)
+    leader.runtime.handleMessage(leaderSession, {
+      type: 'registerClient',
+      client: {
+        id: 'leader-client',
+        name: 'Leader Client',
+        tools: [{ name: 'echoTool' }],
+        prompts: [],
+        skills: [],
+        resources: []
+      }
+    })
+
+    await eventually(async () => {
+      const listed = await follower.manager.requestLeaderRpc?.({
+        method: 'listClients'
+      })
+
+      expect(listed).toEqual({
+        clients: [
+          expect.objectContaining({
+            id: 'leader-client',
+            name: 'Leader Client'
+          })
+        ]
+      })
+    })
+
+    const invoked = await follower.manager.requestLeaderRpc?.({
+      method: 'callTools',
+      params: {
+        clientId: 'leader-client',
+        toolName: 'echoTool'
+      }
+    })
+
+    expect(invoked).toEqual(
+      expect.objectContaining({
+        ok: true,
+        data: {
+          echoedTool: 'echoTool'
+        }
+      })
+    )
+  })
 })
 
 async function startNode(serverId: string, port: number, options: StartNodeOptions = {}): Promise<ClusterNode> {
@@ -401,7 +489,9 @@ async function startNode(serverId: string, port: number, options: StartNodeOptio
     getSelfEndpoints: () => ({
       ws: transportServer.endpoints.ws,
       cluster: transportServer.endpoints.cluster
-    })
+    }),
+    handleRpcRequest: (request) =>
+      (options.handleRpcRequest?.(request as BridgeRequest) ?? executeBridgeRequest(runtime, request as BridgeRequest))
   })
 
   transportServer = new MdpTransportServer(runtime, {
@@ -427,6 +517,7 @@ async function startNode(serverId: string, port: number, options: StartNodeOptio
 
   return {
     serverId,
+    runtime,
     manager,
     transportServer
   }
@@ -442,6 +533,9 @@ async function stopNode(node: ClusterNode): Promise<void> {
 function createNoopManager(): ClusterNode['manager'] {
   return {
     close: async () => {},
+    requestLeaderRpc: async () => {
+      throw new Error('No cluster leader available')
+    },
     get state() {
       return {
         id: 'noop-cluster',

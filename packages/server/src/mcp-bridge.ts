@@ -3,11 +3,10 @@ import { z } from 'zod'
 
 import {
   type AuthContext,
-  type CallClientResultMessage,
   MDP_PROTOCOL_VERSION
 } from '@modeldriveprotocol/protocol'
 
-import type { MdpServerRuntime } from './mdp-server.js'
+import type { BridgeRequest } from './bridge-requests.js'
 
 const argsSchema = z.record(z.string(), z.unknown()).optional()
 const authSchema = z
@@ -28,7 +27,9 @@ const callClientsSchema = {
   auth: authSchema
 }
 
-export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
+export type McpBridgeRequestHandler = (request: BridgeRequest) => Promise<unknown>
+
+export function createMcpBridge(handleRequest: McpBridgeRequestHandler): McpServer {
   const server = new McpServer({
     name: 'modeldriveprotocol-server',
     version: MDP_PROTOCOL_VERSION
@@ -39,7 +40,7 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
     {
       description: 'List currently connected MDP clients and their capability summaries.'
     },
-    async () => successResult({ clients: runtime.listClients() })
+    async () => successResult(asStructuredPayload(await handleRequest({ method: 'listClients' })))
   )
 
   server.registerTool(
@@ -48,37 +49,18 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
       description: 'Invoke a capability on one or more MDP clients using the generic bridge surface.',
       inputSchema: callClientsSchema
     },
-    async ({ clientIds, kind, name, uri, args, auth }) => {
-      const targets = clientIds && clientIds.length > 0
-        ? clientIds
-        : runtime.findMatchingClientIds({
+    async ({ clientIds, kind, name, uri, args, auth }) =>
+      successResult(asStructuredPayload(await handleRequest({
+        method: 'callClients',
+        params: {
+          ...(clientIds ? { clientIds } : {}),
           kind,
           ...(name ? { name } : {}),
-          ...(uri ? { uri } : {})
-        })
-
-      if (targets.length === 0) {
-        return errorResult('No matching MDP clients were found')
-      }
-
-      const results = await Promise.all(
-        targets.map(async (clientId) => ({
-          clientId,
-          ...(await unwrapInvocation(
-            runtime.invoke({
-              clientId,
-              kind,
-              ...(name ? { name } : {}),
-              ...(uri ? { uri } : {}),
-              ...(args ? { args } : {}),
-              ...withAuth(auth)
-            })
-          ))
-        }))
-      )
-
-      return successResult({ results })
-    }
+          ...(uri ? { uri } : {}),
+          ...(args ? { args } : {}),
+          ...withAuth(auth)
+        }
+      })))
   )
 
   server.registerTool(
@@ -89,7 +71,11 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
         clientId: z.string().optional()
       }
     },
-    async ({ clientId }) => successResult({ tools: runtime.capabilityIndex.listTools(clientId) })
+    async ({ clientId }) =>
+      successResult(asStructuredPayload(await handleRequest({
+        method: 'listTools',
+        ...(clientId ? { params: { clientId } } : {})
+      })))
   )
 
   server.registerTool(
@@ -105,12 +91,14 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
     },
     async ({ clientId, toolName, args, auth }) =>
       invocationResult(
-        await runtime.invoke({
-          clientId,
-          kind: 'tool',
-          name: toolName,
-          ...(args ? { args } : {}),
-          ...withAuth(auth)
+        await handleRequest({
+          method: 'callTools',
+          params: {
+            clientId,
+            toolName,
+            ...(args ? { args } : {}),
+            ...withAuth(auth)
+          }
         })
       )
   )
@@ -123,7 +111,11 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
         clientId: z.string().optional()
       }
     },
-    async ({ clientId }) => successResult({ prompts: runtime.capabilityIndex.listPrompts(clientId) })
+    async ({ clientId }) =>
+      successResult(asStructuredPayload(await handleRequest({
+        method: 'listPrompts',
+        ...(clientId ? { params: { clientId } } : {})
+      })))
   )
 
   server.registerTool(
@@ -139,12 +131,14 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
     },
     async ({ clientId, promptName, args, auth }) =>
       invocationResult(
-        await runtime.invoke({
-          clientId,
-          kind: 'prompt',
-          name: promptName,
-          ...(args ? { args } : {}),
-          ...withAuth(auth)
+        await handleRequest({
+          method: 'getPrompt',
+          params: {
+            clientId,
+            promptName,
+            ...(args ? { args } : {}),
+            ...withAuth(auth)
+          }
         })
       )
   )
@@ -157,7 +151,11 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
         clientId: z.string().optional()
       }
     },
-    async ({ clientId }) => successResult({ skills: runtime.capabilityIndex.listSkills(clientId) })
+    async ({ clientId }) =>
+      successResult(asStructuredPayload(await handleRequest({
+        method: 'listSkills',
+        ...(clientId ? { params: { clientId } } : {})
+      })))
   )
 
   server.registerTool(
@@ -173,12 +171,14 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
     },
     async ({ clientId, skillName, args, auth }) =>
       invocationResult(
-        await runtime.invoke({
-          clientId,
-          kind: 'skill',
-          name: skillName,
-          ...(args ? { args } : {}),
-          ...withAuth(auth)
+        await handleRequest({
+          method: 'callSkills',
+          params: {
+            clientId,
+            skillName,
+            ...(args ? { args } : {}),
+            ...withAuth(auth)
+          }
         })
       )
   )
@@ -191,7 +191,11 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
         clientId: z.string().optional()
       }
     },
-    async ({ clientId }) => successResult({ resources: runtime.capabilityIndex.listResources(clientId) })
+    async ({ clientId }) =>
+      successResult(asStructuredPayload(await handleRequest({
+        method: 'listResources',
+        ...(clientId ? { params: { clientId } } : {})
+      })))
   )
 
   server.registerTool(
@@ -207,12 +211,14 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
     },
     async ({ clientId, uri, args, auth }) =>
       invocationResult(
-        await runtime.invoke({
-          clientId,
-          kind: 'resource',
-          uri,
-          ...(args ? { args } : {}),
-          ...withAuth(auth)
+        await handleRequest({
+          method: 'readResource',
+          params: {
+            clientId,
+            uri,
+            ...(args ? { args } : {}),
+            ...withAuth(auth)
+          }
         })
       )
   )
@@ -220,22 +226,30 @@ export function createMcpBridge(runtime: MdpServerRuntime): McpServer {
   return server
 }
 
-async function unwrapInvocation(
-  promise: Promise<CallClientResultMessage>
-): Promise<{ ok: boolean; data?: unknown; error?: unknown }> {
-  const result = await promise
-
-  if (result.ok) {
-    return { ok: true, data: result.data }
+function invocationResult(result: unknown) {
+  if (!isInvocationResult(result)) {
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: JSON.stringify(
+            {
+              ok: false,
+              error: { message: 'Invalid invocation result received from bridge handler' }
+            },
+            null,
+            2
+          )
+        }
+      ],
+      structuredContent: {
+        ok: false,
+        error: { message: 'Invalid invocation result received from bridge handler' }
+      },
+      isError: true
+    }
   }
 
-  return {
-    ok: false,
-    error: result.error ?? { message: 'Unknown client error' }
-  }
-}
-
-function invocationResult(result: CallClientResultMessage) {
   if (!result.ok) {
     return {
       content: [
@@ -261,8 +275,19 @@ function invocationResult(result: CallClientResultMessage) {
 
   return successResult({
     ok: true,
-    data: result.data
+    ...(result.data !== undefined ? { data: result.data } : {})
   })
+}
+
+function isInvocationResult(
+  value: unknown
+): value is { ok: boolean; data?: unknown; error?: unknown } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'ok' in value &&
+    typeof (value as { ok: unknown }).ok === 'boolean'
+  )
 }
 
 function successResult(payload: Record<string, unknown>) {
@@ -277,14 +302,24 @@ function successResult(payload: Record<string, unknown>) {
   }
 }
 
+function asStructuredPayload(value: unknown): Record<string, unknown> {
+  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    return value as Record<string, unknown>
+  }
+
+  return {
+    value
+  }
+}
+
 function normalizeAuth(
   auth:
     | {
-      scheme?: string | undefined
-      token?: string | undefined
-      headers?: Record<string, string> | undefined
-      metadata?: Record<string, unknown> | undefined
-    }
+        scheme?: string | undefined
+        token?: string | undefined
+        headers?: Record<string, string> | undefined
+        metadata?: Record<string, unknown> | undefined
+      }
     | undefined
 ): AuthContext | undefined {
   if (!auth) {
@@ -315,36 +350,13 @@ function normalizeAuth(
 function withAuth(
   auth:
     | {
-      scheme?: string | undefined
-      token?: string | undefined
-      headers?: Record<string, string> | undefined
-      metadata?: Record<string, unknown> | undefined
-    }
+        scheme?: string | undefined
+        token?: string | undefined
+        headers?: Record<string, string> | undefined
+        metadata?: Record<string, unknown> | undefined
+      }
     | undefined
 ) {
   const normalized = normalizeAuth(auth)
   return normalized ? { auth: normalized } : {}
-}
-
-function errorResult(message: string) {
-  return {
-    content: [
-      {
-        type: 'text' as const,
-        text: JSON.stringify(
-          {
-            ok: false,
-            error: message
-          },
-          null,
-          2
-        )
-      }
-    ],
-    structuredContent: {
-      ok: false,
-      error: message
-    },
-    isError: true
-  }
 }
