@@ -29,22 +29,33 @@ export class WebSocketClientTransport implements ClientTransport {
       return
     }
 
-    this.socket = this.webSocketFactory(this.serverUrl)
+    const socket = this.webSocketFactory(this.serverUrl)
+    this.socket = socket
 
     await new Promise<void>((resolve, reject) => {
-      const socket = this.socket as WebSocketLike
-
       socket.addEventListener('open', () => {
+        if (!this.isCurrentSocket(socket)) {
+          return
+        }
+
         resolve()
       })
 
       socket.addEventListener('error', () => {
+        if (!this.isCurrentSocket(socket)) {
+          return
+        }
+
         reject(new Error(`Unable to connect to ${this.serverUrl}`))
       })
 
       socket.addEventListener('message', (event) => {
+        if (!this.isCurrentSocket(socket)) {
+          return
+        }
+
         void readMessagePayload(event as MessageEvent).then((payload) => {
-          if (!this.messageHandler) {
+          if (!this.isCurrentSocket(socket) || !this.messageHandler) {
             return
           }
 
@@ -59,6 +70,11 @@ export class WebSocketClientTransport implements ClientTransport {
       })
 
       socket.addEventListener('close', () => {
+        if (!this.isCurrentSocket(socket)) {
+          return
+        }
+
+        this.socket = undefined
         this.closeHandler?.()
       })
     })
@@ -82,6 +98,10 @@ export class WebSocketClientTransport implements ClientTransport {
 
   onClose(handler: () => void): void {
     this.closeHandler = handler
+  }
+
+  private isCurrentSocket(socket: WebSocketLike): boolean {
+    return this.socket === socket
   }
 }
 

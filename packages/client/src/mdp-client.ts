@@ -155,7 +155,7 @@ export class MdpClient {
 
   async connect(): Promise<void> {
     this.reconnectController.beginConnect()
-    await this.openTransport()
+    await this.reconnectController.connect()
   }
 
   setAuth(auth?: AuthContext): this {

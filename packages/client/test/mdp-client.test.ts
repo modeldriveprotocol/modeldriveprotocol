@@ -355,6 +355,107 @@ describe('MdpClient', () => {
     }
   })
 
+  it('keeps retrying reconnect attempts until the transport becomes available again', async () => {
+    vi.useFakeTimers()
+
+    try {
+      const transport = new FakeTransport()
+      let reconnectFailuresRemaining = 2
+
+      transport.connect = vi.fn(async () => {
+        if (transport.connect.mock.calls.length > 1 && reconnectFailuresRemaining > 0) {
+          reconnectFailuresRemaining -= 1
+          throw new Error('server unavailable')
+        }
+      })
+
+      const client = createMdpClient({
+        serverUrl: 'ws://127.0.0.1:7070',
+        client: {
+          id: 'browser-01',
+          name: 'Browser Client'
+        },
+        reconnect: {
+          enabled: true,
+          initialDelayMs: 10,
+          maxDelayMs: 10
+        },
+        transport
+      })
+
+      await client.connect()
+      client.register()
+      transport.emitClose()
+
+      await vi.advanceTimersByTimeAsync(10)
+      await vi.advanceTimersByTimeAsync(10)
+      await vi.advanceTimersByTimeAsync(10)
+
+      await vi.waitFor(() => {
+        expect(transport.connect).toHaveBeenCalledTimes(4)
+        expect(
+          transport.sent.filter((message) => message.type === 'registerClient')
+        ).toHaveLength(2)
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps retrying the initial connect until the transport becomes available', async () => {
+    vi.useFakeTimers()
+
+    try {
+      const transport = new FakeTransport()
+      let initialFailuresRemaining = 2
+
+      transport.connect = vi.fn(async () => {
+        if (initialFailuresRemaining > 0) {
+          initialFailuresRemaining -= 1
+          throw new Error('server unavailable')
+        }
+      })
+
+      const events: string[] = []
+      const client = createMdpClient({
+        serverUrl: 'ws://127.0.0.1:7070',
+        client: {
+          id: 'browser-01',
+          name: 'Browser Client'
+        },
+        reconnect: {
+          enabled: true,
+          initialDelayMs: 10,
+          maxDelayMs: 10,
+          onEvent: (event) => {
+            events.push(event.type)
+          }
+        },
+        transport
+      })
+
+      const connectPromise = client.connect()
+
+      await vi.advanceTimersByTimeAsync(10)
+      await vi.advanceTimersByTimeAsync(10)
+      await vi.advanceTimersByTimeAsync(10)
+      await connectPromise
+
+      expect(transport.connect).toHaveBeenCalledTimes(3)
+      expect(events).toEqual([
+        'reconnectScheduled',
+        'reconnectAttempt',
+        'reconnectScheduled',
+        'reconnectAttempt',
+        'reconnected'
+      ])
+
+      expect(() => client.register()).not.toThrow()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('requires registration before syncing capabilities', async () => {
     const transport = new FakeTransport()
     const client = createMdpClient({

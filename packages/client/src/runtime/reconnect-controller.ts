@@ -16,6 +16,12 @@ interface MdpClientReconnectControllerOptions {
   reconnectTransport: () => Promise<void>
 }
 
+interface PendingReconnect {
+  promise: Promise<void>
+  resolve: () => void
+  reject: (error: Error) => void
+}
+
 const DEFAULT_RECONNECT_INITIAL_DELAY_MS = 1_000
 const DEFAULT_RECONNECT_MAX_DELAY_MS = 30_000
 const DEFAULT_RECONNECT_MULTIPLIER = 2
@@ -28,6 +34,7 @@ export class MdpClientReconnectController {
   private reconnectTimer: ReturnType<typeof setTimeout> | undefined
   private reconnecting = false
   private disconnectRequested = false
+  private pendingReconnect: PendingReconnect | undefined
 
   constructor(options: MdpClientReconnectControllerOptions) {
     this.serverUrl = options.serverUrl
@@ -40,10 +47,25 @@ export class MdpClientReconnectController {
     this.clearReconnectTimer()
   }
 
+  async connect(): Promise<void> {
+    try {
+      await this.reconnectTransport()
+    } catch (error) {
+      const normalized = error instanceof Error ? error : new Error(String(error))
+
+      if (!this.reconnect?.enabled || this.disconnectRequested) {
+        throw normalized
+      }
+
+      await this.ensureReconnectScheduled(normalized)
+    }
+  }
+
   beginDisconnect(): void {
     this.disconnectRequested = true
     this.reconnecting = false
     this.clearReconnectTimer()
+    this.rejectPendingReconnect(new Error(`Reconnect to ${this.serverUrl} was cancelled`))
   }
 
   isDisconnectRequested(): boolean {
@@ -58,9 +80,29 @@ export class MdpClientReconnectController {
     this.emitReconnectEvent({
       type: 'disconnected'
     })
-    this.scheduleReconnect(
+    void this.ensureReconnectScheduled(
       error ?? new Error(`Connection to ${this.serverUrl} was closed`)
-    )
+    ).catch(() => {})
+  }
+
+  private ensureReconnectScheduled(error: Error): Promise<void> {
+    if (!this.pendingReconnect) {
+      let resolvePending!: () => void
+      let rejectPending!: (error: Error) => void
+      const promise = new Promise<void>((resolve, reject) => {
+        resolvePending = resolve
+        rejectPending = reject
+      })
+
+      this.pendingReconnect = {
+        promise,
+        resolve: resolvePending,
+        reject: rejectPending
+      }
+    }
+
+    this.scheduleReconnect(error)
+    return this.pendingReconnect.promise
   }
 
   private scheduleReconnect(error?: Error): void {
@@ -79,11 +121,13 @@ export class MdpClientReconnectController {
       this.reconnect.maxAttempts !== undefined &&
       attempt > this.reconnect.maxAttempts
     ) {
+      const finalError = error ?? new Error(`Unable to reconnect to ${this.serverUrl}`)
       this.emitReconnectEvent({
         type: 'reconnectStopped',
         attempt: this.reconnectAttempt,
-        error: error ?? new Error(`Unable to reconnect to ${this.serverUrl}`)
+        error: finalError
       })
+      this.rejectPendingReconnect(finalError)
       return
     }
 
@@ -124,9 +168,12 @@ export class MdpClientReconnectController {
         type: 'reconnected',
         attempt
       })
+      this.resolvePendingReconnect()
     } catch (error) {
       const normalized = error instanceof Error ? error : new Error(String(error))
+      this.reconnecting = false
       this.scheduleReconnect(normalized)
+      return
     } finally {
       this.reconnecting = false
     }
@@ -139,6 +186,26 @@ export class MdpClientReconnectController {
 
     clearTimeout(this.reconnectTimer)
     this.reconnectTimer = undefined
+  }
+
+  private resolvePendingReconnect(): void {
+    if (!this.pendingReconnect) {
+      return
+    }
+
+    const pending = this.pendingReconnect
+    this.pendingReconnect = undefined
+    pending.resolve()
+  }
+
+  private rejectPendingReconnect(error: Error): void {
+    if (!this.pendingReconnect) {
+      return
+    }
+
+    const pending = this.pendingReconnect
+    this.pendingReconnect = undefined
+    pending.reject(error)
   }
 
   private emitReconnectEvent(event: MdpClientReconnectEvent): void {
