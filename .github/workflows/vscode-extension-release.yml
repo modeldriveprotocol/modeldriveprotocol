@@ -97,7 +97,7 @@ jobs:
         env:
           VSCODE_EXTENSION_PUBLISHER: ${{ vars.VSCODE_EXTENSION_PUBLISHER }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-          ARCHIVE_FILE: dist/${{ needs.build.outputs.archive_file }}
+          ARCHIVE_FILE: ${{ github.workspace }}/dist/${{ needs.build.outputs.archive_file }}
         run: |
           if [ -z "$VSCODE_EXTENSION_PUBLISHER" ] || [ -z "$VSCE_PAT" ]; then
             echo "Skipping VS Code Marketplace publish because VSCODE_EXTENSION_PUBLISHER or VSCE_PAT is not configured."
