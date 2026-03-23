@@ -4,15 +4,21 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc --noEmit -p tsconfig.json --pretty false && node ./scripts/build.mjs",
+    "build": "wxt build -b chrome",
     "clean": "node ../../scripts/clean.mjs",
+    "dev": "wxt -b chrome",
+    "dev:manual": "MDP_WXT_MANUAL=1 wxt -b chrome",
+    "paths": "node ./scripts/print-load-paths.mjs",
     "test": "pnpm -C ../.. exec vitest run --config vitest.config.ts apps/chrome-extension/test",
-    "typecheck": "tsc --noEmit -p tsconfig.json --pretty false"
+    "typecheck": "wxt prepare && tsc --noEmit -p tsconfig.json --pretty false",
+    "zip": "wxt zip -b chrome",
+    "postinstall": "wxt prepare"
   },
   "dependencies": {
     "@modeldriveprotocol/client": "workspace:*"
   },
   "devDependencies": {
-    "@types/chrome": "^0.1.38"
+    "@types/chrome": "^0.1.38",
+    "wxt": "^0.20.19"
   }
 }

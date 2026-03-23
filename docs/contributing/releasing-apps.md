@@ -20,22 +20,21 @@ Use this path when you want a packaged Chrome extension zip attached to a GitHub
 
 ### Operator steps
 
-1. Update the version in `apps/chrome-extension/src/manifest.json`.
-2. Keep `apps/chrome-extension/package.json` on the same version.
-3. Create and push a tag like `chrome-extension-v1.0.0`.
-4. GitHub Actions runs `.github/workflows/chrome-extension-release.yml`.
+1. Update `apps/chrome-extension/package.json` to the release version.
+2. Create and push a tag like `chrome-extension-v1.0.0`.
+3. GitHub Actions runs `.github/workflows/chrome-extension-release.yml`.
 
 ### What the workflow checks
 
-- the tag version matches `manifest.json`
 - the tag version matches `package.json`
+- the generated WXT manifest version matches `package.json`
 
 ### What the workflow does
 
 - typechecks and tests the extension
 - builds shared workspace package dependencies needed for bundling
 - builds the Chrome extension
-- packages `apps/chrome-extension/dist` into a zip
+- packages `apps/chrome-extension/dist/chrome-mv3` into a zip
 - uploads the packaged artifact inside the workflow
 - creates or updates a GitHub release for the tag and attaches the zip
 

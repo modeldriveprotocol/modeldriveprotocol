@@ -33,22 +33,16 @@ jobs:
         env:
           TAG_NAME: ${{ github.ref_name }}
         run: |
-          MANIFEST_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('apps/chrome-extension/src/manifest.json', 'utf8')).version")
           PACKAGE_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('apps/chrome-extension/package.json', 'utf8')).version")
           TAG_VERSION="${TAG_NAME#chrome-extension-v}"
 
-          if [ "$MANIFEST_VERSION" != "$PACKAGE_VERSION" ]; then
-            echo "Manifest version ($MANIFEST_VERSION) does not match package version ($PACKAGE_VERSION)." >&2
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Tag version ($TAG_VERSION) does not match extension version ($PACKAGE_VERSION)." >&2
             exit 1
           fi
 
-          if [ "$TAG_VERSION" != "$MANIFEST_VERSION" ]; then
-            echo "Tag version ($TAG_VERSION) does not match extension version ($MANIFEST_VERSION)." >&2
-            exit 1
-          fi
-
-          echo "value=$MANIFEST_VERSION" >> "$GITHUB_OUTPUT"
-          echo "archive=apps/chrome-extension/mdp-chrome-extension-v$MANIFEST_VERSION.zip" >> "$GITHUB_OUTPUT"
+          echo "value=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "archive=apps/chrome-extension/mdp-chrome-extension-v$PACKAGE_VERSION.zip" >> "$GITHUB_OUTPUT"
 
       - name: Typecheck extension
         run: pnpm --filter @modeldriveprotocol/chrome-extension typecheck
@@ -62,12 +56,22 @@ jobs:
       - name: Build extension
         run: pnpm --filter @modeldriveprotocol/chrome-extension build
 
+      - name: Validate generated manifest version
+        env:
+          EXPECTED_VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          MANIFEST_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('apps/chrome-extension/dist/chrome-mv3/manifest.json', 'utf8')).version")
+          if [ "$MANIFEST_VERSION" != "$EXPECTED_VERSION" ]; then
+            echo "Generated manifest version ($MANIFEST_VERSION) does not match package version ($EXPECTED_VERSION)." >&2
+            exit 1
+          fi
+
       - name: Package extension
         env:
           ARCHIVE_PATH: ${{ steps.version.outputs.archive }}
         run: |
           rm -f "$ARCHIVE_PATH"
-          cd apps/chrome-extension/dist
+          cd apps/chrome-extension/dist/chrome-mv3
           zip -r "../$(basename "$ARCHIVE_PATH")" .
 
       - name: Upload extension artifact

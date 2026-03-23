@@ -27,7 +27,11 @@ declare global {
   }
 }
 
-if (!window.__MDP_CONTENT_SCRIPT_INSTALLED__) {
+export function installContentScript(): void {
+  if (window.__MDP_CONTENT_SCRIPT_INSTALLED__) {
+    return
+  }
+
   window.__MDP_CONTENT_SCRIPT_INSTALLED__ = true
 
   chrome.runtime.onMessage.addListener(

@@ -36,7 +36,11 @@ declare global {
   }
 }
 
-if (!window.__MDP_EXTENSION_BRIDGE_INSTALLED__) {
+export function installInjectedMainWorldBridge(): void {
+  if (window.__MDP_EXTENSION_BRIDGE_INSTALLED__) {
+    return
+  }
+
   const registeredTools = new Map<string, RegisteredTool>()
   const executedScriptIds = (window.__MDP_EXTENSION_EXECUTED_SCRIPT_IDS__ ??= {})
 

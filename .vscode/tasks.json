@@ -2,6 +2,120 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "mdp:chrome-extension dev",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "--filter",
+        "@modeldriveprotocol/chrome-extension",
+        "dev"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "file": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "WXT",
+          "endsPattern": "Started dev server @"
+        }
+      }
+    },
+    {
+      "label": "mdp:chrome-extension dev (manual load)",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "--filter",
+        "@modeldriveprotocol/chrome-extension",
+        "dev:manual"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "file": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "WXT",
+          "endsPattern": "Started dev server @"
+        }
+      }
+    },
+    {
+      "label": "mdp:chrome-extension build",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "--filter",
+        "@modeldriveprotocol/chrome-extension",
+        "build"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "mdp:chrome-extension paths",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "--filter",
+        "@modeldriveprotocol/chrome-extension",
+        "paths"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "mdp:chrome-extension zip",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "--filter",
+        "@modeldriveprotocol/chrome-extension",
+        "zip"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "mdp:vscode-extension build",
       "type": "shell",
       "command": "pnpm",

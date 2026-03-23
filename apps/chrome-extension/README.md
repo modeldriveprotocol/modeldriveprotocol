@@ -16,18 +16,77 @@ It is designed as an MDP client:
 pnpm --filter @modeldriveprotocol/chrome-extension build
 ```
 
-The unpacked extension output is written to:
+This app now uses [WXT](https://wxt.dev/) for extension development and packaging.
+
+## Local development
+
+Choose the loop that matches how you want to debug:
+
+- `dev`: WXT launches a dedicated Chrome for you
+- `dev:manual`: WXT watches and rebuilds, but you load the extension into your own Chrome
+- `build`: one-off production-style unpacked build
+- `paths`: print the exact local directories for manual loading and the persistent dev profile
+
+Quick path check:
 
 ```bash
-apps/chrome-extension/dist
+pnpm --filter @modeldriveprotocol/chrome-extension paths
+```
+
+Use WXT dev mode during local iteration:
+
+```bash
+pnpm --filter @modeldriveprotocol/chrome-extension dev
+```
+
+That starts Chrome with the extension loaded in an isolated development profile, so UI and runtime changes can be checked locally without rebuilding by hand.
+
+If you want to keep using your own Chrome and load the extension manually, use:
+
+```bash
+pnpm --filter @modeldriveprotocol/chrome-extension dev:manual
+```
+
+That runs the WXT dev pipeline without auto-launching a browser. Then load
+`apps/chrome-extension/dist/chrome-mv3-dev` yourself from `chrome://extensions`.
+The WXT config also keeps a persistent Chromium profile under `apps/chrome-extension/.wxt/chrome-data`, so local login state and browser-side dev settings survive restarts.
+
+If you are working in VSCode, the root workspace also includes:
+
+- task: `mdp:chrome-extension dev`
+- task: `mdp:chrome-extension dev (manual load)`
+- task: `mdp:chrome-extension paths`
+- launch config: `MDP Chrome Extension (WXT Dev)`
+- launch config: `MDP Chrome Extension (Manual Load)`
+
+If you want personal runner overrides without committing them, create
+`apps/chrome-extension/web-ext.config.ts`. This path is gitignored. Typical uses:
+
+- disable auto-launched browser and load the unpacked extension yourself
+- point WXT at a different Chrome/Chromium binary
+- use your own local profile or startup URLs
+
+An example template is checked in at
+`apps/chrome-extension/web-ext.config.example.ts`.
+
+For a production-style unpacked build, WXT writes output to:
+
+```bash
+apps/chrome-extension/dist/chrome-mv3
+```
+
+In manual dev mode, WXT writes the development build to:
+
+```bash
+apps/chrome-extension/dist/chrome-mv3-dev
 ```
 
 ## GitHub Actions
 
 - `.github/workflows/chrome-extension-ci.yml`
-  runs on pull requests, pushes to `main`, and manual dispatch when the extension or its shared client/protocol dependencies change. It typechecks, tests, builds, packages `dist` into a zip, and uploads the artifact.
+  runs on pull requests, pushes to `main`, and manual dispatch when the extension or its shared client/protocol dependencies change. It typechecks, tests, builds with WXT, packages `dist/chrome-mv3` into a zip, and uploads the artifact.
 - `.github/workflows/chrome-extension-release.yml`
-  runs on tags that match `chrome-extension-v*`. It validates that the tag version matches both `apps/chrome-extension/package.json` and `src/manifest.json`, then creates or updates a GitHub release with the packaged extension zip.
+  runs on tags that match `chrome-extension-v*`. It validates that the tag version matches `apps/chrome-extension/package.json`, builds the extension with WXT, checks the generated manifest version, then creates or updates a GitHub release with the packaged extension zip.
 
 Example release tag:
 
@@ -41,7 +100,7 @@ git push origin chrome-extension-v1.0.0
 1. Open `chrome://extensions`
 2. Enable Developer mode
 3. Choose Load unpacked
-4. Select `apps/chrome-extension/dist`
+4. Select `apps/chrome-extension/dist/chrome-mv3`
 
 ## Configure
 

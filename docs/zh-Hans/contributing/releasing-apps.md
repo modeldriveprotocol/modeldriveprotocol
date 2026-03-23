@@ -20,22 +20,21 @@ status: Draft
 
 ### 操作步骤
 
-1. 更新 `apps/chrome-extension/src/manifest.json` 中的版本号。
-2. 保持 `apps/chrome-extension/package.json` 版本一致。
-3. 创建并推送类似 `chrome-extension-v1.0.0` 的 tag。
-4. GitHub Actions 会触发 `.github/workflows/chrome-extension-release.yml`。
+1. 更新 `apps/chrome-extension/package.json` 里的版本号。
+2. 创建并推送类似 `chrome-extension-v1.0.0` 的 tag。
+3. GitHub Actions 会触发 `.github/workflows/chrome-extension-release.yml`。
 
 ### workflow 会先校验什么
 
-- tag 版本是否和 `manifest.json` 一致
 - tag 版本是否和 `package.json` 一致
+- WXT 生成出的 manifest 版本是否和 `package.json` 一致
 
 ### workflow 会做什么
 
 - typecheck 和 test
 - 构建扩展打包依赖的共享 workspace packages
 - 构建 Chrome 扩展
-- 把 `apps/chrome-extension/dist` 打成 zip
+- 把 `apps/chrome-extension/dist/chrome-mv3` 打成 zip
 - 在 workflow 内上传构件
 - 创建或更新对应 tag 的 GitHub Release，并附上 zip
 

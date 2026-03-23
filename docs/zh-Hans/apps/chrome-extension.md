@@ -35,6 +35,7 @@ status: Draft
 - background service worker 负责连接 MDP server
 - 命中的页面会注入 content script 处理 DOM 相关操作
 - 插件还能注入 main-world bridge，让页面脚本自行注册工具
+- 本地开发回路由 WXT 驱动
 
 ## 默认暴露的能力
 
@@ -53,7 +54,15 @@ status: Draft
 pnpm --filter @modeldriveprotocol/chrome-extension build
 ```
 
-构建产物位于 `apps/chrome-extension/dist`，然后在 `chrome://extensions` 打开开发者模式并选择 Load unpacked 即可。
+构建产物位于 `apps/chrome-extension/dist/chrome-mv3`，然后在 `chrome://extensions` 打开开发者模式并选择 Load unpacked 即可。
+
+本地迭代时，可以直接跑：
+
+```bash
+pnpm --filter @modeldriveprotocol/chrome-extension dev
+```
+
+这会通过 WXT dev mode 启动一个已加载插件的 Chrome，本地改动后可以直接在这个开发浏览器里看效果，不必每次手动重建再加载。
 
 ## 配置
 

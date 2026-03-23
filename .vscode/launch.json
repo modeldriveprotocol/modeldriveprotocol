@@ -2,6 +2,20 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "MDP Chrome Extension (WXT Dev)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm --filter @modeldriveprotocol/chrome-extension dev",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "MDP Chrome Extension (Manual Load)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "pnpm --filter @modeldriveprotocol/chrome-extension dev:manual",
+      "cwd": "${workspaceFolder}"
+    },
+    {
       "name": "MDP VSCode Extension",
       "type": "extensionHost",
       "request": "launch",

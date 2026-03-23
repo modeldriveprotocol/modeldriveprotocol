@@ -1,16 +1,10 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "./.wxt/tsconfig.json",
   "compilerOptions": {
     "composite": false,
     "incremental": false,
     "declaration": false,
     "declarationMap": false,
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable",
-      "WebWorker"
-    ],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "noEmit": true,
@@ -29,8 +23,11 @@
     "tsBuildInfoFile": "./tsconfig.tsbuildinfo"
   },
   "include": [
+    ".wxt/wxt.d.ts",
+    "entrypoints/**/*.ts",
     "src/**/*.ts",
     "src/**/*.d.ts",
-    "test/**/*.ts"
+    "test/**/*.ts",
+    "wxt.config.ts"
   ]
 }

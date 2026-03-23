@@ -3,6 +3,8 @@ packages/*/node_modules/
 packages/*/dist/
 packages/*/*.tsbuildinfo
 apps/*/dist/
+apps/*/.wxt/
+apps/*/web-ext.config.ts
 apps/*/*.tsbuildinfo
 apps/*/*.vsix
 .DS_Store

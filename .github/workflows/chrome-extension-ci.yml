@@ -55,7 +55,7 @@ jobs:
       - name: Read extension version
         id: version
         run: |
-          VERSION=$(node -p "JSON.parse(require('fs').readFileSync('apps/chrome-extension/src/manifest.json', 'utf8')).version")
+          VERSION=$(node -p "JSON.parse(require('fs').readFileSync('apps/chrome-extension/package.json', 'utf8')).version")
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
           echo "archive=apps/chrome-extension/mdp-chrome-extension-v$VERSION.zip" >> "$GITHUB_OUTPUT"
 
@@ -71,12 +71,22 @@ jobs:
       - name: Build extension
         run: pnpm --filter @modeldriveprotocol/chrome-extension build
 
+      - name: Validate generated manifest version
+        env:
+          EXPECTED_VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          MANIFEST_VERSION=$(node -p "JSON.parse(require('fs').readFileSync('apps/chrome-extension/dist/chrome-mv3/manifest.json', 'utf8')).version")
+          if [ "$MANIFEST_VERSION" != "$EXPECTED_VERSION" ]; then
+            echo "Generated manifest version ($MANIFEST_VERSION) does not match package version ($EXPECTED_VERSION)." >&2
+            exit 1
+          fi
+
       - name: Package extension
         env:
           ARCHIVE_PATH: ${{ steps.version.outputs.archive }}
         run: |
           rm -f "$ARCHIVE_PATH"
-          cd apps/chrome-extension/dist
+          cd apps/chrome-extension/dist/chrome-mv3
           zip -r "../$(basename "$ARCHIVE_PATH")" .
 
       - name: Upload extension artifact

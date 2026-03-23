@@ -35,6 +35,7 @@ The app is built as an MDP client:
 - the background service worker connects to the MDP server
 - matched pages receive a content script for DOM operations
 - the extension can inject a main-world bridge so page-local code can register tools
+- the local development workflow is powered by WXT
 
 ## What it exposes
 
@@ -53,7 +54,15 @@ Build the unpacked extension with:
 pnpm --filter @modeldriveprotocol/chrome-extension build
 ```
 
-Then load `apps/chrome-extension/dist` from `chrome://extensions` with Developer mode enabled.
+Then load `apps/chrome-extension/dist/chrome-mv3` from `chrome://extensions` with Developer mode enabled.
+
+For local iteration, use:
+
+```bash
+pnpm --filter @modeldriveprotocol/chrome-extension dev
+```
+
+That uses WXT dev mode to start Chrome with the extension loaded, so you can inspect changes locally without a manual rebuild/load cycle.
 
 ## Configure
 
