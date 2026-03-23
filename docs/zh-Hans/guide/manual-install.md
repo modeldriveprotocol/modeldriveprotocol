@@ -9,6 +9,8 @@ status: MVP
 
 下面这些例子参考了常见 MCP host 的安装方式，重点覆盖本地 `stdio` 模式，也就是由宿主直接拉起 MDP server。
 
+如果你现在就在这个仓库里开发，而不是使用已经发布好的包，优先使用仓库里的本地 launcher：`scripts/run-local-mdp-mcp.mjs`。`mdp setup --scope project` 也会优先写入这条路径。
+
 ## 常见客户端
 
 ::: details Claude Code
@@ -30,6 +32,15 @@ claude mcp add --scope project mdp -- npx -y @modeldriveprotocol/server
 
 ```bash
 codex mcp add mdp -- npx -y @modeldriveprotocol/server
+```
+
+如果是在这个仓库里本地开发，更推荐项目级配置改成本地 launcher：
+
+```toml
+[mcp_servers.mdp]
+command = "node"
+args = ["scripts/run-local-mdp-mcp.mjs"]
+startup_timeout_sec = 20
 ```
 
 或者把下面这段内容加到 `~/.codex/config.toml` 或 `.codex/config.toml`：

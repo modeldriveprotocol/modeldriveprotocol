@@ -9,6 +9,8 @@ Use this page when you want to configure MDP explicitly instead of relying on `n
 
 The examples below follow the client-specific installation patterns commonly used in MCP hosts. This page focuses on local MCP server setups, where the host launches MDP over `stdio`.
 
+If you are working inside this repository checkout instead of consuming a published package, prefer the local launcher at `scripts/run-local-mdp-mcp.mjs`. That keeps the host pointed at your checked-out server code and matches what `mdp setup --scope project` writes automatically.
+
 ## Common Clients
 
 ::: details Claude Code
@@ -30,6 +32,15 @@ Using the Codex CLI:
 
 ```bash
 codex mcp add mdp -- npx -y @modeldriveprotocol/server
+```
+
+Inside this repository, prefer project scope with the local launcher:
+
+```toml
+[mcp_servers.mdp]
+command = "node"
+args = ["scripts/run-local-mdp-mcp.mjs"]
+startup_timeout_sec = 20
 ```
 
 Or add this to `~/.codex/config.toml` or `.codex/config.toml`:

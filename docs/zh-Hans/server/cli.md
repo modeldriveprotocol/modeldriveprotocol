@@ -97,6 +97,8 @@ npx @modeldriveprotocol/server setup
 - `--scope user|project`：在支持的 host 里选择用户级或项目级
 - `--dry-run`：只预览要写入的变更，不真正落盘
 
+如果 `setup` 是在这个仓库里运行，并且检测到 `scripts/run-local-mdp-mcp.mjs`，项目级配置会优先写入这个本地 launcher，而不是 `npx`。这样 Codex、Cursor、Claude 在开发阶段会直接指向当前 checkout 里的 server 代码。
+
 ## 核心参数
 
 <!-- GENERATED:core-options:start -->

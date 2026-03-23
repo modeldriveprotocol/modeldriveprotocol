@@ -236,6 +236,53 @@ describe('setup command', () => {
       args: [path.join('scripts', 'run-local-mdp-mcp.mjs')]
     })
   })
+
+  it('uses an absolute local launcher path for user-scope config when running inside the repo', async () => {
+    const sandbox = await createSandbox({ withLocalLauncher: true })
+    const runCommand = vi.fn(async () => {})
+    const launcherPath = path.join(sandbox.cwd, 'scripts', 'run-local-mdp-mcp.mjs')
+
+    await runSetupCommand(
+      {
+        scope: 'user',
+        targets: ['claude', 'codex', 'cursor'],
+        name: 'mdp',
+        dryRun: false
+      },
+      silentIo(),
+      {
+        cwd: sandbox.cwd,
+        homeDir: sandbox.homeDir,
+        readTextFile: async (filePath) => await readFile(filePath, 'utf8'),
+        writeTextFile: sandbox.writeTextFile,
+        ensureDir: sandbox.ensureDir,
+        runCommand
+      }
+    )
+
+    expect(runCommand).toHaveBeenCalledWith('claude', [
+      'mcp',
+      'add',
+      '--scope',
+      'user',
+      'mdp',
+      '--',
+      'node',
+      launcherPath
+    ])
+
+    const codexConfig = await readFile(path.join(sandbox.homeDir, '.codex', 'config.toml'), 'utf8')
+    expect(codexConfig).toContain('command = "node"')
+    expect(codexConfig).toContain(JSON.stringify([launcherPath]))
+
+    const cursorConfig = JSON.parse(
+      await readFile(path.join(sandbox.homeDir, '.cursor', 'mcp.json'), 'utf8')
+    ) as { mcpServers: Record<string, { command: string, args: string[] }> }
+    expect(cursorConfig.mcpServers.mdp).toEqual({
+      command: 'node',
+      args: [launcherPath]
+    })
+  })
 })
 
 async function createSandbox(options?: { withLocalLauncher?: boolean }): Promise<{

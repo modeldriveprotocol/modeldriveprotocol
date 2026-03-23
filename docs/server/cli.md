@@ -97,6 +97,8 @@ The setup command supports:
 - `--scope user|project` to choose user or project scope where supported
 - `--dry-run` to preview changes without writing config
 
+When `setup` runs inside this repository and finds `scripts/run-local-mdp-mcp.mjs`, project-scope host configs use that local launcher instead of `npx`. That keeps Codex, Cursor, and Claude pointed at the checked-out server code during development.
+
 ## Core Options
 
 <!-- GENERATED:core-options:start -->
