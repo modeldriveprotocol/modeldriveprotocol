@@ -17,13 +17,13 @@ export const STORAGE_KEY = 'extensionConfig'
 export const DEFAULT_EXTENSION_CONFIG: ExtensionConfig = {
   serverUrl: 'ws://127.0.0.1:47372',
   clientId: 'mdp-chrome-extension',
-  clientName: 'MDP Chrome Extension',
-  clientDescription: 'Chrome extension bridge that exposes extension and page capabilities through MDP.',
+  clientName: 'Model Drive Protocol for Chrome',
+  clientDescription: 'Chrome extension runtime that exposes browser and page capabilities through Model Drive Protocol.',
   autoConnect: true,
   autoInjectBridge: true,
   matchPatterns: [],
   toolScriptSource: '',
-  notificationTitle: 'MDP Chrome Extension'
+  notificationTitle: 'Model Drive Protocol for Chrome'
 }
 
 export function normalizeConfig(value: unknown): ExtensionConfig {

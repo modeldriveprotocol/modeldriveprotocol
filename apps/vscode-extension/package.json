@@ -3,14 +3,28 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "displayName": "MDP VSCode Client",
-  "description": "VSCode extension that exposes editor and workspace capabilities through the MDP client.",
+  "license": "MIT",
+  "displayName": "Model Drive Protocol for VS Code",
+  "description": "Connect VS Code workspace, editor, review, and resource capabilities to Model Drive Protocol.",
+  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.100.0"
   },
   "categories": [
+    "Machine Learning",
     "Other"
   ],
+  "keywords": [
+    "mdp",
+    "mcp",
+    "model-drive-protocol",
+    "vscode",
+    "agent-tools"
+  ],
+  "homepage": "https://github.com/modeldriveprotocol/modeldriveprotocol/tree/main/apps/vscode-extension",
+  "bugs": {
+    "url": "https://github.com/modeldriveprotocol/modeldriveprotocol/issues"
+  },
   "activationEvents": [
     "onStartupFinished",
     "onCommand:mdp.connect",
@@ -128,6 +142,11 @@
   },
   "mdpRelease": {
     "extensionName": "mdp-vscode-extension"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/modeldriveprotocol/modeldriveprotocol.git",
+    "directory": "apps/vscode-extension"
   },
   "dependencies": {
     "@modeldriveprotocol/client": "workspace:*"

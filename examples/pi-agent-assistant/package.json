@@ -2,6 +2,7 @@
   "name": "mdp-pi-agent-assistant-example",
   "private": true,
   "type": "module",
+  "license": "MIT",
   "scripts": {
     "start:agent": "node ./agent-runner.mjs",
     "start:web": "python3 -m http.server 4173"

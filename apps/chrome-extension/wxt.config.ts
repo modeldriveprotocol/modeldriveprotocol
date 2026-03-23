@@ -19,12 +19,25 @@ export default defineConfig({
         })
   },
   manifest: {
-    name: 'MDP Chrome Extension',
-    description: 'Expose Chrome extension abilities and page-local injected tools through Model Drive Protocol.',
+    name: 'Model Drive Protocol for Chrome',
+    short_name: 'MDP Chrome',
+    description: 'Connect Chrome tabs, extension actions, and page-local tools to Model Drive Protocol.',
+    author: 'Model Drive Protocol',
+    homepage_url: 'https://github.com/modeldriveprotocol/modeldriveprotocol',
+    icons: {
+      16: 'icons/icon-16.png',
+      32: 'icons/icon-32.png',
+      48: 'icons/icon-48.png',
+      128: 'icons/icon-128.png'
+    },
     permissions: ['storage', 'scripting', 'tabs', 'activeTab', 'notifications'],
     optional_host_permissions: ['<all_urls>'],
     action: {
-      default_title: 'MDP Chrome Extension'
+      default_title: 'Model Drive Protocol for Chrome',
+      default_icon: {
+        16: 'icons/icon-16.png',
+        32: 'icons/icon-32.png'
+      }
     }
   },
   vite: () => ({

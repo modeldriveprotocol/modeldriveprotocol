@@ -1,6 +1,7 @@
 {
   "name": "modeldriveprotocol",
   "private": true,
+  "license": "MIT",
   "packageManager": "pnpm@10.28.0",
   "scripts": {
     "build": "pnpm --filter @modeldriveprotocol/protocol build && pnpm --filter @modeldriveprotocol/client build && pnpm --filter @modeldriveprotocol/server build && pnpm --filter @modeldriveprotocol/browser-simple-mdp-client build && pnpm --filter @modeldriveprotocol/nodejs-simple-mdp-client build && pnpm --filter @modeldriveprotocol/vscode-extension build && pnpm --filter @modeldriveprotocol/chrome-extension build",

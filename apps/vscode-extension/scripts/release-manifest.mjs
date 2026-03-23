@@ -1,4 +1,4 @@
-import { access, cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { access, cp, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -62,6 +62,18 @@ export async function createReleaseStage(options = {}) {
   })
   await cp(readmePath, resolve(stageDir, 'README.md'))
 
+  if (typeof sourceManifest.icon === 'string' && sourceManifest.icon.trim().length > 0) {
+    const iconPath = sourceManifest.icon.trim()
+    const sourceIconPath = resolve(appRoot, iconPath)
+    const stagedIconPath = resolve(stageDir, iconPath)
+
+    await access(sourceIconPath)
+    await mkdir(dirname(stagedIconPath), {
+      recursive: true
+    })
+    await cp(sourceIconPath, stagedIconPath)
+  }
+
   const releaseManifest = {
     name: extensionName,
     publisher,
@@ -71,11 +83,19 @@ export async function createReleaseStage(options = {}) {
     type: sourceManifest.type,
     engines: sourceManifest.engines,
     categories: sourceManifest.categories,
+    keywords: sourceManifest.keywords,
     activationEvents: sourceManifest.activationEvents,
     main: sourceManifest.main,
+    icon: sourceManifest.icon,
+    homepage: sourceManifest.homepage,
+    bugs: sourceManifest.bugs,
+    license: sourceManifest.license,
     files: [
       'dist/**',
-      'README.md'
+      'README.md',
+      ...(typeof sourceManifest.icon === 'string' && sourceManifest.icon.trim().length > 0
+        ? [sourceManifest.icon.trim()]
+        : [])
     ],
     contributes: sourceManifest.contributes,
     repository: {

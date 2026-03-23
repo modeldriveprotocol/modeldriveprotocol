@@ -2,6 +2,7 @@
   "name": "@modeldriveprotocol/client",
   "version": "1.0.0",
   "type": "module",
+  "license": "MIT",
   "description": "JavaScript client SDK and browser bundle for Model Drive Protocol.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -2,6 +2,7 @@
   "name": "@modeldriveprotocol/protocol",
   "version": "1.0.0",
   "type": "module",
+  "license": "MIT",
   "description": "Protocol models, messages, guards, and errors for Model Drive Protocol.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -2,6 +2,7 @@
   "name": "@modeldriveprotocol/vercel-ai-cli-agent-example",
   "private": true,
   "type": "module",
+  "license": "MIT",
   "bin": {
     "mdp-test": "./cli.mjs"
   },
