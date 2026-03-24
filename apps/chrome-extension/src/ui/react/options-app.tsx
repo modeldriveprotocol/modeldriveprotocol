@@ -40,6 +40,7 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Popover,
   Snackbar,
   Stack,
   Switch,
@@ -101,8 +102,8 @@ import {
   serializeWorkspaceBundle,
   summarizeWorkspaceBundleText
 } from './workspace-bundle.js'
-
 import { WorkspaceBundleEditor } from './workspace-bundle-editor.js'
+
 type Section = 'workspace' | 'settings' | 'clients' | 'market'
 type TransferMode = 'import' | 'export'
 type ClientDetailTab = 'basics' | 'matching' | 'runtime' | 'assets'
@@ -1517,6 +1518,11 @@ function ClientsSection({
   const { t } = useI18n()
   const [createMenuAnchor, setCreateMenuAnchor] = useState<HTMLElement | null>(null)
   const [clientTypeFilter, setClientTypeFilter] = useState<'all' | 'background' | 'route'>('all')
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    anchorEl: HTMLElement
+    ids: EditableClientId[]
+    names: string[]
+  } | undefined>()
   const [selectedIds, setSelectedIds] = useState<EditableClientId[]>([])
   const backgroundRuntimeState = runtimeState?.clients.find((client) => client.kind === 'background')
   const currentPageUrl = runtimeState?.activeTab?.url
@@ -1608,6 +1614,19 @@ function ClientsSection({
     })
   }
 
+  function requestDeleteClients(clientIds: EditableClientId[], anchorEl: HTMLElement) {
+    const routeClients = draft.routeClients.filter((client) => clientIds.includes(client.id))
+    if (routeClients.length === 0) {
+      return
+    }
+
+    setDeleteConfirmation({
+      anchorEl,
+      ids: routeClients.map((client) => client.id),
+      names: routeClients.map((client) => client.clientName)
+    })
+  }
+
   function deleteClients(clientIds: EditableClientId[]) {
     const nextSelection = selectedClientId && clientIds.includes(selectedClientId) ? undefined : selectedClientId
     onChange({
@@ -1632,7 +1651,6 @@ function ClientsSection({
     }
 
     if (action === 'delete') {
-      deleteClients(selectedIds.filter((id) => id !== 'background'))
       return
     }
 
@@ -1662,231 +1680,280 @@ function ClientsSection({
     })
   }
 
+  function requestBulkDelete(event: MouseEvent<HTMLButtonElement>) {
+    requestDeleteClients(selectedIds.filter((id) => id !== 'background'), event.currentTarget)
+  }
+
+  function confirmDeleteClients() {
+    if (!deleteConfirmation) {
+      return
+    }
+
+    deleteClients(deleteConfirmation.ids)
+    setDeleteConfirmation(undefined)
+  }
+
   const allVisibleSelected = filteredClients.length > 0 && filteredClients.every((item) => selectedIds.includes(item.id))
   const hasAnyRouteSelected = selectedIds.some((id) => id !== 'background')
+  const deleteConfirmationOpen = Boolean(deleteConfirmation)
+  const deleteConfirmationCount = deleteConfirmation?.names.length ?? 0
+  const deleteConfirmationDescription =
+    deleteConfirmationCount > 1
+      ? t('options.clients.confirmDelete.body.multiple', { count: deleteConfirmationCount })
+      : t('options.clients.confirmDelete.body.single', { name: deleteConfirmation?.names[0] ?? '' })
+  const deleteConfirmationPopup = (
+    <Popover
+      open={deleteConfirmationOpen}
+      anchorEl={deleteConfirmation?.anchorEl ?? null}
+      onClose={() => setDeleteConfirmation(undefined)}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+    >
+      <Stack spacing={1} sx={{ p: 1.25, maxWidth: 280 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+          {t('options.clients.confirmDelete.title')}
+        </Typography>
+        <Typography variant="body2">{deleteConfirmationDescription}</Typography>
+        <Typography variant="caption" color="text.secondary">
+          {t('options.clients.confirmDelete.hint')}
+        </Typography>
+        <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ pt: 0.5 }}>
+          <Button size="small" onClick={() => setDeleteConfirmation(undefined)}>
+            {t('options.clients.confirmDelete.cancel')}
+          </Button>
+          <Button size="small" color="error" variant="contained" onClick={confirmDeleteClients}>
+            {t('options.clients.confirmDelete.confirm')}
+          </Button>
+        </Stack>
+      </Stack>
+    </Popover>
+  )
 
   if (!clientDetailOpen) {
     return (
-      <Stack spacing={1.25}>
-        <Stack spacing={1} sx={{ px: 1.25, py: 1 }}>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder={t('options.clients.search')}
-              value={routeSearch}
-              onChange={(event) => onRouteSearchChange(event.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchOutlined fontSize="small" />
-                  </InputAdornment>
-                )
-              }}
-            />
-            <Button
-              variant="contained"
-              onClick={(event) => setCreateMenuAnchor(event.currentTarget)}
-              sx={{ minWidth: 40, px: 1.25 }}
-            >
-              <AddOutlined fontSize="small" />
-            </Button>
-          </Stack>
-          <Menu
-            anchorEl={createMenuAnchor}
-            open={Boolean(createMenuAnchor)}
-            onClose={() => setCreateMenuAnchor(null)}
-          >
-            <MenuItem
-              onClick={() => {
-                setCreateMenuAnchor(null)
-                onCreateClient('route')
-              }}
-            >
-              {t('options.clients.type.route')}
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                setCreateMenuAnchor(null)
-                onCreateClient('background')
-              }}
-            >
-              {t('options.clients.type.background')}
-            </MenuItem>
-            <MenuItem
-              disabled={!canCreateFromPage}
-              onClick={() => {
-                setCreateMenuAnchor(null)
-                onCreateClientFromPage()
-              }}
-            >
-              {t('options.clients.addFromPage')}
-            </MenuItem>
-          </Menu>
-
-          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              value={clientTypeFilter}
-              onChange={(_event, nextValue: 'all' | 'background' | 'route' | null) => {
-                if (nextValue) {
-                  setClientTypeFilter(nextValue)
-                }
-              }}
-            >
-              <ToggleButton value="all">{t('options.clients.filter.all')}</ToggleButton>
-              <ToggleButton value="background">{t('options.clients.type.background')}</ToggleButton>
-              <ToggleButton value="route">{t('options.clients.type.route')}</ToggleButton>
-            </ToggleButtonGroup>
-            {filteredClients.length > 0 ? (
-              <Checkbox
+      <>
+        <Stack spacing={1.25}>
+          <Stack spacing={1} sx={{ px: 1.25, py: 1 }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <TextField
+                fullWidth
                 size="small"
-                checked={allVisibleSelected}
-                indeterminate={!allVisibleSelected && selectedIds.length > 0}
-                onChange={(_event, checked) =>
-                  setSelectedIds(checked ? filteredClients.map((item) => item.id) : [])
-                }
+                placeholder={t('options.clients.search')}
+                value={routeSearch}
+                onChange={(event) => onRouteSearchChange(event.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchOutlined fontSize="small" />
+                    </InputAdornment>
+                  )
+                }}
               />
+              <Button
+                variant="contained"
+                onClick={(event) => setCreateMenuAnchor(event.currentTarget)}
+                sx={{ minWidth: 40, px: 1.25 }}
+              >
+                <AddOutlined fontSize="small" />
+              </Button>
+            </Stack>
+            <Menu
+              anchorEl={createMenuAnchor}
+              open={Boolean(createMenuAnchor)}
+              onClose={() => setCreateMenuAnchor(null)}
+            >
+              <MenuItem
+                onClick={() => {
+                  setCreateMenuAnchor(null)
+                  onCreateClient('route')
+                }}
+              >
+                {t('options.clients.type.route')}
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setCreateMenuAnchor(null)
+                  onCreateClient('background')
+                }}
+              >
+                {t('options.clients.type.background')}
+              </MenuItem>
+              <MenuItem
+                disabled={!canCreateFromPage}
+                onClick={() => {
+                  setCreateMenuAnchor(null)
+                  onCreateClientFromPage()
+                }}
+              >
+                {t('options.clients.addFromPage')}
+              </MenuItem>
+            </Menu>
+
+            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+              <ToggleButtonGroup
+                exclusive
+                size="small"
+                value={clientTypeFilter}
+                onChange={(_event, nextValue: 'all' | 'background' | 'route' | null) => {
+                  if (nextValue) {
+                    setClientTypeFilter(nextValue)
+                  }
+                }}
+              >
+                <ToggleButton value="all">{t('options.clients.filter.all')}</ToggleButton>
+                <ToggleButton value="background">{t('options.clients.type.background')}</ToggleButton>
+                <ToggleButton value="route">{t('options.clients.type.route')}</ToggleButton>
+              </ToggleButtonGroup>
+              {filteredClients.length > 0 ? (
+                <Checkbox
+                  size="small"
+                  checked={allVisibleSelected}
+                  indeterminate={!allVisibleSelected && selectedIds.length > 0}
+                  onChange={(_event, checked) =>
+                    setSelectedIds(checked ? filteredClients.map((item) => item.id) : [])
+                  }
+                />
+              ) : null}
+            </Stack>
+
+            {selectedIds.length > 0 ? (
+              <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+                <Typography variant="caption" color="text.secondary">
+                  {t('options.clients.selected', { count: selectedIds.length })}
+                </Typography>
+                <Stack direction="row" spacing={0.5}>
+                  <ToolbarIcon label={t('options.clients.enable')} onClick={() => applyBulk('enable')}>
+                    <WindowOutlined fontSize="small" />
+                  </ToolbarIcon>
+                  <ToolbarIcon label={t('options.clients.disable')} onClick={() => applyBulk('disable')}>
+                    <DeleteOutlineOutlined fontSize="small" sx={{ transform: 'rotate(45deg)' }} />
+                  </ToolbarIcon>
+                  <ToolbarIcon label={t('options.clients.favorite')} onClick={() => applyBulk('favorite')}>
+                    <StarOutlined fontSize="small" />
+                  </ToolbarIcon>
+                  <ToolbarIcon label={t('options.clients.unfavorite')} onClick={() => applyBulk('unfavorite')}>
+                    <StarBorderOutlined fontSize="small" />
+                  </ToolbarIcon>
+                  <ToolbarIcon
+                    label={t('options.clients.delete')}
+                    onClick={requestBulkDelete}
+                    disabled={!hasAnyRouteSelected}
+                  >
+                    <DeleteOutlineOutlined fontSize="small" />
+                  </ToolbarIcon>
+                </Stack>
+              </Stack>
             ) : null}
           </Stack>
 
-          {selectedIds.length > 0 ? (
-            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-              <Typography variant="caption" color="text.secondary">
-                {t('options.clients.selected', { count: selectedIds.length })}
-              </Typography>
-              <Stack direction="row" spacing={0.5}>
-                <ToolbarIcon label={t('options.clients.enable')} onClick={() => applyBulk('enable')}>
-                  <WindowOutlined fontSize="small" />
-                </ToolbarIcon>
-                <ToolbarIcon label={t('options.clients.disable')} onClick={() => applyBulk('disable')}>
-                  <DeleteOutlineOutlined fontSize="small" sx={{ transform: 'rotate(45deg)' }} />
-                </ToolbarIcon>
-                <ToolbarIcon label={t('options.clients.favorite')} onClick={() => applyBulk('favorite')}>
-                  <StarOutlined fontSize="small" />
-                </ToolbarIcon>
-                <ToolbarIcon label={t('options.clients.unfavorite')} onClick={() => applyBulk('unfavorite')}>
-                  <StarBorderOutlined fontSize="small" />
-                </ToolbarIcon>
-                <ToolbarIcon
-                  label={t('options.clients.delete')}
-                  onClick={() => applyBulk('delete')}
-                  disabled={!hasAnyRouteSelected}
-                >
-                  <DeleteOutlineOutlined fontSize="small" />
-                </ToolbarIcon>
-              </Stack>
-            </Stack>
-          ) : null}
-        </Stack>
+          <Divider />
 
-        <Divider />
-
-        <List dense disablePadding sx={{ px: 0.75, py: 0.5 }}>
-          {filteredClients.length === 0 ? (
-            <ListItem disablePadding sx={{ px: 1.25, py: 1.5 }}>
-              <ListItemText
-                primary={t('options.clients.emptySearch')}
-                secondary={t('options.clients.emptySearchHint')}
-                primaryTypographyProps={{ variant: 'body2' }}
-                secondaryTypographyProps={{ variant: 'caption' }}
-              />
-            </ListItem>
-          ) : (
-            filteredClients.map((item) => {
-              const matched =
-                item.kind === 'route'
-                  ? Boolean(
-                      currentPageUrl &&
-                        canCreateRouteClientFromUrl(currentPageUrl) &&
-                        matchesRouteClient(currentPageUrl, item.client)
-                    )
-                  : false
-              const tone =
-                item.kind === 'background'
-                  ? backgroundRuntimeState?.connectionState === 'connected'
-                    ? 'success.main'
-                    : item.client.enabled
-                      ? 'text.secondary'
-                      : 'error.main'
-                  : matched
-                    ? 'success.main'
-                    : item.client.enabled
-                      ? 'text.secondary'
-                      : 'error.main'
-              return (
-                <ListItem key={item.id} disablePadding>
-                  <ListItemButton
-                    selected={selectedClientId === item.id}
-                    onClick={() => {
-                      onSelectClient(item.id)
-                      onOpenDetail(item.id)
-                    }}
-                    sx={{
-                      minHeight: 60,
-                      px: 1.25,
-                      py: 0.75,
-                      alignItems: 'center',
-                      borderLeft: '2px solid',
-                      borderLeftColor: selectedClientItem?.id === item.id ? 'primary.main' : 'transparent'
-                    }}
-                  >
-                    <Checkbox
-                      edge="start"
-                      size="small"
-                      checked={selectedIds.includes(item.id)}
-                      onClick={(event) => event.stopPropagation()}
-                      onChange={(_event, checked) => toggleSelected(item.id, checked)}
-                      sx={{ mr: 0.5 }}
-                    />
-                    <ListItemIcon sx={{ minWidth: 32, color: 'text.secondary' }}>
-                      {renderClientIcon(item.client.icon)}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={item.client.clientName}
-                      secondary={item.kind === 'background' ? t('options.clients.type.background') : t('options.clients.type.route')}
-                      primaryTypographyProps={{ variant: 'body2', fontWeight: 600, noWrap: true }}
-                      secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
-                    />
-                    <Stack direction="row" spacing={0.25} sx={{ pl: 1 }} onClick={(event) => event.stopPropagation()}>
-                      <ToolbarIcon
-                        label={item.client.favorite ? t('options.clients.unfavorite') : t('options.clients.favorite')}
-                        onClick={() =>
-                          updateDraftClient(item.id, (client) => ({
-                            ...client,
-                            favorite: !client.favorite
-                          }))
-                        }
-                      >
-                        {item.client.favorite ? <StarOutlined fontSize="small" /> : <StarBorderOutlined fontSize="small" />}
-                      </ToolbarIcon>
-                      <Switch
+          <List dense disablePadding sx={{ px: 0.75, py: 0.5 }}>
+            {filteredClients.length === 0 ? (
+              <ListItem disablePadding sx={{ px: 1.25, py: 1.5 }}>
+                <ListItemText
+                  primary={t('options.clients.emptySearch')}
+                  secondary={t('options.clients.emptySearchHint')}
+                  primaryTypographyProps={{ variant: 'body2' }}
+                  secondaryTypographyProps={{ variant: 'caption' }}
+                />
+              </ListItem>
+            ) : (
+              filteredClients.map((item) => {
+                const matched =
+                  item.kind === 'route'
+                    ? Boolean(
+                        currentPageUrl &&
+                          canCreateRouteClientFromUrl(currentPageUrl) &&
+                          matchesRouteClient(currentPageUrl, item.client)
+                      )
+                    : false
+                const tone =
+                  item.kind === 'background'
+                    ? backgroundRuntimeState?.connectionState === 'connected'
+                      ? 'success.main'
+                      : item.client.enabled
+                        ? 'text.secondary'
+                        : 'error.main'
+                    : matched
+                      ? 'success.main'
+                      : item.client.enabled
+                        ? 'text.secondary'
+                        : 'error.main'
+                return (
+                  <ListItem key={item.id} disablePadding>
+                    <ListItemButton
+                      selected={selectedClientId === item.id}
+                      onClick={() => {
+                        onSelectClient(item.id)
+                        onOpenDetail(item.id)
+                      }}
+                      sx={{
+                        minHeight: 60,
+                        px: 1.25,
+                        py: 0.75,
+                        alignItems: 'center',
+                        borderLeft: '2px solid',
+                        borderLeftColor: selectedClientItem?.id === item.id ? 'primary.main' : 'transparent'
+                      }}
+                    >
+                      <Checkbox
+                        edge="start"
                         size="small"
-                        checked={item.client.enabled}
-                        onChange={(_event, checked) =>
-                          updateDraftClient(item.id, (client) => ({
-                            ...client,
-                            enabled: checked
-                          }))
-                        }
+                        checked={selectedIds.includes(item.id)}
+                        onClick={(event) => event.stopPropagation()}
+                        onChange={(_event, checked) => toggleSelected(item.id, checked)}
+                        sx={{ mr: 0.5 }}
                       />
-                      {item.kind === 'route' ? (
+                      <ListItemIcon sx={{ minWidth: 32, color: 'text.secondary' }}>
+                        {renderClientIcon(item.client.icon)}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={item.client.clientName}
+                        secondary={item.kind === 'background' ? t('options.clients.type.background') : t('options.clients.type.route')}
+                        primaryTypographyProps={{ variant: 'body2', fontWeight: 600, noWrap: true }}
+                        secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
+                      />
+                      <Stack direction="row" spacing={0.25} sx={{ pl: 1 }} onClick={(event) => event.stopPropagation()}>
                         <ToolbarIcon
-                          label={t('options.clients.delete')}
-                          onClick={() => deleteClients([item.id])}
+                          label={item.client.favorite ? t('options.clients.unfavorite') : t('options.clients.favorite')}
+                          onClick={() =>
+                            updateDraftClient(item.id, (client) => ({
+                              ...client,
+                              favorite: !client.favorite
+                            }))
+                          }
                         >
-                          <DeleteOutlineOutlined fontSize="small" />
+                          {item.client.favorite ? <StarOutlined fontSize="small" /> : <StarBorderOutlined fontSize="small" />}
                         </ToolbarIcon>
-                      ) : null}
-                    </Stack>
-                  </ListItemButton>
-                </ListItem>
-              )
-            })
-          )}
-        </List>
-      </Stack>
+                        <Switch
+                          size="small"
+                          checked={item.client.enabled}
+                          onChange={(_event, checked) =>
+                            updateDraftClient(item.id, (client) => ({
+                              ...client,
+                              enabled: checked
+                            }))
+                          }
+                        />
+                        {item.kind === 'route' ? (
+                          <ToolbarIcon
+                            label={t('options.clients.delete')}
+                            onClick={(event) => requestDeleteClients([item.id], event.currentTarget)}
+                          >
+                            <DeleteOutlineOutlined fontSize="small" />
+                          </ToolbarIcon>
+                        ) : null}
+                      </Stack>
+                    </ListItemButton>
+                  </ListItem>
+                )
+              })
+            )}
+          </List>
+        </Stack>
+        {deleteConfirmationPopup}
+      </>
     )
   }
 
