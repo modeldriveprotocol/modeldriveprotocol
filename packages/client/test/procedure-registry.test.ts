@@ -167,6 +167,209 @@ describe('ProcedureRegistry', () => {
     )
   })
 
+  it('routes tool, prompt, skill, and resource invocations through middleware', async () => {
+    const registry = new ProcedureRegistry()
+    const events: string[] = []
+
+    registry.useInvocationMiddleware(async (invocation, next) => {
+      const target = invocation.name ?? invocation.uri ?? 'unknown'
+      events.push(`before:${invocation.kind}:${target}`)
+      const result = await next()
+      events.push(`after:${invocation.kind}:${target}:${JSON.stringify(result)}`)
+      return result
+    })
+
+    registry.exposeTool('searchDom', async ({ query }) => ({
+      type: 'tool',
+      query
+    }))
+    registry.exposePrompt('summarizeSelection', async ({ topic }) => ({
+      type: 'prompt',
+      topic
+    }))
+    registry.exposeSkill('workspace/review', '# Workspace Review')
+    registry.exposeResource('webpage://selection', async () => ({
+      type: 'resource'
+    }), {
+      name: 'Selection'
+    })
+
+    await expect(
+      registry.invoke({
+        requestId: 'req-tool',
+        clientId: 'client-01',
+        kind: 'tool',
+        name: 'searchDom',
+        args: {
+          query: 'mdp'
+        }
+      })
+    ).resolves.toEqual({
+      type: 'tool',
+      query: 'mdp'
+    })
+    await expect(
+      registry.invoke({
+        requestId: 'req-prompt',
+        clientId: 'client-01',
+        kind: 'prompt',
+        name: 'summarizeSelection',
+        args: {
+          topic: 'selection'
+        }
+      })
+    ).resolves.toEqual({
+      type: 'prompt',
+      topic: 'selection'
+    })
+    await expect(
+      registry.invoke({
+        requestId: 'req-skill',
+        clientId: 'client-01',
+        kind: 'skill',
+        name: 'workspace/review'
+      })
+    ).resolves.toEqual('# Workspace Review')
+    await expect(
+      registry.invoke({
+        requestId: 'req-resource',
+        clientId: 'client-01',
+        kind: 'resource',
+        uri: 'webpage://selection'
+      })
+    ).resolves.toEqual({
+      type: 'resource'
+    })
+
+    expect(events).toEqual([
+      'before:tool:searchDom',
+      'after:tool:searchDom:{"type":"tool","query":"mdp"}',
+      'before:prompt:summarizeSelection',
+      'after:prompt:summarizeSelection:{"type":"prompt","topic":"selection"}',
+      'before:skill:workspace/review',
+      'after:skill:workspace/review:"# Workspace Review"',
+      'before:resource:webpage://selection',
+      'after:resource:webpage://selection:{"type":"resource"}'
+    ])
+  })
+
+  it('supports middleware chaining, argument rewrites, and short-circuit responses', async () => {
+    const registry = new ProcedureRegistry()
+    const calls: string[] = []
+
+    registry.useInvocationMiddleware(async (invocation, next) => {
+      calls.push(`outer:before:${invocation.name}`)
+
+      if (invocation.name === 'searchDom') {
+        invocation.args = {
+          ...(invocation.args ?? {}),
+          query: 'patched'
+        }
+      }
+
+      const result = await next()
+      calls.push(`outer:after:${JSON.stringify(result)}`)
+      return result
+    })
+    registry.useInvocationMiddleware(async (invocation, next) => {
+      calls.push(`inner:before:${invocation.name}`)
+
+      if (invocation.name === 'cachedSearch') {
+        calls.push('inner:short-circuit')
+        return {
+          query: 'cached',
+          matches: 99
+        }
+      }
+
+      const result = await next()
+      calls.push(`inner:after:${JSON.stringify(result)}`)
+      return result
+    })
+
+    const searchHandler = vi.fn(async ({ query }) => ({
+      query,
+      matches: 3
+    }))
+    const cachedHandler = vi.fn(async () => ({
+      query: 'live',
+      matches: 1
+    }))
+
+    registry.exposeTool('searchDom', searchHandler)
+    registry.exposeTool('cachedSearch', cachedHandler)
+
+    await expect(
+      registry.invoke({
+        requestId: 'req-30',
+        clientId: 'client-01',
+        kind: 'tool',
+        name: 'searchDom',
+        args: {
+          query: 'original'
+        }
+      })
+    ).resolves.toEqual({
+      query: 'patched',
+      matches: 3
+    })
+    await expect(
+      registry.invoke({
+        requestId: 'req-31',
+        clientId: 'client-01',
+        kind: 'tool',
+        name: 'cachedSearch'
+      })
+    ).resolves.toEqual({
+      query: 'cached',
+      matches: 99
+    })
+
+    expect(searchHandler).toHaveBeenCalledWith(
+      {
+        query: 'patched'
+      },
+      expect.objectContaining({
+        name: 'searchDom'
+      })
+    )
+    expect(cachedHandler).not.toHaveBeenCalled()
+    expect(calls).toEqual([
+      'outer:before:searchDom',
+      'inner:before:searchDom',
+      'inner:after:{"query":"patched","matches":3}',
+      'outer:after:{"query":"patched","matches":3}',
+      'outer:before:cachedSearch',
+      'inner:before:cachedSearch',
+      'inner:short-circuit',
+      'outer:after:{"query":"cached","matches":99}'
+    ])
+  })
+
+  it('removes registered invocation middleware', async () => {
+    const registry = new ProcedureRegistry()
+    const middleware = vi.fn(async (_invocation, next) => next())
+
+    registry.useInvocationMiddleware(middleware)
+    expect(registry.removeInvocationMiddleware(middleware)).toBe(true)
+    expect(registry.removeInvocationMiddleware(middleware)).toBe(false)
+
+    registry.exposeTool('searchDom', async () => ({ matches: 1 }))
+
+    await expect(
+      registry.invoke({
+        requestId: 'req-40',
+        clientId: 'client-01',
+        kind: 'tool',
+        name: 'searchDom'
+      })
+    ).resolves.toEqual({
+      matches: 1
+    })
+
+    expect(middleware).not.toHaveBeenCalled()
+  })
+
   it('throws when the target key is missing or unknown', async () => {
     const registry = new ProcedureRegistry()
 

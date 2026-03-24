@@ -16,6 +16,7 @@ import { MdpClientReconnectController } from './runtime/reconnect-controller.js'
 import { authenticateTransport } from './transport/transport-auth.js'
 import type {
   CapabilityHandler,
+  CapabilityInvocationMiddleware,
   ClientDescriptorOverride,
   ClientInfo,
   ClientTransport,
@@ -74,6 +75,16 @@ export class MdpClient {
     this.transport.onClose(() => {
       void this.handleTransportClose()
     })
+  }
+
+  useInvocationMiddleware(middleware: CapabilityInvocationMiddleware): this {
+    this.registry.useInvocationMiddleware(middleware)
+    return this
+  }
+
+  removeInvocationMiddleware(middleware: CapabilityInvocationMiddleware): this {
+    this.registry.removeInvocationMiddleware(middleware)
+    return this
   }
 
   exposeTool(

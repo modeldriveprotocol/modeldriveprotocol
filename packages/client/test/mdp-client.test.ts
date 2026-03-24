@@ -157,6 +157,106 @@ describe('MdpClient', () => {
     })
   })
 
+  it('registers invocation middleware through the public client API', async () => {
+    const transport = new FakeTransport()
+    const client = createMdpClient({
+      serverUrl: 'ws://127.0.0.1:7070',
+      client: {
+        id: 'browser-01',
+        name: 'Browser Client'
+      },
+      transport
+    })
+    const events: string[] = []
+
+    client.useInvocationMiddleware(async (invocation, next) => {
+      events.push(`before:${invocation.kind}:${invocation.name}`)
+      invocation.args = {
+        ...(invocation.args ?? {}),
+        query: 'patched'
+      }
+      const result = await next()
+      events.push(`after:${JSON.stringify(result)}`)
+      return result
+    })
+
+    client.exposeTool('searchDom', async ({ query }) => ({
+      query,
+      matches: 3
+    }))
+
+    transport.emit({
+      type: 'callClient',
+      requestId: 'req-mw-01',
+      clientId: 'browser-01',
+      kind: 'tool',
+      name: 'searchDom',
+      args: {
+        query: 'original'
+      }
+    })
+
+    await vi.waitFor(() => {
+      expect(transport.sent).toEqual([
+        {
+          type: 'callClientResult',
+          requestId: 'req-mw-01',
+          ok: true,
+          data: {
+            query: 'patched',
+            matches: 3
+          }
+        }
+      ])
+    })
+
+    expect(events).toEqual([
+      'before:tool:searchDom',
+      'after:{"query":"patched","matches":3}'
+    ])
+  })
+
+  it('removes invocation middleware through the public client API', async () => {
+    const transport = new FakeTransport()
+    const client = createMdpClient({
+      serverUrl: 'ws://127.0.0.1:7070',
+      client: {
+        id: 'browser-01',
+        name: 'Browser Client'
+      },
+      transport
+    })
+    const middleware = vi.fn(async (_invocation, next) => next())
+
+    client
+      .useInvocationMiddleware(middleware)
+      .removeInvocationMiddleware(middleware)
+      .exposeTool('searchDom', async () => ({ matches: 1 }))
+
+    transport.emit({
+      type: 'callClient',
+      requestId: 'req-mw-02',
+      clientId: 'browser-01',
+      kind: 'tool',
+      name: 'searchDom'
+    })
+
+    await vi.waitFor(() => {
+      expect(transport.sent).toEqual([
+        {
+          type: 'callClientResult',
+          requestId: 'req-mw-02',
+          ok: true,
+          data: {
+            matches: 1
+          }
+        }
+      ])
+    })
+
+    expect(middleware).not.toHaveBeenCalled()
+  })
+
   it('serializes handler failures from routed invocations', async () => {
     const transport = new FakeTransport()
     const client = createMdpClient({

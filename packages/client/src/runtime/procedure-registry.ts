@@ -10,7 +10,10 @@ import type {
 import { isSkillPath } from '@modeldriveprotocol/protocol'
 
 import type {
+  CapabilityInvocation,
+  CapabilityInvocationContext,
   CapabilityHandler,
+  CapabilityInvocationMiddleware,
   ClientInfo,
   ExposePromptOptions,
   ExposeResourceOptions,
@@ -32,6 +35,23 @@ export class ProcedureRegistry {
   private readonly prompts = new Map<string, ProcedureEntry<PromptDescriptor>>()
   private readonly skills = new Map<string, ProcedureEntry<SkillDescriptor>>()
   private readonly resources = new Map<string, ProcedureEntry<ResourceDescriptor>>()
+  private readonly invocationMiddlewares: CapabilityInvocationMiddleware[] = []
+
+  useInvocationMiddleware(middleware: CapabilityInvocationMiddleware): this {
+    this.invocationMiddlewares.push(middleware)
+    return this
+  }
+
+  removeInvocationMiddleware(middleware: CapabilityInvocationMiddleware): boolean {
+    const index = this.invocationMiddlewares.indexOf(middleware)
+
+    if (index < 0) {
+      return false
+    }
+
+    this.invocationMiddlewares.splice(index, 1)
+    return true
+  }
 
   exposeTool(
     name: string,
@@ -210,14 +230,42 @@ export class ProcedureRegistry {
       throw new Error(`Unknown ${kind} "${key}"`)
     }
 
-    return entry.handler(message.args, {
+    const invocation: CapabilityInvocation = {
       requestId: message.requestId,
       clientId: message.clientId,
+      args: message.args,
       kind: message.kind,
       ...(message.name ? { name: message.name } : {}),
       ...(message.uri ? { uri: message.uri } : {}),
       ...(message.auth ? { auth: message.auth } : {})
-    })
+    }
+
+    return this.runWithMiddlewares(invocation, entry.handler)
+  }
+
+  private async runWithMiddlewares(
+    invocation: CapabilityInvocation,
+    handler: CapabilityHandler
+  ): Promise<unknown> {
+    let lastIndex = -1
+
+    const dispatch = async (index: number): Promise<unknown> => {
+      if (index <= lastIndex) {
+        throw new Error('Invocation middleware called next() multiple times')
+      }
+
+      lastIndex = index
+
+      const middleware = this.invocationMiddlewares[index]
+
+      if (!middleware) {
+        return handler(invocation.args, createInvocationContext(invocation))
+      }
+
+      return middleware(invocation, async () => dispatch(index + 1))
+    }
+
+    return dispatch(0)
   }
 }
 
@@ -321,4 +369,17 @@ function isPlainObject(
   value: unknown
 ): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function createInvocationContext(
+  invocation: CapabilityInvocation
+): CapabilityInvocationContext {
+  return {
+    requestId: invocation.requestId,
+    clientId: invocation.clientId,
+    kind: invocation.kind,
+    ...(invocation.name ? { name: invocation.name } : {}),
+    ...(invocation.uri ? { uri: invocation.uri } : {}),
+    ...(invocation.auth ? { auth: invocation.auth } : {})
+  }
 }

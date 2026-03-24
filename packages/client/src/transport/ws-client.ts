@@ -15,7 +15,7 @@ export interface WebSocketLike {
 export type WebSocketFactory = (url: string) => WebSocketLike
 
 export class WebSocketClientTransport implements ClientTransport {
-  private socket?: WebSocketLike
+  private socket: WebSocketLike | undefined
   private messageHandler?: (message: ServerToClientMessage) => void
   private closeHandler?: () => void
 

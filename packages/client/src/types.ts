@@ -38,6 +38,17 @@ export type CapabilityHandler<TResult = unknown> = (
   context: CapabilityInvocationContext
 ) => TResult | Promise<TResult>
 
+export interface CapabilityInvocation extends CapabilityInvocationContext {
+  args: RpcArguments | undefined
+}
+
+export type CapabilityInvocationNext<TResult = unknown> = () => Promise<TResult>
+
+export type CapabilityInvocationMiddleware<TResult = unknown> = (
+  invocation: CapabilityInvocation,
+  next: CapabilityInvocationNext<TResult>
+) => TResult | Promise<TResult>
+
 export type SkillQuery = Record<string, string>
 export type SkillHeaders = Record<string, string>
 

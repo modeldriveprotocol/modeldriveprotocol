@@ -69,6 +69,8 @@ client.register()
 - `removePrompt`
 - `removeSkill`
 - `removeResource`
+- `useInvocationMiddleware`
+- `removeInvocationMiddleware`
 - `setAuth`
 - `connect`
 - `register`
@@ -92,5 +94,22 @@ client.syncTools()
 client.removeResource('webpage://active-tab/page-info')
 client.syncResources()
 ```
+
+## 调用中间件
+
+用 `useInvocationMiddleware` 可以在一个地方统一监听或包裹被路由到客户端的 `tool`、`prompt`、`skill`、`resource` 调用。
+
+```ts
+client.useInvocationMiddleware(async (invocation, next) => {
+  console.log('before', invocation.kind, invocation.name ?? invocation.uri)
+
+  const result = await next()
+
+  console.log('after', invocation.requestId, result)
+  return result
+})
+```
+
+中间件可以读取 `invocation.kind`、`invocation.name`、`invocation.uri`、`invocation.args` 和 `invocation.auth`。如果直接返回而不调用 `next()`，也可以实现短路处理。
 
 如果你要看能力元数据如何定义，继续阅读 [MCP 定义](/zh-Hans/sdk/javascript/mcp-definitions) 和 [Skills 定义](/zh-Hans/sdk/javascript/skills-definitions)。

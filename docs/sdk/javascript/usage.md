@@ -69,6 +69,8 @@ The main SDK methods are:
 - `removePrompt`
 - `removeSkill`
 - `removeResource`
+- `useInvocationMiddleware`
+- `removeInvocationMiddleware`
 - `setAuth`
 - `connect`
 - `register`
@@ -92,5 +94,22 @@ client.syncTools()
 client.removeResource('webpage://active-tab/page-info')
 client.syncResources()
 ```
+
+## Invocation middleware
+
+Use `useInvocationMiddleware` to observe or wrap routed `tool`, `prompt`, `skill`, and `resource` calls in one place.
+
+```ts
+client.useInvocationMiddleware(async (invocation, next) => {
+  console.log('before', invocation.kind, invocation.name ?? invocation.uri)
+
+  const result = await next()
+
+  console.log('after', invocation.requestId, result)
+  return result
+})
+```
+
+Middleware can inspect `invocation.kind`, `invocation.name`, `invocation.uri`, `invocation.args`, and `invocation.auth`. It can also short-circuit by returning without calling `next()`.
 
 For capability metadata details, continue with [MCP Definitions](/sdk/javascript/mcp-definitions) and [Skills Definitions](/sdk/javascript/skills-definitions).
