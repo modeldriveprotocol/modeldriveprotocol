@@ -43,6 +43,20 @@ pnpm docs:build
 
 These commands match the validation flow described in [AGENTS.md](./AGENTS.md).
 
+- `pnpm build` uses `pnpm -r` workspace filters to build all packages and apps from the repo root.
+- `pnpm test` runs unit tests first, then rebuilds package artifacts before the smoke test.
+- `pnpm docs:build` and `pnpm docs:dev` prepare the browser bundles needed by VitePress automatically.
+
+Useful narrower root helpers:
+
+```bash
+pnpm build:packages
+pnpm build:apps
+pnpm typecheck
+pnpm typecheck:packages
+pnpm typecheck:apps
+```
+
 ## Release Workflow
 
 Package publishing is handled by GitHub Actions plus Changesets.
