@@ -102,6 +102,7 @@ import {
   summarizeWorkspaceBundleText
 } from './workspace-bundle.js'
 
+import { WorkspaceBundleEditor } from './workspace-bundle-editor.js'
 type Section = 'workspace' | 'settings' | 'clients' | 'market'
 type TransferMode = 'import' | 'export'
 type ClientDetailTab = 'basics' | 'matching' | 'runtime' | 'assets'
@@ -3452,11 +3453,11 @@ function ImportsSection({
               ].join(' · ')
             : t('options.imports.summaryInvalid')}
         </Typography>
-        <TextField
-          multiline
-          minRows={18}
+        <WorkspaceBundleEditor
+          ariaLabel={t('options.imports.title')}
+          minHeight={360}
           value={transferDraft}
-          onChange={(event) => onTransferDraftChange(event.target.value)}
+          onChange={onTransferDraftChange}
         />
         <input
           ref={importInputRef}
