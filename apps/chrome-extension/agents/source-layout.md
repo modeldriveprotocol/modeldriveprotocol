@@ -8,36 +8,37 @@ Keep app source file sizes bounded and organize code by execution context plus f
 
 For this app, prefer:
 
-- directory entry files such as `foo.ts` or `foo.tsx` that only re-export from `foo/index.ts`
-- folders for large features instead of growing single files past a few hundred lines
+- stable public module files such as `foo.ts` or `foo.tsx` as the real entry point
+- sibling folders such as `foo/**` for extracted helpers, hooks, sections, and subcomponents
+- avoiding extra `index.ts` passthrough layers unless import stability truly requires one
 - shared helpers extracted before adding another unrelated branch to a large file
 
 ## Directory Rules
 
-### `src/ui/react/i18n/**`
+### `src/ui/i18n/**`
 
 Split by concern:
 
 - provider and hooks in `index.tsx`
 - locale types in `types.ts`
-- message dictionaries in small topic files such as `common-messages.ts`, `popup-messages.ts`, `options-shell-messages.ts`
+- message dictionaries in small topic files such as `common-messages.ts`, `sidepanel-messages.ts`, `options-shell-messages.ts`
 
 Do not move storage access or locale detection into unrelated UI modules.
 
-### `src/ui/react/options/**`
+### `src/ui/options/**`
 
 Split by surface:
 
-- `app.tsx` for top-level shell and routing
+- `options-app.tsx` for top-level shell and routing
 - `components/**` for reusable UI atoms
 - `sections/**` for workspace, settings, clients, market, and imports
 - route parsing or section-local utilities in focused helpers, not mixed into component files
 
-### `src/ui/react/popup/**`
+### `src/ui/sidepanel/**`
 
 Split by surface and card type:
 
-- `app.tsx` for top-level state orchestration
+- `sidepanel-app.tsx` for top-level state orchestration
 - helpers for status labels and sorting
 - separate card/render modules for background and route clients when the list grows
 
@@ -92,13 +93,14 @@ If a file crosses that threshold:
 
 1. identify the dominant concerns inside it
 2. extract focused helpers or subcomponents into a sibling directory
-3. leave the original path as a thin entry file or re-export when import stability matters
+3. keep the original public module path as the real entry file and move only the helpers around it
 
 ## Anti-Patterns
 
 Avoid:
 
 - replacing one 900-line file with a 700-line `index.ts`
+- adding one-line passthrough exports when the public entry file can own the real exports directly
 - moving unrelated helpers into `utils.ts` without a feature boundary
 - putting React rendering, route parsing, storage access, and business rules in one module
 - importing from deep UI modules into background or shared runtime modules

@@ -6,7 +6,7 @@ import {
   toTargetTabSummary
 } from '#~/background/shared.js'
 
-import type { ChromeExtensionRuntime } from './index.js'
+import type { ChromeExtensionRuntime } from '../runtime.js'
 
 export async function listGrantedOrigins() {
   return chrome.permissions.getAll()

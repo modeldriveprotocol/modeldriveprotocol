@@ -4,14 +4,14 @@ import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Stack, Typo
 
 import { openOptionsSection } from '../extension-api.js'
 import { renderClientIcon } from '../client-icons.js'
-import { connectionStateLabel } from '../popup-app/helpers.js'
-import type { PopupController, SidepanelClientEntry } from './types.js'
+import { connectionStateLabel } from './helpers.js'
+import type { SidepanelController, SidepanelClientEntry } from './types.js'
 
 export function BackgroundClientPanel({
   controller,
   item
 }: {
-  controller: PopupController
+  controller: SidepanelController
   item: SidepanelClientEntry
 }) {
   return (

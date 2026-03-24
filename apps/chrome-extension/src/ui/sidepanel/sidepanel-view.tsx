@@ -8,9 +8,9 @@ import { openOptionsSection } from '../extension-api.js'
 import { ActionIcon } from './action-icon.js'
 import { BackgroundClientPanel } from './background-client-panel.js'
 import { RouteClientPanel } from './route-client-panel.js'
-import type { PopupController } from './types.js'
+import type { SidepanelController } from './types.js'
 
-export function SidepanelView({ controller }: { controller: PopupController }) {
+export function SidepanelView({ controller }: { controller: SidepanelController }) {
   return (
     <Stack spacing={0} sx={{ minHeight: '100vh' }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
@@ -56,7 +56,7 @@ export function SidepanelView({ controller }: { controller: PopupController }) {
   )
 }
 
-function FeedbackBanners({ controller }: { controller: PopupController }) {
+function FeedbackBanners({ controller }: { controller: SidepanelController }) {
   return (
     <>
       {controller.flash ? <Alert severity="success" sx={{ borderRadius: 0 }} action={controller.successFollowUpAction ? <Button color="inherit" size="small" onClick={controller.successFollowUpAction.onClick} startIcon={controller.successFollowUpAction.icon}>{controller.successFollowUpAction.label}</Button> : undefined}>{controller.flash.message}</Alert> : null}
@@ -66,7 +66,7 @@ function FeedbackBanners({ controller }: { controller: PopupController }) {
   )
 }
 
-function SidepanelEmptyState({ controller }: { controller: PopupController }) {
+function SidepanelEmptyState({ controller }: { controller: SidepanelController }) {
   return (
     <Box sx={{ py: 1.5 }}>
       <Typography variant="body2" color="text.secondary">

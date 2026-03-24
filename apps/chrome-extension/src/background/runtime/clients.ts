@@ -15,7 +15,7 @@ import {
   summarizeRouteClientAssets
 } from '#~/background/shared.js'
 
-import type { ChromeExtensionRuntime } from './index.js'
+import type { ChromeExtensionRuntime } from '../runtime.js'
 import { createTransport } from './helpers.js'
 import { RECONNECT_DELAY_MS } from './types.js'
 

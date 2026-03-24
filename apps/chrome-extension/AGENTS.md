@@ -26,6 +26,8 @@ Open the smallest relevant guide for the current task:
   read [agents/ui-clarity.md](./agents/ui-clarity.md)
 - task is about splitting large source files, reorganizing directories, or deciding where extracted modules should live:
   read [agents/source-layout.md](./agents/source-layout.md)
+- task is inside `src/ui/**`, or is about where UI files should live after the recent directory flattening:
+  read [src/ui/AGENTS.md](./src/ui/AGENTS.md)
 - task spans multiple areas:
   read only the matching guides, in the order of immediate need
 

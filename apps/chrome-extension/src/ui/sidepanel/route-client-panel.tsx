@@ -9,15 +9,15 @@ import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Icon
 
 import { clearPendingSelectorCapture, injectBridge, openOptionsSection, runRecording, startRecording, startSelectorCapture, stopRecording } from '../extension-api.js'
 import { renderClientIcon } from '../client-icons.js'
-import { abilitySummary, connectionStateLabel, routeClientNextStepLabel, routeClientStatusLabel } from '../popup-app/helpers.js'
+import { abilitySummary, connectionStateLabel, routeClientNextStepLabel, routeClientStatusLabel } from './helpers.js'
 import { ActionIcon } from './action-icon.js'
-import type { PopupController, SidepanelClientEntry } from './types.js'
+import type { SidepanelController, SidepanelClientEntry } from './types.js'
 
 export function RouteClientPanel({
   controller,
   item
 }: {
-  controller: PopupController
+  controller: SidepanelController
   item: SidepanelClientEntry
 }) {
   const client = item.client

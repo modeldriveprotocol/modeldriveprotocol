@@ -27,15 +27,19 @@ import {
   sidepanelFocusSummary,
   connectionStateLabel,
   type SidepanelClientFilter
-} from '../popup-app/helpers.js'
-import type { PopupController, PopupSurface, RouteClientPrimaryActionDescriptor, SidepanelClientEntry } from './types.js'
-import { usePopupRuntime } from './use-popup-runtime.js'
+} from './helpers.js'
+import type {
+  RouteClientPrimaryActionDescriptor,
+  SidepanelClientEntry,
+  SidepanelController
+} from './types.js'
+import { useSidepanelRuntime } from './use-sidepanel-runtime.js'
 
 const BACKGROUND_SELECTION_ID = 'background'
 
-export function usePopupController(surface: PopupSurface): PopupController {
+export function useSidepanelController(): SidepanelController {
   const { t } = useI18n()
-  const runtime = usePopupRuntime(t)
+  const runtime = useSidepanelRuntime(t)
   const [selectedClientId, setSelectedClientId] = useState<string>()
   const [expandedClientKey, setExpandedClientKey] = useState<string>()
   const [clientFilter, setClientFilter] = useState<SidepanelClientFilter>('all')
@@ -204,7 +208,6 @@ export function usePopupController(surface: PopupSurface): PopupController {
 
   return {
     ...runtime,
-    surface,
     t,
     backgroundClient,
     pageRouteClients,

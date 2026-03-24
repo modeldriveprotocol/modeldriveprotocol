@@ -3,10 +3,10 @@ import { useEffect, useState } from 'react'
 import {
   getPopupState
 } from '../extension-api.js'
-import { toErrorMessage, type FlashState } from '../popup-app/helpers.js'
+import { toErrorMessage, type FlashState } from './helpers.js'
 import type { PopupRuntimeSlice, TranslateFn } from './types.js'
 
-export function usePopupRuntime(t: TranslateFn): PopupRuntimeSlice {
+export function useSidepanelRuntime(t: TranslateFn): PopupRuntimeSlice {
   const [state, setState] = useState<Awaited<ReturnType<typeof getPopupState>> | undefined>()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>()

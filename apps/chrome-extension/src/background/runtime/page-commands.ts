@@ -9,7 +9,7 @@ import { PAGE_COMMAND_CHANNEL } from '#~/page/messages.js'
 import type { RouteClientConfig } from '#~/shared/config.js'
 import { createManagedScriptId } from '#~/background/shared.js'
 
-import type { ChromeExtensionRuntime } from './index.js'
+import type { ChromeExtensionRuntime } from '../runtime.js'
 
 export async function ensureScriptsInjected(
   runtime: ChromeExtensionRuntime,

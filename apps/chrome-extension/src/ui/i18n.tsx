@@ -1,25 +1,32 @@
-import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react'
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState
+} from 'react'
 
-import { marketMessages } from './market-messages.js'
-import { commonMessages } from './common-messages.js'
-import { optionsMessages } from './options-messages.js'
-import { optionsShellMessages } from './options-shell-messages.js'
-import { popupMessages } from './popup-messages.js'
-import type { Locale, LocalePreference } from './types.js'
+import { commonMessages } from './i18n/common-messages.js'
+import { marketMessages } from './i18n/market-messages.js'
+import { optionsMessages } from './i18n/options-messages.js'
+import { optionsShellMessages } from './i18n/options-shell-messages.js'
+import { sidepanelMessages } from './i18n/sidepanel-messages.js'
+import type { Locale, LocalePreference } from './i18n/types.js'
 
 const UI_LOCALE_KEY = 'mdpUiLocalePreference'
 
 const messages: Record<Locale, Record<string, string>> = {
   en: {
     ...commonMessages.en,
-    ...popupMessages.en,
+    ...sidepanelMessages.en,
     ...optionsShellMessages.en,
     ...optionsMessages.en,
     ...marketMessages.en
   },
   'zh-CN': {
     ...commonMessages['zh-CN'],
-    ...popupMessages['zh-CN'],
+    ...sidepanelMessages['zh-CN'],
     ...optionsShellMessages['zh-CN'],
     ...optionsMessages['zh-CN'],
     ...marketMessages['zh-CN']
@@ -40,12 +47,17 @@ function resolveLocale(input: string | undefined): Locale {
   return normalized.startsWith('zh') ? 'zh-CN' : 'en'
 }
 
-function interpolate(template: string, vars?: Record<string, string | number | undefined>): string {
+function interpolate(
+  template: string,
+  vars?: Record<string, string | number | undefined>
+): string {
   if (!vars) {
     return template
   }
 
-  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => String(vars[key] ?? ''))
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) =>
+    String(vars[key] ?? '')
+  )
 }
 
 function detectLocale(): Locale {
@@ -115,4 +127,4 @@ export function useI18n(): I18nContextValue {
   return context
 }
 
-export type { Locale, LocalePreference } from './types.js'
+export type { Locale, LocalePreference } from './i18n/types.js'

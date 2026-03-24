@@ -1,7 +1,7 @@
 import type { UnknownRecord } from '#~/shared/utils.js'
 import { readString } from '#~/shared/utils.js'
 
-import type { ChromeExtensionRuntime } from './index.js'
+import type { ChromeExtensionRuntime } from '../runtime.js'
 
 export async function handleRuntimeMessage(
   runtime: ChromeExtensionRuntime,

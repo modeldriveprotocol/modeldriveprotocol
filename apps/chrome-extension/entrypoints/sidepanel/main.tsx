@@ -1,9 +1,9 @@
 import { CssBaseline } from '@mui/material'
 import { createRoot } from 'react-dom/client'
 
-import { AppearanceProvider, ExtensionThemeProvider } from '../../src/ui/react/appearance.js'
-import { SidePanelApp } from '../../src/ui/react/sidepanel-app.js'
-import { I18nProvider } from '../../src/ui/react/i18n.js'
+import { AppearanceProvider, ExtensionThemeProvider } from '../../src/ui/appearance.js'
+import { SidePanelApp } from '../../src/ui/sidepanel-app.js'
+import { I18nProvider } from '../../src/ui/i18n.js'
 import '../../src/ui/global.css'
 
 const rootElement = document.querySelector<HTMLElement>('#sidepanel-app')

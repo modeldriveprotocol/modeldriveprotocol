@@ -1,6 +1,6 @@
 import type { Locale } from './types.js'
 
-export const popupMessages: Record<Locale, Record<string, string>> = {
+export const sidepanelMessages: Record<Locale, Record<string, string>> = {
   en: {
     'popup.pageControl': 'MDP Page Control',
     'popup.currentPageTitle': 'Current page',

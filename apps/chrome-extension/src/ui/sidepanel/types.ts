@@ -3,9 +3,12 @@ import type { ReactNode } from 'react'
 import type { PopupClientState, PopupState } from '#~/background/shared.js'
 
 import type { useI18n } from '../i18n.js'
-import type { FlashState, RouteClientPrimaryActionKind, SidepanelClientFilter } from '../popup-app/helpers.js'
+import type {
+  FlashState,
+  RouteClientPrimaryActionKind,
+  SidepanelClientFilter
+} from './helpers.js'
 
-export type PopupSurface = 'popup' | 'sidepanel'
 export type TranslateFn = ReturnType<typeof useI18n>['t']
 
 export type SidepanelClientEntry = {
@@ -45,8 +48,7 @@ export type PopupRuntimeSlice = {
   ) => Promise<void>
 }
 
-export type PopupController = PopupRuntimeSlice & {
-  surface: PopupSurface
+export type SidepanelController = PopupRuntimeSlice & {
   t: TranslateFn
   backgroundClient: PopupClientState | undefined
   pageRouteClients: PopupClientState[]

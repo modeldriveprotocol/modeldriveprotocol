@@ -1,9 +1,9 @@
 import { CssBaseline } from '@mui/material'
 import { createRoot } from 'react-dom/client'
 
-import { AppearanceProvider, ExtensionThemeProvider } from '../../src/ui/react/appearance.js'
-import { I18nProvider } from '../../src/ui/react/i18n.js'
-import { OptionsApp } from '../../src/ui/react/options-app.js'
+import { AppearanceProvider, ExtensionThemeProvider } from '../../src/ui/appearance.js'
+import { I18nProvider } from '../../src/ui/i18n.js'
+import { OptionsApp } from '../../src/ui/options-app.js'
 import '../../src/ui/global.css'
 
 const rootElement = document.querySelector<HTMLElement>('#options-app')

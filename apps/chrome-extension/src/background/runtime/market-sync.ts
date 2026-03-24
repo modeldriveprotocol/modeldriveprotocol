@@ -6,7 +6,7 @@ import {
   type MarketSourceSnapshot
 } from '#~/shared/storage.js'
 
-import type { ChromeExtensionRuntime } from './index.js'
+import type { ChromeExtensionRuntime } from '../runtime.js'
 
 export async function checkMarketSourceUpdatesOnStartup(runtime: ChromeExtensionRuntime): Promise<void> {
   const config = await runtime.getConfig()

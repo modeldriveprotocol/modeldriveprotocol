@@ -4,7 +4,7 @@ import {
   matchesRouteClient
 } from '#~/shared/config.js'
 
-import type { ChromeExtensionRuntime } from './index.js'
+import type { ChromeExtensionRuntime } from '../runtime.js'
 
 export async function handleTabUpdated(
   runtime: ChromeExtensionRuntime,

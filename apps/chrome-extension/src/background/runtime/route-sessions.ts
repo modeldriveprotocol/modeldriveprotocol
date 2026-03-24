@@ -15,7 +15,7 @@ import { saveConfig } from '#~/shared/storage.js'
 import { asRecord, readNumber, readString } from '#~/shared/utils.js'
 import { createManagedScriptId } from '#~/background/shared.js'
 
-import type { ChromeExtensionRuntime } from './index.js'
+import type { ChromeExtensionRuntime } from '../runtime.js'
 import { createRecordingFromCapture, createSelectorResource, delay } from './helpers.js'
 
 export async function runPageCommandForRouteClient<TResult>(

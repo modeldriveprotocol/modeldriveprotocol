@@ -270,3 +270,5 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
     fetchImportFromSource
   }
 }
+
+export type OptionsController = ReturnType<typeof useOptionsController>

@@ -31,8 +31,8 @@ Do not treat `entrypoints/**`, `src/background/index.ts`, or any single capabili
 15. [src/background/shared.ts](../src/background/shared.ts)
 16. [src/page/content-script.ts](../src/page/content-script.ts)
 17. [src/page/injected-main.ts](../src/page/injected-main.ts)
-18. [src/ui/react/sidepanel-app.tsx](../src/ui/react/sidepanel-app.tsx)
-19. [src/ui/react/options-app.tsx](../src/ui/react/options-app.tsx)
+18. [src/ui/sidepanel-app.tsx](../src/ui/sidepanel-app.tsx)
+19. [src/ui/options-app.tsx](../src/ui/options-app.tsx)
 20. [src/shared/config.ts](../src/shared/config.ts)
 21. [test/page-visibility.test.ts](../test/page-visibility.test.ts)
 22. [test/config.test.ts](../test/config.test.ts)
@@ -63,9 +63,9 @@ Keep these boundaries intact:
   DOM command dispatch and page-context wait/action implementations
 - `src/page/injected-main.ts`
   main-world bridge and injected tool registry
-- `src/ui/react/sidepanel-app.tsx`
+- `src/ui/sidepanel-app.tsx`
   current-page sidepanel shell only
-- `src/ui/react/options-app.tsx`
+- `src/ui/options-app.tsx`
   React settings and workspace management surface only
 - `src/page/visibility.ts`
   reusable visibility heuristics that should stay testable outside the content script
@@ -81,7 +81,28 @@ Directory intent:
 - `src/shared/**`
   config, storage, and cross-context utilities
 - `src/ui/**`
-  popup/options scripts and UI assets consumed by the WXT HTML entrypoints
+  sidepanel/options scripts, shared UI helpers, and UI assets consumed by the WXT HTML entrypoints
+
+Current UI layout:
+
+- `src/ui/options-app.tsx`
+  stable options entry module
+- `src/ui/options/**`
+  options-specific shell, routing, sections, and editor helpers
+- `src/ui/sidepanel-app.tsx`
+  stable sidepanel entry module
+- `src/ui/sidepanel/**`
+  sidepanel-specific controller, panels, and render helpers
+- `src/ui/i18n.tsx`
+  stable i18n provider entry
+- `src/ui/i18n/**`
+  locale dictionaries and locale types
+- `src/ui/workspace-bundle-schema.ts`
+  stable schema entry
+- `src/ui/workspace-bundle-schema/**`
+  schema definition fragments
+
+Do not recreate `src/ui/react/**`; that wrapper layer has been intentionally removed.
 
 If you add a new capability, put it in the nearest focused module. If a file starts mixing runtime lifecycle with registration or UI rendering with storage logic, split it before adding more branches.
 

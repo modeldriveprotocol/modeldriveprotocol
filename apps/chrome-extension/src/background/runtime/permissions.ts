@@ -8,7 +8,7 @@ import {
 import { asRecord, readNumber } from '#~/shared/utils.js'
 import { toTargetTabSummary } from '#~/background/shared.js'
 
-import type { ChromeExtensionRuntime } from './index.js'
+import type { ChromeExtensionRuntime } from '../runtime.js'
 import { CONTENT_SCRIPT_ID } from './types.js'
 
 export async function resolveAllowedPageTabForRouteClient(

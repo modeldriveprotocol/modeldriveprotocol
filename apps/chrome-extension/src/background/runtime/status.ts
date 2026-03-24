@@ -11,7 +11,7 @@ import {
   summarizeRouteClientAssets
 } from '#~/background/shared.js'
 
-import type { ChromeExtensionRuntime } from './index.js'
+import type { ChromeExtensionRuntime } from '../runtime.js'
 
 export async function getRuntimeStatus(runtime: ChromeExtensionRuntime) {
   const config = await runtime.getConfig()
