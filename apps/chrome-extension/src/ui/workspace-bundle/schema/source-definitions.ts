@@ -1,34 +1,28 @@
+import { z } from 'zod'
+
 import { marketSourceProviderEnum, marketSourceRefTypeEnum } from './constants.js'
 
-export const sourceDefinitions = {
-  marketSource: {
-    oneOf: [
-      {
-        type: 'object',
-        additionalProperties: false,
-        required: ['id', 'kind', 'url'],
-        properties: {
-          id: { type: 'string', minLength: 1 },
-          kind: { const: 'direct' },
-          url: { type: 'string', format: 'uri' },
-          official: { type: 'boolean' }
-        }
-      },
-      {
-        type: 'object',
-        additionalProperties: false,
-        required: ['id', 'kind', 'url', 'provider', 'repository', 'refType', 'ref'],
-        properties: {
-          id: { type: 'string', minLength: 1 },
-          kind: { const: 'repository' },
-          url: { type: 'string', format: 'uri' },
-          provider: { enum: marketSourceProviderEnum },
-          repository: { type: 'string', minLength: 1 },
-          refType: { enum: marketSourceRefTypeEnum },
-          ref: { type: 'string', minLength: 1 },
-          official: { type: 'boolean' }
-        }
-      }
-    ]
-  }
-} as const
+const nonEmptyStringSchema = z.string().min(1)
+
+const directMarketSourceSchema = z.object({
+  id: nonEmptyStringSchema,
+  kind: z.literal('direct'),
+  url: z.url(),
+  official: z.boolean().optional()
+})
+
+const repositoryMarketSourceSchema = z.object({
+  id: nonEmptyStringSchema,
+  kind: z.literal('repository'),
+  url: z.url(),
+  provider: z.enum(marketSourceProviderEnum),
+  repository: nonEmptyStringSchema,
+  refType: z.enum(marketSourceRefTypeEnum),
+  ref: nonEmptyStringSchema,
+  official: z.boolean().optional()
+})
+
+export const marketSourceSchema = z.discriminatedUnion('kind', [
+  directMarketSourceSchema,
+  repositoryMarketSourceSchema
+])

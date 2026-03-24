@@ -1,101 +1,51 @@
+import { z } from 'zod'
+
 import { clientIconEnum } from './constants.js'
 
-export const assetDefinitions = {
-  routeSelectorResource: {
-    type: 'object',
-    additionalProperties: false,
-    required: [
-      'id',
-      'name',
-      'description',
-      'createdAt',
-      'selector',
-      'alternativeSelectors',
-      'tagName',
-      'classes',
-      'attributes'
-    ],
-    properties: {
-      id: { type: 'string', minLength: 1 },
-      name: { type: 'string', minLength: 1 },
-      description: { type: 'string' },
-      createdAt: { type: 'string', format: 'date-time' },
-      url: { type: 'string' },
-      selector: { type: 'string', minLength: 1 },
-      alternativeSelectors: { type: 'array', items: { type: 'string' } },
-      tagName: { type: 'string' },
-      classes: { type: 'array', items: { type: 'string' } },
-      text: { type: 'string' },
-      attributes: { type: 'object', additionalProperties: { type: 'string' } }
-    }
-  },
-  routeSkillEntry: {
-    type: 'object',
-    additionalProperties: false,
-    required: [
-      'id',
-      'path',
-      'title',
-      'summary',
-      'icon',
-      'queryParameters',
-      'headerParameters',
-      'content'
-    ],
-    properties: {
-      id: { type: 'string', minLength: 1 },
-      path: { type: 'string', minLength: 1 },
-      title: { type: 'string', minLength: 1 },
-      summary: { type: 'string' },
-      icon: { enum: clientIconEnum },
-      queryParameters: {
-        type: 'array',
-        items: { $ref: '#/definitions/routeSkillParameter' }
-      },
-      headerParameters: {
-        type: 'array',
-        items: { $ref: '#/definitions/routeSkillParameter' }
-      },
-      content: { type: 'string' }
-    }
-  },
-  routeSkillFolder: {
-    type: 'object',
-    additionalProperties: false,
-    required: ['id', 'path'],
-    properties: {
-      id: { type: 'string', minLength: 1 },
-      path: { type: 'string', minLength: 1 }
-    }
-  },
-  routeSkillParameter: {
-    type: 'object',
-    additionalProperties: false,
-    required: ['id', 'key', 'summary'],
-    properties: {
-      id: { type: 'string', minLength: 1 },
-      key: { type: 'string', minLength: 1 },
-      summary: { type: 'string' }
-    }
-  },
-  marketClientInstallSource: {
-    type: 'object',
-    additionalProperties: false,
-    required: [
-      'type',
-      'sourceId',
-      'sourceUrl',
-      'marketClientId',
-      'marketVersion',
-      'installedAt'
-    ],
-    properties: {
-      type: { const: 'market' },
-      sourceId: { type: 'string', minLength: 1 },
-      sourceUrl: { type: 'string', format: 'uri' },
-      marketClientId: { type: 'string', minLength: 1 },
-      marketVersion: { type: 'string', minLength: 1 },
-      installedAt: { type: 'string', format: 'date-time' }
-    }
-  }
-} as const
+const nonEmptyStringSchema = z.string().min(1)
+const dateTimeStringSchema = z.string().meta({ format: 'date-time' })
+
+export const routeSelectorResourceSchema = z.object({
+  id: nonEmptyStringSchema,
+  name: nonEmptyStringSchema,
+  description: z.string(),
+  createdAt: dateTimeStringSchema,
+  url: z.string().optional(),
+  selector: nonEmptyStringSchema,
+  alternativeSelectors: z.array(z.string()),
+  tagName: z.string(),
+  classes: z.array(z.string()),
+  text: z.string().optional(),
+  attributes: z.record(z.string(), z.string())
+})
+
+export const routeSkillParameterSchema = z.object({
+  id: nonEmptyStringSchema,
+  key: nonEmptyStringSchema,
+  summary: z.string()
+})
+
+export const routeSkillEntrySchema = z.object({
+  id: nonEmptyStringSchema,
+  path: nonEmptyStringSchema,
+  title: nonEmptyStringSchema,
+  summary: z.string(),
+  icon: z.enum(clientIconEnum),
+  queryParameters: z.array(routeSkillParameterSchema),
+  headerParameters: z.array(routeSkillParameterSchema),
+  content: z.string()
+})
+
+export const routeSkillFolderSchema = z.object({
+  id: nonEmptyStringSchema,
+  path: nonEmptyStringSchema
+})
+
+export const marketClientInstallSourceSchema = z.object({
+  type: z.literal('market'),
+  sourceId: nonEmptyStringSchema,
+  sourceUrl: z.url(),
+  marketClientId: nonEmptyStringSchema,
+  marketVersion: nonEmptyStringSchema,
+  installedAt: dateTimeStringSchema
+})

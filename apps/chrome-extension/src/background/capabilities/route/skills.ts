@@ -1,7 +1,9 @@
 import type { SkillHeaders, SkillQuery } from '@modeldriveprotocol/client'
 import type { JsonSchema } from '@modeldriveprotocol/protocol'
+import { z } from 'zod'
 
 import type { RouteSkillEntry, RouteSkillParameter } from '#~/shared/config.js'
+import { toProtocolJsonSchema } from '#~/background/json-schema.js'
 
 const SKILL_TEMPLATE_TOKEN_PATTERN = /\{\{\s*(query|header)\.([^}]+?)\s*\}\}/g
 
@@ -55,40 +57,34 @@ export function buildRouteSkillInputSchema(
     return undefined
   }
 
-  return {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      ...(querySchema ? { query: querySchema } : {}),
-      ...(headerSchema ? { headers: headerSchema } : {})
-    }
-  }
+  return toProtocolJsonSchema(
+    z.object({
+      ...(querySchema ? { query: querySchema.optional() } : {}),
+      ...(headerSchema ? { headers: headerSchema.optional() } : {})
+    })
+  )
 }
 
 function buildRouteSkillParameterSchema(
   parameters: RouteSkillParameter[],
   description: string
-): JsonSchema | undefined {
+): z.ZodType | undefined {
   if (parameters.length === 0) {
     return undefined
   }
 
-  return {
-    type: 'object',
-    description,
-    additionalProperties: false,
-    properties: Object.fromEntries(
-      parameters.map((parameter) => [
-        parameter.key,
-        {
-          type: 'string',
-          ...(parameter.summary
-            ? {
-                description: parameter.summary
-              }
-            : {})
-        }
-      ])
+  return z
+    .object(
+      Object.fromEntries(
+        parameters.map((parameter) => [
+          parameter.key,
+          (
+            parameter.summary
+              ? z.string().describe(parameter.summary)
+              : z.string()
+          ).optional()
+        ])
+      ) as Record<string, z.ZodOptional<z.ZodType>>
     )
-  }
+    .describe(description)
 }

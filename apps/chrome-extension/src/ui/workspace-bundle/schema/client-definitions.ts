@@ -1,163 +1,87 @@
+import { z } from 'zod'
+
 import {
   clientIconEnum,
   recordedFlowStepTypeEnum,
   routeRuleModeEnum
 } from './constants.js'
 
-export const clientDefinitions = {
-  backgroundClient: {
-    type: 'object',
-    additionalProperties: false,
-    required: [
-      'kind',
-      'id',
-      'enabled',
-      'favorite',
-      'clientId',
-      'clientName',
-      'clientDescription',
-      'icon',
-      'disabledTools',
-      'disabledResources',
-      'disabledSkills'
-    ],
-    properties: {
-      kind: { const: 'background' },
-      id: { type: 'string', minLength: 1 },
-      enabled: { type: 'boolean', default: true },
-      favorite: { type: 'boolean', default: false },
-      clientId: { type: 'string', minLength: 1 },
-      clientName: { type: 'string', minLength: 1 },
-      clientDescription: { type: 'string', minLength: 1 },
-      icon: { enum: clientIconEnum },
-      disabledTools: { type: 'array', items: { type: 'string', minLength: 1 } },
-      disabledResources: {
-        type: 'array',
-        items: { type: 'string', minLength: 1 }
-      },
-      disabledSkills: { type: 'array', items: { type: 'string', minLength: 1 } }
-    }
-  },
-  routeClient: {
-    type: 'object',
-    additionalProperties: false,
-    required: [
-      'kind',
-      'id',
-      'enabled',
-      'favorite',
-      'clientId',
-      'clientName',
-      'clientDescription',
-      'icon',
-      'matchPatterns',
-      'routeRules',
-      'autoInjectBridge',
-      'toolScriptSource',
-      'recordings',
-      'selectorResources',
-      'skillFolders',
-      'skillEntries'
-    ],
-    properties: {
-      kind: { const: 'route' },
-      id: { type: 'string', minLength: 1 },
-      enabled: { type: 'boolean', default: true },
-      favorite: { type: 'boolean', default: false },
-      clientId: { type: 'string', minLength: 1 },
-      clientName: { type: 'string', minLength: 1 },
-      clientDescription: { type: 'string', minLength: 1 },
-      icon: { enum: clientIconEnum },
-      matchPatterns: { type: 'array', items: { type: 'string', minLength: 1 } },
-      routeRules: {
-        type: 'array',
-        items: { $ref: '#/definitions/routePathRule' }
-      },
-      autoInjectBridge: { type: 'boolean', default: true },
-      toolScriptSource: { type: 'string' },
-      recordings: {
-        type: 'array',
-        items: { $ref: '#/definitions/routeClientRecording' }
-      },
-      selectorResources: {
-        type: 'array',
-        items: { $ref: '#/definitions/routeSelectorResource' }
-      },
-      skillFolders: {
-        type: 'array',
-        items: { $ref: '#/definitions/routeSkillFolder' }
-      },
-      skillEntries: {
-        type: 'array',
-        items: { $ref: '#/definitions/routeSkillEntry' }
-      },
-      installSource: { $ref: '#/definitions/marketClientInstallSource' }
-    }
-  },
-  routePathRule: {
-    type: 'object',
-    additionalProperties: false,
-    required: ['id', 'mode', 'value'],
-    properties: {
-      id: { type: 'string', minLength: 1 },
-      mode: { enum: routeRuleModeEnum },
-      value: { type: 'string', minLength: 1 }
-    }
-  },
-  routeClientRecording: {
-    type: 'object',
-    additionalProperties: false,
-    required: [
-      'id',
-      'name',
-      'description',
-      'createdAt',
-      'updatedAt',
-      'capturedFeatures',
-      'steps'
-    ],
-    properties: {
-      id: { type: 'string', minLength: 1 },
-      name: { type: 'string', minLength: 1 },
-      description: { type: 'string' },
-      mode: { enum: ['recording', 'script'] },
-      createdAt: { type: 'string', format: 'date-time' },
-      updatedAt: { type: 'string', format: 'date-time' },
-      startUrl: { type: 'string' },
-      capturedFeatures: { type: 'array', items: { type: 'string' } },
-      steps: {
-        type: 'array',
-        items: { $ref: '#/definitions/recordedFlowStep' }
-      },
-      scriptSource: { type: 'string' }
-    }
-  },
-  recordedFlowStep: {
-    type: 'object',
-    additionalProperties: false,
-    required: [
-      'id',
-      'type',
-      'selector',
-      'alternativeSelectors',
-      'tagName',
-      'classes',
-      'timestampOffsetMs'
-    ],
-    properties: {
-      id: { type: 'string', minLength: 1 },
-      type: { enum: recordedFlowStepTypeEnum },
-      selector: { type: 'string', minLength: 1 },
-      alternativeSelectors: { type: 'array', items: { type: 'string' } },
-      tagName: { type: 'string' },
-      classes: { type: 'array', items: { type: 'string' } },
-      timestampOffsetMs: { type: 'number', minimum: 0 },
-      text: { type: 'string' },
-      label: { type: 'string' },
-      inputType: { type: 'string' },
-      value: { type: 'string' },
-      key: { type: 'string' },
-      code: { type: 'string' }
-    }
-  }
-} as const
+import {
+  marketClientInstallSourceSchema,
+  routeSelectorResourceSchema,
+  routeSkillEntrySchema,
+  routeSkillFolderSchema
+} from './asset-definitions.js'
+
+const nonEmptyStringSchema = z.string().min(1)
+const nonNegativeNumberSchema = z.number().min(0)
+const dateTimeStringSchema = z.string().meta({ format: 'date-time' })
+
+export const routePathRuleSchema = z.object({
+  id: nonEmptyStringSchema,
+  mode: z.enum(routeRuleModeEnum),
+  value: nonEmptyStringSchema
+})
+
+export const recordedFlowStepSchema = z.object({
+  id: nonEmptyStringSchema,
+  type: z.enum(recordedFlowStepTypeEnum),
+  selector: nonEmptyStringSchema,
+  alternativeSelectors: z.array(z.string()),
+  tagName: z.string(),
+  classes: z.array(z.string()),
+  timestampOffsetMs: nonNegativeNumberSchema,
+  text: z.string().optional(),
+  label: z.string().optional(),
+  inputType: z.string().optional(),
+  value: z.string().optional(),
+  key: z.string().optional(),
+  code: z.string().optional()
+})
+
+export const routeClientRecordingSchema = z.object({
+  id: nonEmptyStringSchema,
+  name: nonEmptyStringSchema,
+  description: z.string(),
+  mode: z.enum(['recording', 'script']).optional(),
+  createdAt: dateTimeStringSchema,
+  updatedAt: dateTimeStringSchema,
+  startUrl: z.string().optional(),
+  capturedFeatures: z.array(z.string()),
+  steps: z.array(recordedFlowStepSchema),
+  scriptSource: z.string().optional()
+})
+
+export const backgroundClientSchema = z.object({
+  kind: z.literal('background'),
+  id: nonEmptyStringSchema,
+  enabled: z.boolean().default(true),
+  favorite: z.boolean().default(false),
+  clientId: nonEmptyStringSchema,
+  clientName: nonEmptyStringSchema,
+  clientDescription: nonEmptyStringSchema,
+  icon: z.enum(clientIconEnum),
+  disabledTools: z.array(nonEmptyStringSchema),
+  disabledResources: z.array(nonEmptyStringSchema),
+  disabledSkills: z.array(nonEmptyStringSchema)
+})
+
+export const routeClientSchema = z.object({
+  kind: z.literal('route'),
+  id: nonEmptyStringSchema,
+  enabled: z.boolean().default(true),
+  favorite: z.boolean().default(false),
+  clientId: nonEmptyStringSchema,
+  clientName: nonEmptyStringSchema,
+  clientDescription: nonEmptyStringSchema,
+  icon: z.enum(clientIconEnum),
+  matchPatterns: z.array(nonEmptyStringSchema),
+  routeRules: z.array(routePathRuleSchema),
+  autoInjectBridge: z.boolean().default(true),
+  toolScriptSource: z.string(),
+  recordings: z.array(routeClientRecordingSchema),
+  selectorResources: z.array(routeSelectorResourceSchema),
+  skillFolders: z.array(routeSkillFolderSchema),
+  skillEntries: z.array(routeSkillEntrySchema),
+  installSource: marketClientInstallSourceSchema.optional()
+})

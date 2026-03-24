@@ -1,4 +1,4 @@
-import { ZodError, z } from 'zod'
+import { ZodError } from 'zod'
 
 import {
   DEFAULT_EXTENSION_CONFIG,
@@ -8,19 +8,7 @@ import {
   normalizeConfig
 } from '#~/shared/config.js'
 
-const semverSchema = z.string().trim().regex(/^\d+\.\d+\.\d+$/, 'Expected a semver version like 1.0.0.')
-
-const workspaceBundleSchema = z
-  .object({
-    version: semverSchema.optional(),
-    serverUrl: z.string().optional(),
-    notificationTitle: z.string().optional(),
-    backgroundClients: z.array(z.unknown()).optional(),
-    backgroundClient: z.unknown().optional(),
-    routeClients: z.array(z.unknown()).optional(),
-    marketSources: z.array(z.unknown()).optional()
-  })
-  .passthrough()
+import { workspaceBundleImportSchema } from './schema/root-definitions.js'
 
 export interface WorkspaceBundleSummary {
   routeClients: number
@@ -50,7 +38,7 @@ function isCompatibleWorkspaceBundleVersion(version: string): boolean {
 }
 
 function parseWorkspaceBundlePayload(payload: unknown): ExtensionConfig {
-  const bundle = workspaceBundleSchema.parse(payload)
+  const bundle = workspaceBundleImportSchema.parse(payload)
   const version = bundle.version ?? DEFAULT_EXTENSION_CONFIG.version
 
   if (!isCompatibleWorkspaceBundleVersion(version)) {

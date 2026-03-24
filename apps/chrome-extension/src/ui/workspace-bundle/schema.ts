@@ -1,69 +1,19 @@
-import { SUPPORTED_WORKSPACE_BUNDLE_VERSION } from '#~/shared/config.js'
+import { z } from 'zod'
 
-import { assetDefinitions } from './schema/asset-definitions.js'
-import { clientDefinitions } from './schema/client-definitions.js'
-import { sourceDefinitions } from './schema/source-definitions.js'
+import { workspaceBundleEditorSchema as baseWorkspaceBundleEditorSchema } from './schema/root-definitions.js'
 
 export const WORKSPACE_BUNDLE_SCHEMA_URI =
   'https://modeldriveprotocol.dev/schemas/chrome-extension-workspace-bundle.json'
 
+export const workspaceBundleEditorSchema = baseWorkspaceBundleEditorSchema
+  .meta({
+    $id: WORKSPACE_BUNDLE_SCHEMA_URI,
+    title: 'MDP Chrome extension workspace bundle'
+  })
+
 export const workspaceBundleJsonSchema = {
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  $id: WORKSPACE_BUNDLE_SCHEMA_URI,
-  title: 'MDP Chrome extension workspace bundle',
-  type: 'object',
-  additionalProperties: true,
-  required: [
-    'version',
-    'serverUrl',
-    'notificationTitle',
-    'backgroundClients',
-    'routeClients',
-    'marketSources',
-    'marketAutoCheckUpdates'
-  ],
-  properties: {
-    version: {
-      type: 'string',
-      pattern: '^\\d+\\.\\d+\\.\\d+$',
-      default: SUPPORTED_WORKSPACE_BUNDLE_VERSION,
-      description: 'Workspace bundle version.'
-    },
-    serverUrl: {
-      type: 'string',
-      pattern: '^(wss?|https?)://.+$',
-      default: 'ws://127.0.0.1:47372',
-      description: 'MDP server URL used by the extension.'
-    },
-    notificationTitle: {
-      type: 'string',
-      default: 'Model Drive Protocol for Chrome',
-      description: 'Notification title shown by the extension.'
-    },
-    marketAutoCheckUpdates: {
-      type: 'boolean',
-      default: true,
-      description:
-        'Whether market sources should be checked for updates automatically.'
-    },
-    backgroundClients: {
-      type: 'array',
-      default: [],
-      items: { $ref: '#/definitions/backgroundClient' }
-    },
-    routeClients: {
-      type: 'array',
-      default: [],
-      items: { $ref: '#/definitions/routeClient' }
-    },
-    marketSources: {
-      type: 'array',
-      items: { $ref: '#/definitions/marketSource' }
-    }
-  },
-  definitions: {
-    ...clientDefinitions,
-    ...assetDefinitions,
-    ...sourceDefinitions
-  }
-} as const
+  ...z.toJSONSchema(workspaceBundleEditorSchema, {
+    target: 'draft-07'
+  }),
+  additionalProperties: true
+}

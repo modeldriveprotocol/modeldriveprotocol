@@ -7,6 +7,8 @@ import type {
 import type { MarketSourcePendingUpdate } from '#~/shared/storage.js'
 import { asRecord, createStableId, readNumber, readString } from '#~/shared/utils.js'
 import type { InjectedToolDescriptor, MainWorldBridgeState } from '#~/page/messages.js'
+import { toProtocolJsonSchema } from './json-schema.js'
+import { z } from 'zod'
 
 export type ConnectionState = 'disabled' | 'idle' | 'connecting' | 'connected' | 'error'
 export type InvocationCapabilityKind = 'tool' | 'prompt' | 'skill' | 'resource'
@@ -219,12 +221,11 @@ export function toTargetTabSummary(
 }
 
 export function tabTargetSchema() {
-  return {
-    type: 'object',
-    properties: {
-      tabId: { type: 'number' }
-    }
-  }
+  return toProtocolJsonSchema(
+    z.object({
+      tabId: z.number().optional()
+    })
+  )
 }
 
 export function jsonResource(value: unknown) {

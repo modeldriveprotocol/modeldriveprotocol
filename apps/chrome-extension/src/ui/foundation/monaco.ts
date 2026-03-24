@@ -1,6 +1,9 @@
 import type { Theme } from '@mui/material/styles'
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api'
-import 'monaco-editor/esm/vs/language/json/monaco.contribution'
+// Monaco exposes this ESM contribution at runtime, but does not ship a
+// matching declaration file that TypeScript can resolve from this entrypoint.
+// @ts-expect-error Runtime export is available in Monaco's ESM bundle.
+import * as monacoJsonContribution from 'monaco-editor/esm/vs/language/json/monaco.contribution'
 import 'monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution'
 import 'monaco-editor/esm/vs/basic-languages/markdown/markdown.contribution'
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
@@ -21,6 +24,12 @@ type JsonSchemaRegistration = {
   schemaUri: string
   modelUri: string
   schema: unknown
+}
+
+type MonacoJsonContributionModule = {
+  jsonDefaults?: {
+    setDiagnosticsOptions: (options: unknown) => void
+  }
 }
 
 const jsonSchemaRegistrations = new Map<string, JsonSchemaRegistration>()
@@ -53,15 +62,12 @@ export function ensureMonacoJsonSchema(registration: JsonSchemaRegistration): vo
     jsonSchemaRegistrations.set(key, registration)
   }
 
-  const jsonDefaults = (
-    monaco.languages as typeof monaco.languages & {
-      json: {
-        jsonDefaults: {
-          setDiagnosticsOptions: (options: unknown) => void
-        }
-      }
-    }
-  ).json.jsonDefaults
+  const jsonDefaults = (monacoJsonContribution as MonacoJsonContributionModule)
+    .jsonDefaults
+
+  if (!jsonDefaults) {
+    throw new Error('Monaco JSON language service is unavailable.')
+  }
 
   jsonDefaults.setDiagnosticsOptions({
     allowComments: false,
