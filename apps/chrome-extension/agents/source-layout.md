@@ -19,28 +19,61 @@ For this app, prefer:
 
 Split by concern:
 
-- provider and hooks in `index.tsx`
+- provider and hooks in `provider.tsx`
 - locale types in `types.ts`
 - message dictionaries in small topic files such as `common-messages.ts`, `sidepanel-messages.ts`, `options-shell-messages.ts`
 
 Do not move storage access or locale detection into unrelated UI modules.
 
-### `src/ui/options/**`
+### `src/ui/foundation/**`
+
+Keep cross-surface UI primitives here:
+
+- appearance and theme providers
+- shared icon rendering helpers
+- global UI CSS that entrypoints mount once
+
+Do not put feature state or Chrome runtime calls into this directory.
+
+### `src/ui/platform/**`
+
+Keep browser-facing UI adapters here:
+
+- Chrome runtime messaging
+- options navigation helpers
+- sidepanel open helpers
+- config load/save adapters used by the UI
+
+Do not mix render logic into platform modules.
+
+### `src/ui/apps/options/**`
 
 Split by surface:
 
-- `options-app.tsx` for top-level shell and routing
-- `components/**` for reusable UI atoms
+- `app.tsx` for top-level shell and routing
+- `shell*.tsx` for the options frame
 - `sections/**` for workspace, settings, clients, market, and imports
 - route parsing or section-local utilities in focused helpers, not mixed into component files
 
-### `src/ui/sidepanel/**`
+### `src/ui/market/**`
+
+Keep remote source fetch, zod validation, compatibility checks, and installed-client counting here.
+
+### `src/ui/apps/sidepanel/**`
 
 Split by surface and card type:
 
-- `sidepanel-app.tsx` for top-level state orchestration
+- `app.tsx` for top-level state orchestration
 - helpers for status labels and sorting
 - separate card/render modules for background and route clients when the list grows
+
+### `src/ui/workspace-bundle/**`
+
+Split by concern:
+
+- `bundle.ts` for workspace import/export parsing
+- `editor.tsx` for Monaco-backed JSON editing
+- `schema.ts` plus `schema/**` for schema fragments
 
 ### `src/shared/config/**`
 
