@@ -1,0 +1,50 @@
+import type { Locale } from './types.js'
+
+export const commonMessages: Record<Locale, Record<string, string>> = {
+  en: {
+    'common.enabled': 'Enabled',
+    'common.icon': 'Icon',
+    'common.clientName': 'Client name',
+    'common.clientId': 'Client ID',
+    'common.description': 'Description',
+    'common.summary': 'Summary',
+    'common.loading': 'Loading…',
+    'common.none': 'None',
+    'connection.connected': 'connected',
+    'connection.connecting': 'connecting',
+    'connection.error': 'error',
+    'connection.disconnected': 'disconnected',
+    'tag.ecommerce': 'ecommerce',
+    'tag.operations': 'operations',
+    'tag.flows': 'flows',
+    'tag.dashboard': 'dashboard',
+    'tag.admin': 'admin',
+    'tag.selectors': 'selectors',
+    'tag.crm': 'crm',
+    'tag.profiles': 'profiles',
+    'tag.skills': 'skills'
+  },
+  'zh-CN': {
+    'common.enabled': '启用',
+    'common.icon': '图标',
+    'common.clientName': 'Client 名称',
+    'common.clientId': 'Client ID',
+    'common.description': '描述',
+    'common.summary': '摘要',
+    'common.loading': '加载中…',
+    'common.none': '无',
+    'connection.connected': '已连接',
+    'connection.connecting': '连接中',
+    'connection.error': '错误',
+    'connection.disconnected': '未连接',
+    'tag.ecommerce': '电商',
+    'tag.operations': '运营',
+    'tag.flows': '流程',
+    'tag.dashboard': '仪表盘',
+    'tag.admin': '后台',
+    'tag.selectors': '选择器',
+    'tag.crm': 'CRM',
+    'tag.profiles': '档案',
+    'tag.skills': '技能'
+  }
+}

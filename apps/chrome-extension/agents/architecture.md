@@ -20,7 +20,7 @@ Do not treat `entrypoints/**`, `src/background/index.ts`, or any single capabili
 4. [entrypoints/background.ts](../entrypoints/background.ts)
 5. [entrypoints/content-script.ts](../entrypoints/content-script.ts)
 6. [entrypoints/injected-main.ts](../entrypoints/injected-main.ts)
-7. [entrypoints/popup/index.html](../entrypoints/popup/index.html)
+7. [entrypoints/sidepanel/index.html](../entrypoints/sidepanel/index.html)
 8. [entrypoints/options/index.html](../entrypoints/options/index.html)
 9. [src/background/index.ts](../src/background/index.ts)
 10. [src/background/runtime.ts](../src/background/runtime.ts)
@@ -31,8 +31,8 @@ Do not treat `entrypoints/**`, `src/background/index.ts`, or any single capabili
 15. [src/background/shared.ts](../src/background/shared.ts)
 16. [src/page/content-script.ts](../src/page/content-script.ts)
 17. [src/page/injected-main.ts](../src/page/injected-main.ts)
-18. [src/ui/popup.ts](../src/ui/popup.ts)
-19. [src/ui/options.ts](../src/ui/options.ts)
+18. [src/ui/react/sidepanel-app.tsx](../src/ui/react/sidepanel-app.tsx)
+19. [src/ui/react/options-app.tsx](../src/ui/react/options-app.tsx)
 20. [src/shared/config.ts](../src/shared/config.ts)
 21. [test/page-visibility.test.ts](../test/page-visibility.test.ts)
 22. [test/config.test.ts](../test/config.test.ts)
@@ -48,7 +48,7 @@ Keep these boundaries intact:
 - `src/background/index.ts`
   background startup wiring only; export reusable startup helpers for WXT entrypoints
 - `src/background/runtime.ts`
-  connection lifecycle, permission checks, tab injection state, popup message handling
+  connection lifecycle, permission checks, tab injection state, and sidepanel/options message handling
 - `src/background/capabilities/index.ts`
   top-level assembly of capability groups only
 - `src/background/capabilities/extension.ts`
@@ -63,10 +63,10 @@ Keep these boundaries intact:
   DOM command dispatch and page-context wait/action implementations
 - `src/page/injected-main.ts`
   main-world bridge and injected tool registry
-- `src/ui/popup.ts`
-  popup state rendering and button actions only
-- `src/ui/options.ts`
-  settings form and permission UI only
+- `src/ui/react/sidepanel-app.tsx`
+  current-page sidepanel shell only
+- `src/ui/react/options-app.tsx`
+  React settings and workspace management surface only
 - `src/page/visibility.ts`
   reusable visibility heuristics that should stay testable outside the content script
 
@@ -75,7 +75,7 @@ Directory intent:
 - `src/background/**`
   background worker runtime, capability assembly, and Chrome-side lifecycle
 - `entrypoints/**`
-  WXT-owned extension entrypoints for background, content script, injected script, popup, and options
+  WXT-owned extension entrypoints for background, content script, injected script, sidepanel, and options
 - `src/page/**`
   content script, injected main-world bridge, and page-local message contracts
 - `src/shared/**`

@@ -5,6 +5,7 @@
     "incremental": false,
     "declaration": false,
     "declarationMap": false,
+    "jsx": "react-jsx",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "noEmit": true,
@@ -13,6 +14,13 @@
     ],
     "baseUrl": ".",
     "paths": {
+      "#~/*.js": [
+        "./src/*.ts",
+        "./src/*.tsx"
+      ],
+      "#~/*": [
+        "./src/*"
+      ],
       "@modeldriveprotocol/client": [
         "../../packages/client/src/index.ts"
       ],
@@ -25,7 +33,9 @@
   "include": [
     ".wxt/wxt.d.ts",
     "entrypoints/**/*.ts",
+    "entrypoints/**/*.tsx",
     "src/**/*.ts",
+    "src/**/*.tsx",
     "src/**/*.d.ts",
     "test/**/*.ts",
     "wxt.config.ts"

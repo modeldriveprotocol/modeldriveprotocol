@@ -1,0 +1,14 @@
+{
+  "appName": {
+    "message": "Model Drive Protocol for Chrome"
+  },
+  "appShortName": {
+    "message": "MDP Chrome"
+  },
+  "appDescription": {
+    "message": "Connect Chrome tabs, extension actions, and page-local tools to Model Drive Protocol."
+  },
+  "appActionTitle": {
+    "message": "Model Drive Protocol for Chrome"
+  }
+}

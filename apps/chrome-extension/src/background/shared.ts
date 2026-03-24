@@ -1,16 +1,58 @@
-import type { InjectedToolDescriptor, MainWorldBridgeState } from '../page/messages.js'
-import type { ExtensionConfig } from '../shared/config.js'
-import { asRecord, createStableId, readNumber, readString } from '../shared/utils.js'
+import type {
+  ClientIconKey,
+  ExtensionConfig,
+  RouteClientConfig,
+  RouteSelectorResource
+} from '#~/shared/config.js'
+import type { MarketSourcePendingUpdate } from '#~/shared/storage.js'
+import { asRecord, createStableId, readNumber, readString } from '#~/shared/utils.js'
+import type { InjectedToolDescriptor, MainWorldBridgeState } from '#~/page/messages.js'
 
 export type ConnectionState = 'disabled' | 'idle' | 'connecting' | 'connected' | 'error'
 
-export interface PopupState {
+export interface PopupClientState {
+  clientKey: string
+  kind: 'background' | 'route'
+  id?: string
+  clientId: string
+  clientName: string
+  clientDescription: string
+  icon: ClientIconKey
+  enabled: boolean
   connectionState: ConnectionState
   lastError?: string
   lastConnectedAt?: string
+  matchPatterns: string[]
+  routeRuleSummary?: string
+  matchesActiveTab: boolean
+  recordingCount: number
+  selectorResourceCount: number
+  skillCount: number
+}
+
+export interface PopupState {
   config: ExtensionConfig
-  grantedOrigins: string[]
-  missingMatchPatterns: string[]
+  clients: PopupClientState[]
+  onlineClientCount: number
+  marketUpdates?: {
+    autoCheckEnabled: boolean
+    lastCheckedAt?: string
+    pendingUpdateCount: number
+    pendingUpdates: MarketSourcePendingUpdate[]
+  }
+  activeRouteClientIds: string[]
+  activeRouteClientNames: string[]
+  activeRecording?: {
+    routeClientId: string
+    routeClientName: string
+    startedAt: string
+  }
+  pendingSelectorCapture?: {
+    routeClientId: string
+    routeClientName: string
+    resource: RouteSelectorResource
+    capturedAt: string
+  }
   activeTab?: {
     id?: number
     title?: string
@@ -20,6 +62,7 @@ export interface PopupState {
     eligible: boolean
   }
   activeOriginPattern?: string
+  activeTabHasPermission?: boolean
   bridgeState?: MainWorldBridgeState
   injectedTools: InjectedToolDescriptor[]
 }
@@ -38,6 +81,19 @@ export interface TabInjectionState {
   contentScriptReady: boolean
   mainWorldReady: boolean
   appliedManagedScriptIds: string[]
+}
+
+export interface ManagedClientConnectionState {
+  connectionState: ConnectionState
+  lastError?: string
+  lastConnectedAt?: string
+}
+
+export interface TargetTabSummary {
+  id: number
+  url?: string
+  title?: string
+  active: boolean
 }
 
 export function requireStringArg(args: unknown, key: string): string {
@@ -73,6 +129,21 @@ export function serializeTab(
   }
 }
 
+export function toTargetTabSummary(
+  tab: Partial<Pick<chrome.tabs.Tab, 'id' | 'title' | 'url' | 'active'>>
+): TargetTabSummary {
+  if (typeof tab.id !== 'number') {
+    throw new Error('Target tab is missing an id')
+  }
+
+  return {
+    id: tab.id,
+    ...(typeof tab.url === 'string' ? { url: tab.url } : {}),
+    ...(typeof tab.title === 'string' ? { title: tab.title } : {}),
+    active: Boolean(tab.active)
+  }
+}
+
 export function tabTargetSchema() {
   return {
     type: 'object',
@@ -92,8 +163,8 @@ export function jsonResource(value: unknown) {
 export function createNotificationIcon(): string {
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-      <rect width="128" height="128" rx="24" fill="#0f766e" />
-      <path d="M26 32h18l20 32 20-32h18v64H84V61L64 92 44 61v35H26z" fill="#f8fafc" />
+      <rect width="128" height="128" rx="24" fill="#2563eb" />
+      <path d="M24 34h18l22 29 22-29h18v60H86V61L64 90 42 61v33H24z" fill="#f8fafc" />
     </svg>
   `.trim()
 
@@ -104,8 +175,20 @@ export function createManagedScriptId(prefix: string, source: string): string {
   return createStableId(prefix, source)
 }
 
+export function createClientKey(kind: 'background' | 'route', id = 'default'): string {
+  return `${kind}:${id}`
+}
+
 export function isScrollLogicalPosition(
   value: string | undefined
 ): value is 'start' | 'center' | 'end' | 'nearest' {
   return value === 'start' || value === 'center' || value === 'end' || value === 'nearest'
+}
+
+export function summarizeRouteClientAssets(client: RouteClientConfig) {
+  return {
+    recordingCount: client.recordings.length,
+    selectorResourceCount: client.selectorResources.length,
+    skillCount: client.skillEntries.length
+  }
 }

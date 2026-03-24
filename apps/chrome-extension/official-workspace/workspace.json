@@ -1,0 +1,27 @@
+{
+  "version": "1.0.0",
+  "serverUrl": "ws://127.0.0.1:47372",
+  "notificationTitle": "Model Drive Protocol for Chrome",
+  "backgroundClient": {
+    "kind": "background",
+    "enabled": true,
+    "clientId": "mdp-chrome-background",
+    "clientName": "MDP Chrome Background",
+    "clientDescription": "Chrome extension runtime that exposes browser-level capabilities through Model Drive Protocol.",
+    "icon": "chrome"
+  },
+  "routeClients": [],
+  "marketSources": [
+    {
+      "id": "market-source-official",
+      "kind": "repository",
+      "provider": "github",
+      "repository": "modeldriveprotocol/modeldriveprotocol",
+      "refType": "branch",
+      "ref": "main",
+      "url": "https://raw.githubusercontent.com/modeldriveprotocol/modeldriveprotocol/main/apps/chrome-extension/official-market/catalog.json",
+      "official": true
+    }
+  ],
+  "marketAutoCheckUpdates": true
+}

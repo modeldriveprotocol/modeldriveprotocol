@@ -1,4 +1,4 @@
-import { startBackground } from '../src/background/index.js'
+import { startBackground } from '#~/background/index.js'
 
 export default defineBackground(() => {
   startBackground()

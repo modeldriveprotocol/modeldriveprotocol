@@ -1,13 +1,37 @@
 import { type ExtensionConfig, STORAGE_KEY, normalizeConfig } from './config.js'
 
+const MARKET_SYNC_STATE_KEY = 'marketSourceSyncState'
+
+export interface MarketSourceSnapshot {
+  sourceId: string
+  sourceUrl: string
+  title: string
+  version: string
+  digest: string
+  checkedAt: string
+  clientCount: number
+}
+
+export interface MarketSourcePendingUpdate {
+  sourceId: string
+  sourceUrl: string
+  title: string
+  version: string
+  checkedAt: string
+}
+
+export interface MarketSourceSyncState {
+  lastCheckedAt?: string
+  snapshots: MarketSourceSnapshot[]
+  pendingUpdates: MarketSourcePendingUpdate[]
+}
+
 export async function loadConfig(): Promise<ExtensionConfig> {
   const stored = (await chrome.storage.local.get(STORAGE_KEY)) as Record<string, unknown>
   return normalizeConfig(stored[STORAGE_KEY])
 }
 
-export async function saveConfig(
-  config: ExtensionConfig
-): Promise<ExtensionConfig> {
+export async function saveConfig(config: ExtensionConfig): Promise<ExtensionConfig> {
   const normalized = normalizeConfig(config)
 
   await chrome.storage.local.set({
@@ -17,12 +41,99 @@ export async function saveConfig(
   return normalized
 }
 
-export async function patchConfig(
-  patch: Partial<ExtensionConfig>
-): Promise<ExtensionConfig> {
+export async function patchConfig(patch: Partial<ExtensionConfig>): Promise<ExtensionConfig> {
   const current = await loadConfig()
   return saveConfig({
     ...current,
     ...patch
   })
+}
+
+export async function loadMarketSourceSyncState(): Promise<MarketSourceSyncState> {
+  const stored = (await chrome.storage.local.get(MARKET_SYNC_STATE_KEY)) as Record<string, unknown>
+  const record = stored[MARKET_SYNC_STATE_KEY]
+
+  if (!record || typeof record !== 'object' || Array.isArray(record)) {
+    return {
+      snapshots: [],
+      pendingUpdates: []
+    }
+  }
+
+  const value = record as Record<string, unknown>
+  const snapshots = Array.isArray(value.snapshots)
+    ? value.snapshots
+        .map((item) => {
+          if (!item || typeof item !== 'object' || Array.isArray(item)) {
+            return undefined
+          }
+
+          const snapshot = item as Record<string, unknown>
+          const sourceId = typeof snapshot.sourceId === 'string' ? snapshot.sourceId : undefined
+          const sourceUrl = typeof snapshot.sourceUrl === 'string' ? snapshot.sourceUrl : undefined
+          const title = typeof snapshot.title === 'string' ? snapshot.title : undefined
+          const version = typeof snapshot.version === 'string' ? snapshot.version : undefined
+          const digest = typeof snapshot.digest === 'string' ? snapshot.digest : undefined
+          const checkedAt = typeof snapshot.checkedAt === 'string' ? snapshot.checkedAt : undefined
+          const clientCount = typeof snapshot.clientCount === 'number' ? snapshot.clientCount : undefined
+
+          if (!sourceId || !sourceUrl || !title || !version || !digest || !checkedAt || clientCount === undefined) {
+            return undefined
+          }
+
+          return {
+            sourceId,
+            sourceUrl,
+            title,
+            version,
+            digest,
+            checkedAt,
+            clientCount
+          } satisfies MarketSourceSnapshot
+        })
+        .filter((item): item is MarketSourceSnapshot => Boolean(item))
+    : []
+
+  const pendingUpdates = Array.isArray(value.pendingUpdates)
+    ? value.pendingUpdates
+        .map((item) => {
+          if (!item || typeof item !== 'object' || Array.isArray(item)) {
+            return undefined
+          }
+
+          const update = item as Record<string, unknown>
+          const sourceId = typeof update.sourceId === 'string' ? update.sourceId : undefined
+          const sourceUrl = typeof update.sourceUrl === 'string' ? update.sourceUrl : undefined
+          const title = typeof update.title === 'string' ? update.title : undefined
+          const version = typeof update.version === 'string' ? update.version : undefined
+          const checkedAt = typeof update.checkedAt === 'string' ? update.checkedAt : undefined
+
+          if (!sourceId || !sourceUrl || !title || !version || !checkedAt) {
+            return undefined
+          }
+
+          return {
+            sourceId,
+            sourceUrl,
+            title,
+            version,
+            checkedAt
+          } satisfies MarketSourcePendingUpdate
+        })
+        .filter((item): item is MarketSourcePendingUpdate => Boolean(item))
+    : []
+
+  return {
+    ...(typeof value.lastCheckedAt === 'string' ? { lastCheckedAt: value.lastCheckedAt } : {}),
+    snapshots,
+    pendingUpdates
+  }
+}
+
+export async function saveMarketSourceSyncState(state: MarketSourceSyncState): Promise<MarketSourceSyncState> {
+  await chrome.storage.local.set({
+    [MARKET_SYNC_STATE_KEY]: state
+  })
+
+  return state
 }

@@ -1,4 +1,4 @@
-import { type SerializedError, normalizeForMessaging, serializeError } from '../shared/utils.js'
+import { type SerializedError, normalizeForMessaging, serializeError } from '#~/shared/utils.js'
 import {
   type InjectedToolDescriptor,
   type MainWorldBridgeState,

@@ -1,5 +1,5 @@
-import { type UnknownRecord, asRecord, serializeError } from '../shared/utils.js'
-import { ChromeExtensionRuntime } from './runtime.js'
+import { type UnknownRecord, asRecord, serializeError } from '#~/shared/utils.js'
+import { ChromeExtensionRuntime } from '#~/background/runtime.js'
 
 let backgroundStarted = false
 
@@ -12,11 +12,27 @@ export function startBackground(): void {
 
   const runtime = new ChromeExtensionRuntime()
 
+  if (chrome.sidePanel?.setPanelBehavior) {
+    void chrome.sidePanel.setPanelBehavior({
+      openPanelOnActionClick: true
+    })
+  }
+
   chrome.runtime.onInstalled.addListener(() => {
+    if (chrome.sidePanel?.setPanelBehavior) {
+      void chrome.sidePanel.setPanelBehavior({
+        openPanelOnActionClick: true
+      })
+    }
     void runtime.initialize()
   })
 
   chrome.runtime.onStartup.addListener(() => {
+    if (chrome.sidePanel?.setPanelBehavior) {
+      void chrome.sidePanel.setPanelBehavior({
+        openPanelOnActionClick: true
+      })
+    }
     void runtime.initialize()
   })
 
@@ -48,11 +64,11 @@ export function startBackground(): void {
   chrome.runtime.onMessage.addListener(
     (
       message: UnknownRecord,
-      _sender: unknown,
+      sender: chrome.runtime.MessageSender,
       sendResponse: (response: { ok: boolean; data?: unknown; error?: ReturnType<typeof serializeError> }) => void
     ) => {
       void runtime
-        .handlePopupMessage(asRecord(message))
+        .handleRuntimeMessage(asRecord(message), sender)
         .then((data) => {
           sendResponse({
             ok: true,

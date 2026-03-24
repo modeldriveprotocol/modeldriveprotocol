@@ -7,6 +7,7 @@ const appRoot = fileURLToPath(new URL('.', import.meta.url))
 const manualRunner = process.env.MDP_WXT_MANUAL === '1'
 
 export default defineConfig({
+  modules: ['@wxt-dev/module-react'],
   outDir: 'dist',
   webExt: {
     ...(manualRunner
@@ -19,9 +20,10 @@ export default defineConfig({
         })
   },
   manifest: {
-    name: 'Model Drive Protocol for Chrome',
-    short_name: 'MDP Chrome',
-    description: 'Connect Chrome tabs, extension actions, and page-local tools to Model Drive Protocol.',
+    default_locale: 'en',
+    name: '__MSG_appName__',
+    short_name: '__MSG_appShortName__',
+    description: '__MSG_appDescription__',
     author: 'Model Drive Protocol',
     homepage_url: 'https://github.com/modeldriveprotocol/modeldriveprotocol',
     icons: {
@@ -33,7 +35,7 @@ export default defineConfig({
     permissions: ['storage', 'scripting', 'tabs', 'activeTab', 'notifications'],
     optional_host_permissions: ['<all_urls>'],
     action: {
-      default_title: 'Model Drive Protocol for Chrome',
+      default_title: '__MSG_appActionTitle__',
       default_icon: {
         16: 'icons/icon-16.png',
         32: 'icons/icon-32.png'
@@ -42,10 +44,27 @@ export default defineConfig({
   },
   vite: () => ({
     resolve: {
-      alias: {
-        '@modeldriveprotocol/client': resolve(appRoot, '../../packages/client/src/index.ts'),
-        '@modeldriveprotocol/protocol': resolve(appRoot, '../../packages/protocol/src/index.ts')
-      }
+      alias: [
+        {
+          find: /^#~\/(.*)\.js$/,
+          replacement: resolve(appRoot, 'src/$1')
+        },
+        {
+          find: '#~',
+          replacement: resolve(appRoot, 'src')
+        },
+        {
+          find: '@modeldriveprotocol/client',
+          replacement: resolve(appRoot, '../../packages/client/src/index.ts')
+        },
+        {
+          find: '@modeldriveprotocol/protocol',
+          replacement: resolve(appRoot, '../../packages/protocol/src/index.ts')
+        }
+      ]
+    },
+    build: {
+      chunkSizeWarningLimit: 550
     }
   })
 })

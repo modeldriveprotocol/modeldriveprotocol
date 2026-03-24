@@ -104,13 +104,23 @@ git push origin chrome-extension-v1.0.0
 
 ## Configure
 
-Open the extension options page and set:
+Open the extension options page and configure a workspace:
 
-- `MDP Server URL`
-- target match patterns such as `https://app.example.com/*`
-- optional default tool script for main-world registration
+- one shared `MDP Server URL`
+- one singleton background client for browser-level tools such as tabs, notifications, and config status
+- one or more route-scoped clients with host match patterns plus path rules such as `https://app.example.com/*` + `/billing`
+- optional default tool scripts for each route client
+- route-local skill entries, selector resources, and recorded flows
 
-Saving the options page requests host permissions for the configured patterns.
+Saving the options page requests host permissions for every configured route-client pattern.
+
+The popup now acts as a quick control surface:
+
+- pick the active route client for the current page
+- grant host access for the selected route client
+- inject the bridge and route-managed page script
+- start/stop a recorded flow
+- capture an element selector into a serializable route resource
 
 ## Page Tool Injection
 
@@ -122,7 +132,7 @@ window.__MDP_EXTENSION_BRIDGE__.registerTool('readAppState', () => {
 })
 ```
 
-After injection, the extension client exposes MDP tools such as:
+After injection, each route-scoped client exposes MDP tools such as:
 
 - `page.listInjectedTools`
 - `page.callInjectedTool`
@@ -142,10 +152,13 @@ After injection, the extension client exposes MDP tools such as:
 - `page.waitForUrl`
 - `page.getSnapshot`
 
-The popup also surfaces bridge health for the active tab, including registered tool count and
-managed script ids that have already executed on the current page load.
+Recorded flows are exposed back through MDP as route-client-local `flow.*` tools, selector captures
+are exposed as route-client resources, and skill entries are published as hierarchical MDP skills.
 
-Resource readers can also fetch:
+The popup also surfaces bridge health for the active tab, the currently matched route clients, and
+the latest selector capture / recording session state.
+
+Background resource readers can also fetch:
 
 - `chrome-extension://active-tab`
 - `chrome-extension://active-bridge`

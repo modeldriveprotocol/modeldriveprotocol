@@ -1,0 +1,64 @@
+:root {
+  color-scheme: light;
+  --app-bg: #f5f7fb;
+  --app-fg: #102038;
+  font-family: 'Avenir Next', 'Segoe UI', sans-serif;
+  background: var(--app-bg);
+}
+
+:root[data-ui-appearance='dark'] {
+  color-scheme: dark;
+  --app-bg: #10151d;
+  --app-fg: #edf2ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#popup-app,
+#options-app,
+#sidepanel-app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Avenir Next', 'Segoe UI', sans-serif;
+  background: var(--app-bg);
+  color: var(--app-fg);
+}
+
+.surface {
+  padding: 16px;
+}
+
+.surface-popup {
+  min-width: 420px;
+  padding: 10px;
+}
+
+.surface-wide {
+  min-height: 100vh;
+  padding: 0;
+}
+
+.surface-sidepanel {
+  min-height: 100vh;
+  padding: 0;
+}
+
+.app-shell {
+  width: 100%;
+}
+
+.app-shell-wide {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.app-shell-sidepanel {
+  width: 100%;
+}

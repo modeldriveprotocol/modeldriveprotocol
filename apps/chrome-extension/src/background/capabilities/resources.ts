@@ -1,8 +1,7 @@
 import type { MdpClient } from '@modeldriveprotocol/client'
 
-import { serializeError } from '../../shared/utils.js'
-import type { ChromeExtensionRuntimeApi } from '../runtime-api.js'
-import { jsonResource } from '../shared.js'
+import type { ChromeExtensionRuntimeApi } from '#~/background/runtime-api.js'
+import { jsonResource } from '#~/background/shared.js'
 
 export function registerBackgroundResources(
   client: MdpClient,
@@ -21,43 +20,7 @@ export function registerBackgroundResources(
     'chrome-extension://config',
     async () => jsonResource(await runtime.getConfig()),
     {
-      name: 'Chrome Extension Config',
-      mimeType: 'application/json'
-    }
-  )
-
-  client.exposeResource(
-    'chrome-extension://active-tab',
-    async () => {
-      try {
-        return jsonResource(await runtime.runPageCommand(undefined, { type: 'getSnapshot' }))
-      } catch (error) {
-        return jsonResource({
-          ok: false,
-          error: serializeError(error)
-        })
-      }
-    },
-    {
-      name: 'Active Tab Snapshot',
-      mimeType: 'application/json'
-    }
-  )
-
-  client.exposeResource(
-    'chrome-extension://active-bridge',
-    async () => {
-      try {
-        return jsonResource(await runtime.getInjectedState(undefined))
-      } catch (error) {
-        return jsonResource({
-          ok: false,
-          error: serializeError(error)
-        })
-      }
-    },
-    {
-      name: 'Active Tab Bridge State',
+      name: 'Chrome Extension Workspace Config',
       mimeType: 'application/json'
     }
   )

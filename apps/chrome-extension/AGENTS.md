@@ -24,6 +24,8 @@ Open the smallest relevant guide for the current task:
   read [../../agents/progressive-disclosure.md](../../agents/progressive-disclosure.md)
 - user asks to improve clarity, simplify usage, reduce cognitive load, or make popup/options easier to understand:
   read [agents/ui-clarity.md](./agents/ui-clarity.md)
+- task is about splitting large source files, reorganizing directories, or deciding where extracted modules should live:
+  read [agents/source-layout.md](./agents/source-layout.md)
 - task spans multiple areas:
   read only the matching guides, in the order of immediate need
 

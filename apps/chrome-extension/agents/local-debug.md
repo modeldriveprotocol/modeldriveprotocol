@@ -18,4 +18,4 @@ pnpm --filter @modeldriveprotocol/chrome-extension dev
 - If `dev` fails with `ENOENT ... chrome-out.log`, the immediate fix is to create `apps/chrome-extension/.wxt/chrome-data` first and rerun `dev`.
 - After launch, the extension id can be read from `apps/chrome-extension/.wxt/chrome-data/Default/Secure Preferences` by locating the extension whose `path` ends with `/apps/chrome-extension/dist/chrome-mv3-dev`.
 - During the recorded session, that generated id was `jigghlocdbpecagpponmdkfmnhhiobfo`. Treat it as profile-local debug state, not as a stable id to hardcode.
-- Once the browser is up, opening `chrome-extension://<extension-id>/popup.html` and `chrome-extension://<extension-id>/options.html` is a reliable way to bring the UI to the foreground for a quick visual check.
+- Once the browser is up, opening `chrome-extension://<extension-id>/sidepanel.html` and `chrome-extension://<extension-id>/options.html` is a reliable way to bring the UI to the foreground for a quick visual check.

@@ -1,0 +1,66 @@
+{
+  "version": "1.0.0",
+  "title": "MDP Official Market",
+  "clients": [
+    {
+      "id": "starter-orders",
+      "title": "Orders Workspace",
+      "summary": "A route client preset for order details, refunds, and support notes.",
+      "icon": "route",
+      "tags": ["ecommerce", "operations", "flows"],
+      "client": {
+        "clientId": "mdp-market-orders",
+        "clientName": "Orders Workspace",
+        "clientDescription": "Starter client for order detail pages and refund workflows.",
+        "icon": "route",
+        "matchPatterns": ["https://app.example.com/*"],
+        "routeRules": [
+          {
+            "mode": "pathname-prefix",
+            "value": "/orders"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-admin-console",
+      "title": "Admin Console",
+      "summary": "Preset route client for dashboard pages, health checks, and quick selectors.",
+      "icon": "insights",
+      "tags": ["dashboard", "admin", "selectors"],
+      "client": {
+        "clientId": "mdp-market-admin",
+        "clientName": "Admin Console",
+        "clientDescription": "Starter client for admin dashboards and console panels.",
+        "icon": "insights",
+        "matchPatterns": ["https://admin.example.com/*"],
+        "routeRules": [
+          {
+            "mode": "pathname-prefix",
+            "value": "/dashboard"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-crm",
+      "title": "CRM Profiles",
+      "summary": "Preset for profile review pages with route-local notes and page element capture.",
+      "icon": "layers",
+      "tags": ["crm", "profiles", "skills"],
+      "client": {
+        "clientId": "mdp-market-crm",
+        "clientName": "CRM Profiles",
+        "clientDescription": "Starter client for customer profile pages and handoff notes.",
+        "icon": "layers",
+        "matchPatterns": ["https://crm.example.com/*"],
+        "routeRules": [
+          {
+            "mode": "pathname-prefix",
+            "value": "/profiles"
+          }
+        ]
+      }
+    }
+  ]
+}

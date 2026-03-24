@@ -1,24 +1,15 @@
-import type { InjectedToolDescriptor, MainWorldBridgeState, PageCommand } from '../page/messages.js'
-import type { ExtensionConfig } from '../shared/config.js'
+import type {
+  ExtensionConfig,
+  RouteClientConfig,
+  RouteClientRecording,
+  RouteSelectorResource
+} from '#~/shared/config.js'
+import type { InjectedToolDescriptor, MainWorldBridgeState, PageCommand } from '#~/page/messages.js'
 import type { BrowserTabSummary, PopupState } from './shared.js'
-
-export interface ConnectionConfigPatch {
-  serverUrl?: string
-  clientId?: string
-  clientName?: string
-  clientDescription?: string
-  autoConnect?: boolean
-  autoInjectBridge?: boolean
-}
 
 export interface ChromeExtensionRuntimeApi {
   getStatus(): Promise<PopupState>
   getConfig(): Promise<ExtensionConfig>
-  updateConnectionConfig(patch: ConnectionConfigPatch): Promise<PopupState>
-  setDefaultToolScript(toolScriptSource: string): Promise<{
-    updated: true
-    toolScriptSourceLength: number
-  }>
   listGrantedOrigins(): Promise<unknown>
   listTabs(options: { windowId?: number; activeOnly?: boolean }): Promise<BrowserTabSummary[]>
   activateTab(tabId: number): Promise<BrowserTabSummary>
@@ -41,19 +32,43 @@ export interface ChromeExtensionRuntimeApi {
   openOptionsPage(): Promise<{
     opened: true
   }>
-  runPageCommand<TResult>(args: unknown, command: PageCommand): Promise<TResult>
-  injectToolScript(input: {
-    tabId?: number
-    source: string
-    scriptArgs?: unknown
-    scriptId?: string
-    force?: boolean
-  }): Promise<InjectedToolDescriptor[]>
-  getInjectedState(args: unknown): Promise<MainWorldBridgeState>
-  listInjectedToolsForArgs(args: unknown): Promise<InjectedToolDescriptor[]>
-  callInjectedTool(input: {
-    tabId?: number
-    name: string
-    toolArgs?: unknown
-  }): Promise<unknown>
+  runPageCommandForRouteClient<TResult>(
+    routeClientId: string,
+    args: unknown,
+    command: PageCommand
+  ): Promise<TResult>
+  injectToolScriptForRouteClient(
+    routeClientId: string,
+    input: {
+      tabId?: number
+      source: string
+      scriptArgs?: unknown
+      scriptId?: string
+      force?: boolean
+    }
+  ): Promise<InjectedToolDescriptor[]>
+  getInjectedStateForRouteClient(
+    routeClientId: string,
+    args: unknown
+  ): Promise<MainWorldBridgeState>
+  listInjectedToolsForRouteClient(
+    routeClientId: string,
+    args: unknown
+  ): Promise<InjectedToolDescriptor[]>
+  callInjectedToolForRouteClient(
+    routeClientId: string,
+    input: {
+      tabId?: number
+      name: string
+      toolArgs?: unknown
+    }
+  ): Promise<unknown>
+  getRouteClient(routeClientId: string): Promise<RouteClientConfig>
+  runRouteRecording(
+    routeClientId: string,
+    recordingId: string,
+    args: unknown
+  ): Promise<unknown>
+  listRouteRecordings(routeClientId: string): Promise<RouteClientRecording[]>
+  listRouteSelectorResources(routeClientId: string): Promise<RouteSelectorResource[]>
 }
