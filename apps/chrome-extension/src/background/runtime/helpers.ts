@@ -14,7 +14,9 @@ import type {
   RouteClientRecording,
   RouteSelectorResource
 } from '#~/shared/config.js'
+import { matchesRouteClient } from '#~/shared/config.js'
 import { createRequestId } from '#~/shared/utils.js'
+import type { BrowserTabSummary } from '#~/background/shared.js'
 
 export function createTransport(serverUrl: string): ClientTransport {
   const protocol = new URL(serverUrl).protocol
@@ -100,4 +102,13 @@ export function createSelectorResource(
     ...(result.text ? { text: result.text } : {}),
     attributes: result.attributes
   }
+}
+
+export function countMatchingTabsForRouteClient(
+  routeClient: RouteClientConfig,
+  tabs: Array<Pick<BrowserTabSummary, 'url'>>
+): number {
+  return tabs.reduce((count, tab) => (
+    matchesRouteClient(tab.url, routeClient) ? count + 1 : count
+  ), 0)
 }

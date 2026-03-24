@@ -46,6 +46,12 @@ export function ClientsSection(props: {
           (client) => client.kind === 'background' && client.id === selectedClientItem.id
         )
       : undefined
+  const routeRuntimeState =
+    selectedClientItem?.kind === 'route'
+      ? runtimeState?.clients.find(
+          (client) => client.kind === 'route' && client.id === selectedClientItem.id
+        )
+      : undefined
 
   if (!clientDetailOpen) {
     return (
@@ -71,7 +77,7 @@ export function ClientsSection(props: {
       selectedClientItem.kind === 'background' ? (
         <BackgroundClientEditor client={selectedClientItem.client} draft={draft} initialTab={initialDetailTab} invocationStats={backgroundRuntimeState?.invocationStats} runtimeState={backgroundRuntimeState?.connectionState} onClearHistory={onClearInvocationHistory} onChange={onChange} />
       ) : (
-        <ClientEditor client={selectedClientItem.client} currentPageUrl={currentPageUrl} draft={draft} initialAssetTab={initialAssetTab} initialTab={initialDetailTab} invocationStats={runtimeState?.clients.find((client) => client.id === selectedClientItem.id)?.invocationStats} onClearHistory={onClearInvocationHistory} onChange={onChange} />
+        <ClientEditor client={selectedClientItem.client} currentPageUrl={currentPageUrl} draft={draft} initialAssetTab={initialAssetTab} initialTab={initialDetailTab} invocationStats={routeRuntimeState?.invocationStats} matchingTabCount={routeRuntimeState?.matchingTabCount} onClearHistory={onClearInvocationHistory} onChange={onChange} />
       )
     ) : (
       <Typography variant="body2" color="text.secondary">{t('options.clients.empty')}</Typography>

@@ -7,30 +7,46 @@ import WebOutlined from '@mui/icons-material/WebOutlined'
 import { useEffect, useMemo, useState } from 'react'
 
 import type { PopupClientState } from '#~/background/shared.js'
-import { canCreateRouteClientFromUrl, matchesAnyPattern } from '#~/shared/config.js'
+import {
+  canCreateRouteClientFromUrl,
+  matchesAnyPattern,
+  matchesRouteClient
+} from '#~/shared/config.js'
 
 import {
   grantOrigin,
   injectBridge,
+  loadWorkspaceConfig,
   openOptionsSection,
+  refreshRuntime,
   requestRouteClientFromActiveTab,
+  saveWorkspaceConfig,
   startRecording,
   startSelectorCapture,
   stopRecording
 } from '../../platform/extension-api.js'
 import { useI18n } from '../../i18n/provider.js'
 import {
+  countInstalledMarketClients,
+  createInstalledMarketClient,
+  fetchMarketCatalog,
+  type MarketCatalogClientEntry,
+  type MarketCatalogSourceData,
+  type MarketCatalogSourceResult
+} from '../../market/catalog.js'
+import {
+  toErrorMessage,
   getRouteClientPriority,
   resolveErrorRecoveryAction,
   routeClientNextStepLabel,
   routeClientStatusLabel,
   sidepanelFocusSummary,
-  connectionStateLabel,
   type SidepanelClientFilter
 } from './helpers.js'
 import type {
   RouteClientPrimaryActionDescriptor,
   SidepanelClientEntry,
+  SidepanelContentMode,
   SidepanelController
 } from './types.js'
 import { useSidepanelRuntime } from './use-sidepanel-runtime.js'
@@ -42,6 +58,12 @@ export function useSidepanelController(): SidepanelController {
   const [expandedClientKey, setExpandedClientKey] = useState<string>()
   const [clientFilter, setClientFilter] = useState<SidepanelClientFilter>('all')
   const [clientSearch, setClientSearch] = useState('')
+  const [contentMode, setContentMode] = useState<SidepanelContentMode>('clients')
+  const [marketSearch, setMarketSearch] = useState('')
+  const [marketCatalogs, setMarketCatalogs] = useState<MarketCatalogSourceResult[]>([])
+  const [marketLoading, setMarketLoading] = useState(false)
+  const [marketLoadError, setMarketLoadError] = useState<string>()
+  const [marketRefreshKey, setMarketRefreshKey] = useState(0)
 
   const pageRouteClientItems = useMemo(() => {
     const routeClients = runtime.state?.clients.filter((client) => client.kind === 'route' && client.matchesActiveTab) ?? []
@@ -73,6 +95,11 @@ export function useSidepanelController(): SidepanelController {
   const selectedRouteConfig = useMemo(() => runtime.state?.config.routeClients.find((client) => client.id === selectedClient?.id), [runtime.state?.config.routeClients, selectedClient?.id])
   const activeTabHasPermission = Boolean(runtime.state?.activeTabHasPermission)
   const canCreateFromActivePage = canCreateRouteClientFromUrl(runtime.state?.activeTab?.url)
+  const marketSources = runtime.state?.config.marketSources ?? []
+  const marketSourceKey = useMemo(
+    () => marketSources.map((source) => `${source.id}:${source.url}`).join('|'),
+    [marketSources]
+  )
 
   const filteredSidepanelClients = useMemo(() => {
     const items: SidepanelClientEntry[] = []
@@ -117,6 +144,53 @@ export function useSidepanelController(): SidepanelController {
     })
   }, [pageRouteClients, runtime.state])
 
+  const marketEntries = useMemo(() => {
+    const keyword = marketSearch.trim().toLowerCase()
+    const activeUrl = runtime.state?.activeTab?.url
+    const routeClients = runtime.state?.config.routeClients ?? []
+
+    return marketCatalogs
+      .flatMap((catalog) =>
+        catalog.clients
+          .filter((entry) => matchesRouteClient(activeUrl, entry.template))
+          .map((entry) => {
+            const localCount = countInstalledMarketClients(routeClients, catalog.source.url, entry.id)
+            const searchText = [
+              entry.title,
+              entry.summary,
+              entry.template.clientName,
+              entry.template.clientDescription,
+              catalog.title,
+              catalog.source.url,
+              ...entry.tags
+            ]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase()
+            return {
+              key: `${catalog.source.id}:${entry.id}`,
+              catalog,
+              entry,
+              localCount,
+              searchText
+            }
+          })
+      )
+      .filter((item) => !keyword || item.searchText.includes(keyword))
+      .sort((left, right) => {
+        const sourceCompare = left.catalog.title.localeCompare(right.catalog.title)
+        if (sourceCompare !== 0) {
+          return sourceCompare
+        }
+        return left.entry.title.localeCompare(right.entry.title)
+      })
+  }, [marketCatalogs, marketSearch, runtime.state?.activeTab?.url, runtime.state?.config.routeClients])
+
+  const marketMatchedSourceCount = useMemo(
+    () => new Set(marketEntries.map((item) => item.catalog.source.id)).size,
+    [marketEntries]
+  )
+
   useEffect(() => {
     const preferredClientId = pageRouteClients[0]?.id
     if (!selectedClientId || !pageRouteClients.some((client) => client.id === selectedClientId)) {
@@ -133,6 +207,48 @@ export function useSidepanelController(): SidepanelController {
       setExpandedClientKey(filteredSidepanelClients[0].listId)
     }
   }, [expandedClientKey, filteredSidepanelClients])
+
+  useEffect(() => {
+    if (contentMode !== 'market') {
+      return
+    }
+
+    let cancelled = false
+
+    async function loadMarketCatalogs() {
+      if (marketSources.length === 0) {
+        setMarketCatalogs([])
+        setMarketLoading(false)
+        setMarketLoadError(undefined)
+        return
+      }
+
+      setMarketLoading(true)
+      setMarketLoadError(undefined)
+
+      try {
+        const nextCatalogs = await Promise.all(marketSources.map((source) => fetchMarketCatalog(source)))
+        if (!cancelled) {
+          setMarketCatalogs(nextCatalogs)
+        }
+      } catch (nextError) {
+        if (!cancelled) {
+          setMarketCatalogs([])
+          setMarketLoadError(toErrorMessage(nextError))
+        }
+      } finally {
+        if (!cancelled) {
+          setMarketLoading(false)
+        }
+      }
+    }
+
+    void loadMarketCatalogs()
+
+    return () => {
+      cancelled = true
+    }
+  }, [contentMode, marketRefreshKey, marketSourceKey])
 
   const buildRouteClientPrimaryAction = (client: PopupClientState): RouteClientPrimaryActionDescriptor => {
     const routeConfig = runtime.state?.config.routeClients.find((item) => item.id === client.id)
@@ -207,13 +323,80 @@ export function useSidepanelController(): SidepanelController {
           ? { label: t('popup.errorRecovery.clients'), onClick: () => void openOptionsSection('clients', { clientId: selectedClient?.id }) }
           : undefined
 
+  async function installMarketClient(catalog: MarketCatalogSourceData, entry: MarketCatalogClientEntry) {
+    const currentConfig = await loadWorkspaceConfig()
+    const existingCount = countInstalledMarketClients(currentConfig.routeClients, catalog.source.url, entry.id)
+    const nextClient = createInstalledMarketClient({
+      catalog,
+      entry,
+      existingCount
+    })
+    const requestedOrigins = [...new Set(nextClient.matchPatterns)]
+
+    if (requestedOrigins.length > 0) {
+      const granted = await chrome.permissions.request({ origins: requestedOrigins })
+      if (!granted) {
+        throw new Error(t('popup.market.installAccessDenied'))
+      }
+    }
+
+    await saveWorkspaceConfig({
+      ...currentConfig,
+      routeClients: [nextClient, ...currentConfig.routeClients]
+    })
+    await refreshRuntime()
+
+    setContentMode('clients')
+    setClientFilter('route')
+    setClientSearch('')
+    setSelectedClientId(nextClient.id)
+    setExpandedClientKey(nextClient.id)
+  }
+
+  const sidepanelFocusText =
+    contentMode === 'market'
+      ? marketLoading
+        ? t('popup.market.focus.loading')
+        : marketSources.length === 0
+          ? t('popup.market.focus.emptySources')
+          : !runtime.state?.activeTab?.eligible
+            ? t('popup.market.focus.unsupported')
+            : marketEntries.length > 0
+              ? t('popup.market.focus.matches', {
+                  count: marketEntries.length,
+                  sources: marketMatchedSourceCount
+                })
+              : t('popup.market.focus.emptyMatches')
+      : sidepanelFocusSummary({
+          clientName: selectedClient?.clientName,
+          hasClient: Boolean(selectedClient?.id),
+          canCreateFromActivePage,
+          hasPermission: activeTabHasPermission,
+          hasFlows: Boolean(selectedRouteConfig?.recordings.length),
+          hasResources: Boolean(selectedRouteConfig?.selectorResources.length),
+          hasSkills: Boolean(selectedRouteConfig?.skillEntries.length),
+          isRecording: Boolean(runtime.state?.activeRecording && selectedClient?.id),
+          isCapturingSelector: runtime.state?.pendingSelectorCapture?.routeClientId === selectedClient?.id,
+          t
+        })
+
   return {
     ...runtime,
     t,
     backgroundClients,
     pageRouteClients,
     filteredSidepanelClients,
+    contentMode,
+    setContentMode,
     relatedRouteClients,
+    marketCatalogs,
+    marketEntries,
+    marketLoading,
+    marketLoadError,
+    marketSearch,
+    setMarketSearch,
+    refreshMarketCatalogs: () => setMarketRefreshKey((value) => value + 1),
+    installMarketClient,
     selectedClient,
     selectedRouteConfig,
     selectedOptionsClientId:
@@ -230,18 +413,7 @@ export function useSidepanelController(): SidepanelController {
     setExpandedClientKey,
     setSelectedClientId,
     sidepanelPrimaryAction,
-    sidepanelFocusText: sidepanelFocusSummary({
-      clientName: selectedClient?.clientName,
-      hasClient: Boolean(selectedClient?.id),
-      canCreateFromActivePage,
-      hasPermission: activeTabHasPermission,
-      hasFlows: Boolean(selectedRouteConfig?.recordings.length),
-      hasResources: Boolean(selectedRouteConfig?.selectorResources.length),
-      hasSkills: Boolean(selectedRouteConfig?.skillEntries.length),
-      isRecording: Boolean(runtime.state?.activeRecording && selectedClient?.id),
-      isCapturingSelector: runtime.state?.pendingSelectorCapture?.routeClientId === selectedClient?.id,
-      t
-    }),
+    sidepanelFocusText,
     errorRecoveryAction,
     successFollowUpAction: runtime.flash?.suggestSelectedClientPrimary && selectedClient?.id ? buildRouteClientPrimaryAction(selectedClient) : undefined,
     buildRouteClientPrimaryAction

@@ -1,12 +1,12 @@
-import DownloadOutlined from '@mui/icons-material/DownloadOutlined'
 import SearchOutlined from '@mui/icons-material/SearchOutlined'
-import SettingsOutlined from '@mui/icons-material/SettingsOutlined'
+import StorageOutlined from '@mui/icons-material/StorageOutlined'
 import StorefrontOutlined from '@mui/icons-material/StorefrontOutlined'
 import { Alert, Box, Button, InputAdornment, List, ListItem, ListItemText, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 
 import { openOptionsSection } from '../../platform/extension-api.js'
 import { ActionIcon } from './action-icon.js'
 import { BackgroundClientPanel } from './background-client-panel.js'
+import { MarketPanel } from './market-panel.js'
 import { RouteClientPanel } from './route-client-panel.js'
 import type { SidepanelController } from './types.js'
 
@@ -19,9 +19,8 @@ export function SidepanelView({ controller }: { controller: SidepanelController 
         </Typography>
         <Stack direction="row" spacing={0.5}>
           <ActionIcon label={controller.sidepanelPrimaryAction.label} onClick={controller.sidepanelPrimaryAction.onClick} disabled={controller.sidepanelPrimaryAction.disabled} emphasis>{controller.sidepanelPrimaryAction.icon}</ActionIcon>
-          <ActionIcon label={controller.t('popup.importClient')} onClick={() => void openOptionsSection('settings')}><DownloadOutlined fontSize="small" /></ActionIcon>
-          <ActionIcon label={controller.t('popup.openOptions')} onClick={() => void openOptionsSection('clients', { clientId: controller.selectedOptionsClientId })}><SettingsOutlined fontSize="small" /></ActionIcon>
-          <ActionIcon label={controller.t('popup.openMarket')} onClick={() => void openOptionsSection('market')}><StorefrontOutlined fontSize="small" /></ActionIcon>
+          <ActionIcon label={controller.t('popup.openWorkspace')} onClick={() => void openOptionsSection('workspace')}><StorageOutlined fontSize="small" /></ActionIcon>
+          <ActionIcon label={controller.contentMode === 'market' ? controller.t('popup.showClients') : controller.t('popup.showMarket')} onClick={() => controller.setContentMode(controller.contentMode === 'market' ? 'clients' : 'market')} emphasis={controller.contentMode === 'market'}><StorefrontOutlined fontSize="small" /></ActionIcon>
         </Stack>
       </Stack>
 
@@ -29,28 +28,47 @@ export function SidepanelView({ controller }: { controller: SidepanelController 
         <Typography variant="body2" color="text.secondary" noWrap>{controller.sidepanelFocusText}</Typography>
       </Box>
 
-      <Stack spacing={1} sx={{ px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
-        <TextField
-          size="small"
-          placeholder={controller.t('popup.searchClients')}
-          value={controller.clientSearch}
-          onChange={(event) => controller.setClientSearch(event.target.value)}
-          fullWidth
-          InputProps={{ startAdornment: <InputAdornment position="start"><SearchOutlined fontSize="small" /></InputAdornment> }}
-        />
-        <ToggleButtonGroup size="small" exclusive value={controller.clientFilter} onChange={(_event, nextValue) => nextValue && controller.setClientFilter(nextValue)} sx={{ alignSelf: 'flex-start' }}>
-          <ToggleButton value="all">{controller.t('popup.filter.all')}</ToggleButton>
-          <ToggleButton value="background">{controller.t('popup.filter.background')}</ToggleButton>
-          <ToggleButton value="route">{controller.t('popup.filter.route')}</ToggleButton>
-        </ToggleButtonGroup>
-      </Stack>
+      {controller.contentMode === 'market' ? (
+        <Stack spacing={1} sx={{ px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <TextField
+            size="small"
+            placeholder={controller.t('popup.searchMarketTemplates')}
+            value={controller.marketSearch}
+            onChange={(event) => controller.setMarketSearch(event.target.value)}
+            fullWidth
+            InputProps={{ startAdornment: <InputAdornment position="start"><SearchOutlined fontSize="small" /></InputAdornment> }}
+          />
+        </Stack>
+      ) : (
+        <Stack spacing={1} sx={{ px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <TextField
+            size="small"
+            placeholder={controller.t('popup.searchClients')}
+            value={controller.clientSearch}
+            onChange={(event) => controller.setClientSearch(event.target.value)}
+            fullWidth
+            InputProps={{ startAdornment: <InputAdornment position="start"><SearchOutlined fontSize="small" /></InputAdornment> }}
+          />
+          <ToggleButtonGroup size="small" exclusive value={controller.clientFilter} onChange={(_event, nextValue) => nextValue && controller.setClientFilter(nextValue)} sx={{ alignSelf: 'flex-start' }}>
+            <ToggleButton value="all">{controller.t('popup.filter.all')}</ToggleButton>
+            <ToggleButton value="background">{controller.t('popup.filter.background')}</ToggleButton>
+            <ToggleButton value="route">{controller.t('popup.filter.route')}</ToggleButton>
+          </ToggleButtonGroup>
+        </Stack>
+      )}
 
       <FeedbackBanners controller={controller} />
 
       <Stack spacing={1} sx={{ px: 2, py: 1 }}>
-        {controller.pageRouteClients.length === 0 ? <SidepanelEmptyState controller={controller} /> : null}
-        {controller.filteredSidepanelClients.length === 0 ? <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>{controller.t('popup.noFilteredClients')}</Typography> : null}
-        {controller.filteredSidepanelClients.map((item) => item.type === 'background' ? <BackgroundClientPanel key={item.listId} controller={controller} item={item} /> : <RouteClientPanel key={item.listId} controller={controller} item={item} />)}
+        {controller.contentMode === 'market' ? (
+          <MarketPanel controller={controller} />
+        ) : (
+          <>
+            {controller.pageRouteClients.length === 0 ? <SidepanelEmptyState controller={controller} /> : null}
+            {controller.filteredSidepanelClients.length === 0 ? <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>{controller.t('popup.noFilteredClients')}</Typography> : null}
+            {controller.filteredSidepanelClients.map((item) => item.type === 'background' ? <BackgroundClientPanel key={item.listId} controller={controller} item={item} /> : <RouteClientPanel key={item.listId} controller={controller} item={item} />)}
+          </>
+        )}
       </Stack>
     </Stack>
   )

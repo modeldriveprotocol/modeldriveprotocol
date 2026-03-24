@@ -97,6 +97,60 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
     return () => window.clearInterval(timer)
   }, [loading])
 
+  useEffect(() => {
+    if (loading) {
+      return
+    }
+
+    let timeoutId: number | undefined
+
+    const scheduleRefresh = () => {
+      if (document.visibilityState !== 'visible') {
+        return
+      }
+
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId)
+      }
+
+      timeoutId = window.setTimeout(() => {
+        void refreshRuntimeState({ suppressError: true })
+      }, 120)
+    }
+
+    const onTabUpdated = (
+      _tabId: number,
+      changeInfo: { status?: string; url?: string }
+    ) => {
+      if (changeInfo.status === 'complete' || changeInfo.url) {
+        scheduleRefresh()
+      }
+    }
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        scheduleRefresh()
+      }
+    }
+
+    chrome.tabs.onActivated.addListener(scheduleRefresh)
+    chrome.tabs.onUpdated.addListener(onTabUpdated)
+    chrome.tabs.onRemoved.addListener(scheduleRefresh)
+    chrome.windows.onFocusChanged.addListener(scheduleRefresh)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
+    return () => {
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId)
+      }
+      chrome.tabs.onActivated.removeListener(scheduleRefresh)
+      chrome.tabs.onUpdated.removeListener(onTabUpdated)
+      chrome.tabs.onRemoved.removeListener(scheduleRefresh)
+      chrome.windows.onFocusChanged.removeListener(scheduleRefresh)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [loading])
+
   async function bootstrap() {
     try {
       setLoading(true)

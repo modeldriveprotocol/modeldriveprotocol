@@ -1,4 +1,5 @@
 import {
+  canCreateRouteClientFromUrl,
   getOriginMatchPattern,
   listWorkspaceMatchPatterns,
   matchesAnyPattern,
@@ -12,6 +13,7 @@ import {
 } from '#~/background/shared.js'
 
 import type { ChromeExtensionRuntime } from '../runtime.js'
+import { countMatchingTabsForRouteClient } from './helpers.js'
 import { buildInvocationOverview, toClientInvocationStats } from './telemetry.js'
 
 export async function getRuntimeStatus(runtime: ChromeExtensionRuntime) {
@@ -20,6 +22,7 @@ export async function getRuntimeStatus(runtime: ChromeExtensionRuntime) {
   const grantedPatterns = listWorkspaceMatchPatterns(config)
   const permissionState = await runtime.getPermissionState(grantedPatterns)
   const activeTab = await runtime.getActiveTab()
+  const openTabs = await runtime.listTabs({})
   const activeOriginPattern =
     typeof activeTab?.url === 'string' ? getOriginMatchPattern(activeTab.url) : undefined
   const activeTabHasPermission =
@@ -28,6 +31,12 @@ export async function getRuntimeStatus(runtime: ChromeExtensionRuntime) {
       : false
   const activeRouteClients = config.routeClients.filter((client) =>
     matchesRouteClient(activeTab?.url, client)
+  )
+  const matchingTabCounts = new Map(
+    config.routeClients.map((client) => [
+      client.id,
+      countMatchingTabsForRouteClient(client, openTabs)
+    ])
   )
   const bridgeState =
     typeof activeTab?.id === 'number' &&
@@ -55,6 +64,7 @@ export async function getRuntimeStatus(runtime: ChromeExtensionRuntime) {
         lastConnectedAt: state?.lastConnectedAt,
         matchPatterns: [],
         matchesActiveTab: false,
+        matchingTabCount: 0,
         recordingCount: 0,
         selectorResourceCount: 0,
         skillCount: 0,
@@ -81,6 +91,7 @@ export async function getRuntimeStatus(runtime: ChromeExtensionRuntime) {
         matchPatterns: client.matchPatterns,
         routeRuleSummary: summarizeRouteRules(client),
         matchesActiveTab: matchesRouteClient(activeTab?.url, client),
+        matchingTabCount: matchingTabCounts.get(client.id) ?? 0,
         recordingCount: assets.recordingCount,
         selectorResourceCount: assets.selectorResourceCount,
         skillCount: assets.skillCount,
@@ -123,7 +134,7 @@ export async function getRuntimeStatus(runtime: ChromeExtensionRuntime) {
             ...(typeof activeTab.url === 'string' ? { url: activeTab.url } : {}),
             ...(typeof activeTab.status === 'string' ? { status: activeTab.status } : {}),
             active: Boolean(activeTab.active),
-            eligible: activeRouteClients.length > 0
+            eligible: canCreateRouteClientFromUrl(activeTab.url)
           }
         }
       : {}),

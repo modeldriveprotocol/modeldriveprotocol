@@ -475,6 +475,34 @@ export function ClientsListPanel({
                 (client: any) =>
                   client.kind === item.kind && client.id === item.id
               )
+              const hasMatchingOpenTab =
+                item.kind === 'route'
+                  ? (runtimeClientState?.matchingTabCount ?? 0) > 0
+                  : false
+              const secondaryTone =
+                item.kind === 'route'
+                  ? matched || hasMatchingOpenTab
+                    ? 'success.main'
+                    : 'text.secondary'
+                  : runtimeClientState?.connectionState === 'connected'
+                    ? 'success.main'
+                    : 'text.secondary'
+              const secondaryText =
+                item.kind === 'background'
+                  ? t('options.clients.type.background')
+                  : [
+                      t('options.clients.type.route'),
+                      matched
+                        ? t('options.clients.match')
+                        : hasMatchingOpenTab
+                          ? `${t('options.clients.active')} · ${t(
+                              'options.clients.openTabs',
+                              {
+                                count: runtimeClientState?.matchingTabCount ?? 0
+                              }
+                            )}`
+                          : t('options.clients.idle')
+                    ].join(' · ')
               return (
                 <ListItem key={item.id} disablePadding>
                   <ListItemButton
@@ -512,11 +540,7 @@ export function ClientsListPanel({
                     </ListItemIcon>
                     <ListItemText
                       primary={item.client.clientName}
-                      secondary={
-                        item.kind === 'background'
-                          ? t('options.clients.type.background')
-                          : t('options.clients.type.route')
-                      }
+                      secondary={secondaryText}
                       primaryTypographyProps={{
                         variant: 'body2',
                         fontWeight: 600,
@@ -525,11 +549,7 @@ export function ClientsListPanel({
                       secondaryTypographyProps={{
                         variant: 'caption',
                         noWrap: true,
-                        color:
-                          matched ||
-                          runtimeClientState?.connectionState === 'connected'
-                            ? 'success.main'
-                            : 'text.secondary'
+                        color: secondaryTone
                       }}
                     />
                     <Stack

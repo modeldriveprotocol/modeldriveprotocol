@@ -96,6 +96,7 @@ export interface PopupClientState {
   matchPatterns: string[]
   routeRuleSummary?: string
   matchesActiveTab: boolean
+  matchingTabCount: number
   recordingCount: number
   selectorResourceCount: number
   skillCount: number

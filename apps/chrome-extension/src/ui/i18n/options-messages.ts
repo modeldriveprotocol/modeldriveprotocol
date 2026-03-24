@@ -40,6 +40,7 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.clients.type.route': 'Route',
     'options.clients.noHostPattern': 'No host pattern',
     'options.clients.match': 'match',
+    'options.clients.active': 'active',
     'options.clients.idle': 'idle',
     'options.clients.off': 'off',
     'options.clients.editorFallback': 'Client editor',
@@ -61,6 +62,7 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.clients.emptySearchHint':
       'Clear the search, add a client, or create one from the current page.',
     'options.clients.noActiveTab': 'no active tab',
+    'options.clients.openTabs': '{{count}} open tabs',
     'options.clients.flows': '{{count}} flows',
     'options.clients.resources': '{{count}} resources',
     'options.clients.skills': '{{count}} skills',
@@ -286,6 +288,7 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.clients.type.route': '页面级',
     'options.clients.noHostPattern': '没有 host pattern',
     'options.clients.match': '命中',
+    'options.clients.active': '激活',
     'options.clients.idle': '待机',
     'options.clients.off': '关闭',
     'options.clients.editorFallback': '客户端编辑器',
@@ -307,6 +310,7 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.clients.emptySearchHint':
       '可以清空搜索、添加一个客户端，或从当前页面创建。',
     'options.clients.noActiveTab': '没有活动标签页',
+    'options.clients.openTabs': '{{count}} 个已打开标签页',
     'options.clients.flows': '{{count}} 个流程',
     'options.clients.resources': '{{count}} 个资源',
     'options.clients.skills': '{{count}} 个技能',

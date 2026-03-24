@@ -1,6 +1,11 @@
 import type { ReactNode } from 'react'
 
 import type { PopupClientState, PopupState } from '#~/background/shared.js'
+import type {
+  MarketCatalogClientEntry,
+  MarketCatalogSourceData,
+  MarketCatalogSourceResult
+} from '../../market/catalog.js'
 
 import type { useI18n } from '../../i18n/provider.js'
 import type {
@@ -17,6 +22,16 @@ export type SidepanelClientEntry = {
   priority: number
   searchText: string
   type: SidepanelClientFilter
+}
+
+export type SidepanelContentMode = 'clients' | 'market'
+
+export type SidepanelMarketEntry = {
+  key: string
+  catalog: MarketCatalogSourceData
+  entry: MarketCatalogClientEntry
+  localCount: number
+  searchText: string
 }
 
 export type PopupActionDescriptor = {
@@ -53,7 +68,20 @@ export type SidepanelController = PopupRuntimeSlice & {
   backgroundClients: PopupClientState[]
   pageRouteClients: PopupClientState[]
   filteredSidepanelClients: SidepanelClientEntry[]
+  contentMode: SidepanelContentMode
+  setContentMode: (value: SidepanelContentMode) => void
   relatedRouteClients: PopupState['config']['routeClients']
+  marketCatalogs: MarketCatalogSourceResult[]
+  marketEntries: SidepanelMarketEntry[]
+  marketLoading: boolean
+  marketLoadError: string | undefined
+  marketSearch: string
+  setMarketSearch: (value: string) => void
+  refreshMarketCatalogs: () => void
+  installMarketClient: (
+    catalog: MarketCatalogSourceData,
+    entry: MarketCatalogClientEntry
+  ) => Promise<void>
   selectedClient: PopupClientState | undefined
   selectedRouteConfig: PopupState['config']['routeClients'][number] | undefined
   selectedOptionsClientId: string | undefined

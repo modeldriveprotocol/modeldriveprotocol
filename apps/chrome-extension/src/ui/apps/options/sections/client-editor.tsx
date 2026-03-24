@@ -20,6 +20,7 @@ export function ClientEditor({
   initialAssetTab,
   initialTab,
   invocationStats,
+  matchingTabCount,
   onClearHistory,
   onChange
 }: {
@@ -29,13 +30,20 @@ export function ClientEditor({
   initialAssetTab: OptionsAssetsTab | undefined
   initialTab: ClientDetailTab | undefined
   invocationStats: ClientInvocationStats | undefined
+  matchingTabCount: number | undefined
   onClearHistory: () => void
   onChange: (config: ExtensionConfig) => void
 }) {
   const { t } = useI18n()
   const [tab, setTab] = useState<ClientDetailTab>(initialTab ?? 'basics')
   const matched = Boolean(currentPageUrl && canCreateRouteClientFromUrl(currentPageUrl) && matchesRouteClient(currentPageUrl, client))
+  const hasMatchingOpenTab = (matchingTabCount ?? 0) > 0
   const currentPageLabel = formatSurfaceUrlLabel(currentPageUrl)
+  const runtimeLabel = matched
+    ? currentPageLabel
+    : hasMatchingOpenTab
+      ? t('options.clients.openTabs', { count: matchingTabCount ?? 0 })
+      : currentPageLabel
 
   useEffect(() => {
     setTab(initialTab ?? 'basics')
@@ -62,10 +70,10 @@ export function ClientEditor({
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0.75} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between">
         <Stack spacing={0.25} sx={{ minWidth: 0 }}>
-          <Typography variant="body2" sx={{ color: matched ? 'success.main' : 'text.secondary', fontWeight: 600 }}>
-            {matched ? t('options.clients.match') : client.enabled ? t('options.clients.idle') : t('options.clients.off')}
+          <Typography variant="body2" sx={{ color: matched || hasMatchingOpenTab ? 'success.main' : 'text.secondary', fontWeight: 600 }}>
+            {matched ? t('options.clients.match') : hasMatchingOpenTab ? t('options.clients.active') : client.enabled ? t('options.clients.idle') : t('options.clients.off')}
           </Typography>
-          {currentPageLabel ? <Typography variant="caption" color="text.secondary" noWrap>{currentPageLabel}</Typography> : null}
+          {runtimeLabel ? <Typography variant="caption" color="text.secondary" noWrap>{runtimeLabel}</Typography> : null}
         </Stack>
         <Typography variant="caption" color="text.secondary">
           {[t('options.clients.flows', { count: client.recordings.length }), t('options.clients.resources', { count: client.selectorResources.length }), t('options.clients.skills', { count: client.skillEntries.length })].join(' · ')}
