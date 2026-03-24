@@ -182,7 +182,7 @@ export function ClientsListPanel({
   return (
     <>
       <Stack spacing={1.25}>
-        <Stack spacing={1} sx={{ px: 1.25, py: 1 }}>
+        <Stack spacing={1} sx={{ py: 1 }}>
           <Stack direction="row" alignItems="center" spacing={1}>
             <TextField fullWidth size="small" placeholder={t('options.clients.search')} value={routeSearch} onChange={(event) => onRouteSearchChange(event.target.value)} InputProps={{ startAdornment: <InputAdornment position="start"><SearchOutlined fontSize="small" /></InputAdornment> }} />
             <Button variant="contained" onClick={(event) => setCreateMenuAnchor(event.currentTarget)} sx={{ minWidth: 40, px: 1.25 }}>
@@ -220,7 +220,7 @@ export function ClientsListPanel({
 
         <Divider />
 
-        <List dense disablePadding sx={{ px: 0.75, py: 0.5 }}>
+        <List dense disablePadding sx={{ py: 0.5 }}>
           {filteredClients.length === 0 ? (
             <ListItem disablePadding sx={{ px: 1.25, py: 1.5 }}>
               <ListItemText primary={t('options.clients.emptySearch')} secondary={t('options.clients.emptySearchHint')} primaryTypographyProps={{ variant: 'body2' }} secondaryTypographyProps={{ variant: 'caption' }} />

@@ -23,6 +23,7 @@ import {
 
 import type { AppearancePreference } from '../../foundation/appearance.js'
 import type { LocalePreference } from '../../i18n/provider.js'
+import { OPTIONS_SHELL_HEADER_HEIGHT } from './layout.js'
 import type { NavItem } from './types.js'
 import type { OptionsController } from './use-options-controller.js'
 
@@ -79,8 +80,8 @@ export function OptionsSidebar({
           alignItems="center"
           sx={{
             px: 1.5,
-            py: 1.5,
-            minHeight: 56,
+            height: OPTIONS_SHELL_HEADER_HEIGHT,
+            boxSizing: 'border-box',
             borderBottom: '1px solid',
             borderColor: 'divider'
           }}
@@ -91,13 +92,13 @@ export function OptionsSidebar({
             alt="MDP"
             sx={{ width: 28, height: 28, display: 'block', flexShrink: 0 }}
           />
-          <Typography variant="subtitle2" noWrap>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700 }} noWrap>
             {t('options.brand')}
           </Typography>
         </Stack>
 
-        <Box sx={{ minHeight: 0, overflow: 'auto', px: 1.25 }}>
-          <List dense disablePadding>
+        <Box sx={{ minHeight: 0, overflow: 'auto', px: 1.25, pt: 0 }}>
+          <List dense disablePadding sx={{ pt: 0 }}>
             {navItems.map((item) => (
               <ListItem key={item.id} disablePadding sx={{ mb: 0.25 }}>
                 <ListItemButton

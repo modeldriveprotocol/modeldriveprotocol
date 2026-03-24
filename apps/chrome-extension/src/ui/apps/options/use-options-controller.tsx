@@ -12,7 +12,9 @@ import {
   normalizeConfig,
   type ExtensionConfig
 } from '#~/shared/config.js'
+import type { PopupState } from '#~/background/shared.js'
 import {
+  clearInvocationTelemetry,
   createPresetRouteClient,
   getRuntimeStatus,
   loadWorkspaceConfig,
@@ -26,7 +28,9 @@ import { useOptionsRouting } from './use-options-routing.js'
 export function useOptionsController(t: (key: string, values?: Record<string, string | number>) => string) {
   const routing = useOptionsRouting()
   const [draft, setDraft] = useState<ExtensionConfig>()
-  const [runtimeState, setRuntimeState] = useState<any>()
+  const [runtimeState, setRuntimeState] = useState<PopupState>()
+  const [runtimeStateUpdatedAt, setRuntimeStateUpdatedAt] = useState<string>()
+  const [runtimeRefreshing, setRuntimeRefreshing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>()
   const [status, setStatus] = useState<string>()
@@ -77,18 +81,73 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
     return () => window.removeEventListener('keydown', onKeyDown)
   })
 
+  useEffect(() => {
+    if (loading) {
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') {
+        return
+      }
+
+      void refreshRuntimeState({ suppressError: true })
+    }, 5000)
+
+    return () => window.clearInterval(timer)
+  }, [loading])
+
   async function bootstrap() {
     try {
       setLoading(true)
-      const [nextDraft, nextRuntime] = await Promise.all([loadWorkspaceConfig(), getRuntimeStatus()])
+      const nextDraft = await loadWorkspaceConfig()
       setDraft(nextDraft)
-      setRuntimeState(nextRuntime)
+      await refreshRuntimeState()
       setTransferDraft(serializeWorkspaceBundle(nextDraft))
       setLastSavedSnapshot(JSON.stringify(normalizeConfig(nextDraft)))
     } catch (nextError) {
       setError(String(nextError))
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function refreshRuntimeState(options?: { notify?: boolean; suppressError?: boolean }) {
+    try {
+      setRuntimeRefreshing(true)
+      const nextRuntime = await getRuntimeStatus()
+      setRuntimeState(nextRuntime)
+      setRuntimeStateUpdatedAt(new Date().toISOString())
+
+      if (options?.notify) {
+        notify(t('options.status.runtimeRefreshed'), 'info')
+      }
+    } catch (nextError) {
+      if (options?.notify) {
+        notify(String(nextError), 'error')
+      }
+      if (!options?.suppressError) {
+        throw nextError
+      }
+    } finally {
+      setRuntimeRefreshing(false)
+    }
+  }
+
+  async function clearInvocationHistory(clientKey?: string) {
+    try {
+      await clearInvocationTelemetry(clientKey)
+      await refreshRuntimeState({ suppressError: true })
+      notify(
+        t(
+          clientKey
+            ? 'options.status.invocationHistoryCleared.client'
+            : 'options.status.invocationHistoryCleared.all'
+        ),
+        'info'
+      )
+    } catch (nextError) {
+      notify(String(nextError), 'error')
     }
   }
 
@@ -115,7 +174,7 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
       const saved = await saveWorkspaceConfig(draft)
       await refreshRuntime()
       setDraft(saved)
-      setRuntimeState(await getRuntimeStatus())
+      await refreshRuntimeState()
       setLastSavedSnapshot(JSON.stringify(normalizeConfig(saved)))
       setTransferDraft(serializeWorkspaceBundle(saved))
       notify(t('options.status.saved'), 'success')
@@ -230,6 +289,8 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
     draft,
     setDraft,
     runtimeState,
+    runtimeStateUpdatedAt,
+    runtimeRefreshing,
     loading,
     error,
     status,
@@ -257,6 +318,8 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
     importInputRef,
     dirty,
     notify,
+    clearInvocationHistory,
+    refreshRuntimeState,
     handleSave,
     handleDiscardChanges,
     addMarketSource,

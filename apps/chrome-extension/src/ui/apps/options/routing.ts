@@ -1,9 +1,13 @@
 import type { OptionsAssetsTab } from '../../platform/extension-api.js'
-import type { EditableClientId, OptionsRouteState, Section } from './types.js'
+import type { ClientDetailTab, EditableClientId, OptionsRouteState, Section } from './types.js'
 import { SECTION_IDS } from './types.js'
 
 export function isOptionsAssetsTab(value: string | null | undefined): value is OptionsAssetsTab {
   return value === 'flows' || value === 'resources' || value === 'skills'
+}
+
+function isClientDetailTab(value: string | null | undefined): value is Exclude<ClientDetailTab, 'assets'> {
+  return value === 'basics' || value === 'matching' || value === 'runtime' || value === 'activity'
 }
 
 export function buildOptionsHashPath(
@@ -11,6 +15,7 @@ export function buildOptionsHashPath(
   options?: {
     assetTab?: OptionsAssetsTab
     clientId?: EditableClientId
+    detailTab?: ClientDetailTab
     marketEntryKey?: string
   }
 ): string {
@@ -18,9 +23,13 @@ export function buildOptionsHashPath(
 
   if (normalizedSection === 'clients' && options?.clientId) {
     const segments = ['clients', encodeURIComponent(options.clientId)]
-    if (options.assetTab) {
+
+    if (options.detailTab === 'assets' && options.assetTab) {
       segments.push('assets', options.assetTab)
+    } else if (options.detailTab && options.detailTab !== 'assets') {
+      segments.push(options.detailTab)
     }
+
     return `#/${segments.join('/')}`
   }
 
@@ -51,18 +60,23 @@ export function getOptionsRouteFromLocation(): OptionsRouteState {
   let section: Section = 'workspace'
   let clientId: EditableClientId | undefined
   let assetTab: OptionsAssetsTab | undefined
+  let detailTab: ClientDetailTab | undefined
   let marketEntryKey: string | undefined
 
   if (segments[0] === 'assets') {
     section = 'clients'
     clientId = searchClientId
     assetTab = isOptionsAssetsTab(searchAssetTab) ? searchAssetTab : undefined
+    detailTab = assetTab ? 'assets' : undefined
   } else if (SECTION_IDS.includes(segments[0] as Section)) {
     section = segments[0] as Section
     if (section === 'clients') {
       clientId = segments[1] as EditableClientId | undefined
       if (segments[2] === 'assets' && isOptionsAssetsTab(segments[3])) {
         assetTab = segments[3]
+        detailTab = 'assets'
+      } else if (isClientDetailTab(segments[2])) {
+        detailTab = segments[2]
       }
     } else if (section === 'market') {
       marketEntryKey = segments[1]
@@ -71,6 +85,7 @@ export function getOptionsRouteFromLocation(): OptionsRouteState {
     section = searchClientId || isOptionsAssetsTab(searchAssetTab) ? 'clients' : 'workspace'
     clientId = searchClientId
     assetTab = isOptionsAssetsTab(searchAssetTab) ? searchAssetTab : undefined
+    detailTab = assetTab ? 'assets' : undefined
   }
 
   if (!clientId && searchClientId && section === 'clients') {
@@ -78,14 +93,16 @@ export function getOptionsRouteFromLocation(): OptionsRouteState {
   }
   if (!assetTab && isOptionsAssetsTab(searchAssetTab) && section === 'clients') {
     assetTab = searchAssetTab
+    detailTab = 'assets'
   }
 
   return {
     section,
     clientId,
     assetTab,
+    detailTab,
     marketEntryKey,
-    clientDetailOpen: Boolean(clientId || assetTab),
+    clientDetailOpen: Boolean(clientId || assetTab || detailTab),
     marketDetailOpen: Boolean(section === 'market' && marketEntryKey)
   }
 }
@@ -94,7 +111,8 @@ export function normalizeOptionsLocation(): OptionsRouteState {
   const route = getOptionsRouteFromLocation()
   const nextHash = buildOptionsHashPath(route.section, {
     clientId: route.clientId,
-    assetTab: route.assetTab
+    assetTab: route.assetTab,
+    detailTab: route.detailTab
   })
   const hasLegacySearch = new URLSearchParams(window.location.search).size > 0
 

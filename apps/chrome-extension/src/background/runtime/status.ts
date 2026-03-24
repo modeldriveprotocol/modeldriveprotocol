@@ -12,6 +12,7 @@ import {
 } from '#~/background/shared.js'
 
 import type { ChromeExtensionRuntime } from '../runtime.js'
+import { buildInvocationOverview, toClientInvocationStats } from './telemetry.js'
 
 export async function getRuntimeStatus(runtime: ChromeExtensionRuntime) {
   const config = await runtime.getConfig()
@@ -35,57 +36,70 @@ export async function getRuntimeStatus(runtime: ChromeExtensionRuntime) {
       ? await runtime.safeGetMainWorldState(activeTab.id)
       : undefined
 
+  const clients = [
+    {
+      clientKey: createClientKey('background'),
+      kind: 'background' as const,
+      clientId: config.backgroundClient.clientId,
+      clientName: config.backgroundClient.clientName,
+      clientDescription: config.backgroundClient.clientDescription,
+      icon: config.backgroundClient.icon,
+      enabled: config.backgroundClient.enabled,
+      connectionState:
+        runtime.clientStates.get(createClientKey('background'))?.connectionState ??
+        (config.backgroundClient.enabled ? 'idle' : 'disabled'),
+      lastError: runtime.clientStates.get(createClientKey('background'))?.lastError,
+      lastConnectedAt: runtime.clientStates.get(createClientKey('background'))?.lastConnectedAt,
+      matchPatterns: [],
+      matchesActiveTab: false,
+      recordingCount: 0,
+      selectorResourceCount: 0,
+      skillCount: 0,
+      invocationStats: toClientInvocationStats(
+        runtime.clientTelemetry.get(createClientKey('background'))
+      )
+    },
+    ...config.routeClients.map((client) => {
+      const key = createClientKey('route', client.id)
+      const state = runtime.clientStates.get(key)
+      const assets = summarizeRouteClientAssets(client)
+
+      return {
+        clientKey: key,
+        kind: 'route' as const,
+        id: client.id,
+        clientId: client.clientId,
+        clientName: client.clientName,
+        clientDescription: client.clientDescription,
+        icon: client.icon,
+        enabled: client.enabled,
+        connectionState: state?.connectionState ?? (client.enabled ? 'idle' : 'disabled'),
+        lastError: state?.lastError,
+        lastConnectedAt: state?.lastConnectedAt,
+        matchPatterns: client.matchPatterns,
+        routeRuleSummary: summarizeRouteRules(client),
+        matchesActiveTab: matchesRouteClient(activeTab?.url, client),
+        recordingCount: assets.recordingCount,
+        selectorResourceCount: assets.selectorResourceCount,
+        skillCount: assets.skillCount,
+        invocationStats: toClientInvocationStats(runtime.clientTelemetry.get(key))
+      }
+    })
+  ]
+
   return {
     config,
-    clients: [
-      {
-        clientKey: createClientKey('background'),
-        kind: 'background' as const,
-        clientId: config.backgroundClient.clientId,
-        clientName: config.backgroundClient.clientName,
-        clientDescription: config.backgroundClient.clientDescription,
-        icon: config.backgroundClient.icon,
-        enabled: config.backgroundClient.enabled,
-        connectionState:
-          runtime.clientStates.get(createClientKey('background'))?.connectionState ??
-          (config.backgroundClient.enabled ? 'idle' : 'disabled'),
-        lastError: runtime.clientStates.get(createClientKey('background'))?.lastError,
-        lastConnectedAt: runtime.clientStates.get(createClientKey('background'))?.lastConnectedAt,
-        matchPatterns: [],
-        matchesActiveTab: false,
-        recordingCount: 0,
-        selectorResourceCount: 0,
-        skillCount: 0
-      },
-      ...config.routeClients.map((client) => {
-        const key = createClientKey('route', client.id)
-        const state = runtime.clientStates.get(key)
-        const assets = summarizeRouteClientAssets(client)
-
-        return {
-          clientKey: key,
-          kind: 'route' as const,
-          id: client.id,
-          clientId: client.clientId,
-          clientName: client.clientName,
-          clientDescription: client.clientDescription,
-          icon: client.icon,
-          enabled: client.enabled,
-          connectionState: state?.connectionState ?? (client.enabled ? 'idle' : 'disabled'),
-          lastError: state?.lastError,
-          lastConnectedAt: state?.lastConnectedAt,
-          matchPatterns: client.matchPatterns,
-          routeRuleSummary: summarizeRouteRules(client),
-          matchesActiveTab: matchesRouteClient(activeTab?.url, client),
-          recordingCount: assets.recordingCount,
-          selectorResourceCount: assets.selectorResourceCount,
-          skillCount: assets.skillCount
-        }
-      })
-    ],
+    clients,
     onlineClientCount: [...runtime.clientStates.values()].filter(
       (state) => state.connectionState === 'connected'
     ).length,
+    invocationOverview: buildInvocationOverview(
+      clients.map((client) => ({
+        clientKey: client.clientKey,
+        clientName: client.clientName,
+        invocationStats: client.invocationStats
+      }))
+    ),
     marketUpdates: {
       autoCheckEnabled: config.marketAutoCheckUpdates,
       ...(marketSyncState.lastCheckedAt ? { lastCheckedAt: marketSyncState.lastCheckedAt } : {}),

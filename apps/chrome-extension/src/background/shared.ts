@@ -9,6 +9,77 @@ import { asRecord, createStableId, readNumber, readString } from '#~/shared/util
 import type { InjectedToolDescriptor, MainWorldBridgeState } from '#~/page/messages.js'
 
 export type ConnectionState = 'disabled' | 'idle' | 'connecting' | 'connected' | 'error'
+export type InvocationCapabilityKind = 'tool' | 'prompt' | 'skill' | 'resource'
+export type InvocationResultStatus = 'success' | 'error'
+
+export interface InvocationRecord {
+  requestId: string
+  kind: InvocationCapabilityKind
+  target: string
+  status: InvocationResultStatus
+  durationMs: number
+  startedAt: string
+  finishedAt: string
+  errorMessage?: string
+}
+
+export interface InvocationKindStats {
+  kind: InvocationCapabilityKind
+  totalCount: number
+  successCount: number
+  errorCount: number
+  totalDurationMs: number
+  averageDurationMs: number
+  minDurationMs?: number
+  maxDurationMs?: number
+}
+
+export interface ClientInvocationStats {
+  totalCount: number
+  successCount: number
+  errorCount: number
+  totalDurationMs: number
+  averageDurationMs: number
+  minDurationMs?: number
+  maxDurationMs?: number
+  lastInvokedAt?: string
+  lastStatus?: InvocationResultStatus
+  lastDurationMs?: number
+  lastTarget?: string
+  lastErrorMessage?: string
+  byKind: InvocationKindStats[]
+  recentInvocations: InvocationRecord[]
+}
+
+export interface InvocationOverviewClientStats {
+  clientKey: string
+  clientName: string
+  totalCount: number
+  successCount: number
+  errorCount: number
+  totalDurationMs: number
+  averageDurationMs: number
+  maxDurationMs?: number
+  lastInvokedAt?: string
+}
+
+export interface InvocationOverviewRecentRecord extends InvocationRecord {
+  clientKey: string
+  clientName: string
+}
+
+export interface InvocationOverviewStats {
+  totalCount: number
+  successCount: number
+  errorCount: number
+  totalDurationMs: number
+  averageDurationMs: number
+  maxDurationMs?: number
+  lastInvokedAt?: string
+  activeClientCount: number
+  clients: InvocationOverviewClientStats[]
+  recentInvocations: InvocationOverviewRecentRecord[]
+}
 
 export interface PopupClientState {
   clientKey: string
@@ -28,12 +99,14 @@ export interface PopupClientState {
   recordingCount: number
   selectorResourceCount: number
   skillCount: number
+  invocationStats: ClientInvocationStats
 }
 
 export interface PopupState {
   config: ExtensionConfig
   clients: PopupClientState[]
   onlineClientCount: number
+  invocationOverview: InvocationOverviewStats
   marketUpdates?: {
     autoCheckEnabled: boolean
     lastCheckedAt?: string

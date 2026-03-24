@@ -1,4 +1,4 @@
-import { Button, Stack, Typography } from '@mui/material'
+import { Typography } from '@mui/material'
 
 import type { ExtensionConfig } from '#~/shared/config.js'
 import type { PopupState } from '#~/background/shared.js'
@@ -16,6 +16,7 @@ export function ClientsSection(props: {
   routeSearch: string
   selectedClientId: any
   runtimeState: PopupState | undefined
+  onClearInvocationHistory: () => void
   onCloseDetail: () => void
   onOpenDetail: (clientId: any, detailTab?: any) => void
   onRouteSearchChange: (value: string) => void
@@ -25,7 +26,7 @@ export function ClientsSection(props: {
   onCreateClientFromPage: () => void
 }) {
   const { t } = useI18n()
-  const { clientDetailOpen, canCreateFromPage, draft, initialAssetTab, initialDetailTab, routeSearch, selectedClientId, runtimeState, onCloseDetail, onOpenDetail, onRouteSearchChange, onSelectClient, onChange, onCreateClient, onCreateClientFromPage } = props
+  const { clientDetailOpen, canCreateFromPage, draft, initialAssetTab, initialDetailTab, routeSearch, selectedClientId, runtimeState, onClearInvocationHistory, onCloseDetail, onOpenDetail, onRouteSearchChange, onSelectClient, onChange, onCreateClient, onCreateClientFromPage } = props
   const backgroundRuntimeState = runtimeState?.clients.find((client) => client.kind === 'background')
   const currentPageUrl = runtimeState?.activeTab?.url
   const clientItems = [
@@ -57,22 +58,14 @@ export function ClientsSection(props: {
   }
 
   return (
-    <Stack spacing={1.25}>
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ px: 0.25, py: 0.25 }}>
-        <Button size="small" variant="text" onClick={onCloseDetail} sx={{ px: 0 }}>
-          {t('options.clients.backToList')}
-        </Button>
-        {selectedClientItem ? <Typography variant="subtitle1" sx={{ fontWeight: 700 }} noWrap>{selectedClientItem.client.clientName}</Typography> : null}
-      </Stack>
-      {selectedClientItem ? (
-        selectedClientItem.kind === 'background' ? (
-          <BackgroundClientEditor client={selectedClientItem.client} draft={draft} runtimeState={backgroundRuntimeState?.connectionState} onChange={onChange} />
-        ) : (
-          <ClientEditor client={selectedClientItem.client} draft={draft} currentPageUrl={currentPageUrl} initialAssetTab={initialAssetTab} initialTab={initialDetailTab} onChange={onChange} />
-        )
+    selectedClientItem ? (
+      selectedClientItem.kind === 'background' ? (
+        <BackgroundClientEditor client={selectedClientItem.client} draft={draft} initialTab={initialDetailTab} invocationStats={backgroundRuntimeState?.invocationStats} runtimeState={backgroundRuntimeState?.connectionState} onClearHistory={onClearInvocationHistory} onChange={onChange} />
       ) : (
-        <Typography variant="body2" color="text.secondary">{t('options.clients.empty')}</Typography>
-      )}
-    </Stack>
+        <ClientEditor client={selectedClientItem.client} currentPageUrl={currentPageUrl} draft={draft} initialAssetTab={initialAssetTab} initialTab={initialDetailTab} invocationStats={runtimeState?.clients.find((client) => client.id === selectedClientItem.id)?.invocationStats} onClearHistory={onClearInvocationHistory} onChange={onChange} />
+      )
+    ) : (
+      <Typography variant="body2" color="text.secondary">{t('options.clients.empty')}</Typography>
+    )
   )
 }

@@ -19,12 +19,14 @@ interface RuntimeMessageResponse {
 
 export type OptionsSection = 'workspace' | 'settings' | 'clients' | 'assets' | 'market'
 export type OptionsAssetsTab = 'flows' | 'resources' | 'skills'
+export type OptionsClientDetailTab = 'basics' | 'matching' | 'runtime' | 'assets' | 'activity'
 
 function buildOptionsHashPath(
   section: OptionsSection,
   options?: {
     clientId?: string
     assetTab?: OptionsAssetsTab
+    detailTab?: OptionsClientDetailTab
   }
 ): string {
   const targetSection = section === 'assets' ? 'clients' : section
@@ -32,7 +34,11 @@ function buildOptionsHashPath(
   if (targetSection === 'clients' && options?.clientId) {
     const segments = ['clients', encodeURIComponent(options.clientId)]
 
-    if (options.assetTab) {
+    if (options.detailTab === 'assets' && options.assetTab) {
+      segments.push('assets', options.assetTab)
+    } else if (options.detailTab && options.detailTab !== 'assets') {
+      segments.push(options.detailTab)
+    } else if (options.assetTab) {
       segments.push('assets', options.assetTab)
     }
 
@@ -57,6 +63,7 @@ export function openOptionsSection(
   options?: {
     clientId?: string
     assetTab?: OptionsAssetsTab
+    detailTab?: OptionsClientDetailTab
   }
 ): Promise<chrome.tabs.Tab | undefined> {
   return chrome.tabs.create({
@@ -108,6 +115,13 @@ export async function getRuntimeStatus(): Promise<PopupState> {
 export async function refreshRuntime(): Promise<void> {
   await sendRuntimeMessage<null>({
     type: 'runtime:refresh'
+  })
+}
+
+export async function clearInvocationTelemetry(clientKey?: string): Promise<void> {
+  await sendRuntimeMessage<null>({
+    type: 'runtime:clearInvocationTelemetry',
+    ...(clientKey ? { clientKey } : {})
   })
 }
 

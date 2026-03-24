@@ -1,5 +1,6 @@
 import { type UnknownRecord, asRecord, serializeError } from '#~/shared/utils.js'
 import { ChromeExtensionRuntime } from '#~/background/runtime.js'
+import { STORAGE_KEY } from '#~/shared/config.js'
 
 let backgroundStarted = false
 
@@ -36,8 +37,14 @@ export function startBackground(): void {
     void runtime.initialize()
   })
 
-  chrome.storage.onChanged.addListener((_changes: unknown, areaName: string) => {
-    if (areaName === 'local') {
+  chrome.storage.onChanged.addListener((changes: unknown, areaName: string) => {
+    if (
+      areaName === 'local' &&
+      changes &&
+      typeof changes === 'object' &&
+      !Array.isArray(changes) &&
+      STORAGE_KEY in changes
+    ) {
       void runtime.refresh()
     }
   })

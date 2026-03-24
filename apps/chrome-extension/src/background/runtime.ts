@@ -75,6 +75,8 @@ import {
 } from './runtime/route-sessions.js'
 import { getRuntimeStatus } from './runtime/status.js'
 import { handleTabRemoved, handleTabUpdated } from './runtime/tab-lifecycle.js'
+import { clearInvocationTelemetry } from './runtime/telemetry-storage.js'
+import type { ClientInvocationTelemetryState } from './runtime/telemetry.js'
 import type {
   ActiveRecordingSession,
   ManagedClientHandle,
@@ -86,6 +88,9 @@ export class ChromeExtensionRuntime implements ChromeExtensionRuntimeApi {
   currentConfig: ExtensionConfig | undefined
   readonly clients = new Map<string, ManagedClientHandle>()
   readonly clientStates = new Map<string, ManagedClientConnectionState>()
+  readonly clientTelemetry = new Map<string, ClientInvocationTelemetryState>()
+  telemetryLoaded = false
+  telemetryPersistTimer: ReturnType<typeof globalThis.setTimeout> | undefined
   readonly tabInjectionState = new Map<number, TabInjectionState>()
   refreshPromise: Promise<void> | undefined
   marketSyncCheckPromise: Promise<void> | undefined
@@ -141,5 +146,6 @@ export class ChromeExtensionRuntime implements ChromeExtensionRuntimeApi {
   async persistGrantedActiveTabOrigin(routeClientId: string, pattern: string) { return persistGrantedActiveTabOrigin(this, routeClientId, pattern) }
   async createRouteClientFromActiveTab(clientName?: string) { return createRouteClientFromActiveTab(this, clientName) }
   async updateRouteClient(routeClientId: string, updater: (client: RouteClientConfig) => RouteClientConfig) { return updateRouteClient(this, routeClientId, updater) }
+  async clearInvocationTelemetry(clientKey?: string) { return clearInvocationTelemetry(this, clientKey) }
   scheduleReconnect() { scheduleReconnect(this) }
 }

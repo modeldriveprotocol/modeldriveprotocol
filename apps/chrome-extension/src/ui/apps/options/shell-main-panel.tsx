@@ -1,8 +1,12 @@
-import { Alert, Box, Snackbar, Stack, Typography } from '@mui/material'
+import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
+import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
+import { Alert, Box, CircularProgress, IconButton, Snackbar, Stack, Tooltip, Typography } from '@mui/material'
+import { createClientKey } from '#~/background/shared.js'
 import { createRouteClientConfig, type ExtensionConfig } from '#~/shared/config.js'
 import type { AppearancePreference } from '../../foundation/appearance.js'
 import { createPresetRouteClient } from '../../platform/extension-api.js'
 import type { LocalePreference } from '../../i18n/provider.js'
+import { OPTIONS_SHELL_HEADER_HEIGHT } from './layout.js'
 import { ClientsSection } from './sections/clients-section.js'
 import { GlobalSettingsSection } from './sections/global-settings-section.js'
 import { MarketSection } from './sections/market-section.js'
@@ -26,6 +30,28 @@ export function OptionsMainPanel({
   setLocalePreference,
   t
 }: OptionsMainPanelProps) {
+  const clientItems = [
+    { kind: 'background' as const, id: 'background' as const, client: draft.backgroundClient },
+    ...draft.routeClients.map((client) => ({ kind: 'route' as const, id: client.id, client }))
+  ]
+  const selectedClientItem =
+    clientItems.find((item) => item.id === controller.selectedClientId) ??
+    clientItems.find((item) => item.kind === 'route') ??
+    clientItems[0]
+  const clientDetailTitle =
+    controller.section === 'clients' && controller.clientDetailOpen
+      ? selectedClientItem?.client.clientName
+      : undefined
+  const headerTitle =
+    clientDetailTitle ??
+    (controller.section === 'workspace'
+      ? t('options.header.workspace')
+      : controller.section === 'settings'
+        ? t('options.header.settings')
+        : controller.section === 'clients'
+          ? t('options.header.clients')
+          : t('options.header.market'))
+
   return (
     <Box
       sx={{
@@ -42,26 +68,98 @@ export function OptionsMainPanel({
         spacing={1}
         sx={{
           px: 1.5,
-          py: 1.5,
-          minHeight: 56,
+          height: OPTIONS_SHELL_HEADER_HEIGHT,
+          boxSizing: 'border-box',
           borderBottom: '1px solid',
           borderColor: 'divider',
           bgcolor: 'background.default'
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          {controller.section === 'workspace' && t('options.header.workspace')}
-          {controller.section === 'settings' && t('options.header.settings')}
-          {controller.section === 'clients' && t('options.header.clients')}
-          {controller.section === 'market' && t('options.header.market')}
+        {controller.section === 'clients' && controller.clientDetailOpen ? (
+          <Tooltip title={t('options.clients.backToList')}>
+            <IconButton
+              size="small"
+              aria-label={t('options.clients.backToList')}
+              onClick={() =>
+                controller.setSectionAndHash('clients', {
+                  clientDetailOpen: false
+                })
+              }
+              sx={{ ml: -0.5 }}
+            >
+              <ArrowBackOutlined fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        ) : null}
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 700,
+            flexGrow: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          {headerTitle}
         </Typography>
+        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ flexShrink: 0 }}>
+          {controller.runtimeStateUpdatedAt ? (
+            <Typography variant="caption" color="text.secondary" noWrap>
+              {formatRuntimeTimestamp(controller.runtimeStateUpdatedAt)}
+            </Typography>
+          ) : null}
+          <Tooltip title={t('options.toolbar.refresh')}>
+            <span>
+              <IconButton
+                size="small"
+                aria-label={t('options.toolbar.refresh')}
+                disabled={controller.runtimeRefreshing}
+                onClick={() =>
+                  void controller.refreshRuntimeState({
+                    notify: true,
+                    suppressError: true
+                  })
+                }
+              >
+                {controller.runtimeRefreshing ? (
+                  <CircularProgress size={16} />
+                ) : (
+                  <RefreshOutlined fontSize="small" />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Stack>
       </Stack>
 
-      <Stack spacing={1.5} sx={{ p: 1.5, minHeight: 0, overflow: 'auto' }}>
+      <Stack
+        spacing={1.5}
+        sx={{
+          px: 1.5,
+          pb: 1.5,
+          pt: controller.section === 'clients' && controller.clientDetailOpen ? 0 : 1.5,
+          minHeight: 0,
+          overflow: 'auto'
+        }}
+      >
         {controller.section === 'workspace' ? (
           <WorkspaceSection
             draft={draft}
             dirty={controller.dirty}
+            onClearInvocationHistory={() => {
+              void controller.clearInvocationHistory()
+            }}
+            onOpenClientActivity={(clientKey) => {
+              const selectedId = resolveEditableClientId(clientKey)
+              controller.setSelectedClientId(selectedId)
+              controller.setSectionAndHash('clients', {
+                clientId: selectedId,
+                clientDetailOpen: true,
+                detailTab: 'activity'
+              })
+            }}
             runtimeState={controller.runtimeState}
           />
         ) : null}
@@ -116,10 +214,21 @@ export function OptionsMainPanel({
             canCreateFromPage={Boolean(controller.runtimeState?.activeTab?.url)}
             draft={draft}
             initialAssetTab={controller.assetTabHint}
-            initialDetailTab={controller.assetTabHint ? 'assets' : undefined}
+            initialDetailTab={controller.detailTabHint ?? (controller.assetTabHint ? 'assets' : undefined)}
             routeSearch={controller.routeSearch}
             selectedClientId={controller.selectedClientId}
             runtimeState={controller.runtimeState}
+            onClearInvocationHistory={() => {
+              if (!selectedClientItem) {
+                return
+              }
+
+              void controller.clearInvocationHistory(
+                selectedClientItem.kind === 'background'
+                  ? createClientKey('background')
+                  : createClientKey('route', selectedClientItem.id)
+              )
+            }}
             onCloseDetail={() =>
               controller.setSectionAndHash('clients', {
                 clientDetailOpen: false
@@ -131,8 +240,10 @@ export function OptionsMainPanel({
                 clientId,
                 clientDetailOpen: true,
                 ...(detailTab === 'assets'
-                  ? { assetTab: controller.assetTabHint ?? 'flows' }
-                  : {})
+                  ? { assetTab: controller.assetTabHint ?? 'flows', detailTab: 'assets' }
+                  : detailTab
+                    ? { detailTab }
+                    : {})
               })
             }}
             onRouteSearchChange={controller.setRouteSearch}
@@ -293,4 +404,20 @@ function createClient(
 
 function formatError(error: unknown) {
   return error instanceof Error ? error.message : String(error)
+}
+
+function formatRuntimeTimestamp(value: string): string {
+  return new Date(value).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+}
+
+function resolveEditableClientId(clientKey: string): string {
+  if (clientKey.startsWith('route:')) {
+    return clientKey.slice('route:'.length)
+  }
+
+  return 'background'
 }

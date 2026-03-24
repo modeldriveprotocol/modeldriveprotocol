@@ -17,10 +17,27 @@ import {
 
 import type { ChromeExtensionRuntime } from '../runtime.js'
 import { createTransport } from './helpers.js'
+import {
+  createInvocationTelemetryMiddleware,
+  pruneInvocationTelemetry
+} from './telemetry.js'
+import {
+  ensureInvocationTelemetryLoaded,
+  scheduleInvocationTelemetryPersist
+} from './telemetry-storage.js'
 import { RECONNECT_DELAY_MS } from './types.js'
 
 export async function refreshRuntime(runtime: ChromeExtensionRuntime): Promise<void> {
+  await ensureInvocationTelemetryLoaded(runtime)
   const config = normalizeConfig(await loadConfig())
+  const telemetrySizeBeforePrune = runtime.clientTelemetry.size
+  pruneInvocationTelemetry(runtime.clientTelemetry, [
+    createClientKey('background'),
+    ...config.routeClients.map((client) => createClientKey('route', client.id))
+  ])
+  if (runtime.clientTelemetry.size !== telemetrySizeBeforePrune) {
+    scheduleInvocationTelemetryPersist(runtime)
+  }
   const permissionState = await runtime.syncContentScriptRegistration(config)
   runtime.currentConfig = config
   await runtime.bootstrapOpenTabs(config, permissionState.granted)
@@ -77,6 +94,11 @@ export async function connectBackgroundClient(runtime: ChromeExtensionRuntime, c
       }
     })
 
+    client.useInvocationMiddleware(
+      createInvocationTelemetryMiddleware(runtime.clientTelemetry, key, () => {
+        scheduleInvocationTelemetryPersist(runtime)
+      })
+    )
     registerBackgroundCapabilities(client, runtime)
     await client.connect()
     client.register()
@@ -129,6 +151,11 @@ export async function connectRouteClient(
       }
     })
 
+    client.useInvocationMiddleware(
+      createInvocationTelemetryMiddleware(runtime.clientTelemetry, key, () => {
+        scheduleInvocationTelemetryPersist(runtime)
+      })
+    )
     registerRouteClientCapabilities(client, runtime, routeClient)
     await client.connect()
     client.register()

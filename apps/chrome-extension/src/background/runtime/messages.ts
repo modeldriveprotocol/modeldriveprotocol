@@ -62,6 +62,9 @@ export async function handleRuntimeMessage(
     case 'runtime:refresh':
       await runtime.refresh()
       return { refreshed: true }
+    case 'runtime:clearInvocationTelemetry':
+      await runtime.clearInvocationTelemetry(readString(message, 'clientKey'))
+      return { cleared: true }
     case 'page:selectorCaptured':
       return runtime.handleSelectorCapturedMessage(message, sender)
     default:

@@ -4,12 +4,14 @@ import { Box, Divider, FormControlLabel, MenuItem, Stack, Switch, Tab, Tabs, Tex
 import { useEffect, useState } from 'react'
 
 import { canCreateRouteClientFromUrl, matchesRouteClient, stringifyMatchPatterns, type ExtensionConfig, type RouteClientConfig } from '#~/shared/config.js'
+import type { ClientInvocationStats } from '#~/background/shared.js'
 import type { OptionsAssetsTab } from '../../../platform/extension-api.js'
 import { useI18n } from '../../../i18n/provider.js'
 import { IconPicker } from '../icon-picker.js'
 import { ToolbarIcon } from '../shared.js'
 import { formatSurfaceUrlLabel, type ClientDetailTab } from '../types.js'
 import { ClientAssetsPanel } from './client-assets-panel.js'
+import { ClientInvocationPanel } from './invocation-insights.js'
 
 export function ClientEditor({
   client,
@@ -17,6 +19,8 @@ export function ClientEditor({
   draft,
   initialAssetTab,
   initialTab,
+  invocationStats,
+  onClearHistory,
   onChange
 }: {
   client: RouteClientConfig
@@ -24,6 +28,8 @@ export function ClientEditor({
   draft: ExtensionConfig
   initialAssetTab: OptionsAssetsTab | undefined
   initialTab: ClientDetailTab | undefined
+  invocationStats: ClientInvocationStats | undefined
+  onClearHistory: () => void
   onChange: (config: ExtensionConfig) => void
 }) {
   const { t } = useI18n()
@@ -44,6 +50,16 @@ export function ClientEditor({
 
   return (
     <Stack spacing={1.25}>
+      <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Tabs value={tab} onChange={(_event, next) => setTab(next)} variant="scrollable" scrollButtons={false}>
+          <Tab value="basics" label={t('options.clients.tab.basics')} />
+          <Tab value="matching" label={t('options.clients.tab.matching')} />
+          <Tab value="runtime" label={t('options.clients.tab.runtime')} />
+          <Tab value="assets" label={t('options.clients.tab.assets')} />
+          <Tab value="activity" label={t('options.clients.tab.activity')} />
+        </Tabs>
+      </Box>
+
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0.75} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between">
         <Stack spacing={0.25} sx={{ minWidth: 0 }}>
           <Typography variant="body2" sx={{ color: matched ? 'success.main' : 'text.secondary', fontWeight: 600 }}>
@@ -55,15 +71,6 @@ export function ClientEditor({
           {[t('options.clients.flows', { count: client.recordings.length }), t('options.clients.resources', { count: client.selectorResources.length }), t('options.clients.skills', { count: client.skillEntries.length })].join(' · ')}
         </Typography>
       </Stack>
-
-      <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Tabs value={tab} onChange={(_event, next) => setTab(next)} variant="scrollable" scrollButtons={false}>
-          <Tab value="basics" label={t('options.clients.tab.basics')} />
-          <Tab value="matching" label={t('options.clients.tab.matching')} />
-          <Tab value="runtime" label={t('options.clients.tab.runtime')} />
-          <Tab value="assets" label={t('options.clients.tab.assets')} />
-        </Tabs>
-      </Box>
 
       {tab === 'basics' ? (
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1.25 }}>
@@ -113,6 +120,13 @@ export function ClientEditor({
       ) : null}
 
       {tab === 'assets' ? <ClientAssetsPanel client={client} draft={draft} initialTab={initialAssetTab} onChange={onChange} /> : null}
+      {tab === 'activity' ? (
+        <ClientInvocationPanel
+          description={t('options.clients.invocations.description')}
+          onClearHistory={onClearHistory}
+          stats={invocationStats}
+        />
+      ) : null}
     </Stack>
   )
 }

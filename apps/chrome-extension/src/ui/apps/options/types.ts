@@ -5,7 +5,7 @@ import type { OptionsAssetsTab } from '../../platform/extension-api.js'
 
 export type Section = 'workspace' | 'settings' | 'clients' | 'market'
 export type TransferMode = 'import' | 'export'
-export type ClientDetailTab = 'basics' | 'matching' | 'runtime' | 'assets'
+export type ClientDetailTab = 'basics' | 'matching' | 'runtime' | 'assets' | 'activity'
 export type EditableClientId = 'background' | string
 
 export type MarketSourceDraftInput =
@@ -40,6 +40,7 @@ export type OptionsRouteState = {
   assetTab?: OptionsAssetsTab
   clientDetailOpen: boolean
   clientId?: EditableClientId
+  detailTab?: ClientDetailTab
   marketDetailOpen: boolean
   marketEntryKey?: string
   section: Section

@@ -1,0 +1,1 @@
+export const OPTIONS_SHELL_HEADER_HEIGHT = 64
