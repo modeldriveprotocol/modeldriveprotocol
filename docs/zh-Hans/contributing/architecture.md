@@ -52,3 +52,9 @@ pnpm build
 pnpm test
 pnpm docs:build
 ```
+
+根级脚本现在按职责分层：
+
+- `pnpm build` 是递归的 workspace 构建入口。
+- `pnpm test` 是更完整的仓库级校验路径，包含 smoke test 前的重新构建。
+- `pnpm docs:build` 会先准备文档资源，再构建站点。

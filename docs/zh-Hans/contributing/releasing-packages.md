@@ -22,8 +22,8 @@ status: Draft
 - checkout 对应 tag 的提交
 - 校验 tag 与待发布包版本一致
 - 安装依赖
-- 运行 `pnpm build`
-- 运行 `pnpm test`
+- 运行 `pnpm build`，递归构建 workspace 中的 packages 和 apps
+- 运行 `pnpm test`，其中会在 smoke test 前重新构建 package 产物
 - 运行 `pnpm publish:packages`
 - 创建或更新对应的 GitHub Release
 

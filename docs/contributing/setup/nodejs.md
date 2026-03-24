@@ -59,6 +59,20 @@ pnpm docs:dev
 pnpm docs:build
 ```
 
+- `pnpm build` runs recursive workspace builds across `packages/**` and `apps/**`.
+- `pnpm test` reruns package builds before the smoke test so the dist-based end-to-end check uses fresh artifacts.
+- `pnpm docs:dev` and `pnpm docs:build` automatically build the browser bundles they copy into `docs/public/assets`.
+
+Additional root helpers:
+
+```bash
+pnpm build:packages
+pnpm build:apps
+pnpm typecheck
+pnpm typecheck:packages
+pnpm typecheck:apps
+```
+
 ## App-scoped validation
 
 When you are only touching one app, start with its own commands:

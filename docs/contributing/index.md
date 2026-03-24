@@ -26,6 +26,10 @@ pnpm docs:build
 
 These commands match the validation flow described in the root `AGENTS.md`.
 
+- `pnpm build` runs the workspace build graph from the root instead of hard-coding per-package commands.
+- `pnpm test` includes a fresh package rebuild before the smoke test.
+- `pnpm docs:build` prepares the generated browser assets before invoking VitePress.
+
 ## How to use this section
 
 - Start with [Project Architecture](/contributing/architecture) if you need to understand how changes should flow through the repository.

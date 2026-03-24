@@ -52,3 +52,9 @@ pnpm build
 pnpm test
 pnpm docs:build
 ```
+
+The root scripts are intentionally layered:
+
+- `pnpm build` is the recursive workspace build.
+- `pnpm test` is the broad repo-level verification path and includes the smoke-test rebuild step.
+- `pnpm docs:build` prepares docs assets before building the site.

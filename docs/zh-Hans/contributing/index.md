@@ -26,6 +26,10 @@ pnpm docs:build
 
 这些命令与根目录 `AGENTS.md` 里的校验流程保持一致。
 
+- `pnpm build` 会从仓库根目录递归执行 workspace 构建，而不是手写每个包的命令。
+- `pnpm test` 在 smoke test 前会先重新构建 package。
+- `pnpm docs:build` 在调用 VitePress 前会先准备生成出来的浏览器资源。
+
 ## 如何使用这一组文档
 
 - 如果你先想弄清楚改动应该怎么在仓库里流转，先看 [项目架构](/zh-Hans/contributing/architecture)。

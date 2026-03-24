@@ -59,6 +59,20 @@ pnpm docs:dev
 pnpm docs:build
 ```
 
+- `pnpm build` 会递归构建 `packages/**` 和 `apps/**` 下的 workspace。
+- `pnpm test` 会在 smoke test 前重新构建 package 产物，确保端到端校验使用最新 dist。
+- `pnpm docs:dev` 和 `pnpm docs:build` 会先自动构建文档站点依赖的浏览器 bundle，再准备 `docs/public/assets`。
+
+另外几个常用的根级辅助命令：
+
+```bash
+pnpm build:packages
+pnpm build:apps
+pnpm typecheck
+pnpm typecheck:packages
+pnpm typecheck:apps
+```
+
 ## 应用级校验
 
 如果你只改一个 app，先从它自己的命令开始：
