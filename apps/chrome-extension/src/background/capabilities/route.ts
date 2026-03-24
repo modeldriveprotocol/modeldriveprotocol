@@ -1,4 +1,8 @@
-import type { MdpClient } from '@modeldriveprotocol/client'
+import type {
+  MdpClient,
+  SkillHeaders,
+  SkillQuery
+} from '@modeldriveprotocol/client'
 
 import type { RouteClientConfig } from '#~/shared/config.js'
 import type { ChromeExtensionRuntimeApi } from '#~/background/runtime-api.js'
@@ -6,6 +10,10 @@ import { jsonResource, tabTargetSchema } from '#~/background/shared.js'
 import { registerPageInjectedTools } from './route/page-injected-tools.js'
 import { registerPageInteractionTools } from './route/page-interaction-tools.js'
 import { registerPageWaitTools } from './route/page-wait-tools.js'
+import {
+  buildRouteSkillInputSchema,
+  renderRouteSkillContent
+} from './route/skills.js'
 import { buildSelectorResourcePayload, slugify } from './route/shared.js'
 
 export function registerRouteClientCapabilities(
@@ -17,7 +25,8 @@ export function registerRouteClientCapabilities(
     'route.getStatus',
     async () => runtime.getRouteClient(routeClient.id),
     {
-      description: 'Read the current route-scoped client configuration and recorded assets.'
+      description:
+        'Read the current route-scoped client configuration and recorded assets.'
     }
   )
 
@@ -26,9 +35,19 @@ export function registerRouteClientCapabilities(
   registerPageWaitTools(client, runtime, routeClient)
 
   for (const recording of routeClient.recordings) {
+    const runnable =
+      recording.mode === 'script'
+        ? recording.scriptSource.trim().length > 0
+        : recording.steps.length > 0
+
+    if (!runnable) {
+      continue
+    }
+
     client.exposeTool(
       `flow.${slugify(recording.name)}`,
-      async (args) => runtime.runRouteRecording(routeClient.id, recording.id, args),
+      async (args) =>
+        runtime.runRouteRecording(routeClient.id, recording.id, args),
       {
         description: recording.description,
         inputSchema: tabTargetSchema()
@@ -42,7 +61,9 @@ export function registerRouteClientCapabilities(
       jsonResource({
         routeClient,
         recordings: await runtime.listRouteRecordings(routeClient.id),
-        selectorResources: await runtime.listRouteSelectorResources(routeClient.id)
+        selectorResources: await runtime.listRouteSelectorResources(
+          routeClient.id
+        )
       }),
     {
       name: `${routeClient.clientName} Summary`,
@@ -63,9 +84,17 @@ export function registerRouteClientCapabilities(
   }
 
   for (const skill of routeClient.skillEntries) {
-    client.exposeSkill(skill.path, skill.content, {
-      description: skill.summary,
-      contentType: 'text/markdown'
-    })
+    const inputSchema = buildRouteSkillInputSchema(skill)
+
+    client.exposeSkill(
+      skill.path,
+      (query: SkillQuery, headers: SkillHeaders) =>
+        renderRouteSkillContent(skill, query, headers),
+      {
+        description: skill.summary,
+        contentType: 'text/markdown',
+        ...(inputSchema ? { inputSchema } : {})
+      }
+    )
   }
 }

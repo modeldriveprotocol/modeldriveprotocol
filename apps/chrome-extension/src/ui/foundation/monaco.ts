@@ -1,0 +1,121 @@
+import type { Theme } from '@mui/material/styles'
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.api'
+import 'monaco-editor/esm/vs/language/json/monaco.contribution'
+import 'monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution'
+import 'monaco-editor/esm/vs/basic-languages/markdown/markdown.contribution'
+import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
+import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
+
+declare global {
+  var MonacoEnvironment:
+    | {
+        getWorker: (_moduleId: string, label: string) => Worker
+      }
+    | undefined
+}
+
+const LIGHT_THEME_NAME = 'mdp-monaco-light'
+const DARK_THEME_NAME = 'mdp-monaco-dark'
+
+type JsonSchemaRegistration = {
+  schemaUri: string
+  modelUri: string
+  schema: unknown
+}
+
+const jsonSchemaRegistrations = new Map<string, JsonSchemaRegistration>()
+let monacoBootstrapped = false
+
+export function ensureMonacoBootstrapped(): void {
+  if (monacoBootstrapped) {
+    return
+  }
+
+  globalThis.MonacoEnvironment = {
+    getWorker(_moduleId, label) {
+      if (label === 'json') {
+        return new jsonWorker()
+      }
+
+      return new editorWorker()
+    }
+  }
+
+  monacoBootstrapped = true
+}
+
+export function ensureMonacoJsonSchema(registration: JsonSchemaRegistration): void {
+  ensureMonacoBootstrapped()
+
+  const key = `${registration.schemaUri}:${registration.modelUri}`
+
+  if (!jsonSchemaRegistrations.has(key)) {
+    jsonSchemaRegistrations.set(key, registration)
+  }
+
+  const jsonDefaults = (
+    monaco.languages as typeof monaco.languages & {
+      json: {
+        jsonDefaults: {
+          setDiagnosticsOptions: (options: unknown) => void
+        }
+      }
+    }
+  ).json.jsonDefaults
+
+  jsonDefaults.setDiagnosticsOptions({
+    allowComments: false,
+    enableSchemaRequest: false,
+    schemaValidation: 'warning',
+    validate: true,
+    schemas: [...jsonSchemaRegistrations.values()].map((item) => ({
+      uri: item.schemaUri,
+      fileMatch: [item.modelUri],
+      schema: item.schema
+    }))
+  })
+}
+
+export function applyMonacoTheme(theme: Theme): void {
+  ensureMonacoBootstrapped()
+
+  monaco.editor.defineTheme(LIGHT_THEME_NAME, {
+    base: 'vs',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': theme.palette.background.paper,
+      'editor.foreground': theme.palette.text.primary,
+      'editor.lineHighlightBackground': theme.palette.action.hover,
+      'editorLineNumber.foreground': theme.palette.text.disabled,
+      'editorLineNumber.activeForeground': theme.palette.text.secondary,
+      'editor.selectionBackground': theme.palette.action.selected,
+      'editor.inactiveSelectionBackground': theme.palette.action.focus,
+      'editorIndentGuide.background1': theme.palette.divider,
+      'editorIndentGuide.activeBackground1': theme.palette.text.disabled,
+      'editorWhitespace.foreground': theme.palette.divider
+    }
+  })
+
+  monaco.editor.defineTheme(DARK_THEME_NAME, {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': theme.palette.background.paper,
+      'editor.foreground': theme.palette.text.primary,
+      'editor.lineHighlightBackground': theme.palette.action.hover,
+      'editorLineNumber.foreground': theme.palette.text.disabled,
+      'editorLineNumber.activeForeground': theme.palette.text.secondary,
+      'editor.selectionBackground': theme.palette.action.selected,
+      'editor.inactiveSelectionBackground': theme.palette.action.focus,
+      'editorIndentGuide.background1': theme.palette.divider,
+      'editorIndentGuide.activeBackground1': theme.palette.text.disabled,
+      'editorWhitespace.foreground': theme.palette.divider
+    }
+  })
+
+  monaco.editor.setTheme(theme.palette.mode === 'dark' ? DARK_THEME_NAME : LIGHT_THEME_NAME)
+}
+
+export { monaco }

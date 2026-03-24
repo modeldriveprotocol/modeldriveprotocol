@@ -3,13 +3,30 @@ import type { Locale } from './types.js'
 export const optionsMessages: Record<Locale, Record<string, string>> = {
   en: {
     'options.clients.title': 'Clients',
-    'options.clients.description': 'Search, preview, and edit background and route clients.',
+    'options.clients.description':
+      'Search, preview, and edit background and route clients.',
     'options.clients.add': 'Add route client',
     'options.clients.addFromPage': 'Create from current page',
-    'options.clients.backgroundSummary': 'Browser-level singleton with built-in tools and resources',
-    'options.clients.backgroundAssetsDescription': 'This client exposes built-in extension tools and resources. They are always available and read-only here.',
+    'options.clients.backgroundSummary':
+      'Browser-level client with configurable built-in tools and resources',
+    'options.clients.backgroundAssetsDescription':
+      'Choose which built-in extension tools and resources the background client exposes. Disabled items stay hidden from the server until you turn them back on.',
     'options.clients.backgroundTools': 'Built-in tools',
     'options.clients.backgroundResources': 'Built-in resources',
+    'options.clients.backgroundSkills': 'Built-in skills',
+    'options.clients.backgroundDefaultName': 'Background Client {{count}}',
+    'options.clients.backgroundToolsCount':
+      '{{enabled}} / {{total}} tools enabled',
+    'options.clients.backgroundResourcesCount':
+      '{{enabled}} / {{total}} resources enabled',
+    'options.clients.backgroundSkillsCount':
+      '{{enabled}} / {{total}} skills enabled',
+    'options.clients.backgroundAssetsEnabledCount':
+      '{{enabled}} / {{total}} enabled',
+    'options.clients.backgroundSkillsEmpty':
+      'No built-in background skills yet.',
+    'options.clients.backgroundAssetStatus.enabled': 'Enabled',
+    'options.clients.backgroundAssetStatus.disabled': 'Disabled',
     'options.clients.defaultName': 'Route Client {{count}}',
     'options.clients.search': 'Search clients, ids, patterns, skills',
     'options.clients.filter.all': 'All',
@@ -26,19 +43,23 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.clients.idle': 'idle',
     'options.clients.off': 'off',
     'options.clients.editorFallback': 'Client editor',
-    'options.clients.editorDescription': 'Edit identity, matching, and runtime behavior.',
+    'options.clients.editorDescription':
+      'Edit identity, matching, and runtime behavior.',
     'options.clients.duplicate': 'Duplicate client',
     'options.clients.delete': 'Delete client',
     'options.clients.confirmDelete.title': 'Delete client?',
-    'options.clients.confirmDelete.body.single': 'This will permanently remove "{{name}}" from the workspace.',
-    'options.clients.confirmDelete.body.multiple': 'This will permanently remove {{count}} clients from the workspace.',
+    'options.clients.confirmDelete.body.single':
+      'This will permanently remove "{{name}}" from the workspace.',
+    'options.clients.confirmDelete.body.multiple':
+      'This will permanently remove {{count}} clients from the workspace.',
     'options.clients.confirmDelete.hint': 'This action cannot be undone.',
     'options.clients.confirmDelete.cancel': 'Cancel',
     'options.clients.confirmDelete.confirm': 'Delete',
     'options.clients.copySuffix': 'Copy',
     'options.clients.empty': 'Add or select a route client to edit it here.',
     'options.clients.emptySearch': 'No client matches this search yet.',
-    'options.clients.emptySearchHint': 'Clear the search, add a client, or create one from the current page.',
+    'options.clients.emptySearchHint':
+      'Clear the search, add a client, or create one from the current page.',
     'options.clients.noActiveTab': 'no active tab',
     'options.clients.flows': '{{count}} flows',
     'options.clients.resources': '{{count}} resources',
@@ -51,7 +72,8 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.clients.tab.assets': 'Assets',
     'options.clients.tab.activity': 'Activity',
     'options.clients.backToList': 'Back to clients',
-    'options.clients.invocations.description': 'Invocation telemetry collected through the client SDK middleware hook. History stays available until you clear it.',
+    'options.clients.invocations.description':
+      'Invocation telemetry collected through the client SDK middleware hook. History stays available until you clear it.',
     'options.clients.pathRules': 'Path rules',
     'options.clients.addRule': 'Add route rule',
     'options.clients.removeRule': 'Remove rule',
@@ -89,7 +111,8 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.invocations.kind.skill': 'Skill',
     'options.invocations.kind.resource': 'Resource',
     'options.assets.title': 'Assets',
-    'options.assets.description': 'Pick a route client first so you can review and edit its tools, resources, and skills.',
+    'options.assets.description':
+      'Pick a route client first so you can review and edit its tools, resources, and skills.',
     'options.assets.noSelectedClient': 'No route client selected yet.',
     'options.assets.addResource': 'Add resource',
     'options.assets.addSkill': 'Add skill',
@@ -97,16 +120,29 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.assets.tab.flows': 'Flows {{count}}',
     'options.assets.tab.resources': 'Resources {{count}}',
     'options.assets.tab.skills': 'Skills {{count}}',
-    'options.assets.flows.title': 'Recorded flows',
-    'options.assets.flows.description': 'Tools created from page recordings.',
-    'options.assets.flows.empty': 'No flows recorded yet. Start from the popup on a matching page.',
+    'options.assets.flows.title': 'Flows',
+    'options.assets.flows.description':
+      'Build flow tools from popup recordings or write them directly in JavaScript.',
+    'options.assets.flows.empty':
+      'No flows yet. Record one from the popup or add a code flow here.',
+    'options.assets.flows.addCode': 'Add code flow',
+    'options.assets.flows.newName': 'Code Flow',
     'options.assets.flows.name': 'Flow name',
     'options.assets.flows.steps': '{{count}} steps',
     'options.assets.flows.startUrl': 'Start',
     'options.assets.flows.features': 'Features',
+    'options.assets.flows.mode.recording': 'Recorded steps',
+    'options.assets.flows.mode.script': 'Code',
+    'options.assets.flows.recordingEmpty':
+      'No recorded steps yet. Record this flow from the popup, or switch back to code mode.',
+    'options.assets.flows.scriptHelp':
+      'This script runs in the page main world. Use `args` for tool input, and return any value you want the flow tool to emit.',
+    'options.assets.flows.scriptEditor': 'Flow script editor',
     'options.assets.resources.title': 'Selector resources',
-    'options.assets.resources.description': 'Serializable page elements captured or authored for this route client.',
-    'options.assets.resources.empty': 'No selector resources yet. Capture them from the popup or add them manually.',
+    'options.assets.resources.description':
+      'Serializable page elements captured or authored for this route client.',
+    'options.assets.resources.empty':
+      'No selector resources yet. Capture them from the popup or add them manually.',
     'options.assets.resources.newName': 'New resource',
     'options.assets.resources.name': 'Resource name',
     'options.assets.resources.selector': 'Selector',
@@ -114,20 +150,66 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.assets.resources.text': 'Captured text',
     'options.assets.resources.alternativeSelectors': 'Alternative selectors',
     'options.assets.resources.classes': 'Classes',
-    'options.assets.skills.title': 'Skill entries',
-    'options.assets.skills.description': 'Route-local skill paths and markdown guidance.',
-    'options.assets.skills.empty': 'No skills yet. Use structured paths like workspace/orders/refunds.',
+    'options.assets.skills.title': 'Skill files',
+    'options.assets.skills.description':
+      'Manage route-local skills as a file tree, then edit parameterized markdown on the right.',
+    'options.assets.skills.empty':
+      'No skills yet. Add one and use paths like workspace/orders/refunds to build folders.',
     'options.assets.skills.newTitle': 'New skill',
+    'options.assets.skills.newFolder': 'New folder',
+    'options.assets.skills.addFolder': 'Add folder',
+    'options.assets.skills.addSkillInFolder': 'Add file to folder',
+    'options.assets.skills.deleteFolder': 'Delete folder files',
+    'options.assets.skills.cancelFolderDraft': 'Cancel folder',
+    'options.assets.skills.confirmFolderDraft': 'Create folder',
     'options.assets.skills.path': 'Path',
+    'options.assets.skills.pathHint':
+      'Use `/` in the path to create folders in the tree.',
+    'options.assets.skills.pathInvalid':
+      'Enter at least one path segment using lowercase letters, numbers, `-`, or `_`.',
+    'options.assets.skills.pathConflict':
+      'This path already exists in the current client.',
+    'options.assets.skills.folderPath': 'Folder path',
+    'options.assets.skills.folderPathInvalid':
+      'Enter at least one folder segment using lowercase letters, numbers, `-`, or `_`.',
+    'options.assets.skills.folderPathConflict':
+      'Renaming this folder would collide with an existing file or folder path.',
+    'options.assets.skills.folderDraftHint':
+      'Folders are materialized when they contain at least one markdown file.',
+    'options.assets.skills.folderSummaryTitle': 'Folder summary',
+    'options.assets.skills.folderSummary':
+      '{{count}} markdown file(s) currently live under this folder.',
+    'options.assets.skills.folderHint':
+      'Renaming a folder rewrites every file path under it. Deleting a folder removes every file under it.',
     'options.assets.skills.titleField': 'Title',
     'options.assets.skills.content': 'Content',
+    'options.assets.skills.treeHint':
+      'Each skill path becomes a markdown file in the tree on the left.',
+    'options.assets.skills.noSelection':
+      'Select a file from the tree, or add a new skill to start editing.',
+    'options.assets.skills.queryParameters': 'Query parameters',
+    'options.assets.skills.headerParameters': 'Header parameters',
+    'options.assets.skills.addQueryParameter': 'Add query parameter',
+    'options.assets.skills.addHeaderParameter': 'Add header parameter',
+    'options.assets.skills.queryParametersEmpty': 'No query parameters yet.',
+    'options.assets.skills.headerParametersEmpty': 'No header parameters yet.',
+    'options.assets.skills.parameterKey': 'Parameter key',
+    'options.assets.skills.availableVariables': 'Available variables',
+    'options.assets.skills.availableVariablesEmpty':
+      'Add a query or header parameter to generate variables.',
+    'options.assets.skills.insertVariable': 'Insert into markdown',
+    'options.assets.skills.markdownHelp':
+      'Reference query and header values with tokens like `{{query.ticketId}}` and `{{header.x-workspace}}`.',
+    'options.assets.skills.markdown': 'Markdown editor',
     'options.market.title': 'Starter market',
-    'options.market.description': 'Install starter client templates locally, then customize them inside Clients and Assets.',
+    'options.market.description':
+      'Install starter client templates locally, then customize them inside Clients and Assets.',
     'options.market.install': 'Install {{name}}',
     'options.market.previewClient': 'Included client',
     'options.market.matching': 'Matching',
     'options.imports.title': 'Import and export',
-    'options.imports.description': 'Move workspace bundles in and out of the extension without leaving the configuration surface.',
+    'options.imports.description':
+      'Move workspace bundles in and out of the extension without leaving the configuration surface.',
     'options.imports.copy': 'Copy JSON',
     'options.imports.download': 'Download JSON',
     'options.imports.upload': 'Upload JSON file',
@@ -149,18 +231,22 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.imports.summaryRoutes': '{{count}} route clients',
     'options.imports.summaryBackgroundOn': 'background enabled',
     'options.imports.summaryBackgroundOff': 'background disabled',
-    'options.imports.summaryInvalid': 'Current JSON is not a valid workspace bundle.',
+    'options.imports.summaryInvalid':
+      'Current JSON is not a valid workspace bundle.',
     'options.diagnostics.runtime.title': 'Runtime',
-    'options.diagnostics.runtime.description': 'Inspect the active page, bridge state, and client connections.',
+    'options.diagnostics.runtime.description':
+      'Inspect the active page, bridge state, and client connections.',
     'options.diagnostics.noActiveUrl': 'No active URL',
     'options.diagnostics.bridgeUnavailable': 'bridge unavailable',
     'options.diagnostics.route.title': 'Route match interpreter',
-    'options.diagnostics.route.description': 'Check which route clients would activate for a specific URL.',
+    'options.diagnostics.route.description':
+      'Check which route clients would activate for a specific URL.',
     'options.diagnostics.route.evaluateUrl': 'Evaluate URL',
     'options.diagnostics.route.matchesAnyPath': 'Matches any path',
     'options.diagnostics.route.miss': 'miss',
     'options.diagnostics.bridgeTools.title': 'Bridge tools',
-    'options.diagnostics.bridgeTools.description': 'Tools currently injected into the active page.',
+    'options.diagnostics.bridgeTools.description':
+      'Tools currently injected into the active page.',
     'options.diagnostics.injectedTool': 'Injected tool'
   },
   'zh-CN': {
@@ -168,10 +254,25 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.clients.description': '统一搜索、预览并编辑后台级和路由级客户端。',
     'options.clients.add': '添加路由客户端',
     'options.clients.addFromPage': '从当前页面创建',
-    'options.clients.backgroundSummary': '浏览器级单例，内置工具和资源能力',
-    'options.clients.backgroundAssetsDescription': '这个客户端内置扩展级工具和资源，这里只做查看，不支持编辑内容本身。',
+    'options.clients.backgroundSummary':
+      '浏览器级客户端，可按需启停内置工具和资源',
+    'options.clients.backgroundAssetsDescription':
+      '这里可以控制 background client 对外暴露哪些内置工具和资源。停用后对应能力会从服务端视角隐藏，直到重新启用。',
     'options.clients.backgroundTools': '内置工具',
     'options.clients.backgroundResources': '内置资源',
+    'options.clients.backgroundSkills': '内置技能',
+    'options.clients.backgroundDefaultName': '后台客户端 {{count}}',
+    'options.clients.backgroundToolsCount':
+      '已启用 {{enabled}} / {{total}} 个工具',
+    'options.clients.backgroundResourcesCount':
+      '已启用 {{enabled}} / {{total}} 个资源',
+    'options.clients.backgroundSkillsCount':
+      '已启用 {{enabled}} / {{total}} 个技能',
+    'options.clients.backgroundAssetsEnabledCount':
+      '已启用 {{enabled}} / {{total}} 项',
+    'options.clients.backgroundSkillsEmpty': '当前还没有内置 background 技能。',
+    'options.clients.backgroundAssetStatus.enabled': '已启用',
+    'options.clients.backgroundAssetStatus.disabled': '已停用',
     'options.clients.defaultName': 'Route Client {{count}}',
     'options.clients.search': '搜索客户端、ID、匹配规则、技能',
     'options.clients.filter.all': '全部',
@@ -188,19 +289,23 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.clients.idle': '待机',
     'options.clients.off': '关闭',
     'options.clients.editorFallback': '客户端编辑器',
-    'options.clients.editorDescription': '编辑当前客户端的基础信息、匹配规则和运行行为。',
+    'options.clients.editorDescription':
+      '编辑当前客户端的基础信息、匹配规则和运行行为。',
     'options.clients.duplicate': '复制客户端',
     'options.clients.delete': '删除客户端',
     'options.clients.confirmDelete.title': '确认删除客户端？',
-    'options.clients.confirmDelete.body.single': '删除后会从当前工作区永久移除“{{name}}”。',
-    'options.clients.confirmDelete.body.multiple': '删除后会从当前工作区永久移除这 {{count}} 个客户端。',
+    'options.clients.confirmDelete.body.single':
+      '删除后会从当前工作区永久移除“{{name}}”。',
+    'options.clients.confirmDelete.body.multiple':
+      '删除后会从当前工作区永久移除这 {{count}} 个客户端。',
     'options.clients.confirmDelete.hint': '这个操作无法撤销。',
     'options.clients.confirmDelete.cancel': '取消',
     'options.clients.confirmDelete.confirm': '删除',
     'options.clients.copySuffix': '副本',
     'options.clients.empty': '先添加或选择一个路由客户端，再在这里编辑。',
     'options.clients.emptySearch': '当前搜索没有命中客户端。',
-    'options.clients.emptySearchHint': '可以清空搜索、添加一个客户端，或从当前页面创建。',
+    'options.clients.emptySearchHint':
+      '可以清空搜索、添加一个客户端，或从当前页面创建。',
     'options.clients.noActiveTab': '没有活动标签页',
     'options.clients.flows': '{{count}} 个流程',
     'options.clients.resources': '{{count}} 个资源',
@@ -213,7 +318,8 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.clients.tab.assets': '资产',
     'options.clients.tab.activity': '调用统计',
     'options.clients.backToList': '返回客户端列表',
-    'options.clients.invocations.description': '基于 client SDK 中间件勾子采集调用遥测，历史会一直保留到你手动清空。',
+    'options.clients.invocations.description':
+      '基于 client SDK 中间件勾子采集调用遥测，历史会一直保留到你手动清空。',
     'options.clients.pathRules': '路径规则',
     'options.clients.addRule': '添加路由规则',
     'options.clients.removeRule': '删除规则',
@@ -251,7 +357,8 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.invocations.kind.skill': '技能',
     'options.invocations.kind.resource': '资源',
     'options.assets.title': '资产',
-    'options.assets.description': '先选择一个路由客户端，再查看和编辑它的工具、资源和技能。',
+    'options.assets.description':
+      '先选择一个路由客户端，再查看和编辑它的工具、资源和技能。',
     'options.assets.noSelectedClient': '还没有选中的路由客户端。',
     'options.assets.addResource': '新增资源',
     'options.assets.addSkill': '新增技能',
@@ -259,16 +366,29 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.assets.tab.flows': '流程 {{count}}',
     'options.assets.tab.resources': '资源 {{count}}',
     'options.assets.tab.skills': '技能 {{count}}',
-    'options.assets.flows.title': '录制流程',
-    'options.assets.flows.description': '通过页面录制生成的工具。',
-    'options.assets.flows.empty': '还没有录制流程。请先在命中页面的 popup 中开始录制。',
+    'options.assets.flows.title': '流程',
+    'options.assets.flows.description':
+      '流程既可以来自 popup 录制，也可以直接用 JavaScript 编写。',
+    'options.assets.flows.empty':
+      '还没有流程。可以先从 popup 录制，或者直接新增一个代码流程。',
+    'options.assets.flows.addCode': '新增代码流程',
+    'options.assets.flows.newName': '代码流程',
     'options.assets.flows.name': '流程名称',
     'options.assets.flows.steps': '{{count}} 步',
     'options.assets.flows.startUrl': '起始页',
     'options.assets.flows.features': '特征',
+    'options.assets.flows.mode.recording': '录制步骤',
+    'options.assets.flows.mode.script': '代码',
+    'options.assets.flows.recordingEmpty':
+      '当前还没有录制步骤。你可以从 popup 录这个流程，或者切回代码模式。',
+    'options.assets.flows.scriptHelp':
+      '这段脚本会在页面主世界执行。用 `args` 读取工具输入，并返回你希望 flow tool 输出的结果。',
+    'options.assets.flows.scriptEditor': '流程脚本编辑器',
     'options.assets.resources.title': 'Selector 资源',
-    'options.assets.resources.description': '为当前路由客户端捕获或手动维护的可序列化页面元素。',
-    'options.assets.resources.empty': '还没有 selector 资源。可以从 popup 捕获，或者手动新增。',
+    'options.assets.resources.description':
+      '为当前路由客户端捕获或手动维护的可序列化页面元素。',
+    'options.assets.resources.empty':
+      '还没有 selector 资源。可以从 popup 捕获，或者手动新增。',
     'options.assets.resources.newName': '新资源',
     'options.assets.resources.name': '资源名称',
     'options.assets.resources.selector': 'Selector',
@@ -276,20 +396,65 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.assets.resources.text': '捕获文本',
     'options.assets.resources.alternativeSelectors': '备用选择器',
     'options.assets.resources.classes': '类名',
-    'options.assets.skills.title': '技能条目',
-    'options.assets.skills.description': '当前路由客户端的本地技能路径和 markdown 指引。',
-    'options.assets.skills.empty': '还没有技能。建议使用 `workspace/orders/refunds` 这类结构化路径。',
+    'options.assets.skills.title': '技能文件',
+    'options.assets.skills.description':
+      '左侧按文件树管理当前 route client 的技能，右侧编辑参数化 markdown 内容。',
+    'options.assets.skills.empty':
+      '还没有技能。新增后可以用 `workspace/orders/refunds` 这类路径组织目录。',
     'options.assets.skills.newTitle': '新技能',
+    'options.assets.skills.newFolder': '新目录',
+    'options.assets.skills.addFolder': '新增目录',
+    'options.assets.skills.addSkillInFolder': '在目录中新建文件',
+    'options.assets.skills.deleteFolder': '删除目录下文件',
+    'options.assets.skills.cancelFolderDraft': '取消建目录',
+    'options.assets.skills.confirmFolderDraft': '创建目录',
     'options.assets.skills.path': '路径',
+    'options.assets.skills.pathHint':
+      '路径里使用 `/` 就会在左侧树中形成目录层级。',
+    'options.assets.skills.pathInvalid':
+      '至少填写一个路径段，并使用小写字母、数字、`-` 或 `_`。',
+    'options.assets.skills.pathConflict': '当前 client 里已经存在同名路径。',
+    'options.assets.skills.folderPath': '目录路径',
+    'options.assets.skills.folderPathInvalid':
+      '至少填写一个目录层级，并使用小写字母、数字、`-` 或 `_`。',
+    'options.assets.skills.folderPathConflict':
+      '目录改名后会和已有文件或目录路径冲突。',
+    'options.assets.skills.folderDraftHint':
+      '目录里至少要有一个 markdown 文件，目录结构才会被保留下来。',
+    'options.assets.skills.folderSummaryTitle': '目录概览',
+    'options.assets.skills.folderSummary':
+      '当前这个目录下共有 {{count}} 个 markdown 文件。',
+    'options.assets.skills.folderHint':
+      '重命名目录会批量改写目录下所有文件路径，删除目录会移除该目录下的所有文件。',
     'options.assets.skills.titleField': '标题',
     'options.assets.skills.content': '内容',
+    'options.assets.skills.treeHint':
+      '每个技能路径都会映射成左侧树里的一份 markdown 文件。',
+    'options.assets.skills.noSelection':
+      '从左侧树里选择一个文件，或者先新增技能开始编辑。',
+    'options.assets.skills.queryParameters': 'Query 参数',
+    'options.assets.skills.headerParameters': 'Header 参数',
+    'options.assets.skills.addQueryParameter': '新增 Query 参数',
+    'options.assets.skills.addHeaderParameter': '新增 Header 参数',
+    'options.assets.skills.queryParametersEmpty': '还没有 Query 参数。',
+    'options.assets.skills.headerParametersEmpty': '还没有 Header 参数。',
+    'options.assets.skills.parameterKey': '参数键名',
+    'options.assets.skills.availableVariables': '可用变量',
+    'options.assets.skills.availableVariablesEmpty':
+      '先添加 Query 或 Header 参数，这里才会生成可引用变量。',
+    'options.assets.skills.insertVariable': '插入到 markdown',
+    'options.assets.skills.markdownHelp':
+      '可以在 markdown 里使用 `{{query.ticketId}}`、`{{header.x-workspace}}` 这类变量引用上面定义的参数。',
+    'options.assets.skills.markdown': 'Markdown 编辑器',
     'options.market.title': '起步市场',
-    'options.market.description': '先在本地安装起步客户端模板，再到“客户端”和“资产”中继续定制。',
+    'options.market.description':
+      '先在本地安装起步客户端模板，再到“客户端”和“资产”中继续定制。',
     'options.market.install': '安装 {{name}}',
     'options.market.previewClient': '包含的客户端',
     'options.market.matching': '匹配',
     'options.imports.title': '导入导出',
-    'options.imports.description': '在不离开配置面的前提下，把工作区 bundle 导入或导出。',
+    'options.imports.description':
+      '在不离开配置面的前提下，把工作区 bundle 导入或导出。',
     'options.imports.copy': '复制 JSON',
     'options.imports.download': '下载 JSON',
     'options.imports.upload': '上传 JSON 文件',
@@ -313,16 +478,19 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.imports.summaryBackgroundOff': '后台级未启用',
     'options.imports.summaryInvalid': '当前 JSON 不是有效的工作区 bundle。',
     'options.diagnostics.runtime.title': '运行时',
-    'options.diagnostics.runtime.description': '查看当前页面、bridge 状态和 client 连接。',
+    'options.diagnostics.runtime.description':
+      '查看当前页面、bridge 状态和 client 连接。',
     'options.diagnostics.noActiveUrl': '没有活动 URL',
     'options.diagnostics.bridgeUnavailable': 'bridge 不可用',
     'options.diagnostics.route.title': '路由命中解释器',
-    'options.diagnostics.route.description': '检查某个 URL 会命中哪些 route clients。',
+    'options.diagnostics.route.description':
+      '检查某个 URL 会命中哪些 route clients。',
     'options.diagnostics.route.evaluateUrl': '待评估 URL',
     'options.diagnostics.route.matchesAnyPath': '匹配任意路径',
     'options.diagnostics.route.miss': '未命中',
     'options.diagnostics.bridgeTools.title': 'Bridge 工具',
-    'options.diagnostics.bridgeTools.description': '当前已经注入到活动页面里的工具。',
+    'options.diagnostics.bridgeTools.description':
+      '当前已经注入到活动页面里的工具。',
     'options.diagnostics.injectedTool': '已注入工具'
   }
 }

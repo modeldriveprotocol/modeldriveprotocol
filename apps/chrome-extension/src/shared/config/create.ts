@@ -1,5 +1,6 @@
 import { createRequestId } from '../utils.js'
 import {
+  type BackgroundClientConfig,
   DEFAULT_EXTENSION_CONFIG,
   MARKET_CATALOG_SYNC_PATH,
   WORKSPACE_BUNDLE_SYNC_PATH,
@@ -20,10 +21,13 @@ import {
 } from './internal.js'
 import { getOriginMatchPattern, suggestPathnameRule } from './matching.js'
 
-export function createRouteClientConfig(overrides: Partial<RouteClientConfig> = {}): RouteClientConfig {
+export function createRouteClientConfig(
+  overrides: Partial<RouteClientConfig> = {}
+): RouteClientConfig {
   const sourceName = overrides.clientName?.trim() || 'Route Client'
   const routeId = normalizeId(overrides.id) ?? createRequestId('route-client')
-  const clientId = normalizeId(overrides.clientId) ?? buildClientId(sourceName, routeId)
+  const clientId =
+    normalizeId(overrides.clientId) ?? buildClientId(sourceName, routeId)
 
   return {
     kind: 'route',
@@ -42,8 +46,37 @@ export function createRouteClientConfig(overrides: Partial<RouteClientConfig> = 
     toolScriptSource: overrides.toolScriptSource?.trim() ?? '',
     recordings: overrides.recordings ?? [],
     selectorResources: overrides.selectorResources ?? [],
+    skillFolders: overrides.skillFolders ?? [],
     skillEntries: overrides.skillEntries ?? [],
-    ...(overrides.installSource ? { installSource: overrides.installSource } : {})
+    ...(overrides.installSource
+      ? { installSource: overrides.installSource }
+      : {})
+  }
+}
+
+export function createBackgroundClientConfig(
+  overrides: Partial<BackgroundClientConfig> = {}
+): BackgroundClientConfig {
+  const sourceName = overrides.clientName?.trim() || 'Background Client'
+  const backgroundId =
+    normalizeId(overrides.id) ?? createRequestId('background-client')
+  const clientId =
+    normalizeId(overrides.clientId) ?? buildClientId(sourceName, backgroundId)
+
+  return {
+    kind: 'background',
+    id: backgroundId,
+    enabled: overrides.enabled ?? true,
+    favorite: overrides.favorite ?? false,
+    clientId,
+    clientName: sourceName,
+    clientDescription:
+      overrides.clientDescription?.trim() ||
+      'Browser-level client for extension tools, resources, and background automation capabilities.',
+    icon: overrides.icon ?? 'chrome',
+    disabledTools: overrides.disabledTools ?? [],
+    disabledResources: overrides.disabledResources ?? [],
+    disabledSkills: overrides.disabledSkills ?? []
   }
 }
 
@@ -72,7 +105,9 @@ export function createRepositoryMarketSourceConfig(options: {
   const ref = options.ref.trim()
 
   if (!repository || !ref) {
-    throw new Error('Repository-backed market source requires a repository and ref.')
+    throw new Error(
+      'Repository-backed market source requires a repository and ref.'
+    )
   }
 
   return {
@@ -87,7 +122,10 @@ export function createRepositoryMarketSourceConfig(options: {
   }
 }
 
-export function createRouteRule(mode: RouteRuleMode = 'pathname-prefix', value = '/'): RoutePathRule {
+export function createRouteRule(
+  mode: RouteRuleMode = 'pathname-prefix',
+  value = '/'
+): RoutePathRule {
   return {
     id: createRequestId('route-rule'),
     mode,
@@ -103,11 +141,14 @@ export function createRouteClientFromUrl(
   const originPattern = getOriginMatchPattern(parsed.href)
 
   if (!originPattern) {
-    throw new Error('Open an http, https, or file page before creating a route client.')
+    throw new Error(
+      'Open an http, https, or file page before creating a route client.'
+    )
   }
 
   const pathnameRule = suggestPathnameRule(parsed.pathname)
-  const defaultName = overrides.clientName?.trim() || deriveRouteClientNameFromUrl(parsed)
+  const defaultName =
+    overrides.clientName?.trim() || deriveRouteClientNameFromUrl(parsed)
 
   return createRouteClientConfig({
     clientName: defaultName,
@@ -135,7 +176,12 @@ export function buildRepositoryMarketSourceUrl(
   repository: string,
   ref: string
 ): string {
-  return buildRepositoryRawUrl(provider, repository, ref, MARKET_CATALOG_SYNC_PATH)
+  return buildRepositoryRawUrl(
+    provider,
+    repository,
+    ref,
+    MARKET_CATALOG_SYNC_PATH
+  )
 }
 
 export function buildRepositoryWorkspaceBundleUrl(
@@ -143,7 +189,12 @@ export function buildRepositoryWorkspaceBundleUrl(
   repository: string,
   ref: string
 ): string {
-  return buildRepositoryRawUrl(provider, repository, ref, WORKSPACE_BUNDLE_SYNC_PATH)
+  return buildRepositoryRawUrl(
+    provider,
+    repository,
+    ref,
+    WORKSPACE_BUNDLE_SYNC_PATH
+  )
 }
 
 export function buildRepositoryRawUrl(
@@ -156,12 +207,18 @@ export function buildRepositoryRawUrl(
   const normalizedRef = ref.trim()
 
   if (!normalizedRepository || !normalizedRef || !path.trim()) {
-    throw new Error('Repository-backed source requires a repository, ref, and path.')
+    throw new Error(
+      'Repository-backed source requires a repository, ref, and path.'
+    )
   }
 
   if (provider === 'github') {
-    return `https://raw.githubusercontent.com/${normalizedRepository}/${encodeURIComponent(normalizedRef)}/${path}`
+    return `https://raw.githubusercontent.com/${normalizedRepository}/${encodeURIComponent(
+      normalizedRef
+    )}/${path}`
   }
 
-  return `https://gitlab.com/${normalizedRepository}/-/raw/${encodeURIComponent(normalizedRef)}/${path}`
+  return `https://gitlab.com/${normalizedRepository}/-/raw/${encodeURIComponent(
+    normalizedRef
+  )}/${path}`
 }

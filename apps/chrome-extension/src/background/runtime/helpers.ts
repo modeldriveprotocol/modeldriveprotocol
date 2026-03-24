@@ -55,11 +55,13 @@ export function createRecordingFromCapture(
     id: createRequestId('recording'),
     name,
     description: options.description?.trim() || stepPreview || 'Recorded interaction flow.',
+    mode: 'recording',
     createdAt: result.finishedAt,
     updatedAt: result.finishedAt,
     startUrl: result.url,
     capturedFeatures: result.capturedFeatures,
-    steps: result.steps.map((step) => normalizeRecordedAction(step))
+    steps: result.steps.map((step) => normalizeRecordedAction(step)),
+    scriptSource: ''
   }
 }
 

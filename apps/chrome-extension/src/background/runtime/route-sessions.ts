@@ -100,6 +100,31 @@ export async function runRouteRecording(
   }
 
   const tab = await runtime.resolveAllowedPageTabForRouteClient(routeClient, args)
+
+  if (recording.mode === 'script') {
+    if (!recording.scriptSource.trim()) {
+      throw new Error(`Flow "${recording.name}" does not have any script source yet`)
+    }
+
+    const result = await runtime.sendPageCommand(tab.id, routeClient, {
+      type: 'runMainWorld',
+      action: 'runScript',
+      args: {
+        source: recording.scriptSource,
+        ...(args !== undefined ? { scriptArgs: args } : {})
+      }
+    })
+
+    return {
+      completed: true as const,
+      routeClientId,
+      recordingId,
+      stepCount: 0,
+      tabId: tab.id,
+      result
+    }
+  }
+
   let previousOffset = 0
   for (const step of recording.steps) {
     const delayMs = Math.min(Math.max(0, step.timestampOffsetMs - previousOffset), 350)

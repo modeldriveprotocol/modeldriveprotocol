@@ -37,28 +37,30 @@ export async function getRuntimeStatus(runtime: ChromeExtensionRuntime) {
       : undefined
 
   const clients = [
-    {
-      clientKey: createClientKey('background'),
-      kind: 'background' as const,
-      clientId: config.backgroundClient.clientId,
-      clientName: config.backgroundClient.clientName,
-      clientDescription: config.backgroundClient.clientDescription,
-      icon: config.backgroundClient.icon,
-      enabled: config.backgroundClient.enabled,
-      connectionState:
-        runtime.clientStates.get(createClientKey('background'))?.connectionState ??
-        (config.backgroundClient.enabled ? 'idle' : 'disabled'),
-      lastError: runtime.clientStates.get(createClientKey('background'))?.lastError,
-      lastConnectedAt: runtime.clientStates.get(createClientKey('background'))?.lastConnectedAt,
-      matchPatterns: [],
-      matchesActiveTab: false,
-      recordingCount: 0,
-      selectorResourceCount: 0,
-      skillCount: 0,
-      invocationStats: toClientInvocationStats(
-        runtime.clientTelemetry.get(createClientKey('background'))
-      )
-    },
+    ...config.backgroundClients.map((client) => {
+      const key = createClientKey('background', client.id)
+      const state = runtime.clientStates.get(key)
+
+      return {
+        clientKey: key,
+        kind: 'background' as const,
+        id: client.id,
+        clientId: client.clientId,
+        clientName: client.clientName,
+        clientDescription: client.clientDescription,
+        icon: client.icon,
+        enabled: client.enabled,
+        connectionState: state?.connectionState ?? (client.enabled ? 'idle' : 'disabled'),
+        lastError: state?.lastError,
+        lastConnectedAt: state?.lastConnectedAt,
+        matchPatterns: [],
+        matchesActiveTab: false,
+        recordingCount: 0,
+        selectorResourceCount: 0,
+        skillCount: 0,
+        invocationStats: toClientInvocationStats(runtime.clientTelemetry.get(key))
+      }
+    }),
     ...config.routeClients.map((client) => {
       const key = createClientKey('route', client.id)
       const state = runtime.clientStates.get(key)

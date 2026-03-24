@@ -30,10 +30,71 @@ describe('chrome extension config helpers', () => {
       toolScriptSource: 'window.test = true;'
     })
 
-    expect(migrated.backgroundClient.clientId).toBe('legacy-client-background')
+    expect(migrated.backgroundClients[0]?.clientId).toBe('legacy-client-background')
     expect(migrated.routeClients).toHaveLength(1)
     expect(migrated.routeClients[0]?.clientId).toBe('legacy-client-page')
     expect(migrated.routeClients[0]?.autoInjectBridge).toBe(false)
+  })
+
+  it('normalizes script-based flows alongside recorded flows', () => {
+    const normalized = normalizeConfig({
+      ...DEFAULT_EXTENSION_CONFIG,
+      routeClients: [
+        {
+          ...createRouteClientConfig({
+            id: 'route-script',
+            clientId: 'route-script',
+            matchPatterns: ['https://app.example.com/*']
+          }),
+          recordings: [
+            {
+              id: 'flow-script',
+              name: 'Script Flow',
+              description: 'Runs custom code',
+              mode: 'script',
+              createdAt: '2026-03-25T10:00:00.000Z',
+              updatedAt: '2026-03-25T10:00:00.000Z',
+              capturedFeatures: [],
+              steps: [],
+              scriptSource: 'return args?.selector ?? "button";'
+            }
+          ]
+        }
+      ]
+    })
+
+    expect(normalized.routeClients[0]?.recordings[0]).toMatchObject({
+      id: 'flow-script',
+      mode: 'script',
+      scriptSource: 'return args?.selector ?? "button";',
+      steps: []
+    })
+  })
+
+  it('normalizes background disabled capability lists against built-in ids', () => {
+    const normalized = normalizeConfig({
+      ...DEFAULT_EXTENSION_CONFIG,
+      backgroundClients: [
+        {
+          ...DEFAULT_EXTENSION_CONFIG.backgroundClients[0],
+        disabledTools: [
+          'extension.listTabs',
+          ' extension.listTabs ',
+          'extension.unknown'
+        ],
+        disabledResources: [
+          'chrome-extension://tabs',
+          'chrome-extension://missing',
+          'chrome-extension://tabs'
+        ],
+        disabledSkills: ['background.skill.missing']
+      }
+      ]
+    })
+
+    expect(normalized.backgroundClients[0]?.disabledTools).toEqual(['extension.listTabs'])
+    expect(normalized.backgroundClients[0]?.disabledResources).toEqual(['chrome-extension://tabs'])
+    expect(normalized.backgroundClients[0]?.disabledSkills).toEqual([])
   })
 
   it('deduplicates and trims match patterns', () => {

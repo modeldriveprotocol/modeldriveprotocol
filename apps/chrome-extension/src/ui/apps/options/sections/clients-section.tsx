@@ -27,16 +27,25 @@ export function ClientsSection(props: {
 }) {
   const { t } = useI18n()
   const { clientDetailOpen, canCreateFromPage, draft, initialAssetTab, initialDetailTab, routeSearch, selectedClientId, runtimeState, onClearInvocationHistory, onCloseDetail, onOpenDetail, onRouteSearchChange, onSelectClient, onChange, onCreateClient, onCreateClientFromPage } = props
-  const backgroundRuntimeState = runtimeState?.clients.find((client) => client.kind === 'background')
   const currentPageUrl = runtimeState?.activeTab?.url
   const clientItems = [
-    { kind: 'background' as const, id: 'background' as const, client: draft.backgroundClient },
+    ...draft.backgroundClients.map((client) => ({
+      kind: 'background' as const,
+      id: client.id,
+      client
+    })),
     ...draft.routeClients.map((client) => ({ kind: 'route' as const, id: client.id, client }))
   ]
   const selectedClientItem =
     clientItems.find((item) => item.id === selectedClientId) ??
     clientItems.find((item) => item.kind === 'route') ??
     clientItems[0]
+  const backgroundRuntimeState =
+    selectedClientItem?.kind === 'background'
+      ? runtimeState?.clients.find(
+          (client) => client.kind === 'background' && client.id === selectedClientItem.id
+        )
+      : undefined
 
   if (!clientDetailOpen) {
     return (

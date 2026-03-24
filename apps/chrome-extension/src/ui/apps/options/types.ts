@@ -6,7 +6,7 @@ import type { OptionsAssetsTab } from '../../platform/extension-api.js'
 export type Section = 'workspace' | 'settings' | 'clients' | 'market'
 export type TransferMode = 'import' | 'export'
 export type ClientDetailTab = 'basics' | 'matching' | 'runtime' | 'assets' | 'activity'
-export type EditableClientId = 'background' | string
+export type EditableClientId = string
 
 export type MarketSourceDraftInput =
   | {
@@ -57,25 +57,6 @@ export const ICON_OPTIONS: ClientIconKey[] = [
   'javascript',
   'html',
   'css'
-]
-
-export const BACKGROUND_BUILT_IN_TOOLS = [
-  'extension.getStatus',
-  'extension.getConfig',
-  'extension.listGrantedOrigins',
-  'extension.listTabs',
-  'extension.activateTab',
-  'extension.reloadTab',
-  'extension.createTab',
-  'extension.closeTab',
-  'extension.showNotification',
-  'extension.openOptionsPage'
-]
-
-export const BACKGROUND_BUILT_IN_RESOURCES = [
-  'chrome-extension://status',
-  'chrome-extension://config',
-  'chrome-extension://tabs'
 ]
 
 export const SECTION_IDS: Section[] = ['workspace', 'settings', 'clients', 'market']

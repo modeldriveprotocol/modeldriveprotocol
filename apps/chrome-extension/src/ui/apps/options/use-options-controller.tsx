@@ -252,7 +252,7 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
     try {
       const next = parseWorkspaceBundleText(transferDraft)
       setDraft(next)
-      routing.setSelectedClientId(next.routeClients[0]?.id)
+      routing.setSelectedClientId(next.routeClients[0]?.id ?? next.backgroundClients[0]?.id)
       setTransferMode('import')
       notify(t('options.status.importApplied'), 'success')
     } catch (nextError) {

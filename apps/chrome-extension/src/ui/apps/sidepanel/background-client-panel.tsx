@@ -44,7 +44,7 @@ export function BackgroundClientPanel({
             size="small"
             variant="contained"
             startIcon={<SettingsOutlined fontSize="small" />}
-            onClick={() => void openOptionsSection('clients', { clientId: 'background' })}
+            onClick={() => void openOptionsSection('clients', { clientId: item.client.id })}
             sx={{ alignSelf: 'flex-start' }}
           >
             {controller.t('popup.errorRecovery.clients')}

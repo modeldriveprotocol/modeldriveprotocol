@@ -1,8 +1,24 @@
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
+import ContentCopyOutlined from '@mui/icons-material/ContentCopyOutlined'
 import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
-import { Alert, Box, CircularProgress, IconButton, Snackbar, Stack, Tooltip, Typography } from '@mui/material'
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  IconButton,
+  Snackbar,
+  Stack,
+  Tooltip,
+  Typography
+} from '@mui/material'
 import { createClientKey } from '#~/background/shared.js'
-import { createRouteClientConfig, type ExtensionConfig } from '#~/shared/config.js'
+import {
+  createBackgroundClientConfig,
+  createRouteClientConfig,
+  type BackgroundClientConfig,
+  type ExtensionConfig,
+  type RouteClientConfig
+} from '#~/shared/config.js'
 import type { AppearancePreference } from '../../foundation/appearance.js'
 import { createPresetRouteClient } from '../../platform/extension-api.js'
 import type { LocalePreference } from '../../i18n/provider.js'
@@ -31,8 +47,16 @@ export function OptionsMainPanel({
   t
 }: OptionsMainPanelProps) {
   const clientItems = [
-    { kind: 'background' as const, id: 'background' as const, client: draft.backgroundClient },
-    ...draft.routeClients.map((client) => ({ kind: 'route' as const, id: client.id, client }))
+    ...draft.backgroundClients.map((client) => ({
+      kind: 'background' as const,
+      id: client.id,
+      client
+    })),
+    ...draft.routeClients.map((client) => ({
+      kind: 'route' as const,
+      id: client.id,
+      client
+    }))
   ]
   const selectedClientItem =
     clientItems.find((item) => item.id === controller.selectedClientId) ??
@@ -47,10 +71,10 @@ export function OptionsMainPanel({
     (controller.section === 'workspace'
       ? t('options.header.workspace')
       : controller.section === 'settings'
-        ? t('options.header.settings')
-        : controller.section === 'clients'
-          ? t('options.header.clients')
-          : t('options.header.market'))
+      ? t('options.header.settings')
+      : controller.section === 'clients'
+      ? t('options.header.clients')
+      : t('options.header.market'))
 
   return (
     <Box
@@ -104,7 +128,55 @@ export function OptionsMainPanel({
         >
           {headerTitle}
         </Typography>
-        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ flexShrink: 0 }}>
+        <Stack
+          direction="row"
+          spacing={0.75}
+          alignItems="center"
+          sx={{ flexShrink: 0 }}
+        >
+          {controller.section === 'clients' &&
+          controller.clientDetailOpen &&
+          selectedClientItem ? (
+            <Tooltip title={t('options.clients.duplicate')}>
+              <IconButton
+                size="small"
+                aria-label={t('options.clients.duplicate')}
+                onClick={() => {
+                  const nextClient = forkEditableClient(selectedClientItem, t)
+
+                  controller.setDraft((current: any) =>
+                    current
+                      ? selectedClientItem.kind === 'background'
+                        ? {
+                            ...current,
+                            backgroundClients: [
+                              ...current.backgroundClients,
+                              nextClient
+                            ]
+                          }
+                        : {
+                            ...current,
+                            routeClients: [...current.routeClients, nextClient]
+                          }
+                      : current
+                  )
+                  controller.setSelectedClientId(nextClient.id)
+                  controller.setSectionAndHash('clients', {
+                    clientId: nextClient.id,
+                    clientDetailOpen: true
+                  })
+                  controller.notify(
+                    t('options.status.clientForked', {
+                      name: nextClient.clientName
+                    }),
+                    'success'
+                  )
+                }}
+              >
+                <ContentCopyOutlined fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          ) : null}
           {controller.runtimeStateUpdatedAt ? (
             <Typography variant="caption" color="text.secondary" noWrap>
               {formatRuntimeTimestamp(controller.runtimeStateUpdatedAt)}
@@ -139,7 +211,10 @@ export function OptionsMainPanel({
         sx={{
           px: 1.5,
           pb: 1.5,
-          pt: controller.section === 'clients' && controller.clientDetailOpen ? 0 : 1.5,
+          pt:
+            controller.section === 'clients' && controller.clientDetailOpen
+              ? 0
+              : 1.5,
           minHeight: 0,
           overflow: 'auto'
         }}
@@ -180,7 +255,9 @@ export function OptionsMainPanel({
             onChange={controller.setDraft}
             onMarketAutoCheckChange={(nextValue) =>
               controller.setDraft((current: any) =>
-                current ? { ...current, marketAutoCheckUpdates: nextValue } : current
+                current
+                  ? { ...current, marketAutoCheckUpdates: nextValue }
+                  : current
               )
             }
             onAppearancePreferenceChange={setAppearancePreference}
@@ -214,7 +291,10 @@ export function OptionsMainPanel({
             canCreateFromPage={Boolean(controller.runtimeState?.activeTab?.url)}
             draft={draft}
             initialAssetTab={controller.assetTabHint}
-            initialDetailTab={controller.detailTabHint ?? (controller.assetTabHint ? 'assets' : undefined)}
+            initialDetailTab={
+              controller.detailTabHint ??
+              (controller.assetTabHint ? 'assets' : undefined)
+            }
             routeSearch={controller.routeSearch}
             selectedClientId={controller.selectedClientId}
             runtimeState={controller.runtimeState}
@@ -225,7 +305,7 @@ export function OptionsMainPanel({
 
               void controller.clearInvocationHistory(
                 selectedClientItem.kind === 'background'
-                  ? createClientKey('background')
+                  ? createClientKey('background', selectedClientItem.id)
                   : createClientKey('route', selectedClientItem.id)
               )
             }}
@@ -240,32 +320,40 @@ export function OptionsMainPanel({
                 clientId,
                 clientDetailOpen: true,
                 ...(detailTab === 'assets'
-                  ? { assetTab: controller.assetTabHint ?? 'flows', detailTab: 'assets' }
+                  ? {
+                      assetTab: controller.assetTabHint ?? 'flows',
+                      detailTab: 'assets'
+                    }
                   : detailTab
-                    ? { detailTab }
-                    : {})
+                  ? { detailTab }
+                  : {})
               })
             }}
             onRouteSearchChange={controller.setRouteSearch}
             onSelectClient={controller.setSelectedClientId}
             onChange={controller.setDraft}
             onCreateClient={(kind: 'background' | 'route') => {
-              if (kind === 'background') {
-                controller.setSelectedClientId('background')
-                controller.setSectionAndHash('clients', {
-                  clientId: 'background',
-                  clientDetailOpen: true
-                })
-                controller.notify(t('options.status.backgroundOpened'), 'info')
-                return
-              }
-
-              const nextClient = createClient(draft.routeClients.length + 1, t)
+              const nextClient =
+                kind === 'background'
+                  ? createBackgroundClient(
+                      draft.backgroundClients.length + 1,
+                      t
+                    )
+                  : createRouteClient(draft.routeClients.length + 1, t)
               controller.setDraft((current: any) =>
                 current
                   ? {
                       ...current,
-                      routeClients: [...current.routeClients, nextClient]
+                      ...(kind === 'background'
+                        ? {
+                            backgroundClients: [
+                              ...current.backgroundClients,
+                              nextClient
+                            ]
+                          }
+                        : {
+                            routeClients: [...current.routeClients, nextClient]
+                          })
                     }
                   : current
               )
@@ -274,7 +362,14 @@ export function OptionsMainPanel({
                 clientId: nextClient.id,
                 clientDetailOpen: true
               })
-              controller.notify(t('options.status.clientAdded'), 'success')
+              controller.notify(
+                t(
+                  kind === 'background'
+                    ? 'options.status.backgroundClientAdded'
+                    : 'options.status.clientAdded'
+                ),
+                'success'
+              )
             }}
             onCreateClientFromPage={() => {
               const activeUrl = controller.runtimeState?.activeTab?.url
@@ -391,7 +486,7 @@ export function OptionsMainPanel({
   )
 }
 
-function createClient(
+function createRouteClient(
   index: number,
   t: (key: string, values?: Record<string, string | number>) => string
 ) {
@@ -399,6 +494,88 @@ function createClient(
     clientName: t('options.clients.defaultName', { count: index }),
     clientId: `mdp-route-client-${index}`,
     icon: index % 2 === 0 ? 'layers' : 'route'
+  })
+}
+
+function createBackgroundClient(
+  index: number,
+  t: (key: string, values?: Record<string, string | number>) => string
+) {
+  return createBackgroundClientConfig({
+    clientName: t('options.clients.backgroundDefaultName', { count: index }),
+    clientId: `mdp-background-client-${index}`,
+    icon: 'chrome'
+  })
+}
+
+function forkEditableClient(
+  item:
+    | {
+        kind: 'background'
+        id: string
+        client: BackgroundClientConfig
+      }
+    | {
+        kind: 'route'
+        id: string
+        client: RouteClientConfig
+      },
+  t: (key: string, values?: Record<string, string | number>) => string
+) {
+  const nextName = `${item.client.clientName} ${t(
+    'options.clients.copySuffix'
+  )}`
+
+  if (item.kind === 'background') {
+    const { id: _id, clientId: _clientId, ...backgroundRest } = item.client
+
+    return createBackgroundClientConfig({
+      ...backgroundRest,
+      clientName: nextName,
+      favorite: false,
+      disabledTools: [...item.client.disabledTools],
+      disabledResources: [...item.client.disabledResources],
+      disabledSkills: [...item.client.disabledSkills]
+    })
+  }
+
+  const {
+    id: _id,
+    clientId: _clientId,
+    installSource: _installSource,
+    ...routeRest
+  } = item.client
+
+  return createRouteClientConfig({
+    ...routeRest,
+    clientName: nextName,
+    favorite: false,
+    routeRules: item.client.routeRules.map((rule) => ({ ...rule })),
+    recordings: item.client.recordings.map((recording) => ({
+      ...recording,
+      capturedFeatures: [...recording.capturedFeatures],
+      steps: recording.steps.map((step) => ({
+        ...step,
+        alternativeSelectors: [...step.alternativeSelectors],
+        classes: [...step.classes]
+      }))
+    })),
+    selectorResources: item.client.selectorResources.map((resource) => ({
+      ...resource,
+      alternativeSelectors: [...resource.alternativeSelectors],
+      classes: [...resource.classes],
+      attributes: { ...resource.attributes }
+    })),
+    skillFolders: item.client.skillFolders.map((folder) => ({ ...folder })),
+    skillEntries: item.client.skillEntries.map((skill) => ({
+      ...skill,
+      queryParameters: skill.queryParameters.map((parameter) => ({
+        ...parameter
+      })),
+      headerParameters: skill.headerParameters.map((parameter) => ({
+        ...parameter
+      }))
+    }))
   })
 }
 
@@ -419,5 +596,9 @@ function resolveEditableClientId(clientKey: string): string {
     return clientKey.slice('route:'.length)
   }
 
-  return 'background'
+  if (clientKey.startsWith('background:')) {
+    return clientKey.slice('background:'.length)
+  }
+
+  return clientKey
 }

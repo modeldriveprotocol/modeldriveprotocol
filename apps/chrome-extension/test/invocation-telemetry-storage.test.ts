@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { DEFAULT_BACKGROUND_CLIENT } from '../src/shared/config.js'
+import { createClientKey } from '../src/background/shared.js'
 import {
   clearInvocationTelemetry,
   ensureInvocationTelemetryLoaded,
@@ -98,6 +100,37 @@ describe('chrome extension invocation telemetry storage', () => {
       totalCount: 2,
       errorCount: 1
     })
+  })
+
+  it('migrates legacy singleton background telemetry keys to the default background client id', async () => {
+    get.mockResolvedValue({
+      invocationTelemetry: {
+        background: {
+          totalCount: 1,
+          successCount: 1,
+          errorCount: 0,
+          totalDurationMs: 30,
+          byKind: {
+            tool: { kind: 'tool', totalCount: 1, successCount: 1, errorCount: 0, totalDurationMs: 30 },
+            prompt: { kind: 'prompt', totalCount: 0, successCount: 0, errorCount: 0, totalDurationMs: 0 },
+            skill: { kind: 'skill', totalCount: 0, successCount: 0, errorCount: 0, totalDurationMs: 0 },
+            resource: { kind: 'resource', totalCount: 0, successCount: 0, errorCount: 0, totalDurationMs: 0 }
+          },
+          recentInvocations: []
+        }
+      }
+    })
+
+    const runtime = {
+      telemetryLoaded: false,
+      clientTelemetry: new Map(),
+      telemetryPersistTimer: undefined
+    } as any
+
+    await ensureInvocationTelemetryLoaded(runtime)
+
+    expect(runtime.clientTelemetry.has(createClientKey('background', DEFAULT_BACKGROUND_CLIENT.id))).toBe(true)
+    expect(runtime.clientTelemetry.has('background')).toBe(false)
   })
 
   it('persists telemetry with debounce', async () => {

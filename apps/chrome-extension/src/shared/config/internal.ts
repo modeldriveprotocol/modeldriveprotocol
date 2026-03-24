@@ -8,16 +8,23 @@ import { asRecord, uniqueStrings } from '../utils.js'
 
 export function normalizePatterns(patterns: string[]): string[] {
   return uniqueStrings(
-    patterns.map((pattern) => pattern.trim()).filter((pattern) => pattern.length > 0)
+    patterns
+      .map((pattern) => pattern.trim())
+      .filter((pattern) => pattern.length > 0)
   )
 }
 
-export function normalizeString(value: string | undefined, fallback: string): string {
+export function normalizeString(
+  value: string | undefined,
+  fallback: string
+): string {
   const trimmed = value?.trim()
   return trimmed && trimmed.length > 0 ? trimmed : fallback
 }
 
-export function normalizeMarketSourceUrl(value: string | undefined): string | undefined {
+export function normalizeMarketSourceUrl(
+  value: string | undefined
+): string | undefined {
   if (!value) {
     return undefined
   }
@@ -35,7 +42,9 @@ export function normalizeMarketSourceUrl(value: string | undefined): string | un
   }
 }
 
-export function normalizeRepositoryIdentifier(value: string | undefined): string | undefined {
+export function normalizeRepositoryIdentifier(
+  value: string | undefined
+): string | undefined {
   const trimmed = value?.trim()
 
   if (!trimmed) {
@@ -47,7 +56,9 @@ export function normalizeRepositoryIdentifier(value: string | undefined): string
   if (withoutGit.startsWith('http://') || withoutGit.startsWith('https://')) {
     try {
       const parsed = new URL(withoutGit)
-      const parts = parsed.pathname.split('/').filter((segment) => segment.length > 0)
+      const parts = parsed.pathname
+        .split('/')
+        .filter((segment) => segment.length > 0)
       return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : undefined
     } catch {
       return undefined
@@ -68,17 +79,30 @@ export function normalizeTimestamp(value: string | undefined): string {
   }
 
   const timestamp = Date.parse(value)
-  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : new Date().toISOString()
+  return Number.isFinite(timestamp)
+    ? new Date(timestamp).toISOString()
+    : new Date().toISOString()
 }
 
 export function normalizeOffset(value: unknown): number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? value
+    : 0
 }
 
-export function normalizeSkillPath(value: string | undefined): string | undefined {
+export function normalizeSkillPath(
+  value: string | undefined
+): string | undefined {
   const trimmed = value
     ?.split('/')
-    .map((segment) => segment.trim())
+    .map((segment) =>
+      segment
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^[-_]+|[-_]+$/g, '')
+    )
     .filter((segment) => segment.length > 0)
     .join('/')
 
@@ -86,24 +110,29 @@ export function normalizeSkillPath(value: string | undefined): string | undefine
 }
 
 export function deriveSkillTitle(path: string): string {
-  return path
-    .split('/')
-    .at(-1)
-    ?.replace(/[-_]+/g, ' ')
-    .replace(/\b\w/g, (letter) => letter.toUpperCase()) ?? 'Skill'
+  return (
+    path
+      .split('/')
+      .at(-1)
+      ?.replace(/[-_]+/g, ' ')
+      .replace(/\b\w/g, (letter) => letter.toUpperCase()) ?? 'Skill'
+  )
 }
 
 export function deriveRouteClientNameFromUrl(parsed: URL): string {
   const host = parsed.hostname.replace(/^www\./, '')
   const rule = suggestPathnameRule(parsed.pathname)
-  const suffix = rule === '/'
-    ? 'Root'
-    : rule
-        .split('/')
-        .filter((segment) => segment.length > 0)
-        .map((segment) => segment.replace(/[-_]+/g, ' '))
-        .map((segment) => segment.replace(/\b\w/g, (letter) => letter.toUpperCase()))
-        .join(' ')
+  const suffix =
+    rule === '/'
+      ? 'Root'
+      : rule
+          .split('/')
+          .filter((segment) => segment.length > 0)
+          .map((segment) => segment.replace(/[-_]+/g, ' '))
+          .map((segment) =>
+            segment.replace(/\b\w/g, (letter) => letter.toUpperCase())
+          )
+          .join(' ')
 
   return `${host} ${suffix}`.trim()
 }
@@ -123,7 +152,9 @@ export function normalizeId(value: string | undefined): string | undefined {
   return trimmed && trimmed.length > 0 ? trimmed : undefined
 }
 
-export function isRouteRuleMode(value: string | undefined): value is RouteRuleMode {
+export function isRouteRuleMode(
+  value: string | undefined
+): value is RouteRuleMode {
   return (
     value === 'pathname-prefix' ||
     value === 'pathname-exact' ||
@@ -132,7 +163,10 @@ export function isRouteRuleMode(value: string | undefined): value is RouteRuleMo
   )
 }
 
-export function normalizeIcon(value: string | undefined, fallback: ClientIconKey): ClientIconKey {
+export function normalizeIcon(
+  value: string | undefined,
+  fallback: ClientIconKey
+): ClientIconKey {
   switch (value) {
     case 'chrome':
     case 'route':
@@ -150,7 +184,9 @@ export function normalizeIcon(value: string | undefined, fallback: ClientIconKey
   }
 }
 
-export function normalizeAttributeMap(value: unknown): SelectorResourceAttributeMap {
+export function normalizeAttributeMap(
+  value: unknown
+): SelectorResourceAttributeMap {
   const record = asRecord(value)
   const normalized: SelectorResourceAttributeMap = {}
 
@@ -184,9 +220,10 @@ export function chromePatternToRegex(pattern: string): RegExp {
 
   const hostPattern = hostAndPath.slice(0, firstSlashIndex)
   const pathPattern = hostAndPath.slice(firstSlashIndex)
-  const schemeRegex = schemePattern === '*'
-    ? 'https?'
-    : escapeRegex(schemePattern).replace(/\\\*/g, 'https?')
+  const schemeRegex =
+    schemePattern === '*'
+      ? 'https?'
+      : escapeRegex(schemePattern).replace(/\\\*/g, 'https?')
 
   const hostRegex = buildHostRegex(hostPattern, schemePattern)
   const pathRegex = escapeRegex(pathPattern).replace(/\\\*/g, '.*')
@@ -225,7 +262,9 @@ function suggestPathnameRule(pathname: string): string {
     return '/'
   }
 
-  const [firstSegment, secondSegment] = normalized.split('/').filter((segment) => segment.length > 0)
+  const [firstSegment, secondSegment] = normalized
+    .split('/')
+    .filter((segment) => segment.length > 0)
 
   if (!firstSegment) {
     return '/'

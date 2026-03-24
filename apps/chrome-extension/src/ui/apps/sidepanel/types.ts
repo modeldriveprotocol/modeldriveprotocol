@@ -50,7 +50,7 @@ export type PopupRuntimeSlice = {
 
 export type SidepanelController = PopupRuntimeSlice & {
   t: TranslateFn
-  backgroundClient: PopupClientState | undefined
+  backgroundClients: PopupClientState[]
   pageRouteClients: PopupClientState[]
   filteredSidepanelClients: SidepanelClientEntry[]
   relatedRouteClients: PopupState['config']['routeClients']

@@ -17,7 +17,7 @@ export const workspaceBundleJsonSchema = {
     'version',
     'serverUrl',
     'notificationTitle',
-    'backgroundClient',
+    'backgroundClients',
     'routeClients',
     'marketSources',
     'marketAutoCheckUpdates'
@@ -46,7 +46,11 @@ export const workspaceBundleJsonSchema = {
       description:
         'Whether market sources should be checked for updates automatically.'
     },
-    backgroundClient: { $ref: '#/definitions/backgroundClient' },
+    backgroundClients: {
+      type: 'array',
+      default: [],
+      items: { $ref: '#/definitions/backgroundClient' }
+    },
     routeClients: {
       type: 'array',
       default: [],

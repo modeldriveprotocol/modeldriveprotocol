@@ -10,7 +10,11 @@ export type ClientIconKey =
   | 'html'
   | 'css'
 
-export type RouteRuleMode = 'pathname-prefix' | 'pathname-exact' | 'url-contains' | 'regex'
+export type RouteRuleMode =
+  | 'pathname-prefix'
+  | 'pathname-exact'
+  | 'url-contains'
+  | 'regex'
 
 export interface RoutePathRule {
   id: string
@@ -38,11 +42,13 @@ export interface RouteClientRecording {
   id: string
   name: string
   description: string
+  mode: 'recording' | 'script'
   createdAt: string
   updatedAt: string
   startUrl?: string
   capturedFeatures: string[]
   steps: RecordedFlowStep[]
+  scriptSource: string
 }
 
 export interface SelectorResourceAttributeMap {
@@ -69,7 +75,20 @@ export interface RouteSkillEntry {
   title: string
   summary: string
   icon: ClientIconKey
+  queryParameters: RouteSkillParameter[]
+  headerParameters: RouteSkillParameter[]
   content: string
+}
+
+export interface RouteSkillParameter {
+  id: string
+  key: string
+  summary: string
+}
+
+export interface RouteSkillFolder {
+  id: string
+  path: string
 }
 
 export interface MarketSourceConfig {
@@ -98,12 +117,16 @@ export interface MarketClientInstallSource {
 
 export interface BackgroundClientConfig {
   kind: 'background'
+  id: string
   enabled: boolean
   favorite: boolean
   clientId: string
   clientName: string
   clientDescription: string
   icon: ClientIconKey
+  disabledTools: string[]
+  disabledResources: string[]
+  disabledSkills: string[]
 }
 
 export interface RouteClientConfig {
@@ -121,6 +144,7 @@ export interface RouteClientConfig {
   toolScriptSource: string
   recordings: RouteClientRecording[]
   selectorResources: RouteSelectorResource[]
+  skillFolders: RouteSkillFolder[]
   skillEntries: RouteSkillEntry[]
   installSource?: MarketClientInstallSource
 }
@@ -129,7 +153,7 @@ export interface ExtensionConfig {
   version: string
   serverUrl: string
   notificationTitle: string
-  backgroundClient: BackgroundClientConfig
+  backgroundClients: BackgroundClientConfig[]
   routeClients: RouteClientConfig[]
   marketSources: MarketSourceConfig[]
   marketAutoCheckUpdates: boolean
@@ -138,8 +162,10 @@ export interface ExtensionConfig {
 export const STORAGE_KEY = 'extensionWorkspaceConfig'
 export const SUPPORTED_MARKET_CATALOG_VERSION = '1.0.0'
 export const SUPPORTED_WORKSPACE_BUNDLE_VERSION = '1.0.0'
-export const MARKET_CATALOG_SYNC_PATH = 'apps/chrome-extension/official-market/catalog.json'
-export const WORKSPACE_BUNDLE_SYNC_PATH = 'apps/chrome-extension/official-workspace/workspace.json'
+export const MARKET_CATALOG_SYNC_PATH =
+  'apps/chrome-extension/official-market/catalog.json'
+export const WORKSPACE_BUNDLE_SYNC_PATH =
+  'apps/chrome-extension/official-workspace/workspace.json'
 
 export const DEFAULT_OFFICIAL_MARKET_SOURCE: MarketSourceConfig = {
   id: 'market-source-official',
@@ -154,19 +180,24 @@ export const DEFAULT_OFFICIAL_MARKET_SOURCE: MarketSourceConfig = {
 
 export const DEFAULT_BACKGROUND_CLIENT: BackgroundClientConfig = {
   kind: 'background',
+  id: 'background-client-default',
   enabled: true,
   favorite: false,
   clientId: 'mdp-chrome-background',
   clientName: 'MDP Chrome Background',
-  clientDescription: 'Chrome extension runtime that exposes browser-level capabilities through Model Drive Protocol.',
-  icon: 'chrome'
+  clientDescription:
+    'Chrome extension runtime that exposes browser-level capabilities through Model Drive Protocol.',
+  icon: 'chrome',
+  disabledTools: [],
+  disabledResources: [],
+  disabledSkills: []
 }
 
 export const DEFAULT_EXTENSION_CONFIG: ExtensionConfig = {
   version: SUPPORTED_WORKSPACE_BUNDLE_VERSION,
   serverUrl: 'ws://127.0.0.1:47372',
   notificationTitle: 'Model Drive Protocol for Chrome',
-  backgroundClient: DEFAULT_BACKGROUND_CLIENT,
+  backgroundClients: [DEFAULT_BACKGROUND_CLIENT],
   routeClients: [],
   marketSources: [DEFAULT_OFFICIAL_MARKET_SOURCE],
   marketAutoCheckUpdates: true

@@ -1,6 +1,7 @@
 import { createMdpClient } from '@modeldriveprotocol/client'
 
 import {
+  type BackgroundClientConfig,
   type ExtensionConfig,
   type RouteClientConfig,
   matchesRouteClient,
@@ -30,13 +31,19 @@ import { RECONNECT_DELAY_MS } from './types.js'
 export async function refreshRuntime(runtime: ChromeExtensionRuntime): Promise<void> {
   await ensureInvocationTelemetryLoaded(runtime)
   const config = normalizeConfig(await loadConfig())
-  const telemetrySizeBeforePrune = runtime.clientTelemetry.size
-  pruneInvocationTelemetry(runtime.clientTelemetry, [
-    createClientKey('background'),
+  const activeClientKeys = new Set([
+    ...config.backgroundClients.map((client) => createClientKey('background', client.id)),
     ...config.routeClients.map((client) => createClientKey('route', client.id))
   ])
+  const telemetrySizeBeforePrune = runtime.clientTelemetry.size
+  pruneInvocationTelemetry(runtime.clientTelemetry, [...activeClientKeys])
   if (runtime.clientTelemetry.size !== telemetrySizeBeforePrune) {
     scheduleInvocationTelemetryPersist(runtime)
+  }
+  for (const clientKey of [...runtime.clientStates.keys()]) {
+    if (!activeClientKeys.has(clientKey)) {
+      runtime.clientStates.delete(clientKey)
+    }
   }
   const permissionState = await runtime.syncContentScriptRegistration(config)
   runtime.currentConfig = config
@@ -48,10 +55,15 @@ export async function syncClients(runtime: ChromeExtensionRuntime, config: Exten
   await disconnectAllClients(runtime)
   const pending: Array<Promise<void>> = []
 
-  if (config.backgroundClient.enabled) {
-    pending.push(connectBackgroundClient(runtime, config))
-  } else {
-    runtime.clientStates.set(createClientKey('background'), { connectionState: 'disabled' })
+  for (const backgroundClient of config.backgroundClients) {
+    if (!backgroundClient.enabled) {
+      runtime.clientStates.set(createClientKey('background', backgroundClient.id), {
+        connectionState: 'disabled'
+      })
+      continue
+    }
+
+    pending.push(connectBackgroundClient(runtime, config, backgroundClient))
   }
 
   for (const routeClient of config.routeClients) {
@@ -65,8 +77,12 @@ export async function syncClients(runtime: ChromeExtensionRuntime, config: Exten
   await Promise.all(pending)
 }
 
-export async function connectBackgroundClient(runtime: ChromeExtensionRuntime, config: ExtensionConfig) {
-  const key = createClientKey('background')
+export async function connectBackgroundClient(
+  runtime: ChromeExtensionRuntime,
+  config: ExtensionConfig,
+  backgroundClient: BackgroundClientConfig
+) {
+  const key = createClientKey('background', backgroundClient.id)
   runtime.clientStates.set(key, { connectionState: 'connecting' })
 
   try {
@@ -81,15 +97,16 @@ export async function connectBackgroundClient(runtime: ChromeExtensionRuntime, c
       serverUrl: config.serverUrl,
       transport,
       client: {
-        id: config.backgroundClient.clientId,
-        name: config.backgroundClient.clientName,
-        description: config.backgroundClient.clientDescription,
+        id: backgroundClient.clientId,
+        name: backgroundClient.clientName,
+        description: backgroundClient.clientDescription,
         version: manifest.version,
         platform: 'chrome-extension',
         metadata: {
           manifestVersion: manifest.manifest_version,
           extensionId: chrome.runtime.id,
-          clientKind: 'background'
+          clientKind: 'background',
+          backgroundClientId: backgroundClient.id
         }
       }
     })
@@ -99,11 +116,17 @@ export async function connectBackgroundClient(runtime: ChromeExtensionRuntime, c
         scheduleInvocationTelemetryPersist(runtime)
       })
     )
-    registerBackgroundCapabilities(client, runtime)
+    registerBackgroundCapabilities(client, runtime, backgroundClient)
     await client.connect()
     client.register()
 
-    runtime.clients.set(key, { key, kind: 'background', clientId: config.backgroundClient.clientId, client })
+    runtime.clients.set(key, {
+      key,
+      kind: 'background',
+      clientId: backgroundClient.clientId,
+      backgroundClientId: backgroundClient.id,
+      client
+    })
     runtime.clientStates.set(key, { connectionState: 'connected', lastConnectedAt: new Date().toISOString() })
   } catch (error) {
     runtime.clientStates.set(key, { connectionState: 'error', lastError: serializeError(error).message })
@@ -241,7 +264,11 @@ export function scheduleReconnect(runtime: ChromeExtensionRuntime): void {
     return
   }
   const config = runtime.currentConfig
-  if (!config || (!config.backgroundClient.enabled && !config.routeClients.some((client) => client.enabled))) {
+  if (
+    !config ||
+    (!config.backgroundClients.some((client) => client.enabled) &&
+      !config.routeClients.some((client) => client.enabled))
+  ) {
     return
   }
   runtime.reconnectTimer = globalThis.setTimeout(() => {

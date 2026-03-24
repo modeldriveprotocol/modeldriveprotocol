@@ -1,9 +1,11 @@
+import { DEFAULT_BACKGROUND_CLIENT } from '#~/shared/config.js'
 import { readNumber, readString } from '#~/shared/utils.js'
 import type {
   InvocationCapabilityKind,
   InvocationRecord,
   InvocationResultStatus
 } from '#~/background/shared.js'
+import { createClientKey } from '#~/background/shared.js'
 
 import type { ChromeExtensionRuntime } from '../runtime.js'
 import type { ClientInvocationTelemetryState } from './telemetry.js'
@@ -37,7 +39,12 @@ export async function ensureInvocationTelemetryLoaded(
     const telemetry = parseClientInvocationTelemetryState(value)
 
     if (telemetry) {
-      runtime.clientTelemetry.set(clientKey, telemetry)
+      runtime.clientTelemetry.set(
+        clientKey === 'background'
+          ? createClientKey('background', DEFAULT_BACKGROUND_CLIENT.id)
+          : clientKey,
+        telemetry
+      )
     }
   }
 }

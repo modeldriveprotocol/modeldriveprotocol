@@ -34,6 +34,8 @@ export const optionsShellMessages: Record<Locale, Record<string, string>> = {
     'options.status.importRepositoryLoaded': 'Workspace JSON loaded from repository.',
     'options.status.routePresetCreated': 'Route client preset created from the active page.',
     'options.status.clientAdded': 'Added a new route client to the draft.',
+    'options.status.backgroundClientAdded': 'Added a new background client to the draft.',
+    'options.status.clientForked': 'Forked client: {{name}}.',
     'options.status.marketClientInstalled': 'Installed market client: {{name}}.',
     'options.status.marketSourceAdded': 'Added market source.',
     'options.status.marketSourceUpdated': 'Updated market source.',
@@ -92,7 +94,7 @@ export const optionsShellMessages: Record<Locale, Record<string, string>> = {
     'options.appearance.light': 'Light',
     'options.appearance.dark': 'Dark',
     'options.workspace.background.title': 'Background client',
-    'options.workspace.background.description': 'Browser-level singleton for tabs, windows, bookmarks, and extension actions.'
+    'options.workspace.background.description': 'Browser-level clients for tabs, windows, bookmarks, and extension actions.'
   },
   'zh-CN': {
     'options.nav.workspace': '概览',
@@ -127,6 +129,8 @@ export const optionsShellMessages: Record<Locale, Record<string, string>> = {
     'options.status.importRepositoryLoaded': '已从仓库载入工作区 JSON。',
     'options.status.routePresetCreated': '已根据当前页面创建路由客户端预设。',
     'options.status.clientAdded': '已向草稿添加一个新的路由客户端。',
+    'options.status.backgroundClientAdded': '已向草稿添加一个新的后台客户端。',
+    'options.status.clientForked': '已 fork 客户端：{{name}}。',
     'options.status.marketClientInstalled': '已安装市场客户端：{{name}}。',
     'options.status.marketSourceAdded': '已添加市场来源。',
     'options.status.marketSourceUpdated': '已更新市场来源。',
@@ -185,6 +189,6 @@ export const optionsShellMessages: Record<Locale, Record<string, string>> = {
     'options.appearance.light': '浅色',
     'options.appearance.dark': '深色',
     'options.workspace.background.title': '后台级客户端',
-    'options.workspace.background.description': '浏览器级单例客户端，用来承载标签页、窗口、书签和扩展动作等能力。'
+    'options.workspace.background.description': '浏览器级客户端，用来承载标签页、窗口、书签和扩展动作等能力。'
   }
 }

@@ -15,6 +15,7 @@ const workspaceBundleSchema = z
     version: semverSchema.optional(),
     serverUrl: z.string().optional(),
     notificationTitle: z.string().optional(),
+    backgroundClients: z.array(z.unknown()).optional(),
     backgroundClient: z.unknown().optional(),
     routeClients: z.array(z.unknown()).optional(),
     marketSources: z.array(z.unknown()).optional()
@@ -92,7 +93,7 @@ export function summarizeWorkspaceBundleText(text: string): WorkspaceBundleSumma
     const bundle = parseWorkspaceBundleText(text)
     return {
       routeClients: bundle.routeClients.length,
-      backgroundEnabled: bundle.backgroundClient.enabled,
+      backgroundEnabled: bundle.backgroundClients.some((client) => client.enabled),
       valid: true,
       version: bundle.version
     }

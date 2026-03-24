@@ -1,5 +1,16 @@
-import { asRecord, createRequestId, readBoolean, readString, readStringArray } from '../utils.js'
-import { createRouteClientConfig, buildRepositoryMarketSourceUrl } from './create.js'
+import {
+  asRecord,
+  createRequestId,
+  readBoolean,
+  readString,
+  readStringArray
+} from '../utils.js'
+import {
+  buildRepositoryMarketSourceUrl,
+  createBackgroundClientConfig,
+  createRouteClientConfig
+} from './create.js'
+import { normalizeDisabledBackgroundCapabilities } from './background-assets.js'
 import {
   DEFAULT_BACKGROUND_CLIENT,
   DEFAULT_EXTENSION_CONFIG,
@@ -25,6 +36,7 @@ import {
 } from './internal.js'
 import {
   normalizeRecordings,
+  normalizeSkillFolders,
   normalizeSelectorResources,
   normalizeSkillEntries
 } from './normalize-assets.js'
@@ -33,7 +45,7 @@ export function normalizeConfig(value: unknown): ExtensionConfig {
   if (value === undefined || value === null) {
     return {
       ...DEFAULT_EXTENSION_CONFIG,
-      backgroundClient: { ...DEFAULT_BACKGROUND_CLIENT },
+      backgroundClients: [normalizeBackgroundClient(undefined)],
       routeClients: []
     }
   }
@@ -42,24 +54,41 @@ export function normalizeConfig(value: unknown): ExtensionConfig {
   const record = asRecord(migrated)
 
   return {
-    version: normalizeString(readString(record, 'version'), DEFAULT_EXTENSION_CONFIG.version),
-    serverUrl: normalizeString(readString(record, 'serverUrl'), DEFAULT_EXTENSION_CONFIG.serverUrl),
+    version: normalizeString(
+      readString(record, 'version'),
+      DEFAULT_EXTENSION_CONFIG.version
+    ),
+    serverUrl: normalizeString(
+      readString(record, 'serverUrl'),
+      DEFAULT_EXTENSION_CONFIG.serverUrl
+    ),
     notificationTitle: normalizeString(
       readString(record, 'notificationTitle'),
       DEFAULT_EXTENSION_CONFIG.notificationTitle
     ),
-    backgroundClient: normalizeBackgroundClient(record.backgroundClient),
+    backgroundClients: normalizeBackgroundClients(
+      'backgroundClients' in record
+        ? record.backgroundClients
+        : 'backgroundClient' in record
+        ? [record.backgroundClient]
+        : undefined
+    ),
     routeClients: normalizeRouteClients(record.routeClients),
     marketSources: normalizeMarketSources(record.marketSources),
     marketAutoCheckUpdates:
-      readBoolean(record, 'marketAutoCheckUpdates') ?? DEFAULT_EXTENSION_CONFIG.marketAutoCheckUpdates
+      readBoolean(record, 'marketAutoCheckUpdates') ??
+      DEFAULT_EXTENSION_CONFIG.marketAutoCheckUpdates
   }
 }
 
 function migrateLegacyConfig(value: unknown): unknown {
   const record = asRecord(value)
 
-  if ('backgroundClient' in record || 'routeClients' in record) {
+  if (
+    'backgroundClient' in record ||
+    'backgroundClients' in record ||
+    'routeClients' in record
+  ) {
     return value
   }
 
@@ -67,7 +96,8 @@ function migrateLegacyConfig(value: unknown): unknown {
   const toolScriptSource = readString(record, 'toolScriptSource')?.trim() ?? ''
   const legacyAutoConnect = readBoolean(record, 'autoConnect') ?? true
   const legacyAutoInjectBridge = readBoolean(record, 'autoInjectBridge') ?? true
-  const legacyClientId = normalizeId(readString(record, 'clientId')) ?? 'mdp-chrome-extension'
+  const legacyClientId =
+    normalizeId(readString(record, 'clientId')) ?? 'mdp-chrome-extension'
   const legacyClientName = normalizeString(
     readString(record, 'clientName'),
     'Model Drive Protocol for Chrome'
@@ -96,20 +126,28 @@ function migrateLegacyConfig(value: unknown): unknown {
 
   return {
     version: DEFAULT_EXTENSION_CONFIG.version,
-    serverUrl: normalizeString(readString(record, 'serverUrl'), DEFAULT_EXTENSION_CONFIG.serverUrl),
+    serverUrl: normalizeString(
+      readString(record, 'serverUrl'),
+      DEFAULT_EXTENSION_CONFIG.serverUrl
+    ),
     notificationTitle: normalizeString(
       readString(record, 'notificationTitle'),
       DEFAULT_EXTENSION_CONFIG.notificationTitle
     ),
-    backgroundClient: {
-      kind: 'background',
-      enabled: legacyAutoConnect,
-      favorite: false,
-      clientId: `${legacyClientId}-background`,
-      clientName: `${legacyClientName} Background`,
-      clientDescription: legacyClientDescription,
-      icon: 'chrome'
-    },
+    backgroundClients: [
+      createBackgroundClientConfig({
+        id: 'background-client-default',
+        enabled: legacyAutoConnect,
+        favorite: false,
+        clientId: `${legacyClientId}-background`,
+        clientName: `${legacyClientName} Background`,
+        clientDescription: legacyClientDescription,
+        icon: 'chrome',
+        disabledTools: [],
+        disabledResources: [],
+        disabledSkills: []
+      })
+    ],
     routeClients,
     marketSources: [DEFAULT_OFFICIAL_MARKET_SOURCE],
     marketAutoCheckUpdates: DEFAULT_EXTENSION_CONFIG.marketAutoCheckUpdates
@@ -121,16 +159,54 @@ function normalizeBackgroundClient(value: unknown): BackgroundClientConfig {
 
   return {
     kind: 'background',
-    enabled: readBoolean(record, 'enabled') ?? DEFAULT_BACKGROUND_CLIENT.enabled,
-    favorite: readBoolean(record, 'favorite') ?? DEFAULT_BACKGROUND_CLIENT.favorite,
-    clientId: normalizeId(readString(record, 'clientId')) ?? DEFAULT_BACKGROUND_CLIENT.clientId,
-    clientName: normalizeString(readString(record, 'clientName'), DEFAULT_BACKGROUND_CLIENT.clientName),
+    id: normalizeId(readString(record, 'id')) ?? DEFAULT_BACKGROUND_CLIENT.id,
+    enabled:
+      readBoolean(record, 'enabled') ?? DEFAULT_BACKGROUND_CLIENT.enabled,
+    favorite:
+      readBoolean(record, 'favorite') ?? DEFAULT_BACKGROUND_CLIENT.favorite,
+    clientId:
+      normalizeId(readString(record, 'clientId')) ??
+      DEFAULT_BACKGROUND_CLIENT.clientId,
+    clientName: normalizeString(
+      readString(record, 'clientName'),
+      DEFAULT_BACKGROUND_CLIENT.clientName
+    ),
     clientDescription: normalizeString(
       readString(record, 'clientDescription'),
       DEFAULT_BACKGROUND_CLIENT.clientDescription
     ),
-    icon: normalizeIcon(readString(record, 'icon'), DEFAULT_BACKGROUND_CLIENT.icon)
+    icon: normalizeIcon(
+      readString(record, 'icon'),
+      DEFAULT_BACKGROUND_CLIENT.icon
+    ),
+    disabledTools: normalizeDisabledBackgroundCapabilities(
+      'tool',
+      record.disabledTools
+    ),
+    disabledResources: normalizeDisabledBackgroundCapabilities(
+      'resource',
+      record.disabledResources
+    ),
+    disabledSkills: normalizeDisabledBackgroundCapabilities(
+      'skill',
+      record.disabledSkills
+    )
   }
+}
+
+function normalizeBackgroundClients(value: unknown): BackgroundClientConfig[] {
+  if (!Array.isArray(value)) {
+    return [normalizeBackgroundClient(undefined)]
+  }
+
+  const normalized = value
+    .map((item) => normalizeBackgroundClient(item))
+    .filter(
+      (client, index, array) =>
+        array.findIndex((candidate) => candidate.id === client.id) === index
+    )
+
+  return normalized
 }
 
 function normalizeRouteClients(value: unknown): RouteClientConfig[] {
@@ -140,7 +216,10 @@ function normalizeRouteClients(value: unknown): RouteClientConfig[] {
 
   return value
     .map((item) => normalizeRouteClient(item))
-    .filter((client, index, array) => array.findIndex((candidate) => candidate.id === client.id) === index)
+    .filter(
+      (client, index, array) =>
+        array.findIndex((candidate) => candidate.id === client.id) === index
+    )
 }
 
 function normalizeMarketSources(value: unknown): MarketSourceConfig[] {
@@ -154,12 +233,15 @@ function normalizeMarketSources(value: unknown): MarketSourceConfig[] {
   for (const item of value) {
     const record = asRecord(item)
     const kind = readString(record, 'kind')
-    const id = normalizeId(readString(record, 'id')) ?? createRequestId('market-source')
+    const id =
+      normalizeId(readString(record, 'id')) ?? createRequestId('market-source')
     const official = readBoolean(record, 'official') ?? false
 
     if (kind === 'repository') {
       const provider = readString(record, 'provider')
-      const repository = normalizeRepositoryIdentifier(readString(record, 'repository'))
+      const repository = normalizeRepositoryIdentifier(
+        readString(record, 'repository')
+      )
       const refType = readString(record, 'refType')
       const ref = readString(record, 'ref')?.trim()
 
@@ -212,10 +294,17 @@ function normalizeMarketSources(value: unknown): MarketSourceConfig[] {
 
 function normalizeRouteClient(value: unknown): RouteClientConfig {
   const record = asRecord(value)
-  const clientName = normalizeString(readString(record, 'clientName'), 'Route Client')
-  const routeId = normalizeId(readString(record, 'id')) ?? createRequestId('route-client')
-  const clientId = normalizeId(readString(record, 'clientId')) ?? buildClientId(clientName, routeId)
+  const clientName = normalizeString(
+    readString(record, 'clientName'),
+    'Route Client'
+  )
+  const routeId =
+    normalizeId(readString(record, 'id')) ?? createRequestId('route-client')
+  const clientId =
+    normalizeId(readString(record, 'clientId')) ??
+    buildClientId(clientName, routeId)
   const installSource = normalizeMarketInstallSource(record.installSource)
+  const skillEntries = normalizeSkillEntries(record.skillEntries)
 
   return {
     kind: 'route',
@@ -229,18 +318,23 @@ function normalizeRouteClient(value: unknown): RouteClientConfig {
       'Route-scoped client for page automation, selector resources, and hierarchical skills.'
     ),
     icon: normalizeIcon(readString(record, 'icon'), 'route'),
-    matchPatterns: normalizePatterns(readStringArray(record, 'matchPatterns') ?? []),
+    matchPatterns: normalizePatterns(
+      readStringArray(record, 'matchPatterns') ?? []
+    ),
     routeRules: normalizeRouteRules(record.routeRules),
     autoInjectBridge: readBoolean(record, 'autoInjectBridge') ?? true,
     toolScriptSource: readString(record, 'toolScriptSource')?.trim() ?? '',
     recordings: normalizeRecordings(record.recordings),
     selectorResources: normalizeSelectorResources(record.selectorResources),
-    skillEntries: normalizeSkillEntries(record.skillEntries),
+    skillFolders: normalizeSkillFolders(record.skillFolders, skillEntries),
+    skillEntries,
     ...(installSource ? { installSource } : {})
   }
 }
 
-function normalizeMarketInstallSource(value: unknown): MarketClientInstallSource | undefined {
+function normalizeMarketInstallSource(
+  value: unknown
+): MarketClientInstallSource | undefined {
   const record = asRecord(value)
   const type = readString(record, 'type')
   const sourceId = normalizeId(readString(record, 'sourceId'))
@@ -248,7 +342,13 @@ function normalizeMarketInstallSource(value: unknown): MarketClientInstallSource
   const marketClientId = normalizeId(readString(record, 'marketClientId'))
   const marketVersion = normalizeId(readString(record, 'marketVersion'))
 
-  if (type !== 'market' || !sourceId || !sourceUrl || !marketClientId || !marketVersion) {
+  if (
+    type !== 'market' ||
+    !sourceId ||
+    !sourceUrl ||
+    !marketClientId ||
+    !marketVersion
+  ) {
     return undefined
   }
 
@@ -278,7 +378,9 @@ function normalizeRouteRules(value: unknown): RoutePathRule[] {
       }
 
       return {
-        id: normalizeId(readString(record, 'id')) ?? createRequestId('route-rule'),
+        id:
+          normalizeId(readString(record, 'id')) ??
+          createRequestId('route-rule'),
         mode,
         value: rawValue
       } satisfies RoutePathRule

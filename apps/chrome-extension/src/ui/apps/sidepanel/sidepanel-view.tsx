@@ -15,7 +15,7 @@ export function SidepanelView({ controller }: { controller: SidepanelController 
     <Stack spacing={0} sx={{ minHeight: '100vh' }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
         <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1, minWidth: 0, pr: 1 }}>
-          {controller.t('popup.sidepanelSummary', { background: controller.backgroundClient ? 1 : 0, page: controller.pageRouteClients.length, online: controller.state?.onlineClientCount ?? 0 })}
+          {controller.t('popup.sidepanelSummary', { background: controller.backgroundClients.length, page: controller.pageRouteClients.length, online: controller.state?.onlineClientCount ?? 0 })}
         </Typography>
         <Stack direction="row" spacing={0.5}>
           <ActionIcon label={controller.sidepanelPrimaryAction.label} onClick={controller.sidepanelPrimaryAction.onClick} disabled={controller.sidepanelPrimaryAction.disabled} emphasis>{controller.sidepanelPrimaryAction.icon}</ActionIcon>

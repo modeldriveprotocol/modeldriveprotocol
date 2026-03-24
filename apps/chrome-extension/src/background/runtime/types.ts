@@ -9,6 +9,7 @@ export interface ManagedClientHandle {
   key: string
   kind: 'background' | 'route'
   clientId: string
+  backgroundClientId?: string
   routeClientId?: string
   client: MdpClient
 }

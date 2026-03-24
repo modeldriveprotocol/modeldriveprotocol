@@ -157,7 +157,9 @@ export function RouteClientPanel({
                 >
                   <ListItemText
                     primary={recording.name}
-                    secondary={controller.t('popup.flowSteps', { count: recording.steps.length })}
+                    secondary={recording.mode === 'script'
+                      ? controller.t('popup.flowCode')
+                      : controller.t('popup.flowSteps', { count: recording.steps.length })}
                     primaryTypographyProps={{ variant: 'body2' }}
                     secondaryTypographyProps={{ variant: 'caption' }}
                   />

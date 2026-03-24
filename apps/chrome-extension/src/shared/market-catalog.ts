@@ -23,7 +23,10 @@ const clientIconSchema = z.enum([
   'css'
 ])
 
-const semverSchema = z.string().trim().regex(/^\d+\.\d+\.\d+$/, 'Expected a semver version like 1.0.0.')
+const semverSchema = z
+  .string()
+  .trim()
+  .regex(/^\d+\.\d+\.\d+$/, 'Expected a semver version like 1.0.0.')
 const routeRuleSchema = z.object({
   id: z.string().trim().min(1).optional(),
   mode: z.enum(['pathname-prefix', 'pathname-exact', 'url-contains', 'regex']),
@@ -50,11 +53,13 @@ const recordingSchema = z.object({
   id: z.string().trim().min(1).optional(),
   name: z.string().trim().min(1),
   description: z.string().default(''),
+  mode: z.enum(['recording', 'script']).default('recording'),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
   startUrl: z.string().url().optional(),
   capturedFeatures: z.array(z.string().trim().min(1)).default([]),
-  steps: z.array(recordedFlowStepSchema).default([])
+  steps: z.array(recordedFlowStepSchema).default([]),
+  scriptSource: z.string().default('')
 })
 
 const selectorResourceSchema = z.object({
@@ -77,7 +82,30 @@ const skillEntrySchema = z.object({
   title: z.string().trim().min(1).optional(),
   summary: z.string().default(''),
   icon: clientIconSchema.optional(),
+  queryParameters: z
+    .array(
+      z.object({
+        id: z.string().trim().min(1).optional(),
+        key: z.string().trim().min(1),
+        summary: z.string().default('')
+      })
+    )
+    .default([]),
+  headerParameters: z
+    .array(
+      z.object({
+        id: z.string().trim().min(1).optional(),
+        key: z.string().trim().min(1),
+        summary: z.string().default('')
+      })
+    )
+    .default([]),
   content: z.string().default('')
+})
+
+const skillFolderSchema = z.object({
+  id: z.string().trim().min(1).optional(),
+  path: z.string().trim().min(1)
 })
 
 const routeClientTemplateSchema = z.object({
@@ -92,6 +120,7 @@ const routeClientTemplateSchema = z.object({
   toolScriptSource: z.string().default(''),
   recordings: z.array(recordingSchema).default([]),
   selectorResources: z.array(selectorResourceSchema).default([]),
+  skillFolders: z.array(skillFolderSchema).default([]),
   skillEntries: z.array(skillEntrySchema).default([])
 })
 
@@ -154,7 +183,10 @@ export function isCompatibleCatalogVersion(version: string): boolean {
   return input[0] === supported[0]
 }
 
-export function normalizeCatalogSourceTitle(source: MarketSourceConfig, value: string | undefined): string {
+export function normalizeCatalogSourceTitle(
+  source: MarketSourceConfig,
+  value: string | undefined
+): string {
   const title = value?.trim()
   if (title) {
     return title
@@ -171,7 +203,9 @@ export function normalizeCatalogSourceTitle(source: MarketSourceConfig, value: s
   }
 }
 
-function buildTemplateClient(entry: ParsedMarketCatalogClient): RouteClientConfig {
+function buildTemplateClient(
+  entry: ParsedMarketCatalogClient
+): RouteClientConfig {
   const template = entry.client
 
   return normalizeConfig({
@@ -191,13 +225,17 @@ function buildTemplateClient(entry: ParsedMarketCatalogClient): RouteClientConfi
         toolScriptSource: template.toolScriptSource,
         recordings: template.recordings,
         selectorResources: template.selectorResources,
+        skillFolders: template.skillFolders,
         skillEntries: template.skillEntries
       }
     ]
   }).routeClients[0]
 }
 
-function buildCatalogResult(source: MarketSourceConfig, payload: ParsedMarketCatalog): MarketCatalogSourceResult {
+function buildCatalogResult(
+  source: MarketSourceConfig,
+  payload: ParsedMarketCatalog
+): MarketCatalogSourceResult {
   const compatible = isCompatibleCatalogVersion(payload.version)
   const title = normalizeCatalogSourceTitle(source, payload.title)
   const clients = compatible
@@ -236,7 +274,9 @@ export function formatCatalogError(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-export async function fetchMarketCatalog(source: MarketSourceConfig): Promise<MarketCatalogSourceResult> {
+export async function fetchMarketCatalog(
+  source: MarketSourceConfig
+): Promise<MarketCatalogSourceResult> {
   try {
     const response = await fetch(source.url, {
       method: 'GET',
@@ -263,7 +303,9 @@ export async function fetchMarketCatalog(source: MarketSourceConfig): Promise<Ma
   }
 }
 
-export function createMarketCatalogDigest(result: MarketCatalogSourceResult): string {
+export function createMarketCatalogDigest(
+  result: MarketCatalogSourceResult
+): string {
   return createStableId(
     'market-catalog',
     JSON.stringify({

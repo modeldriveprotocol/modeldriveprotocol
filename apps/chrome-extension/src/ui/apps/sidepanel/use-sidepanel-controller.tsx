@@ -35,8 +35,6 @@ import type {
 } from './types.js'
 import { useSidepanelRuntime } from './use-sidepanel-runtime.js'
 
-const BACKGROUND_SELECTION_ID = 'background'
-
 export function useSidepanelController(): SidepanelController {
   const { t } = useI18n()
   const runtime = useSidepanelRuntime(t)
@@ -67,7 +65,10 @@ export function useSidepanelController(): SidepanelController {
   }, [runtime.state])
 
   const pageRouteClients = useMemo(() => pageRouteClientItems.map((item) => item.client), [pageRouteClientItems])
-  const backgroundClient = useMemo(() => runtime.state?.clients.find((client) => client.kind === 'background'), [runtime.state?.clients])
+  const backgroundClients = useMemo(
+    () => runtime.state?.clients.filter((client) => client.kind === 'background') ?? [],
+    [runtime.state?.clients]
+  )
   const selectedClient = useMemo(() => pageRouteClients.find((client) => client.id === selectedClientId) ?? pageRouteClients[0], [pageRouteClients, selectedClientId])
   const selectedRouteConfig = useMemo(() => runtime.state?.config.routeClients.find((client) => client.id === selectedClient?.id), [runtime.state?.config.routeClients, selectedClient?.id])
   const activeTabHasPermission = Boolean(runtime.state?.activeTabHasPermission)
@@ -75,10 +76,10 @@ export function useSidepanelController(): SidepanelController {
 
   const filteredSidepanelClients = useMemo(() => {
     const items: SidepanelClientEntry[] = []
-    if (backgroundClient) {
+    for (const backgroundClient of backgroundClients) {
       items.push({
         client: backgroundClient,
-        listId: BACKGROUND_SELECTION_ID,
+        listId: backgroundClient.id ?? backgroundClient.clientKey,
         priority: -1,
         type: 'background',
         searchText: [backgroundClient.clientName, backgroundClient.clientId, t('popup.backgroundClientSummary')].join(' ').toLowerCase()
@@ -101,7 +102,7 @@ export function useSidepanelController(): SidepanelController {
       }
       return !normalizedSearch || item.searchText.includes(normalizedSearch)
     })
-  }, [backgroundClient, clientFilter, clientSearch, pageRouteClientItems, t])
+  }, [backgroundClients, clientFilter, clientSearch, pageRouteClientItems, t])
 
   const relatedRouteClients = useMemo(() => {
     if (!runtime.state?.activeTab?.url) {
@@ -209,13 +210,16 @@ export function useSidepanelController(): SidepanelController {
   return {
     ...runtime,
     t,
-    backgroundClient,
+    backgroundClients,
     pageRouteClients,
     filteredSidepanelClients,
     relatedRouteClients,
     selectedClient,
     selectedRouteConfig,
-    selectedOptionsClientId: expandedClientKey === BACKGROUND_SELECTION_ID ? BACKGROUND_SELECTION_ID : selectedClient?.id,
+    selectedOptionsClientId:
+      filteredSidepanelClients.find(
+        (item) => item.listId === expandedClientKey && item.type === 'background'
+      )?.client.id ?? selectedClient?.id,
     activeTabHasPermission,
     canCreateFromActivePage,
     clientFilter,
