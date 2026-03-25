@@ -138,11 +138,15 @@ export function RouteClientPanel({
                     <IconButton
                       edge="end"
                       size="small"
-                      onClick={() => void controller.runAction(controller.t('popup.replayedFlow'), async () => {
-                        if (client.id) {
-                          await runRecording(client.id, recording.id)
-                        }
-                      })}
+                      onClick={() => void controller.runAction(
+                        controller.t('popup.replayedFlow'),
+                        async () => {
+                          if (client.id) {
+                            await runRecording(client.id, recording.id)
+                          }
+                        },
+                        { refresh: false }
+                      )}
                     >
                       <PlayArrowOutlined fontSize="small" />
                     </IconButton>

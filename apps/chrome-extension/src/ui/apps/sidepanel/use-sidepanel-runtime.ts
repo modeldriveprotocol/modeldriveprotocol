@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 
+import { STORAGE_KEY } from '#~/shared/config.js'
+
 import {
   getPopupState
 } from '../../platform/extension-api.js'
+import { MARKET_SYNC_STATE_KEY } from '#~/shared/storage.js'
 import { toErrorMessage, type FlashState } from './helpers.js'
-import type { PopupRuntimeSlice, TranslateFn } from './types.js'
+import type { PopupRuntimeActionOptions, PopupRuntimeSlice, TranslateFn } from './types.js'
 
 export function useSidepanelRuntime(t: TranslateFn): PopupRuntimeSlice {
   const [state, setState] = useState<Awaited<ReturnType<typeof getPopupState>> | undefined>()
@@ -24,6 +27,20 @@ export function useSidepanelRuntime(t: TranslateFn): PopupRuntimeSlice {
       setRecordingDescription(t('popup.defaultRecordingDescription'))
     }
   }, [recordingDescription, recordingName, state?.activeRecording, t])
+
+  useEffect(() => {
+    if (!flash) {
+      return
+    }
+
+    const timeoutId = globalThis.setTimeout(() => {
+      setFlash(undefined)
+    }, 2400)
+
+    return () => {
+      globalThis.clearTimeout(timeoutId)
+    }
+  }, [flash])
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof globalThis.setTimeout> | undefined
@@ -46,9 +63,15 @@ export function useSidepanelRuntime(t: TranslateFn): PopupRuntimeSlice {
       _changes: Record<string, chrome.storage.StorageChange>,
       areaName: chrome.storage.AreaName
     ) => {
-      if (areaName === 'local') {
-        scheduleRefresh()
+      if (areaName !== 'local') {
+        return
       }
+
+      if (!(_changes[STORAGE_KEY] || _changes[MARKET_SYNC_STATE_KEY])) {
+        return
+      }
+
+      scheduleRefresh()
     }
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -96,9 +119,7 @@ export function useSidepanelRuntime(t: TranslateFn): PopupRuntimeSlice {
   async function runAction(
     label: string,
     action: () => Promise<void>,
-    options?: {
-      suggestSelectedClientPrimary?: boolean
-    }
+    options?: PopupRuntimeActionOptions
   ) {
     try {
       setError(undefined)
@@ -108,7 +129,9 @@ export function useSidepanelRuntime(t: TranslateFn): PopupRuntimeSlice {
         message: label,
         suggestSelectedClientPrimary: options?.suggestSelectedClientPrimary
       })
-      await load(false)
+      if (options?.refresh !== false) {
+        await load(false)
+      }
     } catch (nextError) {
       setError(toErrorMessage(nextError))
     }

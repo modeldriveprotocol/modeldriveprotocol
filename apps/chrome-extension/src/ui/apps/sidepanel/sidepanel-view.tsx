@@ -1,12 +1,13 @@
 import SearchOutlined from '@mui/icons-material/SearchOutlined'
 import StorageOutlined from '@mui/icons-material/StorageOutlined'
 import StorefrontOutlined from '@mui/icons-material/StorefrontOutlined'
-import { Alert, Box, Button, InputAdornment, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import { InputAdornment, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 
 import { openOptionsSection } from '../../platform/extension-api.js'
 import { ActionIcon } from './action-icon.js'
 import { MarketPanel } from './market-panel.js'
 import { SidepanelClientsPanel } from './sidepanel-clients-panel.js'
+import { SidepanelStatusStrip } from './sidepanel-status-strip.js'
 import type { SidepanelController } from './types.js'
 
 export function SidepanelView({ controller }: { controller: SidepanelController }) {
@@ -23,9 +24,7 @@ export function SidepanelView({ controller }: { controller: SidepanelController 
         </Stack>
       </Stack>
 
-      <Box sx={{ px: 2, py: 0.75, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.default' }}>
-        <Typography variant="body2" color="text.secondary" noWrap>{controller.sidepanelFocusText}</Typography>
-      </Box>
+      <SidepanelStatusStrip controller={controller} />
 
       {controller.contentMode === 'market' ? (
         <Stack spacing={1} sx={{ px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
@@ -56,8 +55,6 @@ export function SidepanelView({ controller }: { controller: SidepanelController 
         </Stack>
       )}
 
-      <FeedbackBanners controller={controller} />
-
       <Stack spacing={1} sx={{ px: 2, py: 1 }}>
         {controller.contentMode === 'market' ? (
           <MarketPanel controller={controller} />
@@ -66,15 +63,5 @@ export function SidepanelView({ controller }: { controller: SidepanelController 
         )}
       </Stack>
     </Stack>
-  )
-}
-
-function FeedbackBanners({ controller }: { controller: SidepanelController }) {
-  return (
-    <>
-      {controller.flash ? <Alert severity="success" sx={{ borderRadius: 0 }} action={controller.successFollowUpAction ? <Button color="inherit" size="small" onClick={controller.successFollowUpAction.onClick} startIcon={controller.successFollowUpAction.icon}>{controller.successFollowUpAction.label}</Button> : undefined}>{controller.flash.message}</Alert> : null}
-      {controller.error ? <Alert severity="error" sx={{ borderRadius: 0 }} action={controller.errorRecoveryAction ? <Button color="inherit" size="small" onClick={controller.errorRecoveryAction.onClick}>{controller.errorRecoveryAction.label}</Button> : undefined}>{controller.error}</Alert> : null}
-      {controller.loading ? <Alert severity="info" sx={{ borderRadius: 0 }}>{controller.t('common.loading')}</Alert> : null}
-    </>
   )
 }

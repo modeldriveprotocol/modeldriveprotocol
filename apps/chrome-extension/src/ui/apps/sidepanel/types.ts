@@ -45,6 +45,11 @@ export type RouteClientPrimaryActionDescriptor = PopupActionDescriptor & {
   kind: RouteClientPrimaryActionKind
 }
 
+export type PopupRuntimeActionOptions = {
+  suggestSelectedClientPrimary?: boolean
+  refresh?: boolean
+}
+
 export type PopupRuntimeSlice = {
   state: PopupState | undefined
   loading: boolean
@@ -57,9 +62,7 @@ export type PopupRuntimeSlice = {
   runAction: (
     label: string,
     action: () => Promise<void>,
-    options?: {
-      suggestSelectedClientPrimary?: boolean
-    }
+    options?: PopupRuntimeActionOptions
   ) => Promise<void>
 }
 

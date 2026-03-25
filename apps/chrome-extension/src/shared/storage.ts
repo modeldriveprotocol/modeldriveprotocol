@@ -1,6 +1,6 @@
 import { type ExtensionConfig, STORAGE_KEY, normalizeConfig } from './config.js'
 
-const MARKET_SYNC_STATE_KEY = 'marketSourceSyncState'
+export const MARKET_SYNC_STATE_KEY = 'marketSourceSyncState'
 
 export interface MarketSourceSnapshot {
   sourceId: string
