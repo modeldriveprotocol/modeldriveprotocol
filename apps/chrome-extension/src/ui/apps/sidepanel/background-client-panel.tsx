@@ -19,6 +19,7 @@ export function BackgroundClientPanel({
       onChange={(expanded) => controller.setExpandedClientKey(expanded ? item.listId : undefined)}
       icon={item.client.icon}
       title={item.client.clientName}
+      onTitleClick={() => void openOptionsSection('clients', { clientId: item.client.id })}
       subtitle={controller.t('popup.backgroundClientSummary')}
       summaryMeta={(
         <Typography variant="caption" color="text.secondary">

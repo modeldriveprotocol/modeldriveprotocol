@@ -54,6 +54,7 @@ export function RouteClientPanel({
       }}
       icon={client.icon}
       title={client.clientName}
+      onTitleClick={() => void openOptionsSection('clients', { clientId: client.id })}
       subtitle={client.routeRuleSummary ?? client.matchPatterns[0] ?? controller.t('popup.noRouteRules')}
       summaryMeta={(
         <Stack spacing={0.25} sx={{ minWidth: 120, textAlign: 'right' }}>
