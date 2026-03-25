@@ -16,36 +16,39 @@ describe('route skill assets', () => {
       {
         id: 'skill-refund',
         path: 'workspace/orders/refunds',
-        title: 'Refund guide',
-        summary: 'Refund instructions',
-        icon: 'spark',
-        queryParameters: [
-          {
-            id: 'query-ticket',
-            key: 'ticketId',
-            summary: 'Support ticket id'
-          }
-        ],
-        headerParameters: [
-          {
-            id: 'header-workspace',
-            key: 'x-workspace',
-            summary: 'Workspace name'
-          }
-        ],
+        metadata: {
+          title: 'Refund guide',
+          summary: 'Refund instructions',
+          queryParameters: [
+            {
+              id: 'query-attempt',
+              key: 'attempt',
+              summary: 'Retry attempt',
+              type: 'number'
+            }
+          ],
+          headerParameters: [
+            {
+              id: 'header-preview',
+              key: 'x-preview',
+              summary: 'Preview mode',
+              type: 'boolean'
+            }
+          ]
+        },
         content:
-          '# Refund\n\nTicket: {{query.ticketId}}\nWorkspace: {{header.X-Workspace}}\nMissing: {{query.missing}}'
+          '# Refund\n\nAttempt: {{query.attempt}}\nPreview: {{header.X-Preview}}\nMissing: {{query.missing}}'
       },
       {
-        ticketId: 'REQ-42'
+        attempt: 3
       },
       {
-        'X-Workspace': 'ops'
+        'X-Preview': true
       }
     )
 
     expect(content).toBe(
-      '# Refund\n\nTicket: REQ-42\nWorkspace: ops\nMissing: '
+      '# Refund\n\nAttempt: 3\nPreview: true\nMissing: '
     )
   })
 
@@ -54,23 +57,26 @@ describe('route skill assets', () => {
       buildRouteSkillInputSchema({
         id: 'skill-refund',
         path: 'workspace/orders/refunds',
-        title: 'Refund guide',
-        summary: 'Refund instructions',
-        icon: 'spark',
-        queryParameters: [
-          {
-            id: 'query-ticket',
-            key: 'ticketId',
-            summary: 'Support ticket id'
-          }
-        ],
-        headerParameters: [
-          {
-            id: 'header-workspace',
-            key: 'x-workspace',
-            summary: 'Workspace name'
-          }
-        ],
+        metadata: {
+          title: 'Refund guide',
+          summary: 'Refund instructions',
+          queryParameters: [
+            {
+              id: 'query-attempt',
+              key: 'attempt',
+              summary: 'Retry attempt',
+              type: 'number'
+            }
+          ],
+          headerParameters: [
+            {
+              id: 'header-preview',
+              key: 'x-preview',
+              summary: 'Preview mode',
+              type: 'boolean'
+            }
+          ]
+        },
         content: '# Refund'
       })
     ).toEqual({
@@ -82,9 +88,9 @@ describe('route skill assets', () => {
           description: 'Query values available to this skill.',
           additionalProperties: false,
           properties: {
-            ticketId: {
-              type: 'string',
-              description: 'Support ticket id'
+            attempt: {
+              type: 'number',
+              description: 'Retry attempt'
             }
           }
         },
@@ -93,9 +99,9 @@ describe('route skill assets', () => {
           description: 'Header values available to this skill.',
           additionalProperties: false,
           properties: {
-            'x-workspace': {
-              type: 'string',
-              description: 'Workspace name'
+            'x-preview': {
+              type: 'boolean',
+              description: 'Preview mode'
             }
           }
         }
@@ -103,7 +109,7 @@ describe('route skill assets', () => {
     })
   })
 
-  it('normalizes route skill parameters for query and headers', () => {
+  it('normalizes route skill parameters for query and headers from legacy top-level fields', () => {
     const normalized = normalizeConfig({
       ...DEFAULT_EXTENSION_CONFIG,
       routeClients: [
@@ -127,6 +133,12 @@ describe('route skill assets', () => {
                   summary: 'Support ticket id'
                 },
                 {
+                  id: 'query-retry',
+                  key: 'maxRetries',
+                  summary: 'Retry count',
+                  type: 'number'
+                },
+                {
                   id: 'query-ticket-b',
                   key: 'ticketId',
                   summary: 'Duplicate query parameter'
@@ -137,6 +149,12 @@ describe('route skill assets', () => {
                   id: 'header-workspace-a',
                   key: ' X-Workspace ',
                   summary: 'Workspace name'
+                },
+                {
+                  id: 'header-preview',
+                  key: 'x-preview',
+                  summary: 'Preview mode',
+                  type: 'boolean'
                 },
                 {
                   id: 'header-workspace-b',
@@ -153,18 +171,32 @@ describe('route skill assets', () => {
 
     const skill = normalized.routeClients[0]?.skillEntries[0]
 
-    expect(skill?.queryParameters).toEqual([
+    expect(skill?.metadata.queryParameters).toEqual([
       {
         id: 'query-ticket-a',
         key: 'ticketId',
-        summary: 'Support ticket id'
+        summary: 'Support ticket id',
+        type: 'string'
+      },
+      {
+        id: 'query-retry',
+        key: 'maxRetries',
+        summary: 'Retry count',
+        type: 'number'
       }
     ])
-    expect(skill?.headerParameters).toEqual([
+    expect(skill?.metadata.headerParameters).toEqual([
       {
         id: 'header-workspace-a',
         key: 'X-Workspace',
-        summary: 'Workspace name'
+        summary: 'Workspace name',
+        type: 'string'
+      },
+      {
+        id: 'header-preview',
+        key: 'x-preview',
+        summary: 'Preview mode',
+        type: 'boolean'
       }
     ])
   })
@@ -183,21 +215,23 @@ describe('route skill assets', () => {
             {
               id: 'skill-refund-a',
               path: ' Workspace / Orders & Returns ',
-              title: 'Refund guide',
-              summary: '',
-              icon: 'spark',
-              queryParameters: [],
-              headerParameters: [],
+              metadata: {
+                title: 'Refund guide',
+                summary: '',
+                queryParameters: [],
+                headerParameters: []
+              },
               content: '# Refund'
             },
             {
               id: 'skill-refund-b',
               path: 'workspace/orders-returns',
-              title: 'Duplicate normalized path',
-              summary: '',
-              icon: 'spark',
-              queryParameters: [],
-              headerParameters: [],
+              metadata: {
+                title: 'Duplicate normalized path',
+                summary: '',
+                queryParameters: [],
+                headerParameters: []
+              },
               content: '# Duplicate'
             }
           ]

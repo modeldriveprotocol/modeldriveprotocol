@@ -610,7 +610,7 @@ describe('MdpClient', () => {
     })
   })
 
-  it('routes skill resolvers with query params and headers', async () => {
+  it('routes skill resolvers with typed query params and headers', async () => {
     const transport = new FakeTransport()
     const client = createMdpClient({
       serverUrl: 'ws://127.0.0.1:7070',
@@ -623,7 +623,8 @@ describe('MdpClient', () => {
 
     client.exposeSkill(
       'workspace/review',
-      async (query, headers) => `# Workspace Review\n\nq=${query.q}\nheader=${headers['x-test-header']}`
+      async (query, headers) =>
+        `# Workspace Review\n\nlimit=${query.limit}\nheader=${headers['x-enabled']}`
     )
 
     transport.emit({
@@ -634,10 +635,10 @@ describe('MdpClient', () => {
       name: 'workspace/review',
       args: {
         query: {
-          q: 'focus'
+          limit: 5
         },
         headers: {
-          'x-test-header': 'present'
+          'x-enabled': false
         }
       }
     })
@@ -648,7 +649,7 @@ describe('MdpClient', () => {
           type: 'callClientResult',
           requestId: 'req-skill-01',
           ok: true,
-          data: '# Workspace Review\n\nq=focus\nheader=present'
+          data: '# Workspace Review\n\nlimit=5\nheader=false'
         }
       ])
     })

@@ -28,6 +28,7 @@
     "@modeldriveprotocol/client": "workspace:*",
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
+    "@mui/x-tree-view": "^8.27.2",
     "@wxt-dev/module-react": "^1.2.2",
     "monaco-editor": "^0.55.1",
     "react": "^19.2.4",

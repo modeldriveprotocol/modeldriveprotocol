@@ -15,6 +15,8 @@ export interface MonacoCodeEditorHandle {
 
 type MonacoCodeEditorProps = {
   ariaLabel: string
+  frame?: 'outlined' | 'plain'
+  height?: number | string
   jsonSchema?: {
     schemaUri: string
     schema: unknown
@@ -34,6 +36,8 @@ export const MonacoCodeEditor = forwardRef<
   (
     {
       ariaLabel,
+      frame = 'plain',
+      height,
       jsonSchema,
       language,
       minHeight = 360,
@@ -170,15 +174,22 @@ export const MonacoCodeEditor = forwardRef<
     return (
       <Box
         sx={{
+          ...(height !== undefined ? { height } : {}),
           minHeight,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
           overflow: 'hidden',
-          bgcolor: 'background.paper'
+          ...(frame === 'outlined'
+            ? {
+                border: '1px solid',
+                borderColor: 'divider',
+                bgcolor: 'background.paper'
+              }
+            : {})
         }}
       >
-        <Box ref={containerRef} sx={{ height: minHeight, width: '100%' }} />
+        <Box
+          ref={containerRef}
+          sx={{ height: height ?? minHeight, minHeight, width: '100%' }}
+        />
       </Box>
     )
   }

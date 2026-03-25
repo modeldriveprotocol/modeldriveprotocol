@@ -9,13 +9,13 @@ import type {
   RouteClientRecording,
   RouteSkillFolder,
   RouteSkillParameter,
+  RouteSkillParameterType,
   RouteSelectorResource,
   RouteSkillEntry
 } from './types.js'
 import {
   deriveSkillTitle,
   normalizeAttributeMap,
-  normalizeIcon,
   normalizeId,
   normalizeOffset,
   normalizePatterns,
@@ -29,6 +29,8 @@ export function normalizeRecordings(value: unknown): RouteClientRecording[] {
     return []
   }
 
+  const usedPaths = new Set<string>()
+
   return value.map((item) => {
     const record = asRecord(item)
     const name = normalizeString(readString(record, 'name'), 'Recorded Flow')
@@ -38,6 +40,12 @@ export function normalizeRecordings(value: unknown): RouteClientRecording[] {
 
     return {
       id: normalizeId(readString(record, 'id')) ?? createRequestId('recording'),
+      path: normalizeUniqueAssetPath(
+        readString(record, 'path'),
+        name,
+        'flow',
+        usedPaths
+      ),
       name,
       description: normalizeString(
         readString(record, 'description'),
@@ -118,6 +126,8 @@ export function normalizeSelectorResources(
     return []
   }
 
+  const usedPaths = new Set<string>()
+
   return value
     .map((item) => {
       const record = asRecord(item)
@@ -136,6 +146,12 @@ export function normalizeSelectorResources(
         id:
           normalizeId(readString(record, 'id')) ??
           createRequestId('selector-resource'),
+        path: normalizeUniqueAssetPath(
+          readString(record, 'path'),
+          name,
+          'resource',
+          usedPaths
+        ),
         name,
         description: normalizeString(
           readString(record, 'description'),
@@ -160,6 +176,28 @@ export function normalizeSelectorResources(
     .filter((resource): resource is RouteSelectorResource => Boolean(resource))
 }
 
+function normalizeUniqueAssetPath(
+  rawPath: string | undefined,
+  fallbackName: string,
+  defaultBase: string,
+  usedPaths: Set<string>
+): string {
+  const basePath =
+    normalizeSkillPath(rawPath) ??
+    normalizeSkillPath(fallbackName) ??
+    defaultBase
+  let candidate = basePath
+  let attempt = 2
+
+  while (usedPaths.has(candidate)) {
+    candidate = `${basePath}-${attempt}`
+    attempt += 1
+  }
+
+  usedPaths.add(candidate)
+  return candidate
+}
+
 export function normalizeSkillEntries(value: unknown): RouteSkillEntry[] {
   if (!Array.isArray(value)) {
     return []
@@ -168,6 +206,7 @@ export function normalizeSkillEntries(value: unknown): RouteSkillEntry[] {
   return value
     .map((item) => {
       const record = asRecord(item)
+      const metadataRecord = asRecord(record.metadata)
       const path = normalizeSkillPath(readString(record, 'path'))
 
       if (!path) {
@@ -177,19 +216,25 @@ export function normalizeSkillEntries(value: unknown): RouteSkillEntry[] {
       return {
         id: normalizeId(readString(record, 'id')) ?? createRequestId('skill'),
         path,
-        title: normalizeString(
-          readString(record, 'title'),
-          deriveSkillTitle(path)
-        ),
-        summary: normalizeString(
-          readString(record, 'summary'),
-          'Workspace guidance for the route-scoped client.'
-        ),
-        icon: normalizeIcon(readString(record, 'icon'), 'spark'),
-        queryParameters: normalizeSkillParameters(record.queryParameters),
-        headerParameters: normalizeSkillParameters(record.headerParameters, {
-          caseInsensitiveKeys: true
-        }),
+        metadata: {
+          title: normalizeString(
+            readString(metadataRecord, 'title') ?? readString(record, 'title'),
+            deriveSkillTitle(path)
+          ),
+          summary: normalizeString(
+            readString(metadataRecord, 'summary') ?? readString(record, 'summary'),
+            'Workspace guidance for the route-scoped client.'
+          ),
+          queryParameters: normalizeSkillParameters(
+            metadataRecord.queryParameters ?? record.queryParameters
+          ),
+          headerParameters: normalizeSkillParameters(
+            metadataRecord.headerParameters ?? record.headerParameters,
+            {
+              caseInsensitiveKeys: true
+            }
+          )
+        },
         content: readString(record, 'content')?.trim() ?? ''
       } satisfies RouteSkillEntry
     })
@@ -257,7 +302,8 @@ function normalizeSkillParameters(
           normalizeId(readString(record, 'id')) ??
           createRequestId('skill-param'),
         key,
-        summary: readString(record, 'summary')?.trim() ?? ''
+        summary: readString(record, 'summary')?.trim() ?? '',
+        type: normalizeSkillParameterType(readString(record, 'type'))
       } satisfies RouteSkillParameter
     })
     .filter((parameter): parameter is RouteSkillParameter => Boolean(parameter))
@@ -282,4 +328,14 @@ function normalizeSkillParameterKey(
   caseInsensitive = false
 ): string {
   return caseInsensitive ? value.toLowerCase() : value
+}
+
+function normalizeSkillParameterType(
+  value: string | undefined
+): RouteSkillParameterType {
+  if (value === 'number' || value === 'boolean') {
+    return value
+  }
+
+  return 'string'
 }

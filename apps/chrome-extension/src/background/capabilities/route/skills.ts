@@ -22,13 +22,13 @@ export function renderRouteSkillContent(
       }
 
       if (source === 'query') {
-        return query[key] ?? ''
+        return stringifyTemplateValue(query[key])
       }
 
       const exact = headers[key]
 
       if (exact !== undefined) {
-        return exact
+        return stringifyTemplateValue(exact)
       }
 
       const lowerKey = key.toLowerCase()
@@ -36,7 +36,7 @@ export function renderRouteSkillContent(
         ([name]) => name.toLowerCase() === lowerKey
       )
 
-      return matchedHeader?.[1] ?? ''
+      return stringifyTemplateValue(matchedHeader?.[1])
     }
   )
 }
@@ -45,11 +45,11 @@ export function buildRouteSkillInputSchema(
   skill: RouteSkillEntry
 ): JsonSchema | undefined {
   const querySchema = buildRouteSkillParameterSchema(
-    skill.queryParameters,
+    skill.metadata.queryParameters,
     'Query values available to this skill.'
   )
   const headerSchema = buildRouteSkillParameterSchema(
-    skill.headerParameters,
+    skill.metadata.headerParameters,
     'Header values available to this skill.'
   )
 
@@ -80,11 +80,43 @@ function buildRouteSkillParameterSchema(
           parameter.key,
           (
             parameter.summary
-              ? z.string().describe(parameter.summary)
-              : z.string()
+              ? buildSkillParameterValueSchema(parameter.type).describe(
+                  parameter.summary
+                )
+              : buildSkillParameterValueSchema(parameter.type)
           ).optional()
         ])
       ) as Record<string, z.ZodOptional<z.ZodType>>
     )
     .describe(description)
+}
+
+function buildSkillParameterValueSchema(
+  type: RouteSkillParameter['type']
+): z.ZodType {
+  if (type === 'number') {
+    return z.number()
+  }
+
+  if (type === 'boolean') {
+    return z.boolean()
+  }
+
+  return z.string()
+}
+
+function stringifyTemplateValue(value: unknown): string {
+  if (value === undefined || value === null) {
+    return ''
+  }
+
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+
+  return JSON.stringify(value)
 }

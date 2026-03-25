@@ -18,6 +18,7 @@ describe('chrome extension route recordings', () => {
           recordings: [
             {
               id: 'flow-script',
+              path: 'script-flow',
               name: 'Script Flow',
               description: 'Runs custom code',
               mode: 'script',

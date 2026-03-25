@@ -91,7 +91,7 @@ export function registerRouteClientCapabilities(
       (query: SkillQuery, headers: SkillHeaders) =>
         renderRouteSkillContent(skill, query, headers),
       {
-        description: skill.summary,
+        description: skill.metadata.summary,
         contentType: 'text/markdown',
         ...(inputSchema ? { inputSchema } : {})
       }

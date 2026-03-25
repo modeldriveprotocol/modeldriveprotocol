@@ -1,12 +1,11 @@
 import { z } from 'zod'
 
-import { clientIconEnum } from './constants.js'
-
 const nonEmptyStringSchema = z.string().min(1)
 const dateTimeStringSchema = z.string().meta({ format: 'date-time' })
 
 export const routeSelectorResourceSchema = z.object({
   id: nonEmptyStringSchema,
+  path: nonEmptyStringSchema,
   name: nonEmptyStringSchema,
   description: z.string(),
   createdAt: dateTimeStringSchema,
@@ -22,17 +21,21 @@ export const routeSelectorResourceSchema = z.object({
 export const routeSkillParameterSchema = z.object({
   id: nonEmptyStringSchema,
   key: nonEmptyStringSchema,
-  summary: z.string()
+  summary: z.string(),
+  type: z.enum(['string', 'number', 'boolean']).default('string')
+})
+
+export const routeSkillMetadataSchema = z.object({
+  title: nonEmptyStringSchema,
+  summary: z.string(),
+  queryParameters: z.array(routeSkillParameterSchema),
+  headerParameters: z.array(routeSkillParameterSchema)
 })
 
 export const routeSkillEntrySchema = z.object({
   id: nonEmptyStringSchema,
   path: nonEmptyStringSchema,
-  title: nonEmptyStringSchema,
-  summary: z.string(),
-  icon: z.enum(clientIconEnum),
-  queryParameters: z.array(routeSkillParameterSchema),
-  headerParameters: z.array(routeSkillParameterSchema),
+  metadata: routeSkillMetadataSchema,
   content: z.string()
 })
 

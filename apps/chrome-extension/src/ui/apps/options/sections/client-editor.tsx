@@ -44,6 +44,7 @@ export function ClientEditor({
     : hasMatchingOpenTab
       ? t('options.clients.openTabs', { count: matchingTabCount ?? 0 })
       : currentPageLabel
+  const stretchBody = tab === 'assets'
 
   useEffect(() => {
     setTab(initialTab ?? 'basics')
@@ -57,18 +58,14 @@ export function ClientEditor({
   }
 
   return (
-    <Stack spacing={1.25}>
-      <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Tabs value={tab} onChange={(_event, next) => setTab(next)} variant="scrollable" scrollButtons={false}>
-          <Tab value="basics" label={t('options.clients.tab.basics')} />
-          <Tab value="matching" label={t('options.clients.tab.matching')} />
-          <Tab value="runtime" label={t('options.clients.tab.runtime')} />
-          <Tab value="assets" label={t('options.clients.tab.assets')} />
-          <Tab value="activity" label={t('options.clients.tab.activity')} />
-        </Tabs>
-      </Box>
-
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0.75} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between">
+    <Stack spacing={1.25} sx={stretchBody ? { flex: 1, minHeight: 0 } : undefined}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={0.75}
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        justifyContent="space-between"
+        sx={{ pt: 1.25 }}
+      >
         <Stack spacing={0.25} sx={{ minWidth: 0 }}>
           <Typography variant="body2" sx={{ color: matched || hasMatchingOpenTab ? 'success.main' : 'text.secondary', fontWeight: 600 }}>
             {matched ? t('options.clients.match') : hasMatchingOpenTab ? t('options.clients.active') : client.enabled ? t('options.clients.idle') : t('options.clients.off')}
@@ -79,6 +76,16 @@ export function ClientEditor({
           {[t('options.clients.flows', { count: client.recordings.length }), t('options.clients.resources', { count: client.selectorResources.length }), t('options.clients.skills', { count: client.skillEntries.length })].join(' · ')}
         </Typography>
       </Stack>
+
+      <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Tabs value={tab} onChange={(_event, next) => setTab(next)} variant="scrollable" scrollButtons={false}>
+          <Tab value="basics" label={t('options.clients.tab.basics')} />
+          <Tab value="matching" label={t('options.clients.tab.matching')} />
+          <Tab value="runtime" label={t('options.clients.tab.runtime')} />
+          <Tab value="assets" label={t('options.clients.tab.assets')} />
+          <Tab value="activity" label={t('options.clients.tab.activity')} />
+        </Tabs>
+      </Box>
 
       {tab === 'basics' ? (
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1.25 }}>
@@ -127,7 +134,16 @@ export function ClientEditor({
         </Box>
       ) : null}
 
-      {tab === 'assets' ? <ClientAssetsPanel client={client} draft={draft} initialTab={initialAssetTab} onChange={onChange} /> : null}
+      {tab === 'assets' ? (
+        <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
+          <ClientAssetsPanel
+            client={client}
+            draft={draft}
+            initialTab={initialAssetTab}
+            onChange={onChange}
+          />
+        </Box>
+      ) : null}
       {tab === 'activity' ? (
         <ClientInvocationPanel
           description={t('options.clients.invocations.description')}

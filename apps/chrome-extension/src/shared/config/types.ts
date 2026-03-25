@@ -40,6 +40,7 @@ export interface RecordedFlowStep {
 
 export interface RouteClientRecording {
   id: string
+  path: string
   name: string
   description: string
   mode: 'recording' | 'script'
@@ -57,6 +58,7 @@ export interface SelectorResourceAttributeMap {
 
 export interface RouteSelectorResource {
   id: string
+  path: string
   name: string
   description: string
   createdAt: string
@@ -69,21 +71,27 @@ export interface RouteSelectorResource {
   attributes: SelectorResourceAttributeMap
 }
 
-export interface RouteSkillEntry {
-  id: string
-  path: string
-  title: string
-  summary: string
-  icon: ClientIconKey
-  queryParameters: RouteSkillParameter[]
-  headerParameters: RouteSkillParameter[]
-  content: string
-}
+export type RouteSkillParameterType = 'string' | 'number' | 'boolean'
 
 export interface RouteSkillParameter {
   id: string
   key: string
   summary: string
+  type: RouteSkillParameterType
+}
+
+export interface RouteSkillMetadata {
+  title: string
+  summary: string
+  queryParameters: RouteSkillParameter[]
+  headerParameters: RouteSkillParameter[]
+}
+
+export interface RouteSkillEntry {
+  id: string
+  path: string
+  metadata: RouteSkillMetadata
+  content: string
 }
 
 export interface RouteSkillFolder {

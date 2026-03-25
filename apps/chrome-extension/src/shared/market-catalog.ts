@@ -51,6 +51,7 @@ const recordedFlowStepSchema = z.object({
 
 const recordingSchema = z.object({
   id: z.string().trim().min(1).optional(),
+  path: z.string().trim().min(1).optional(),
   name: z.string().trim().min(1),
   description: z.string().default(''),
   mode: z.enum(['recording', 'script']).default('recording'),
@@ -64,6 +65,7 @@ const recordingSchema = z.object({
 
 const selectorResourceSchema = z.object({
   id: z.string().trim().min(1).optional(),
+  path: z.string().trim().min(1).optional(),
   name: z.string().trim().min(1),
   description: z.string().default(''),
   createdAt: z.string().optional(),
@@ -79,15 +81,41 @@ const selectorResourceSchema = z.object({
 const skillEntrySchema = z.object({
   id: z.string().trim().min(1).optional(),
   path: z.string().trim().min(1),
+  metadata: z
+    .object({
+      title: z.string().trim().min(1).optional(),
+      summary: z.string().default(''),
+      queryParameters: z
+        .array(
+          z.object({
+            id: z.string().trim().min(1).optional(),
+            key: z.string().trim().min(1),
+            summary: z.string().default(''),
+            type: z.enum(['string', 'number', 'boolean']).default('string')
+          })
+        )
+        .default([]),
+      headerParameters: z
+        .array(
+          z.object({
+            id: z.string().trim().min(1).optional(),
+            key: z.string().trim().min(1),
+            summary: z.string().default(''),
+            type: z.enum(['string', 'number', 'boolean']).default('string')
+          })
+        )
+        .default([])
+    })
+    .optional(),
   title: z.string().trim().min(1).optional(),
   summary: z.string().default(''),
-  icon: clientIconSchema.optional(),
   queryParameters: z
     .array(
       z.object({
         id: z.string().trim().min(1).optional(),
         key: z.string().trim().min(1),
-        summary: z.string().default('')
+        summary: z.string().default(''),
+        type: z.enum(['string', 'number', 'boolean']).default('string')
       })
     )
     .default([]),
@@ -96,7 +124,8 @@ const skillEntrySchema = z.object({
       z.object({
         id: z.string().trim().min(1).optional(),
         key: z.string().trim().min(1),
-        summary: z.string().default('')
+        summary: z.string().default(''),
+        type: z.enum(['string', 'number', 'boolean']).default('string')
       })
     )
     .default([]),

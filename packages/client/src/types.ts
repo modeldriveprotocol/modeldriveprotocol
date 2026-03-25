@@ -3,6 +3,7 @@ import type {
   CapabilityKind,
   ClientDescriptor,
   ClientToServerMessage,
+  JsonPrimitive,
   JsonObject,
   JsonSchema,
   PromptArgumentDescriptor,
@@ -49,8 +50,9 @@ export type CapabilityInvocationMiddleware<TResult = unknown> = (
   next: CapabilityInvocationNext<TResult>
 ) => TResult | Promise<TResult>
 
-export type SkillQuery = Record<string, string>
-export type SkillHeaders = Record<string, string>
+export type SkillParameterValue = Exclude<JsonPrimitive, null>
+export type SkillQuery = Record<string, SkillParameterValue>
+export type SkillHeaders = Record<string, SkillParameterValue>
 
 export type SkillResolver<TResult = string> = (
   query: SkillQuery,

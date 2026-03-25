@@ -97,8 +97,8 @@ export function OptionsSidebar({
           </Typography>
         </Stack>
 
-        <Box sx={{ minHeight: 0, overflow: 'auto', px: 1.25, pt: 0 }}>
-          <List dense disablePadding sx={{ pt: 0 }}>
+        <Box sx={{ minHeight: 0, overflow: 'auto', px: 1.25, py: 1 }}>
+          <List dense disablePadding>
             {navItems.map((item) => (
               <ListItem key={item.id} disablePadding sx={{ mb: 0.25 }}>
                 <ListItemButton

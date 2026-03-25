@@ -22,6 +22,7 @@ export function WorkspaceBundleEditor({
   return (
     <MonacoCodeEditor
       ariaLabel={ariaLabel}
+      frame="outlined"
       jsonSchema={{
         schemaUri: WORKSPACE_BUNDLE_SCHEMA_URI,
         schema: workspaceBundleJsonSchema

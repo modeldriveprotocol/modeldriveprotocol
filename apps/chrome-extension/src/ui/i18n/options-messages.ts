@@ -116,9 +116,20 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.assets.description':
       'Pick a route client first so you can review and edit its tools, resources, and skills.',
     'options.assets.noSelectedClient': 'No route client selected yet.',
+    'options.assets.noSelection': 'Select an item.',
+    'options.assets.search': 'Search assets',
+    'options.assets.searchEmpty': 'No assets match this search.',
+    'options.assets.openParentFolder': 'Open parent folder',
+    'options.assets.scopeChildren': '{{count}} item(s)',
+    'options.assets.path': 'Path',
+    'options.assets.pathInvalid':
+      'Use lowercase letters, numbers, `-`, `_`, and `/`.',
+    'options.assets.pathConflict': 'This path already exists in the client.',
     'options.assets.addResource': 'Add resource',
     'options.assets.addSkill': 'Add skill',
+    'options.assets.renameItem': 'Rename',
     'options.assets.deleteItem': 'Delete item',
+    'options.assets.deleteFolder': 'Delete folder',
     'options.assets.tab.flows': 'Flows {{count}}',
     'options.assets.tab.resources': 'Resources {{count}}',
     'options.assets.tab.skills': 'Skills {{count}}',
@@ -155,13 +166,16 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.assets.skills.title': 'Skill files',
     'options.assets.skills.description':
       'Manage route-local skills as a file tree, then edit parameterized markdown on the right.',
-    'options.assets.skills.empty':
-      'No skills yet. Add one and use paths like workspace/orders/refunds to build folders.',
+    'options.assets.skills.empty': 'No skills yet.',
     'options.assets.skills.newTitle': 'New skill',
     'options.assets.skills.newFolder': 'New folder',
+    'options.assets.skills.search': 'Search',
+    'options.assets.skills.searchEmpty': 'No matches.',
+    'options.assets.skills.create': 'Create',
     'options.assets.skills.addFolder': 'Add folder',
     'options.assets.skills.addSkillInFolder': 'Add file to folder',
     'options.assets.skills.deleteFolder': 'Delete folder files',
+    'options.assets.skills.renameItem': 'Rename',
     'options.assets.skills.cancelFolderDraft': 'Cancel folder',
     'options.assets.skills.confirmFolderDraft': 'Create folder',
     'options.assets.skills.path': 'Path',
@@ -187,8 +201,9 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.assets.skills.content': 'Content',
     'options.assets.skills.treeHint':
       'Each skill path becomes a markdown file in the tree on the left.',
-    'options.assets.skills.noSelection':
-      'Select a file from the tree, or add a new skill to start editing.',
+    'options.assets.skills.treeKeyboardHint':
+      'Arrow keys navigate. F2 renames the selected file or folder.',
+    'options.assets.skills.noSelection': 'Select a file.',
     'options.assets.skills.queryParameters': 'Query parameters',
     'options.assets.skills.headerParameters': 'Header parameters',
     'options.assets.skills.addQueryParameter': 'Add query parameter',
@@ -196,6 +211,15 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.assets.skills.queryParametersEmpty': 'No query parameters yet.',
     'options.assets.skills.headerParametersEmpty': 'No header parameters yet.',
     'options.assets.skills.parameterKey': 'Parameter key',
+    'options.assets.skills.parameterType': 'Type',
+    'options.assets.skills.parameterType.string': 'Text',
+    'options.assets.skills.parameterType.number': 'Number',
+    'options.assets.skills.parameterType.boolean': 'Boolean',
+    'options.assets.skills.advancedMode': 'Advanced mode',
+    'options.assets.skills.advancedModeHint':
+      'Configure query and header parameters in a dialog.',
+    'options.assets.skills.parameterSummary':
+      '{{queryCount}} query · {{headerCount}} header',
     'options.assets.skills.availableVariables': 'Available variables',
     'options.assets.skills.availableVariablesEmpty':
       'Add a query or header parameter to generate variables.',
@@ -364,9 +388,20 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.assets.description':
       '先选择一个路由客户端，再查看和编辑它的工具、资源和技能。',
     'options.assets.noSelectedClient': '还没有选中的路由客户端。',
+    'options.assets.noSelection': '选择一个项目。',
+    'options.assets.search': '搜索资产',
+    'options.assets.searchEmpty': '没有匹配的资产。',
+    'options.assets.openParentFolder': '打开上一级目录',
+    'options.assets.scopeChildren': '{{count}} 项',
+    'options.assets.path': '路径',
+    'options.assets.pathInvalid':
+      '请使用小写字母、数字、`-`、`_` 和 `/` 组成路径。',
+    'options.assets.pathConflict': '当前 client 里已经存在同名路径。',
     'options.assets.addResource': '新增资源',
     'options.assets.addSkill': '新增技能',
+    'options.assets.renameItem': '重命名',
     'options.assets.deleteItem': '删除当前项',
+    'options.assets.deleteFolder': '删除目录',
     'options.assets.tab.flows': '流程 {{count}}',
     'options.assets.tab.resources': '资源 {{count}}',
     'options.assets.tab.skills': '技能 {{count}}',
@@ -403,13 +438,16 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.assets.skills.title': '技能文件',
     'options.assets.skills.description':
       '左侧按文件树管理当前 route client 的技能，右侧编辑参数化 markdown 内容。',
-    'options.assets.skills.empty':
-      '还没有技能。新增后可以用 `workspace/orders/refunds` 这类路径组织目录。',
+    'options.assets.skills.empty': '还没有技能。',
     'options.assets.skills.newTitle': '新技能',
     'options.assets.skills.newFolder': '新目录',
+    'options.assets.skills.search': '搜索',
+    'options.assets.skills.searchEmpty': '没有匹配项。',
+    'options.assets.skills.create': '新建',
     'options.assets.skills.addFolder': '新增目录',
     'options.assets.skills.addSkillInFolder': '在目录中新建文件',
     'options.assets.skills.deleteFolder': '删除目录下文件',
+    'options.assets.skills.renameItem': '重命名',
     'options.assets.skills.cancelFolderDraft': '取消建目录',
     'options.assets.skills.confirmFolderDraft': '创建目录',
     'options.assets.skills.path': '路径',
@@ -434,8 +472,9 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.assets.skills.content': '内容',
     'options.assets.skills.treeHint':
       '每个技能路径都会映射成左侧树里的一份 markdown 文件。',
-    'options.assets.skills.noSelection':
-      '从左侧树里选择一个文件，或者先新增技能开始编辑。',
+    'options.assets.skills.treeKeyboardHint':
+      '可以用方向键导航，按 F2 重命名当前选中的文件或目录。',
+    'options.assets.skills.noSelection': '选择一个文件。',
     'options.assets.skills.queryParameters': 'Query 参数',
     'options.assets.skills.headerParameters': 'Header 参数',
     'options.assets.skills.addQueryParameter': '新增 Query 参数',
@@ -443,6 +482,15 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.assets.skills.queryParametersEmpty': '还没有 Query 参数。',
     'options.assets.skills.headerParametersEmpty': '还没有 Header 参数。',
     'options.assets.skills.parameterKey': '参数键名',
+    'options.assets.skills.parameterType': '类型',
+    'options.assets.skills.parameterType.string': '文本',
+    'options.assets.skills.parameterType.number': '数字',
+    'options.assets.skills.parameterType.boolean': '布尔值',
+    'options.assets.skills.advancedMode': '高级模式',
+    'options.assets.skills.advancedModeHint':
+      '在弹窗里配置 Query 和 Header 参数。',
+    'options.assets.skills.parameterSummary':
+      '{{queryCount}} 个 Query · {{headerCount}} 个 Header',
     'options.assets.skills.availableVariables': '可用变量',
     'options.assets.skills.availableVariablesEmpty':
       '先添加 Query 或 Header 参数，这里才会生成可引用变量。',

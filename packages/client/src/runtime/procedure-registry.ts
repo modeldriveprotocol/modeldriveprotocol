@@ -344,20 +344,24 @@ function readSkillRequest(
   }
 
   return {
-    query: readStringRecord(args.query),
-    headers: readStringRecord(args.headers)
+    query: readSkillValueRecord(args.query),
+    headers: readSkillValueRecord(args.headers)
   }
 }
 
-function readStringRecord(value: unknown): Record<string, string> {
+function readSkillValueRecord(value: unknown): SkillQuery {
   if (!isPlainObject(value)) {
     return {}
   }
 
-  const result: Record<string, string> = {}
+  const result: SkillQuery = {}
 
   for (const [key, entry] of Object.entries(value)) {
-    if (typeof entry === 'string') {
+    if (
+      typeof entry === 'string' ||
+      typeof entry === 'number' ||
+      typeof entry === 'boolean'
+    ) {
       result[key] = entry
     }
   }

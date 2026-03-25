@@ -569,12 +569,15 @@ function forkEditableClient(
     skillFolders: item.client.skillFolders.map((folder) => ({ ...folder })),
     skillEntries: item.client.skillEntries.map((skill) => ({
       ...skill,
-      queryParameters: skill.queryParameters.map((parameter) => ({
-        ...parameter
-      })),
-      headerParameters: skill.headerParameters.map((parameter) => ({
-        ...parameter
-      }))
+      metadata: {
+        ...skill.metadata,
+        queryParameters: skill.metadata.queryParameters.map((parameter) => ({
+          ...parameter
+        })),
+        headerParameters: skill.metadata.headerParameters.map((parameter) => ({
+          ...parameter
+        }))
+      }
     }))
   })
 }

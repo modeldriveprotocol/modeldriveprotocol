@@ -65,6 +65,7 @@ describe('chrome extension config helpers', () => {
 
     expect(normalized.routeClients[0]?.recordings[0]).toMatchObject({
       id: 'flow-script',
+      path: 'script-flow',
       mode: 'script',
       scriptSource: 'return args?.selector ?? "button";',
       steps: []

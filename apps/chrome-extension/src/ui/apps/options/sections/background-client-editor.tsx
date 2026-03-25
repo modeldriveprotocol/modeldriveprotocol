@@ -80,15 +80,13 @@ export function BackgroundClientEditor({
 
   return (
     <Stack spacing={1.25}>
-      <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Tabs value={tab} onChange={(_event, next) => setTab(next)} variant="scrollable" scrollButtons={false}>
-          <Tab value="basics" label={t('options.clients.tab.basics')} />
-          <Tab value="assets" label={t('options.clients.tab.assets')} />
-          <Tab value="activity" label={t('options.clients.tab.activity')} />
-        </Tabs>
-      </Box>
-
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0.75} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between">
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={0.75}
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        justifyContent="space-between"
+        sx={{ pt: 1.25 }}
+      >
         <Stack spacing={0.25} sx={{ minWidth: 0 }}>
           <Typography variant="body2" sx={{ color: runtimeState === 'connected' ? 'success.main' : 'text.secondary', fontWeight: 600 }}>
             {runtimeState ? t(`connection.${runtimeState}`) : client.enabled ? t('options.clients.idle') : t('options.clients.off')}
@@ -112,6 +110,14 @@ export function BackgroundClientEditor({
           ].join(' · ')}
         </Typography>
       </Stack>
+
+      <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
+        <Tabs value={tab} onChange={(_event, next) => setTab(next)} variant="scrollable" scrollButtons={false}>
+          <Tab value="basics" label={t('options.clients.tab.basics')} />
+          <Tab value="assets" label={t('options.clients.tab.assets')} />
+          <Tab value="activity" label={t('options.clients.tab.activity')} />
+        </Tabs>
+      </Box>
 
       {tab === 'basics' ? (
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1.25 }}>

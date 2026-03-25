@@ -1,31 +1,35 @@
 import AddOutlined from '@mui/icons-material/AddOutlined'
-import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import CreateNewFolderOutlined from '@mui/icons-material/CreateNewFolderOutlined'
 import DeleteOutlineOutlined from '@mui/icons-material/DeleteOutlineOutlined'
 import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined'
-import DoneOutlined from '@mui/icons-material/DoneOutlined'
-import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
+import EditOutlined from '@mui/icons-material/EditOutlined'
 import FolderOutlined from '@mui/icons-material/FolderOutlined'
+import SearchOutlined from '@mui/icons-material/SearchOutlined'
+import TuneOutlined from '@mui/icons-material/TuneOutlined'
 import {
   Box,
+  ButtonBase,
   Chip,
-  List,
-  ListItemButton,
+  IconButton,
   ListItemIcon,
-  ListItemText,
+  Menu,
+  MenuItem,
   Stack,
   TextField,
   Tooltip,
-  Typography
+  Typography,
+  InputAdornment
 } from '@mui/material'
+import { SimpleTreeView, TreeItem, useSimpleTreeViewApiRef } from '@mui/x-tree-view'
+import type { KeyboardEvent, MouseEvent, ReactNode, SyntheticEvent } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type {
-  ClientIconKey,
   RouteClientConfig,
   RouteSkillEntry,
   RouteSkillFolder,
+  RouteSkillMetadata,
   RouteSkillParameter
 } from '#~/shared/config.js'
 import {
@@ -33,13 +37,22 @@ import {
   type MonacoCodeEditorHandle
 } from '../../../foundation/monaco-editor.js'
 import { useI18n } from '../../../i18n/provider.js'
-import { IconPicker } from '../icon-picker.js'
 import { ToolbarIcon } from '../shared.js'
+import { SkillParametersDialog } from './skill-parameters-dialog.js'
 import { createLocalId } from '../types.js'
 
 const DEFAULT_SKILL_MARKDOWN = '# Skill\n\nDescribe the workflow here.\n'
 
-type SkillTreeNode =
+function createDefaultSkillMetadata(title: string): RouteSkillMetadata {
+  return {
+    title,
+    summary: '',
+    queryParameters: [],
+    headerParameters: []
+  }
+}
+
+export type SkillTreeNode =
   | {
       kind: 'folder'
       id: string
@@ -53,6 +66,7 @@ type SkillTreeNode =
       skillId: string
       path: string
       label: string
+      searchText: string
     }
 
 type SkillTemplateToken = {
@@ -60,25 +74,79 @@ type SkillTemplateToken = {
   summary: string
 }
 
+type TreeRenameTarget =
+  | {
+      kind: 'folder'
+      path: string
+      value: string
+    }
+  | {
+      kind: 'skill'
+      skillId: string
+      value: string
+    }
+
+type VisibleTreeNode = {
+  kind: SkillTreeNode['kind']
+  id: string
+  path: string
+  parentPath?: string
+  skillId?: string
+}
+
 export function ClientSkillsPanel({
   client,
-  onChange
+  hideHeader = false,
+  hideTree = false,
+  onChange,
+  onSelectionChange,
+  selectedFolderPath: controlledSelectedFolderPath,
+  selectedSkillId: controlledSelectedSkillId
 }: {
   client: RouteClientConfig
+  hideHeader?: boolean
+  hideTree?: boolean
   onChange: (client: RouteClientConfig) => void
+  onSelectionChange?: (selection: {
+    folderPath?: string
+    skillId?: string
+  }) => void
+  selectedFolderPath?: string
+  selectedSkillId?: string
 }) {
   const { t } = useI18n()
-  const [selectedSkillId, setSelectedSkillId] = useState<string>()
-  const [selectedFolderPath, setSelectedFolderPath] = useState<string>()
+  const plainLayout = hideTree
+  const [selectedSkillId, setSelectedSkillId] = useState<string | undefined>(
+    controlledSelectedSkillId
+  )
+  const [selectedFolderPath, setSelectedFolderPath] = useState<
+    string | undefined
+  >(controlledSelectedFolderPath)
   const [expandedFolders, setExpandedFolders] = useState<string[]>([])
-  const [pathInput, setPathInput] = useState('')
-  const [folderDraftPath, setFolderDraftPath] = useState('')
-  const [folderPathInput, setFolderPathInput] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [treeRenameTarget, setTreeRenameTarget] = useState<TreeRenameTarget>()
+  const [createMenuAnchor, setCreateMenuAnchor] = useState<HTMLElement | null>(
+    null
+  )
+  const [advancedModeOpen, setAdvancedModeOpen] = useState(false)
   const editorRef = useRef<MonacoCodeEditorHandle | null>(null)
+  const treeApiRef = useSimpleTreeViewApiRef()
   const folderPaths = useMemo(
     () => listTreeFolders(client.skillEntries, client.skillFolders),
     [client.skillEntries, client.skillFolders]
   )
+
+  useEffect(() => {
+    if (
+      controlledSelectedSkillId === undefined &&
+      controlledSelectedFolderPath === undefined
+    ) {
+      return
+    }
+
+    setSelectedSkillId(controlledSelectedSkillId)
+    setSelectedFolderPath(controlledSelectedFolderPath)
+  }, [controlledSelectedFolderPath, controlledSelectedSkillId])
 
   useEffect(() => {
     setSelectedSkillId((current) =>
@@ -96,6 +164,13 @@ export function ClientSkillsPanel({
     )
   }, [folderPaths])
 
+  useEffect(() => {
+    onSelectionChange?.({
+      folderPath: selectedFolderPath,
+      skillId: selectedFolderPath ? undefined : selectedSkillId
+    })
+  }, [onSelectionChange, selectedFolderPath, selectedSkillId])
+
   const selectedSkill = selectedFolderPath
     ? undefined
     : client.skillEntries.find((skill) => skill.id === selectedSkillId) ??
@@ -109,14 +184,13 @@ export function ClientSkillsPanel({
         : [],
     [client.skillEntries, selectedFolderPath]
   )
-
-  useEffect(() => {
-    setPathInput(selectedSkill?.path ?? '')
-  }, [selectedSkill?.id, selectedSkill?.path])
-
-  useEffect(() => {
-    setFolderPathInput(selectedFolderPath ?? '')
-  }, [selectedFolderPath])
+  const sortedSelectedFolderSkills = useMemo(
+    () =>
+      [...selectedFolderSkills].sort((left, right) =>
+        left.path.localeCompare(right.path)
+      ),
+    [selectedFolderSkills]
+  )
 
   useEffect(() => {
     if (!selectedSkill) {
@@ -138,41 +212,70 @@ export function ClientSkillsPanel({
     () => buildSkillTree(client.skillEntries, client.skillFolders),
     [client.skillEntries, client.skillFolders]
   )
+  const filteredTree = useMemo(
+    () => filterSkillTree(tree, searchQuery),
+    [searchQuery, tree]
+  )
+  const forcedExpandedFolders = useMemo(
+    () => listFolderPaths(filteredTree),
+    [filteredTree]
+  )
+  const expandedItemIds = useMemo(
+    () =>
+      (
+        searchQuery.trim()
+          ? [...new Set([...expandedFolders, ...forcedExpandedFolders])]
+          : expandedFolders
+      ).map((path) => `folder:${path}`),
+    [expandedFolders, forcedExpandedFolders, searchQuery]
+  )
+  const selectedTreeItemId = selectedFolderPath
+    ? `folder:${selectedFolderPath}`
+    : selectedSkill
+    ? `skill:${selectedSkill.id}`
+    : undefined
   const availableTokens = useMemo(
     () => buildSkillTokens(selectedSkill),
     [selectedSkill]
   )
-  const selectedSkillPathState = useMemo(
-    () => getSkillPathState(selectedSkill, client.skillEntries, pathInput, t),
-    [client.skillEntries, pathInput, selectedSkill, t]
-  )
-  const selectedFolderPathState = useMemo(
+  const treeRenameState = useMemo(
     () =>
-      getFolderPathState(
-        selectedFolderPath,
+      getTreeRenameState(
+        treeRenameTarget,
         client.skillEntries,
         client.skillFolders,
-        folderPathInput,
         t
       ),
-    [
-      client.skillEntries,
-      client.skillFolders,
-      folderPathInput,
-      selectedFolderPath,
-      t
-    ]
+    [client.skillEntries, client.skillFolders, t, treeRenameTarget]
   )
-  const folderDraftState = useMemo(
-    () =>
-      getFolderDraftState(
-        client.skillEntries,
-        client.skillFolders,
-        folderDraftPath,
-        t
-      ),
-    [client.skillEntries, client.skillFolders, folderDraftPath, t]
-  )
+
+  useEffect(() => {
+    setTreeRenameTarget((current) => {
+      if (!current) {
+        return current
+      }
+
+      if (
+        current.kind === 'skill' &&
+        current.skillId !== selectedSkill?.id
+      ) {
+        return undefined
+      }
+
+      if (
+        current.kind === 'folder' &&
+        current.path !== selectedFolderPath
+      ) {
+        return undefined
+      }
+
+      return current
+    })
+  }, [selectedFolderPath, selectedSkill?.id])
+
+  useEffect(() => {
+    setAdvancedModeOpen(false)
+  }, [selectedSkill?.id])
 
   function updateSkillAssets(
     updater: (assets: {
@@ -222,6 +325,16 @@ export function ClientSkillsPanel({
     )
   }
 
+  function updateSkillMetadata(
+    skillId: string,
+    updater: (metadata: RouteSkillMetadata) => RouteSkillMetadata
+  ) {
+    updateSkill(skillId, (skill) => ({
+      ...skill,
+      metadata: updater(skill.metadata)
+    }))
+  }
+
   function resolveCurrentFolderPath(): string {
     return (
       selectedFolderPath ?? (selectedSkill ? dirname(selectedSkill.path) : '')
@@ -237,31 +350,54 @@ export function ClientSkillsPanel({
     const nextSkill: RouteSkillEntry = {
       id: createLocalId('skill'),
       path: nextPath,
-      title: t('options.assets.skills.newTitle'),
-      summary: '',
-      icon: 'spark' as ClientIconKey,
-      queryParameters: [],
-      headerParameters: [],
+      metadata: createDefaultSkillMetadata(t('options.assets.skills.newTitle')),
       content: DEFAULT_SKILL_MARKDOWN
     }
 
+    setSearchQuery('')
     updateSkills((skills) => [...skills, nextSkill])
     setSelectedSkillId(nextSkill.id)
     setSelectedFolderPath(undefined)
     setExpandedFolders((current) => [
       ...new Set([...current, ...listAncestorFolders(nextSkill.path)])
     ])
+    setTreeRenameTarget({
+      kind: 'skill',
+      skillId: nextSkill.id,
+      value: basename(nextSkill.path)
+    })
   }
 
-  function openFolderDraft() {
-    setFolderDraftPath(
-      createUniqueFolderPath(
-        client.skillEntries.map((skill) => skill.path),
-        client.skillFolders,
-        resolveCurrentFolderPath(),
-        'new-folder'
-      )
+  function addFolder(parentPath = resolveCurrentFolderPath()) {
+    const nextFolderPath = createUniqueFolderPath(
+      client.skillEntries.map((skill) => skill.path),
+      client.skillFolders,
+      parentPath,
+      'new-folder'
     )
+
+    setSearchQuery('')
+    updateFolders((folders) => [
+      ...folders,
+      {
+        id: createLocalId('skill-folder'),
+        path: nextFolderPath
+      }
+    ])
+    setSelectedFolderPath(nextFolderPath)
+    setSelectedSkillId(undefined)
+    setExpandedFolders((current) => [
+      ...new Set([
+        ...current,
+        ...listAncestorFolders(nextFolderPath),
+        nextFolderPath
+      ])
+    ])
+    setTreeRenameTarget({
+      kind: 'folder',
+      path: nextFolderPath,
+      value: basename(nextFolderPath)
+    })
   }
 
   function deleteSkill(skillId: string) {
@@ -270,26 +406,28 @@ export function ClientSkillsPanel({
   }
 
   function addParameter(skillId: string, kind: 'query' | 'header') {
-    updateSkill(skillId, (skill) => ({
-      ...skill,
+    updateSkillMetadata(skillId, (metadata) => ({
+      ...metadata,
       ...(kind === 'query'
         ? {
             queryParameters: [
-              ...skill.queryParameters,
+              ...metadata.queryParameters,
               {
                 id: createLocalId('skill-query'),
                 key: '',
-                summary: ''
+                summary: '',
+                type: 'string'
               }
             ]
           }
         : {
             headerParameters: [
-              ...skill.headerParameters,
+              ...metadata.headerParameters,
               {
                 id: createLocalId('skill-header'),
                 key: '',
-                summary: ''
+                summary: '',
+                type: 'string'
               }
             ]
           })
@@ -302,18 +440,18 @@ export function ClientSkillsPanel({
     parameterId: string,
     patch: Partial<RouteSkillParameter>
   ) {
-    updateSkill(skillId, (skill) => ({
-      ...skill,
+    updateSkillMetadata(skillId, (metadata) => ({
+      ...metadata,
       ...(kind === 'query'
         ? {
-            queryParameters: skill.queryParameters.map((parameter) =>
+            queryParameters: metadata.queryParameters.map((parameter) =>
               parameter.id === parameterId
                 ? { ...parameter, ...patch }
                 : parameter
             )
           }
         : {
-            headerParameters: skill.headerParameters.map((parameter) =>
+            headerParameters: metadata.headerParameters.map((parameter) =>
               parameter.id === parameterId
                 ? { ...parameter, ...patch }
                 : parameter
@@ -327,16 +465,16 @@ export function ClientSkillsPanel({
     kind: 'query' | 'header',
     parameterId: string
   ) {
-    updateSkill(skillId, (skill) => ({
-      ...skill,
+    updateSkillMetadata(skillId, (metadata) => ({
+      ...metadata,
       ...(kind === 'query'
         ? {
-            queryParameters: skill.queryParameters.filter(
+            queryParameters: metadata.queryParameters.filter(
               (parameter) => parameter.id !== parameterId
             )
           }
         : {
-            headerParameters: skill.headerParameters.filter(
+            headerParameters: metadata.headerParameters.filter(
               (parameter) => parameter.id !== parameterId
             )
           })
@@ -349,99 +487,6 @@ export function ClientSkillsPanel({
         ? current.filter((item) => item !== path)
         : [...current, path]
     )
-  }
-
-  function commitSkillPath(skill: RouteSkillEntry | undefined) {
-    if (!skill) {
-      return
-    }
-
-    const nextPath = normalizeEditableSkillPath(pathInput)
-
-    setPathInput(nextPath || skill.path)
-
-    if (!nextPath || nextPath === skill.path) {
-      return
-    }
-
-    if (hasSkillPathConflict(skill, client.skillEntries, nextPath)) {
-      return
-    }
-
-    updateSkill(skill.id, (current) => ({
-      ...current,
-      path: nextPath
-    }))
-  }
-
-  function commitFolderDraft() {
-    const nextFolderPath = normalizeEditableSkillPath(folderDraftPath)
-
-    if (!nextFolderPath || folderDraftState.error) {
-      return
-    }
-
-    updateFolders((folders) => [
-      ...folders,
-      {
-        id: createLocalId('skill-folder'),
-        path: nextFolderPath
-      }
-    ])
-    setSelectedFolderPath(nextFolderPath)
-    setExpandedFolders((current) => [
-      ...new Set([
-        ...current,
-        ...listAncestorFolders(nextFolderPath),
-        nextFolderPath
-      ])
-    ])
-    setFolderDraftPath('')
-  }
-
-  function closeFolderDraft() {
-    setFolderDraftPath('')
-  }
-
-  function commitFolderPath(folderPath: string | undefined) {
-    if (!folderPath) {
-      return
-    }
-
-    const nextFolderPath = normalizeEditableSkillPath(folderPathInput)
-
-    setFolderPathInput(nextFolderPath || folderPath)
-
-    if (!nextFolderPath || nextFolderPath === folderPath) {
-      return
-    }
-
-    if (selectedFolderPathState.error) {
-      return
-    }
-
-    updateSkillAssets(({ skillEntries, skillFolders }) => ({
-      skillEntries: renameFolderSkills(
-        skillEntries,
-        folderPath,
-        nextFolderPath
-      ),
-      skillFolders: renameFolderFolders(
-        skillFolders,
-        folderPath,
-        nextFolderPath
-      )
-    }))
-    setSelectedFolderPath(nextFolderPath)
-    setExpandedFolders((current) => {
-      const next = new Set(current)
-      next.delete(folderPath)
-      next.add(nextFolderPath)
-      for (const path of listAncestorFolders(nextFolderPath)) {
-        next.add(path)
-      }
-      return [...next]
-    })
   }
 
   function deleteFolder(folderPath: string | undefined) {
@@ -465,264 +510,403 @@ export function ClientSkillsPanel({
     setSelectedSkillId(undefined)
   }
 
-  return (
-    <Stack spacing={1.25}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        spacing={1}
-      >
-        <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-            {t('options.assets.skills.title')}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {t('options.assets.skills.description')}
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={0.5}>
-          <ToolbarIcon
-            label={t('options.assets.skills.addFolder')}
-            onClick={() => openFolderDraft()}
-          >
-            <CreateNewFolderOutlined fontSize="small" />
-          </ToolbarIcon>
-          <ToolbarIcon
-            label={t('options.assets.addSkill')}
-            onClick={() => addSkill()}
-          >
-            <AddOutlined fontSize="small" />
-          </ToolbarIcon>
-        </Stack>
-      </Stack>
+  function selectTreeNode(node: VisibleTreeNode) {
+    if (node.kind === 'folder') {
+      selectFolder(node.path)
+      return
+    }
 
+    setSelectedFolderPath(undefined)
+    setSelectedSkillId(node.skillId)
+  }
+
+  function focusTreeNode(nodeId: string | undefined) {
+    if (!nodeId) {
+      return
+    }
+
+    requestAnimationFrame(() => {
+      treeApiRef.current?.focusItem(null, nodeId)
+    })
+  }
+
+  function startTreeRename(node: VisibleTreeNode) {
+    selectTreeNode(node)
+    setTreeRenameTarget(
+      node.kind === 'folder'
+        ? {
+            kind: 'folder',
+            path: node.path,
+            value: basename(node.path)
+          }
+        : {
+            kind: 'skill',
+            skillId: node.skillId ?? '',
+            value: basename(node.path)
+          }
+    )
+  }
+
+  function cancelTreeRename() {
+    setTreeRenameTarget(undefined)
+  }
+
+  function commitTreeRename() {
+    if (!treeRenameTarget || treeRenameState.error) {
+      return
+    }
+
+    if (treeRenameTarget.kind === 'skill') {
+      const skill = client.skillEntries.find(
+        (item) => item.id === treeRenameTarget.skillId
+      )
+
+      if (!skill) {
+        cancelTreeRename()
+        return
+      }
+
+      const nextLabel = normalizeEditableTreeLabel(treeRenameTarget.value)
+      const nextPath = replacePathLeaf(skill.path, nextLabel)
+
+      updateSkill(skill.id, (current) => ({
+        ...current,
+        path: nextPath
+      }))
+      setSelectedSkillId(skill.id)
+      setSelectedFolderPath(undefined)
+      cancelTreeRename()
+      focusTreeNode(`skill:${skill.id}`)
+      return
+    }
+
+    const nextLabel = normalizeEditableTreeLabel(treeRenameTarget.value)
+    const nextFolderPath = replacePathLeaf(treeRenameTarget.path, nextLabel)
+
+    updateSkillAssets(({ skillEntries, skillFolders }) => ({
+      skillEntries: renameFolderSkills(
+        skillEntries,
+        treeRenameTarget.path,
+        nextFolderPath
+      ),
+      skillFolders: renameFolderFolders(
+        skillFolders,
+        treeRenameTarget.path,
+        nextFolderPath
+      )
+    }))
+    setSelectedFolderPath(nextFolderPath)
+    setExpandedFolders((current) => {
+      const next = new Set(current)
+      next.delete(treeRenameTarget.path)
+      next.add(nextFolderPath)
+      for (const path of listAncestorFolders(nextFolderPath)) {
+        next.add(path)
+      }
+      return [...next]
+    })
+    cancelTreeRename()
+    focusTreeNode(`folder:${nextFolderPath}`)
+  }
+
+  function handleTreeKeyDown(
+    event: KeyboardEvent<HTMLElement>,
+    node: VisibleTreeNode
+  ) {
+    if (treeRenameTarget) {
+      return
+    }
+
+    if (event.key === 'F2') {
+      event.preventDefault()
+      startTreeRename(node)
+    }
+  }
+
+  function handleExpandedItemsChange(
+    _event: SyntheticEvent | null,
+    itemIds: string[]
+  ) {
+    setExpandedFolders(
+      itemIds
+        .filter((itemId) => itemId.startsWith('folder:'))
+        .map((itemId) => itemId.slice('folder:'.length))
+    )
+  }
+
+  function handleSelectedItemsChange(
+    _event: SyntheticEvent | null,
+    itemId: string | null
+  ) {
+    if (!itemId) {
+      return
+    }
+
+    if (itemId.startsWith('folder:')) {
+      selectFolder(itemId.slice('folder:'.length))
+      return
+    }
+
+    setSelectedFolderPath(undefined)
+    setSelectedSkillId(itemId.slice('skill:'.length))
+  }
+
+  function openCreateMenu(event: MouseEvent<HTMLButtonElement>) {
+    setCreateMenuAnchor(event.currentTarget)
+  }
+
+  function closeCreateMenu() {
+    setCreateMenuAnchor(null)
+  }
+
+  return (
+    <Stack
+      spacing={1}
+      sx={plainLayout ? { height: '100%', minHeight: 0 } : undefined}
+    >
+      {!hideHeader ? (
+        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+          {t('options.assets.skills.title')}
+        </Typography>
+      ) : null}
       <Box
         sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', lg: '280px minmax(0, 1fr)' },
+          display: hideTree ? 'block' : 'grid',
+          ...(plainLayout ? { height: '100%', minHeight: 0 } : {}),
+          gridTemplateColumns: hideTree
+            ? undefined
+            : 'minmax(180px, 260px) minmax(0, 1fr)',
           gap: 1.25,
-          minHeight: 620
+          alignItems: 'start'
         }}
       >
-        <Box
-          sx={{
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            overflow: 'hidden',
-            bgcolor: 'background.paper'
-          }}
-        >
-          <Stack spacing={0} sx={{ height: '100%' }}>
-            {folderDraftPath ? (
-              <Box
+        {!hideTree ? (
+          <Box
+            sx={{
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 2,
+              overflow: 'hidden',
+              bgcolor: 'background.paper'
+            }}
+          >
+            <Stack spacing={0} sx={{ height: '100%' }}>
+              <Stack
+                direction="row"
+                spacing={0.75}
                 sx={{
-                  px: 1,
+                  pl: 1,
+                  pr: 1.5,
                   py: 1,
                   borderBottom: '1px solid',
                   borderColor: 'divider'
                 }}
               >
-                <Stack spacing={0.75}>
-                  <TextField
-                    autoFocus
-                    size="small"
-                    label={t('options.assets.skills.newFolder')}
-                    value={folderDraftPath}
-                    error={folderDraftState.error}
-                    helperText={folderDraftState.helperText}
-                    onChange={(event) =>
-                      setFolderDraftPath(
-                        normalizeEditableSkillPath(event.target.value)
-                      )
+                <TextField
+                  size="small"
+                  placeholder={t('options.assets.skills.search')}
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchOutlined fontSize="small" color="action" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: searchQuery ? (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label={t('common.clear')}
+                            size="small"
+                            onClick={() => setSearchQuery('')}
+                          >
+                            <CloseOutlined fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      ) : undefined
                     }
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault()
-                        commitFolderDraft()
-                      }
+                  }}
+                  sx={{ flex: 1 }}
+                />
+                <Tooltip title={t('options.assets.skills.create')}>
+                  <IconButton
+                    aria-label={t('options.assets.skills.create')}
+                    onClick={openCreateMenu}
+                    size="small"
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 1.25,
+                      flexShrink: 0
+                    }}
+                  >
+                    <AddOutlined fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Menu
+                  anchorEl={createMenuAnchor}
+                  open={Boolean(createMenuAnchor)}
+                  onClose={closeCreateMenu}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      closeCreateMenu()
+                      addSkill()
+                    }}
+                  >
+                    <ListItemIcon>
+                      <DescriptionOutlined fontSize="small" />
+                    </ListItemIcon>
+                    {t('options.assets.addSkill')}
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      closeCreateMenu()
+                      addFolder()
+                    }}
+                  >
+                    <ListItemIcon>
+                      <CreateNewFolderOutlined fontSize="small" />
+                    </ListItemIcon>
+                    {t('options.assets.skills.addFolder')}
+                  </MenuItem>
+                </Menu>
+              </Stack>
 
-                      if (event.key === 'Escape') {
-                        event.preventDefault()
-                        closeFolderDraft()
+              <Box sx={{ py: 0.5, pr: 1 }}>
+                {filteredTree.length === 0 ? (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ px: 1.25, py: 1.25 }}
+                  >
+                    {searchQuery.trim()
+                      ? t('options.assets.skills.searchEmpty')
+                      : t('options.assets.skills.empty')}
+                  </Typography>
+                ) : (
+                  <SimpleTreeView
+                    apiRef={treeApiRef}
+                    expandedItems={expandedItemIds}
+                    expansionTrigger="iconContainer"
+                    onExpandedItemsChange={handleExpandedItemsChange}
+                    onSelectedItemsChange={(_event, itemId) =>
+                      handleSelectedItemsChange(_event, itemId as string | null)
+                    }
+                    selectedItems={selectedTreeItemId}
+                    sx={{
+                      px: 0.5,
+                      '& .MuiTreeItem-content': {
+                        minHeight: 32,
+                        pr: 0.5,
+                        borderRadius: 1
+                      },
+                      '& .MuiTreeItem-label': {
+                        flex: 1,
+                        minWidth: 0
                       }
                     }}
-                  />
-                  <Stack
-                    direction="row"
-                    spacing={0.5}
-                    justifyContent="flex-end"
                   >
-                    <ToolbarIcon
-                      label={t('options.assets.skills.cancelFolderDraft')}
-                      onClick={() => closeFolderDraft()}
-                    >
-                      <CloseOutlined fontSize="small" />
-                    </ToolbarIcon>
-                    <ToolbarIcon
-                      disabled={folderDraftState.error}
-                      label={t('options.assets.skills.confirmFolderDraft')}
-                      onClick={() => commitFolderDraft()}
-                    >
-                      <DoneOutlined fontSize="small" />
-                    </ToolbarIcon>
-                  </Stack>
-                </Stack>
+                    {filteredTree.map((node) => (
+                      <SkillTreeNodeRow
+                        key={node.id}
+                        node={node}
+                        onAddFolder={addFolder}
+                        onAddSkill={addSkill}
+                        onCancelRename={cancelTreeRename}
+                        onCommitRename={commitTreeRename}
+                        onDeleteFolder={deleteFolder}
+                        onDeleteSkill={deleteSkill}
+                        onRenameChange={(value) =>
+                          setTreeRenameTarget((current) =>
+                            current ? { ...current, value } : current
+                          )
+                        }
+                        onStartRename={startTreeRename}
+                        onTreeKeyDown={handleTreeKeyDown}
+                        onToggleFolder={toggleFolder}
+                        renameError={Boolean(treeRenameState.error)}
+                        renameHelperText={treeRenameState.helperText}
+                        renameTarget={treeRenameTarget}
+                        selectedFolderPath={selectedFolderPath}
+                        selectedSkillId={selectedSkill?.id}
+                        t={t}
+                      />
+                    ))}
+                  </SimpleTreeView>
+                )}
               </Box>
-            ) : null}
-
-            <Box sx={{ flex: 1, overflow: 'auto' }}>
-              {tree.length === 0 ? (
-                <Stack spacing={0.5} sx={{ px: 1.25, py: 1.5 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {t('options.assets.skills.empty')}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('options.assets.skills.treeHint')}
-                  </Typography>
-                </Stack>
-              ) : (
-                <List disablePadding>
-                  {tree.map((node) => (
-                    <SkillTreeNodeRow
-                      expandedFolders={expandedFolders}
-                      key={node.id}
-                      node={node}
-                      onSelectFolder={selectFolder}
-                      onSelectSkill={(skillId) => {
-                        setSelectedFolderPath(undefined)
-                        setSelectedSkillId(skillId)
-                      }}
-                      onToggleFolder={toggleFolder}
-                      selectedFolderPath={selectedFolderPath}
-                      selectedSkillId={selectedSkill?.id}
-                    />
-                  ))}
-                </List>
-              )}
-            </Box>
-          </Stack>
-        </Box>
+            </Stack>
+          </Box>
+        ) : null}
 
         {selectedSkill ? (
-          <Stack spacing={1.25} sx={{ minWidth: 0 }}>
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1fr) auto',
-                gap: 1,
-                alignItems: 'start'
-              }}
-            >
+          <Stack
+            spacing={1.25}
+            sx={{
+              minWidth: 0,
+              ...(plainLayout ? { height: '100%', minHeight: 0 } : {})
+            }}
+          >
+            <Stack spacing={1}>
               <TextField
-                size="small"
-                label={t('options.assets.skills.path')}
-                value={pathInput}
-                error={selectedSkillPathState.error}
-                helperText={selectedSkillPathState.helperText}
-                onBlur={() => commitSkillPath(selectedSkill)}
-                onChange={(event) =>
-                  setPathInput(normalizeEditableSkillPath(event.target.value))
-                }
-              />
-              <ToolbarIcon
-                label={t('options.assets.deleteItem')}
-                onClick={() => deleteSkill(selectedSkill.id)}
-              >
-                <DeleteOutlineOutlined fontSize="small" />
-              </ToolbarIcon>
-            </Box>
-
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) 180px' },
-                gap: 1
-              }}
-            >
-              <TextField
+                fullWidth
                 size="small"
                 label={t('options.assets.skills.titleField')}
-                value={selectedSkill.title}
+                value={selectedSkill.metadata.title}
                 onChange={(event) =>
-                  updateSkill(selectedSkill.id, (skill) => ({
-                    ...skill,
+                  updateSkillMetadata(selectedSkill.id, (metadata) => ({
+                    ...metadata,
                     title: event.target.value
                   }))
                 }
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Tooltip title={t('options.assets.skills.advancedMode')}>
+                          <IconButton
+                            aria-label={t('options.assets.skills.advancedMode')}
+                            edge="end"
+                            onClick={() => setAdvancedModeOpen(true)}
+                            size="small"
+                          >
+                            <TuneOutlined fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </InputAdornment>
+                    )
+                  }
+                }}
               />
-              <IconPicker
-                label={t('common.icon')}
-                value={selectedSkill.icon}
-                onChange={(icon) =>
-                  updateSkill(selectedSkill.id, (skill) => ({
-                    ...skill,
-                    icon
+              <TextField
+                fullWidth
+                size="small"
+                label={t('common.summary')}
+                multiline
+                minRows={3}
+                maxRows={3}
+                value={selectedSkill.metadata.summary}
+                onChange={(event) =>
+                  updateSkillMetadata(selectedSkill.id, (metadata) => ({
+                    ...metadata,
+                    summary: event.target.value
                   }))
                 }
               />
-            </Box>
+            </Stack>
 
-            <TextField
-              size="small"
-              label={t('common.summary')}
-              value={selectedSkill.summary}
-              onChange={(event) =>
-                updateSkill(selectedSkill.id, (skill) => ({
-                  ...skill,
-                  summary: event.target.value
-                }))
-              }
-            />
-
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  xl: 'repeat(2, minmax(0, 1fr))'
-                },
-                gap: 1.25
-              }}
+            <Stack
+              spacing={0.75}
+              sx={plainLayout ? { flex: 1, minHeight: 0 } : undefined}
             >
-              <SkillParameterPanel
-                kind="query"
-                onAdd={() => addParameter(selectedSkill.id, 'query')}
-                onDelete={(parameterId) =>
-                  deleteParameter(selectedSkill.id, 'query', parameterId)
-                }
-                onUpdate={(parameterId, patch) =>
-                  updateParameter(selectedSkill.id, 'query', parameterId, patch)
-                }
-                parameters={selectedSkill.queryParameters}
-                t={t}
-                title={t('options.assets.skills.queryParameters')}
+              <SkillParameterBriefs
+                headerParameters={selectedSkill.metadata.headerParameters}
+                queryParameters={selectedSkill.metadata.queryParameters}
               />
-              <SkillParameterPanel
-                kind="header"
-                onAdd={() => addParameter(selectedSkill.id, 'header')}
-                onDelete={(parameterId) =>
-                  deleteParameter(selectedSkill.id, 'header', parameterId)
-                }
-                onUpdate={(parameterId, patch) =>
-                  updateParameter(
-                    selectedSkill.id,
-                    'header',
-                    parameterId,
-                    patch
-                  )
-                }
-                parameters={selectedSkill.headerParameters}
-                t={t}
-                title={t('options.assets.skills.headerParameters')}
-              />
-            </Box>
-
-            <Stack spacing={0.75}>
-              <Typography variant="subtitle2">
-                {t('options.assets.skills.availableVariables')}
-              </Typography>
               {availableTokens.length > 0 ? (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
                   {availableTokens.map((token) => (
@@ -749,295 +933,549 @@ export function ClientSkillsPanel({
                     </Tooltip>
                   ))}
                 </Box>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  {t('options.assets.skills.availableVariablesEmpty')}
-                </Typography>
-              )}
-              <Typography variant="caption" color="text.secondary">
-                {t('options.assets.skills.markdownHelp')}
-              </Typography>
+              ) : null}
+              <Box sx={plainLayout ? { flex: 1, minHeight: 280 } : undefined}>
+                <MonacoCodeEditor
+                  ariaLabel={t('options.assets.skills.content')}
+                  height={plainLayout ? '100%' : undefined}
+                  language="markdown"
+                  minHeight={plainLayout ? 280 : 520}
+                  modelUri={`inmemory://modeldriveprotocol/chrome-extension/route-client/${client.id}/skill/${selectedSkill.id}.md`}
+                  onChange={(value) =>
+                    updateSkill(selectedSkill.id, (skill) => ({
+                      ...skill,
+                      content: value
+                    }))
+                  }
+                  options={{
+                    wordWrap: 'on',
+                    wrappingIndent: 'indent'
+                  }}
+                  ref={editorRef}
+                  value={selectedSkill.content}
+                />
+              </Box>
             </Stack>
-
-            <Stack spacing={0.75}>
-              <Typography variant="subtitle2">
-                {t('options.assets.skills.markdown')}
-              </Typography>
-              <MonacoCodeEditor
-                ariaLabel={t('options.assets.skills.content')}
-                language="markdown"
-                minHeight={420}
-                modelUri={`inmemory://modeldriveprotocol/chrome-extension/route-client/${client.id}/skill/${selectedSkill.id}.md`}
-                onChange={(value) =>
-                  updateSkill(selectedSkill.id, (skill) => ({
-                    ...skill,
-                    content: value
-                  }))
-                }
-                options={{
-                  wordWrap: 'on',
-                  wrappingIndent: 'indent'
-                }}
-                ref={editorRef}
-                value={selectedSkill.content}
-              />
-            </Stack>
+            <SkillParametersDialog
+              headerParameters={selectedSkill.metadata.headerParameters}
+              onAddParameter={(kind) => addParameter(selectedSkill.id, kind)}
+              onClose={() => setAdvancedModeOpen(false)}
+              onDeleteParameter={(kind, parameterId) =>
+                deleteParameter(selectedSkill.id, kind, parameterId)
+              }
+              onUpdateParameter={(kind, parameterId, patch) =>
+                updateParameter(selectedSkill.id, kind, parameterId, patch)
+              }
+              open={advancedModeOpen}
+              queryParameters={selectedSkill.metadata.queryParameters}
+              skillTitle={selectedSkill.metadata.title}
+            />
           </Stack>
         ) : selectedFolderPath ? (
-          <Stack spacing={1.25} sx={{ minWidth: 0 }}>
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1fr) auto auto',
-                gap: 1,
-                alignItems: 'start'
-              }}
-            >
-              <TextField
-                size="small"
-                label={t('options.assets.skills.folderPath')}
-                value={folderPathInput}
-                error={selectedFolderPathState.error}
-                helperText={selectedFolderPathState.helperText}
-                onBlur={() => commitFolderPath(selectedFolderPath)}
-                onChange={(event) =>
-                  setFolderPathInput(
-                    normalizeEditableSkillPath(event.target.value)
-                  )
-                }
-              />
+          <Stack
+            spacing={1.25}
+            sx={{
+              minWidth: 0,
+              ...(plainLayout
+                ? {}
+                : {
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    bgcolor: 'background.paper',
+                    px: 1.25,
+                    py: 1.1
+                  })
+            }}
+          >
+            <Stack direction="row" spacing={0.75} justifyContent="flex-end">
               <ToolbarIcon
                 label={t('options.assets.skills.addSkillInFolder')}
                 onClick={() => addSkill(selectedFolderPath)}
               >
                 <AddOutlined fontSize="small" />
               </ToolbarIcon>
-              <ToolbarIcon
-                label={t('options.assets.skills.deleteFolder')}
-                onClick={() => deleteFolder(selectedFolderPath)}
-              >
-                <DeleteOutlineOutlined fontSize="small" />
-              </ToolbarIcon>
-            </Box>
-
-            <Stack spacing={0.5}>
-              <Typography variant="subtitle2">
-                {t('options.assets.skills.folderSummaryTitle')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t('options.assets.skills.folderSummary', {
-                  count: selectedFolderSkills.length
-                })}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {t('options.assets.skills.folderHint')}
-              </Typography>
             </Stack>
+
+            <Typography variant="body2" color="text.secondary">
+              {t('options.assets.skills.folderSummary', {
+                count: selectedFolderSkills.length
+              })}
+            </Typography>
+
+            {sortedSelectedFolderSkills.length > 0 ? (
+              <Stack spacing={0}>
+                {sortedSelectedFolderSkills.map((skill) => (
+                  <ButtonBase
+                    key={skill.id}
+                    onClick={() => {
+                      setSelectedFolderPath(undefined)
+                      setSelectedSkillId(skill.id)
+                    }}
+                    sx={{
+                      alignItems: 'stretch',
+                      borderBottom: '1px solid',
+                      borderColor: 'divider',
+                      justifyContent: 'flex-start',
+                      px: 0,
+                      py: 1,
+                      textAlign: 'left',
+                      '&:hover': {
+                        bgcolor: 'action.hover'
+                      }
+                    }}
+                  >
+                    <Stack spacing={0.25} sx={{ minWidth: 0, width: '100%' }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 600 }}
+                        noWrap
+                      >
+                        {basename(skill.path)}.md
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        noWrap
+                      >
+                        {skill.path}
+                      </Typography>
+                    </Stack>
+                  </ButtonBase>
+                ))}
+              </Stack>
+            ) : null}
           </Stack>
         ) : (
-          <Stack
-            spacing={0.75}
-            justifyContent="center"
+          <Box
             sx={{
-              border: '1px dashed',
-              borderColor: 'divider',
-              borderRadius: 2,
-              px: 2,
-              py: 3,
-              minHeight: 360
+              px: 0,
+              py: 1,
+              minHeight: 360,
+              display: 'grid',
+              placeItems: 'center'
             }}
           >
             <Typography variant="body2" color="text.secondary">
-              {t('options.assets.skills.empty')}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
               {t('options.assets.skills.noSelection')}
             </Typography>
-          </Stack>
+          </Box>
         )}
       </Box>
     </Stack>
   )
 }
 
-function SkillParameterPanel({
-  kind,
-  onAdd,
-  onDelete,
-  onUpdate,
-  parameters,
-  t,
-  title
+function SkillTreeNodeRow({
+  node,
+  onAddFolder,
+  onAddSkill,
+  onCancelRename,
+  onCommitRename,
+  onDeleteFolder,
+  onDeleteSkill,
+  onRenameChange,
+  onStartRename,
+  onTreeKeyDown,
+  onToggleFolder,
+  renameError,
+  renameHelperText,
+  renameTarget,
+  selectedFolderPath,
+  selectedSkillId,
+  t
 }: {
-  kind: 'query' | 'header'
-  onAdd: () => void
-  onDelete: (parameterId: string) => void
-  onUpdate: (parameterId: string, patch: Partial<RouteSkillParameter>) => void
-  parameters: RouteSkillParameter[]
+  node: SkillTreeNode
+  onAddFolder: (folderPath: string) => void
+  onAddSkill: (folderPath: string) => void
+  onCancelRename: () => void
+  onCommitRename: () => void
+  onDeleteFolder: (folderPath: string) => void
+  onDeleteSkill: (skillId: string) => void
+  onRenameChange: (value: string) => void
+  onStartRename: (node: VisibleTreeNode) => void
+  onTreeKeyDown: (
+    event: KeyboardEvent<HTMLElement>,
+    node: VisibleTreeNode
+  ) => void
+  onToggleFolder: (path: string) => void
+  renameError: boolean
+  renameHelperText: string
+  renameTarget: TreeRenameTarget | undefined
+  selectedFolderPath: string | undefined
+  selectedSkillId: string | undefined
   t: (key: string, values?: Record<string, string | number>) => string
-  title: string
 }) {
-  return (
-    <Stack
-      spacing={1}
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-        px: 1.25,
-        py: 1.1
-      }}
-    >
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        spacing={1}
-      >
-        <Typography variant="subtitle2">{title}</Typography>
-        <ToolbarIcon
-          label={t(
-            kind === 'query'
-              ? 'options.assets.skills.addQueryParameter'
-              : 'options.assets.skills.addHeaderParameter'
-          )}
-          onClick={onAdd}
-        >
-          <AddOutlined fontSize="small" />
-        </ToolbarIcon>
-      </Stack>
+  const selected =
+    node.kind === 'folder'
+      ? selectedFolderPath === node.path
+      : selectedSkillId === node.skillId
+  const visibleNode: VisibleTreeNode =
+    node.kind === 'folder'
+      ? {
+          kind: 'folder',
+          id: `folder:${node.path}`,
+          path: node.path,
+          parentPath: dirname(node.path) || undefined
+        }
+      : {
+          kind: 'skill',
+          id: `skill:${node.skillId}`,
+          path: node.path,
+          parentPath: dirname(node.path) || undefined,
+          skillId: node.skillId
+        }
+  const renaming =
+    renameTarget?.kind === 'folder'
+      ? node.kind === 'folder' && renameTarget.path === node.path
+      : node.kind === 'skill' && renameTarget?.skillId === node.skillId
 
-      {parameters.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          {t(
-            kind === 'query'
-              ? 'options.assets.skills.queryParametersEmpty'
-              : 'options.assets.skills.headerParametersEmpty'
+  return (
+    <TreeItem
+      itemId={visibleNode.id}
+      label={
+        <Box
+          onDoubleClick={
+            node.kind === 'folder'
+              ? (event) => {
+                  event.stopPropagation()
+                  onToggleFolder(node.path)
+                }
+              : undefined
+          }
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            minWidth: 0
+          }}
+        >
+          {node.kind === 'folder' ? (
+            <FolderOutlined fontSize="small" />
+          ) : (
+            <DescriptionOutlined fontSize="small" />
           )}
-        </Typography>
-      ) : (
-        <Stack spacing={0.9}>
-          {parameters.map((parameter) => (
-            <Box
-              key={parameter.id}
+          {renaming && renameTarget ? (
+            <TreeRenameField
+              error={renameError}
+              helperText={renameHelperText}
+              onCancel={onCancelRename}
+              onChange={onRenameChange}
+              onCommit={onCommitRename}
+              value={renameTarget.value}
+            />
+          ) : (
+            <Typography
+              variant="body2"
+              noWrap
               sx={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr) auto',
-                gap: 1,
-                alignItems: 'start'
+                minWidth: 0,
+                flex: 1,
+                fontWeight: node.kind === 'folder' ? 600 : 400
               }}
             >
-              <TextField
-                size="small"
-                label={t('options.assets.skills.parameterKey')}
-                value={parameter.key}
-                onChange={(event) =>
-                  onUpdate(parameter.id, { key: event.target.value })
-                }
-              />
-              <TextField
-                size="small"
-                label={t('common.summary')}
-                value={parameter.summary}
-                onChange={(event) =>
-                  onUpdate(parameter.id, { summary: event.target.value })
-                }
-              />
-              <ToolbarIcon
+              {node.kind === 'folder' ? node.label : `${node.label}.md`}
+            </Typography>
+          )}
+          <Box
+            className="skill-tree-actions"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.25,
+              ml: 'auto',
+              opacity: selected ? 1 : 0,
+              pointerEvents: selected ? 'auto' : 'none',
+              transition: 'opacity 120ms ease'
+            }}
+          >
+            <TreeActionIcon
+              label={t('options.assets.skills.renameItem')}
+              onClick={(event) => {
+                event.stopPropagation()
+                onStartRename(visibleNode)
+              }}
+            >
+              <EditOutlined fontSize="inherit" />
+            </TreeActionIcon>
+            {node.kind === 'folder' ? (
+              <>
+                <TreeActionIcon
+                  label={t('options.assets.skills.addSkillInFolder')}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onAddSkill(node.path)
+                  }}
+                >
+                  <AddOutlined fontSize="inherit" />
+                </TreeActionIcon>
+                <TreeActionIcon
+                  label={t('options.assets.skills.addFolder')}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onAddFolder(node.path)
+                  }}
+                >
+                  <CreateNewFolderOutlined fontSize="inherit" />
+                </TreeActionIcon>
+                <TreeActionIcon
+                  label={t('options.assets.skills.deleteFolder')}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onDeleteFolder(node.path)
+                  }}
+                >
+                  <DeleteOutlineOutlined fontSize="inherit" />
+                </TreeActionIcon>
+              </>
+            ) : (
+              <TreeActionIcon
                 label={t('options.assets.deleteItem')}
-                onClick={() => onDelete(parameter.id)}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onDeleteSkill(node.skillId)
+                }}
               >
-                <DeleteOutlineOutlined fontSize="small" />
-              </ToolbarIcon>
-            </Box>
+                <DeleteOutlineOutlined fontSize="inherit" />
+              </TreeActionIcon>
+            )}
+          </Box>
+        </Box>
+      }
+      onKeyDown={(event) => onTreeKeyDown(event, visibleNode)}
+      sx={{
+        '& > .MuiTreeItem-content:hover .skill-tree-actions': {
+          opacity: 1,
+          pointerEvents: 'auto'
+        }
+      }}
+    >
+      {node.kind === 'folder'
+        ? node.children.map((child) => (
+            <SkillTreeNodeRow
+              key={child.id}
+              node={child}
+              onAddFolder={onAddFolder}
+              onAddSkill={onAddSkill}
+              onCancelRename={onCancelRename}
+              onCommitRename={onCommitRename}
+              onDeleteFolder={onDeleteFolder}
+              onDeleteSkill={onDeleteSkill}
+              onRenameChange={onRenameChange}
+              onStartRename={onStartRename}
+              onTreeKeyDown={onTreeKeyDown}
+              onToggleFolder={onToggleFolder}
+              renameError={renameError}
+              renameHelperText={renameHelperText}
+              renameTarget={renameTarget}
+              selectedFolderPath={selectedFolderPath}
+              selectedSkillId={selectedSkillId}
+              t={t}
+            />
+          ))
+        : null}
+    </TreeItem>
+  )
+}
+
+function TreeRenameField({
+  error,
+  helperText,
+  onCancel,
+  onChange,
+  onCommit,
+  value
+}: {
+  error: boolean
+  helperText: string
+  onCancel: () => void
+  onChange: (value: string) => void
+  onCommit: () => void
+  value: string
+}) {
+  return (
+    <TextField
+      autoFocus
+      size="small"
+      variant="standard"
+      value={value}
+      error={error}
+      title={error ? helperText : undefined}
+      onBlur={() => {
+        if (error) {
+          onCancel()
+          return
+        }
+
+        onCommit()
+      }}
+      onChange={(event) => onChange(event.target.value)}
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => {
+        event.stopPropagation()
+
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          if (!error) {
+            onCommit()
+          }
+        }
+
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          onCancel()
+        }
+      }}
+      sx={{
+        flex: 1,
+        minWidth: 0,
+        '& .MuiInputBase-root': {
+          fontSize: 14
+        }
+      }}
+    />
+  )
+}
+
+function SkillParameterBriefs({
+  headerParameters,
+  queryParameters
+}: {
+  headerParameters: RouteSkillParameter[]
+  queryParameters: RouteSkillParameter[]
+}) {
+  const { t } = useI18n()
+
+  return (
+    <Stack spacing={0.35} sx={{ minWidth: 0 }}>
+      <SkillParameterBriefRow
+        parameters={queryParameters}
+        title={t('options.assets.skills.queryParameters')}
+      />
+      <SkillParameterBriefRow
+        parameters={headerParameters}
+        title={t('options.assets.skills.headerParameters')}
+      />
+    </Stack>
+  )
+}
+
+function SkillParameterBriefRow({
+  parameters,
+  title
+}: {
+  parameters: RouteSkillParameter[]
+  title: string
+}) {
+  const { t } = useI18n()
+
+  return (
+    <Stack
+      direction={{ xs: 'column', sm: 'row' }}
+      spacing={{ xs: 0.25, sm: 0.75 }}
+      alignItems={{ xs: 'flex-start', sm: 'baseline' }}
+      sx={{ minWidth: 0 }}
+    >
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ width: { sm: 88 }, flexShrink: 0 }}
+      >
+        {title}
+      </Typography>
+      {parameters.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          {t('common.none')}
+        </Typography>
+      ) : (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, minWidth: 0 }}>
+          {parameters.map((parameter) => (
+            <Chip
+              key={parameter.id}
+              label={formatSkillParameterBrief(parameter, t)}
+              size="small"
+              variant="outlined"
+            />
           ))}
-        </Stack>
+        </Box>
       )}
     </Stack>
   )
 }
 
-function SkillTreeNodeRow({
-  expandedFolders,
-  node,
-  onSelectFolder,
-  onSelectSkill,
-  onToggleFolder,
-  selectedFolderPath,
-  selectedSkillId
+function TreeActionIcon({
+  children,
+  label,
+  onClick
 }: {
-  expandedFolders: string[]
-  node: SkillTreeNode
-  onSelectFolder: (folderPath: string) => void
-  onSelectSkill: (skillId: string) => void
-  onToggleFolder: (path: string) => void
-  selectedFolderPath: string | undefined
-  selectedSkillId: string | undefined
+  children: ReactNode
+  label: string
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void
 }) {
   return (
-    <>
-      {node.kind === 'folder' ? (
-        <>
-          <ListItemButton
-            selected={selectedFolderPath === node.path}
-            onClick={() => {
-              onSelectFolder(node.path)
-              onToggleFolder(node.path)
-            }}
-            sx={{ pl: folderPadding(node.path) }}
-          >
-            <ListItemIcon sx={{ minWidth: 28 }}>
-              {expandedFolders.includes(node.path) ? (
-                <ExpandMoreOutlined fontSize="small" />
-              ) : (
-                <ChevronRightOutlined fontSize="small" />
-              )}
-            </ListItemIcon>
-            <ListItemIcon sx={{ minWidth: 28 }}>
-              <FolderOutlined fontSize="small" />
-            </ListItemIcon>
-            <ListItemText
-              primary={node.label}
-              primaryTypographyProps={{
-                variant: 'body2',
-                fontWeight: 600,
-                noWrap: true
-              }}
-            />
-          </ListItemButton>
-          {expandedFolders.includes(node.path)
-            ? node.children.map((child) => (
-                <SkillTreeNodeRow
-                  expandedFolders={expandedFolders}
-                  key={child.id}
-                  node={child}
-                  onSelectFolder={onSelectFolder}
-                  onSelectSkill={onSelectSkill}
-                  onToggleFolder={onToggleFolder}
-                  selectedFolderPath={selectedFolderPath}
-                  selectedSkillId={selectedSkillId}
-                />
-              ))
-            : null}
-        </>
-      ) : (
-        <ListItemButton
-          selected={selectedSkillId === node.skillId}
-          onClick={() => onSelectSkill(node.skillId)}
-          sx={{ pl: folderPadding(node.path) + 7 }}
-        >
-          <ListItemIcon sx={{ minWidth: 28 }}>
-            <DescriptionOutlined fontSize="small" />
-          </ListItemIcon>
-          <ListItemText
-            primary={`${node.label}.md`}
-            secondary={node.path}
-            primaryTypographyProps={{ variant: 'body2', noWrap: true }}
-            secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
-          />
-        </ListItemButton>
-      )}
-    </>
+    <Tooltip title={label}>
+      <IconButton
+        size="small"
+        aria-label={label}
+        onClick={onClick}
+        sx={{
+          width: 22,
+          height: 22,
+          color: 'text.secondary',
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+          '&:hover': {
+            bgcolor: 'action.hover'
+          }
+        }}
+      >
+        {children}
+      </IconButton>
+    </Tooltip>
+  )
+}
+
+function getTreeRenameState(
+  target: TreeRenameTarget | undefined,
+  skills: RouteSkillEntry[],
+  folders: RouteSkillFolder[],
+  t: (key: string, values?: Record<string, string | number>) => string
+): {
+  error: boolean
+  helperText: string
+} {
+  if (!target) {
+    return {
+      error: false,
+      helperText: ''
+    }
+  }
+
+  if (target.kind === 'skill') {
+    const skill = skills.find((item) => item.id === target.skillId)
+
+    if (!skill) {
+      return {
+        error: true,
+        helperText: t('options.assets.skills.pathInvalid')
+      }
+    }
+
+    return getSkillPathState(
+      skill,
+      skills,
+      replacePathLeaf(skill.path, normalizeEditableTreeLabel(target.value)),
+      t
+    )
+  }
+
+  return getFolderPathState(
+    target.path,
+    skills,
+    folders,
+    replacePathLeaf(target.path, normalizeEditableTreeLabel(target.value)),
+    t
   )
 }
 
@@ -1049,19 +1487,32 @@ function buildSkillTokens(
   }
 
   return [
-    ...skill.queryParameters
+    ...skill.metadata.queryParameters
       .map((parameter) => ({
         token: parameter.key.trim() ? `{{query.${parameter.key.trim()}}}` : '',
         summary: parameter.summary
       }))
       .filter((parameter) => Boolean(parameter.token)),
-    ...skill.headerParameters
+    ...skill.metadata.headerParameters
       .map((parameter) => ({
         token: parameter.key.trim() ? `{{header.${parameter.key.trim()}}}` : '',
         summary: parameter.summary
       }))
       .filter((parameter) => Boolean(parameter.token))
   ]
+}
+
+function formatSkillParameterBrief(
+  parameter: RouteSkillParameter,
+  t: (key: string, values?: Record<string, string | number>) => string
+): string {
+  const key = parameter.key.trim()
+
+  if (!key) {
+    return t(`options.assets.skills.parameterType.${parameter.type}`)
+  }
+
+  return `${key} · ${t(`options.assets.skills.parameterType.${parameter.type}`)}`
 }
 
 function getSkillPathState(
@@ -1219,7 +1670,7 @@ function getFolderPathState(
   }
 }
 
-function buildSkillTree(
+export function buildSkillTree(
   skills: RouteSkillEntry[],
   folders: RouteSkillFolder[]
 ): SkillTreeNode[] {
@@ -1297,11 +1748,100 @@ function buildSkillTree(
       id: `skill:${skill.id}`,
       skillId: skill.id,
       path: skill.path,
-      label: segments.at(-1) ?? skill.title ?? 'skill'
+      label: segments.at(-1) ?? skill.metadata.title ?? 'skill',
+      searchText: [
+        skill.path,
+        skill.metadata.title,
+        skill.metadata.summary,
+        skill.content
+      ]
+        .filter(Boolean)
+        .join(' ')
     })
   }
 
   return sortSkillTreeNodes(root)
+}
+
+export function filterSkillTree(
+  nodes: SkillTreeNode[],
+  searchQuery: string
+): SkillTreeNode[] {
+  const normalizedQuery = searchQuery.trim().toLowerCase()
+
+  if (!normalizedQuery) {
+    return nodes
+  }
+
+  return nodes.reduce<SkillTreeNode[]>((result, node) => {
+    const matchesNode =
+      node.kind === 'folder'
+        ? `${node.path} ${node.label}`.toLowerCase().includes(normalizedQuery)
+        : `${node.path} ${node.label} ${node.searchText}`
+            .toLowerCase()
+            .includes(normalizedQuery)
+
+    if (node.kind === 'folder') {
+      if (matchesNode) {
+        result.push(node)
+        return result
+      }
+
+      const filteredChildren = filterSkillTree(node.children, normalizedQuery)
+
+      if (filteredChildren.length > 0) {
+        result.push({ ...node, children: filteredChildren })
+      }
+
+      return result
+    }
+
+    if (matchesNode) {
+      result.push(node)
+    }
+
+    return result
+  }, [])
+}
+
+function listFolderPaths(nodes: SkillTreeNode[]): string[] {
+  return nodes.flatMap((node) =>
+    node.kind === 'folder'
+      ? [node.path, ...listFolderPaths(node.children)]
+      : []
+  )
+}
+
+function flattenVisibleTreeNodes(
+  nodes: SkillTreeNode[],
+  expandedFolders: string[],
+  parentPath?: string
+): VisibleTreeNode[] {
+  return nodes.flatMap((node) => {
+    if (node.kind === 'folder') {
+      return [
+        {
+          kind: 'folder' as const,
+          id: `folder:${node.path}`,
+          path: node.path,
+          parentPath
+        },
+        ...(expandedFolders.includes(node.path)
+          ? flattenVisibleTreeNodes(node.children, expandedFolders, node.path)
+          : [])
+      ]
+    }
+
+    return [
+      {
+        kind: 'skill' as const,
+        id: `skill:${node.skillId}`,
+        path: node.path,
+        parentPath,
+        skillId: node.skillId
+      }
+    ]
+  })
 }
 
 function sortSkillTreeNodes(nodes: SkillTreeNode[]): SkillTreeNode[] {
@@ -1360,11 +1900,7 @@ function createUniqueFolderPath(
       existingPaths.map((path, index) => ({
         id: String(index),
         path,
-        title: '',
-        summary: '',
-        icon: 'spark',
-        queryParameters: [],
-        headerParameters: [],
+        metadata: createDefaultSkillMetadata(''),
         content: ''
       })),
       folders
@@ -1533,6 +2069,16 @@ function dirname(path: string): string {
   return segments.slice(0, -1).join('/')
 }
 
+function basename(path: string): string {
+  const segments = splitSkillPath(path)
+  return segments.at(-1) ?? ''
+}
+
+function replacePathLeaf(path: string, nextLeaf: string): string {
+  const parentPath = dirname(path)
+  return parentPath ? `${parentPath}/${nextLeaf}` : nextLeaf
+}
+
 function listAncestorFolders(path: string): string[] {
   const segments = splitSkillPath(path)
   const folders: string[] = []
@@ -1549,4 +2095,9 @@ function folderPadding(path: string): number {
     .split('/')
     .filter(Boolean).length
   return 1 + Math.max(depth - 1, 0) * 2
+}
+
+function normalizeEditableTreeLabel(value: string): string {
+  const segments = splitSkillPath(value)
+  return segments.at(-1) ?? ''
 }

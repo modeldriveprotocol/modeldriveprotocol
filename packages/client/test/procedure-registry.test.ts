@@ -128,10 +128,10 @@ describe('ProcedureRegistry', () => {
     expect(resourceHandler).toHaveBeenCalledOnce()
   })
 
-  it('invokes skill resolvers with query params and headers', async () => {
+  it('invokes skill resolvers with typed query params and headers', async () => {
     const registry = new ProcedureRegistry()
     const skillResolver = vi.fn(async (query, headers) =>
-      `# Query Skill\n\nquery=${query.q}\nheader=${headers['x-test-header']}`
+      `# Query Skill\n\nquery=${query.limit}\nheader=${headers['x-enabled']}`
     )
 
     registry.exposeSkill('docs/query', skillResolver)
@@ -144,21 +144,21 @@ describe('ProcedureRegistry', () => {
         name: 'docs/query',
         args: {
           query: {
-            q: 'mdp'
+            limit: 3
           },
           headers: {
-            'x-test-header': 'present'
+            'x-enabled': true
           }
         }
       })
-    ).resolves.toBe('# Query Skill\n\nquery=mdp\nheader=present')
+    ).resolves.toBe('# Query Skill\n\nquery=3\nheader=true')
 
     expect(skillResolver).toHaveBeenCalledWith(
       {
-        q: 'mdp'
+        limit: 3
       },
       {
-        'x-test-header': 'present'
+        'x-enabled': true
       },
       expect.objectContaining({
         clientId: 'client-01',

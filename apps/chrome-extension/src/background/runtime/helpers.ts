@@ -55,6 +55,11 @@ export function createRecordingFromCapture(
 
   return {
     id: createRequestId('recording'),
+    path: createUniqueAssetPath(
+      routeClient.recordings.map((recording) => recording.path),
+      name,
+      'flow'
+    ),
     name,
     description: options.description?.trim() || stepPreview || 'Recorded interaction flow.',
     mode: 'recording',
@@ -89,9 +94,16 @@ export function createSelectorResource(
   routeClient: RouteClientConfig,
   result: PageSelectorCaptureResult
 ): RouteSelectorResource {
+  const name = `${routeClient.clientName} Selector ${routeClient.selectorResources.length + 1}`
+
   return {
     id: createRequestId('selector-resource'),
-    name: `${routeClient.clientName} Selector ${routeClient.selectorResources.length + 1}`,
+    path: createUniqueAssetPath(
+      routeClient.selectorResources.map((resource) => resource.path),
+      name,
+      'resource'
+    ),
+    name,
     description: `Captured selector resource for ${result.tagName}.`,
     createdAt: new Date().toISOString(),
     url: result.url,
@@ -111,4 +123,39 @@ export function countMatchingTabsForRouteClient(
   return tabs.reduce((count, tab) => (
     matchesRouteClient(tab.url, routeClient) ? count + 1 : count
   ), 0)
+}
+
+function createUniqueAssetPath(
+  existingPaths: string[],
+  fallbackName: string,
+  defaultBase: string
+): string {
+  const basePath = normalizeEditableAssetPath(fallbackName) || defaultBase
+  const usedPaths = new Set(
+    existingPaths.map((path) => normalizeEditableAssetPath(path)).filter(Boolean)
+  )
+  let candidate = basePath
+  let attempt = 2
+
+  while (usedPaths.has(candidate)) {
+    candidate = `${basePath}-${attempt}`
+    attempt += 1
+  }
+
+  return candidate
+}
+
+function normalizeEditableAssetPath(path: string): string {
+  return path
+    .split('/')
+    .map((segment) =>
+      segment
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^[-_]+|[-_]+$/g, '')
+    )
+    .filter(Boolean)
+    .join('/')
 }

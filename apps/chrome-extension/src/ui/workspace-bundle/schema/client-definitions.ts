@@ -41,6 +41,7 @@ export const recordedFlowStepSchema = z.object({
 
 export const routeClientRecordingSchema = z.object({
   id: nonEmptyStringSchema,
+  path: nonEmptyStringSchema,
   name: nonEmptyStringSchema,
   description: z.string(),
   mode: z.enum(['recording', 'script']).optional(),
