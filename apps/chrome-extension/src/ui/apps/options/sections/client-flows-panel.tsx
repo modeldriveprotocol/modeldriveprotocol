@@ -54,32 +54,44 @@ export function ClientFlowsPanel({
   selectedFlowId?: string
 }) {
   const { t } = useI18n()
-  const [selectedFlowId, setSelectedFlowId] = useState<string | undefined>(
+  const [localSelectedFlowId, setLocalSelectedFlowId] = useState<string | undefined>(
     controlledSelectedFlowId
   )
   const [pathInput, setPathInput] = useState('')
+  const isSelectionControlled = controlledSelectedFlowId !== undefined
+  const selectedFlowId = controlledSelectedFlowId ?? localSelectedFlowId
+
+  function commitSelectedFlowId(nextSelectedFlowId: string | undefined) {
+    if (!isSelectionControlled) {
+      setLocalSelectedFlowId((current) =>
+        current === nextSelectedFlowId ? current : nextSelectedFlowId
+      )
+    }
+
+    onSelectedFlowIdChange?.(nextSelectedFlowId)
+  }
 
   useEffect(() => {
-    if (controlledSelectedFlowId === undefined) {
+    if (isSelectionControlled) {
       return
     }
 
-    setSelectedFlowId(controlledSelectedFlowId)
-  }, [controlledSelectedFlowId])
+    const nextSelectedFlowId = getNextSelectedFlowId({
+      allowEmptySelection,
+      recordings: client.recordings,
+      selectedFlowId
+    })
 
-  useEffect(() => {
-    setSelectedFlowId((current) =>
-      current && client.recordings.some((recording) => recording.id === current)
-        ? current
-        : allowEmptySelection
-        ? undefined
-        : client.recordings[0]?.id
-    )
-  }, [allowEmptySelection, client.id, client.recordings])
-
-  useEffect(() => {
-    onSelectedFlowIdChange?.(selectedFlowId)
-  }, [onSelectedFlowIdChange, selectedFlowId])
+    if (nextSelectedFlowId !== selectedFlowId) {
+      commitSelectedFlowId(nextSelectedFlowId)
+    }
+  }, [
+    allowEmptySelection,
+    client.id,
+    client.recordings,
+    isSelectionControlled,
+    selectedFlowId
+  ])
 
   const selectedFlow =
     client.recordings.find((recording) => recording.id === selectedFlowId) ?? client.recordings[0]
@@ -139,7 +151,7 @@ export function ClientFlowsPanel({
     }
 
     updateRecordings((recordings) => [nextFlow, ...recordings])
-    setSelectedFlowId(nextFlow.id)
+    commitSelectedFlowId(nextFlow.id)
   }
 
   function setSelectedMode(mode: RouteClientRecording['mode']) {
@@ -420,6 +432,29 @@ function getFlowPathState(
   return {
     error: false
   }
+}
+
+function getNextSelectedFlowId({
+  allowEmptySelection,
+  recordings,
+  selectedFlowId
+}: {
+  allowEmptySelection: boolean
+  recordings: RouteClientRecording[]
+  selectedFlowId: string | undefined
+}): string | undefined {
+  if (
+    selectedFlowId &&
+    recordings.some((recording) => recording.id === selectedFlowId)
+  ) {
+    return selectedFlowId
+  }
+
+  if (allowEmptySelection) {
+    return undefined
+  }
+
+  return recordings[0]?.id
 }
 
 function createUniqueAssetPath(

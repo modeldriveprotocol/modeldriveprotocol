@@ -557,6 +557,13 @@ export function ClientAssetsPanel({
     selectAssetItem(itemId)
   }
 
+  function handleSelectedFlowIdChange(flowId: string | undefined) {
+    setSelectedItemId((current) => {
+      const nextItemId = flowId ? `flow:${flowId}` : 'root:flows'
+      return current === nextItemId ? current : nextItemId
+    })
+  }
+
   function handleExpandedItemsChange(itemIds: string[]) {
     setExpandedFlowFolders(
       itemIds
@@ -1991,9 +1998,7 @@ export function ClientAssetsPanel({
               hideHeader
               hideList
               onChange={updateClient}
-              onSelectedFlowIdChange={(flowId) =>
-                setSelectedItemId(flowId ? `flow:${flowId}` : 'root:flows')
-              }
+              onSelectedFlowIdChange={handleSelectedFlowIdChange}
               selectedFlowId={selectedFlowId}
             />
           </Stack>
