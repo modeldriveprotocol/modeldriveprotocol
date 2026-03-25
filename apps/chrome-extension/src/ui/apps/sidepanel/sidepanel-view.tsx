@@ -1,13 +1,12 @@
 import SearchOutlined from '@mui/icons-material/SearchOutlined'
 import StorageOutlined from '@mui/icons-material/StorageOutlined'
 import StorefrontOutlined from '@mui/icons-material/StorefrontOutlined'
-import { Alert, Box, Button, InputAdornment, List, ListItem, ListItemText, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import { Alert, Box, Button, InputAdornment, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 
 import { openOptionsSection } from '../../platform/extension-api.js'
 import { ActionIcon } from './action-icon.js'
-import { BackgroundClientPanel } from './background-client-panel.js'
 import { MarketPanel } from './market-panel.js'
-import { RouteClientPanel } from './route-client-panel.js'
+import { SidepanelClientsPanel } from './sidepanel-clients-panel.js'
 import type { SidepanelController } from './types.js'
 
 export function SidepanelView({ controller }: { controller: SidepanelController }) {
@@ -63,11 +62,7 @@ export function SidepanelView({ controller }: { controller: SidepanelController 
         {controller.contentMode === 'market' ? (
           <MarketPanel controller={controller} />
         ) : (
-          <>
-            {controller.pageRouteClients.length === 0 ? <SidepanelEmptyState controller={controller} /> : null}
-            {controller.filteredSidepanelClients.length === 0 ? <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>{controller.t('popup.noFilteredClients')}</Typography> : null}
-            {controller.filteredSidepanelClients.map((item) => item.type === 'background' ? <BackgroundClientPanel key={item.listId} controller={controller} item={item} /> : <RouteClientPanel key={item.listId} controller={controller} item={item} />)}
-          </>
+          <SidepanelClientsPanel controller={controller} />
         )}
       </Stack>
     </Stack>
@@ -81,29 +76,5 @@ function FeedbackBanners({ controller }: { controller: SidepanelController }) {
       {controller.error ? <Alert severity="error" sx={{ borderRadius: 0 }} action={controller.errorRecoveryAction ? <Button color="inherit" size="small" onClick={controller.errorRecoveryAction.onClick}>{controller.errorRecoveryAction.label}</Button> : undefined}>{controller.error}</Alert> : null}
       {controller.loading ? <Alert severity="info" sx={{ borderRadius: 0 }}>{controller.t('common.loading')}</Alert> : null}
     </>
-  )
-}
-
-function SidepanelEmptyState({ controller }: { controller: SidepanelController }) {
-  return (
-    <Box sx={{ py: 1.5 }}>
-      <Typography variant="body2" color="text.secondary">
-        {controller.canCreateFromActivePage ? controller.t('popup.noMatchingClient') : controller.t('popup.unsupportedActivePage')}
-      </Typography>
-      {!controller.canCreateFromActivePage && controller.relatedRouteClients.length === 0 ? <Button size="small" variant="text" onClick={() => void openOptionsSection('clients')} sx={{ mt: 1, px: 0 }}>{controller.t('popup.errorRecovery.clients')}</Button> : null}
-      {controller.relatedRouteClients.length ? (
-        <Stack spacing={1} sx={{ mt: 1.25 }}>
-          <Typography variant="caption" color="text.secondary">{controller.t('popup.relatedClientsTitle')}</Typography>
-          <List dense disablePadding>
-            {controller.relatedRouteClients.slice(0, 3).map((client) => (
-              <ListItem key={client.id} disablePadding sx={{ py: 0.5 }}>
-                <ListItemText primary={client.clientName} secondary={client.matchPatterns.join(', ')} primaryTypographyProps={{ variant: 'body2' }} secondaryTypographyProps={{ variant: 'caption' }} />
-              </ListItem>
-            ))}
-          </List>
-          <Button size="small" variant="text" onClick={() => void openOptionsSection('clients', { clientId: controller.relatedRouteClients[0]?.id })} sx={{ alignSelf: 'flex-start', px: 0 }}>{controller.t('popup.relatedClientsAction')}</Button>
-        </Stack>
-      ) : null}
-    </Box>
   )
 }
