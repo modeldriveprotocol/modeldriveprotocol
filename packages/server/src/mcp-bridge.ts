@@ -3,12 +3,40 @@ import { z } from 'zod'
 
 import {
   type AuthContext,
-  MDP_PROTOCOL_VERSION
+  type IndexedPathDescriptor,
+  type JsonObject,
+  type JsonValue,
+  type RpcArguments,
+  MDP_PROTOCOL_VERSION,
+  isJsonObject,
+  isJsonValue
 } from '@modeldriveprotocol/protocol'
 
 import type { BridgeRequest } from './bridge-requests.js'
 
-const argsSchema = z.record(z.string(), z.unknown()).optional()
+const methodSchema = z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])
+const legacyCapabilityKindSchema = z.enum(['tool', 'prompt', 'skill', 'resource'])
+const positiveIntegerSchema = z.number().int().positive().optional()
+const listClientsInputSchema = z
+  .object({
+    search: z.string().optional()
+  })
+  .optional()
+const listPathsInputSchema = z
+  .object({
+    clientId: z.string().optional(),
+    search: z.string().optional(),
+    depth: positiveIntegerSchema
+  })
+  .optional()
+const legacyListInputSchema = z
+  .object({
+    clientId: z.string().optional()
+  })
+  .optional()
+const querySchema = z.record(z.string(), z.unknown()).optional()
+const bodySchema = z.unknown().optional()
+const headersSchema = z.record(z.string(), z.string()).optional()
 const authSchema = z
   .object({
     scheme: z.string().optional(),
@@ -17,15 +45,6 @@ const authSchema = z
     metadata: z.record(z.string(), z.unknown()).optional()
   })
   .optional()
-
-const callClientsSchema = {
-  clientIds: z.array(z.string()).optional(),
-  kind: z.enum(['tool', 'prompt', 'skill', 'resource']),
-  name: z.string().optional(),
-  uri: z.string().optional(),
-  args: argsSchema,
-  auth: authSchema
-}
 
 export type McpBridgeRequestHandler = (request: BridgeRequest) => Promise<unknown>
 
@@ -38,189 +57,313 @@ export function createMcpBridge(handleRequest: McpBridgeRequestHandler): McpServ
   server.registerTool(
     'listClients',
     {
-      description: 'List currently connected MDP clients and their capability summaries.'
+      description: 'List currently connected MDP clients and their path catalogs.',
+      inputSchema: listClientsInputSchema
     },
-    async () => successResult(asStructuredPayload(await handleRequest({ method: 'listClients' })))
+    async (args) =>
+      successResult(asStructuredPayload(await handleRequest({
+        method: 'listClients',
+        ...(args?.search ? { params: { search: args.search } } : {})
+      })))
   )
 
   server.registerTool(
-    'callClients',
+    'listPaths',
     {
-      description: 'Invoke a capability on one or more MDP clients using the generic bridge surface.',
-      inputSchema: callClientsSchema
+      description: 'List path descriptors registered by connected MDP clients.',
+      inputSchema: listPathsInputSchema
     },
-    async ({ clientIds, kind, name, uri, args, auth }) =>
+    async (args) =>
       successResult(asStructuredPayload(await handleRequest({
-        method: 'callClients',
-        params: {
-          ...(clientIds ? { clientIds } : {}),
-          kind,
-          ...(name ? { name } : {}),
-          ...(uri ? { uri } : {}),
-          ...(args ? { args } : {}),
-          ...withAuth(auth)
-        }
+        method: 'listPaths',
+        ...(args?.clientId || args?.search || args?.depth !== undefined
+          ? {
+              params: {
+                ...(args?.clientId ? { clientId: args.clientId } : {}),
+                ...(args?.search ? { search: args.search } : {}),
+                ...(args?.depth !== undefined ? { depth: args.depth } : {})
+              }
+            }
+          : {})
       })))
   )
 
   server.registerTool(
     'listTools',
     {
-      description: 'List all tools registered by connected MDP clients.',
-      inputSchema: {
-        clientId: z.string().optional()
-      }
+      description: 'List tool descriptors registered by connected MDP clients.',
+      inputSchema: legacyListInputSchema
     },
-    async ({ clientId }) =>
-      successResult(asStructuredPayload(await handleRequest({
-        method: 'listTools',
-        ...(clientId ? { params: { clientId } } : {})
-      })))
-  )
-
-  server.registerTool(
-    'callTools',
-    {
-      description: 'Invoke a tool exposed by a specific MDP client.',
-      inputSchema: {
-        clientId: z.string(),
-        toolName: z.string(),
-        args: argsSchema,
-        auth: authSchema
-      }
-    },
-    async ({ clientId, toolName, args, auth }) =>
-      invocationResult(
-        await handleRequest({
-          method: 'callTools',
-          params: {
-            clientId,
-            toolName,
-            ...(args ? { args } : {}),
-            ...withAuth(auth)
-          }
-        })
-      )
+    async (args) =>
+      successResult({
+        tools: (await listIndexedPaths(handleRequest, {
+          ...(args?.clientId ? { clientId: args.clientId } : {}),
+          depth: Number.MAX_SAFE_INTEGER
+        }))
+          .filter((descriptor) => isLegacyBridgeKind(descriptor, 'tool'))
+          .map((descriptor) => ({
+            clientId: descriptor.clientId,
+            clientName: descriptor.clientName,
+            name: getLegacyBridgeIdentifier(descriptor, 'tool') as string,
+            ...(descriptor.description ? { description: descriptor.description } : {}),
+            ...(descriptor.type === 'endpoint' && descriptor.inputSchema
+              ? { inputSchema: descriptor.inputSchema }
+              : {})
+          }))
+      })
   )
 
   server.registerTool(
     'listPrompts',
     {
-      description: 'List all prompts registered by connected MDP clients.',
-      inputSchema: {
-        clientId: z.string().optional()
-      }
+      description: 'List prompt descriptors registered by connected MDP clients.',
+      inputSchema: legacyListInputSchema
     },
-    async ({ clientId }) =>
-      successResult(asStructuredPayload(await handleRequest({
-        method: 'listPrompts',
-        ...(clientId ? { params: { clientId } } : {})
-      })))
-  )
-
-  server.registerTool(
-    'getPrompt',
-    {
-      description: 'Resolve a prompt exposed by a specific MDP client.',
-      inputSchema: {
-        clientId: z.string(),
-        promptName: z.string(),
-        args: argsSchema,
-        auth: authSchema
-      }
-    },
-    async ({ clientId, promptName, args, auth }) =>
-      invocationResult(
-        await handleRequest({
-          method: 'getPrompt',
-          params: {
-            clientId,
-            promptName,
-            ...(args ? { args } : {}),
-            ...withAuth(auth)
-          }
-        })
-      )
+    async (args) =>
+      successResult({
+        prompts: (await listIndexedPaths(handleRequest, {
+          ...(args?.clientId ? { clientId: args.clientId } : {}),
+          depth: Number.MAX_SAFE_INTEGER
+        }))
+          .filter((descriptor) => isLegacyBridgeKind(descriptor, 'prompt'))
+          .map((descriptor) => ({
+            clientId: descriptor.clientId,
+            clientName: descriptor.clientName,
+            name: getLegacyBridgeIdentifier(descriptor, 'prompt') as string,
+            ...(descriptor.description ? { description: descriptor.description } : {}),
+            ...(descriptor.type === 'prompt' && descriptor.inputSchema
+              ? { inputSchema: descriptor.inputSchema }
+              : {})
+          }))
+      })
   )
 
   server.registerTool(
     'listSkills',
     {
-      description: 'List all skills registered by connected MDP clients.',
-      inputSchema: {
-        clientId: z.string().optional()
-      }
+      description: 'List skill descriptors registered by connected MDP clients.',
+      inputSchema: legacyListInputSchema
     },
-    async ({ clientId }) =>
-      successResult(asStructuredPayload(await handleRequest({
-        method: 'listSkills',
-        ...(clientId ? { params: { clientId } } : {})
-      })))
-  )
-
-  server.registerTool(
-    'callSkills',
-    {
-      description: 'Invoke a skill exposed by a specific MDP client.',
-      inputSchema: {
-        clientId: z.string(),
-        skillName: z.string(),
-        args: argsSchema,
-        auth: authSchema
-      }
-    },
-    async ({ clientId, skillName, args, auth }) =>
-      invocationResult(
-        await handleRequest({
-          method: 'callSkills',
-          params: {
-            clientId,
-            skillName,
-            ...(args ? { args } : {}),
-            ...withAuth(auth)
-          }
-        })
-      )
+    async (args) =>
+      successResult({
+        skills: (await listIndexedPaths(handleRequest, {
+          ...(args?.clientId ? { clientId: args.clientId } : {}),
+          depth: Number.MAX_SAFE_INTEGER
+        }))
+          .filter((descriptor) => isLegacyBridgeKind(descriptor, 'skill'))
+          .map((descriptor) => ({
+            clientId: descriptor.clientId,
+            clientName: descriptor.clientName,
+            name: getLegacyBridgeIdentifier(descriptor, 'skill') as string,
+            ...(descriptor.description ? { description: descriptor.description } : {}),
+            ...(descriptor.type === 'skill' && descriptor.contentType
+              ? { contentType: descriptor.contentType }
+              : {})
+          }))
+      })
   )
 
   server.registerTool(
     'listResources',
     {
-      description: 'List all resources registered by connected MDP clients.',
+      description: 'List resource descriptors registered by connected MDP clients.',
+      inputSchema: legacyListInputSchema
+    },
+    async (args) =>
+      successResult({
+        resources: (await listIndexedPaths(handleRequest, {
+          ...(args?.clientId ? { clientId: args.clientId } : {}),
+          depth: Number.MAX_SAFE_INTEGER
+        }))
+          .filter((descriptor) => isLegacyBridgeKind(descriptor, 'resource'))
+          .map((descriptor) => ({
+            clientId: descriptor.clientId,
+            clientName: descriptor.clientName,
+            uri: getLegacyBridgeIdentifier(descriptor, 'resource') as string,
+            ...(descriptor.legacy?.kind === 'resource' && descriptor.legacy.name
+              ? { name: descriptor.legacy.name }
+              : {}),
+            ...(descriptor.description ? { description: descriptor.description } : {}),
+            ...(descriptor.type === 'endpoint' && descriptor.contentType
+              ? { mimeType: descriptor.contentType }
+              : {})
+          }))
+      })
+  )
+
+  server.registerTool(
+    'callPath',
+    {
+      description: 'Invoke one exact path on one exact MDP client.',
       inputSchema: {
-        clientId: z.string().optional()
+        clientId: z.string(),
+        method: methodSchema,
+        path: z.string(),
+        query: querySchema,
+        body: bodySchema,
+        headers: headersSchema,
+        auth: authSchema
       }
     },
-    async ({ clientId }) =>
-      successResult(asStructuredPayload(await handleRequest({
-        method: 'listResources',
-        ...(clientId ? { params: { clientId } } : {})
-      })))
+    async ({ clientId, method, path, query, body, headers, auth }) =>
+      invocationResult(
+        await handleRequest({
+          method: 'callPath',
+          params: {
+            clientId,
+            method,
+            path,
+            ...(query ? { query: normalizeQuery(query) } : {}),
+            ...(body !== undefined ? { body: normalizeBody(body) } : {}),
+            ...(headers ? { headers } : {}),
+            ...withAuth(auth)
+          }
+        })
+      )
+  )
+
+  server.registerTool(
+    'callTools',
+    {
+      description: 'Invoke one exact legacy tool on one exact MDP client.',
+      inputSchema: {
+        clientId: z.string(),
+        toolName: z.string(),
+        args: querySchema,
+        auth: authSchema
+      }
+    },
+    async ({ clientId, toolName, args, auth }) =>
+      invocationResult(
+        await invokeLegacyPath(handleRequest, {
+          clientId,
+          kind: 'tool',
+          identifier: toolName,
+          ...(args ? { args: normalizeQuery(args) } : {}),
+          ...withAuth(auth)
+        })
+      )
+  )
+
+  server.registerTool(
+    'getPrompt',
+    {
+      description: 'Resolve one exact legacy prompt on one exact MDP client.',
+      inputSchema: {
+        clientId: z.string(),
+        promptName: z.string(),
+        args: querySchema,
+        auth: authSchema
+      }
+    },
+    async ({ clientId, promptName, args, auth }) =>
+      invocationResult(
+        await invokeLegacyPath(handleRequest, {
+          clientId,
+          kind: 'prompt',
+          identifier: promptName,
+          ...(args ? { args: normalizeQuery(args) } : {}),
+          ...withAuth(auth)
+        })
+      )
+  )
+
+  server.registerTool(
+    'callSkills',
+    {
+      description: 'Resolve one exact legacy skill on one exact MDP client.',
+      inputSchema: {
+        clientId: z.string(),
+        skillName: z.string(),
+        args: querySchema,
+        auth: authSchema
+      }
+    },
+    async ({ clientId, skillName, args, auth }) =>
+      invocationResult(
+        await invokeLegacyPath(handleRequest, {
+          clientId,
+          kind: 'skill',
+          identifier: skillName,
+          ...(args ? { args: normalizeQuery(args) } : {}),
+          ...withAuth(auth)
+        })
+      )
   )
 
   server.registerTool(
     'readResource',
     {
-      description: 'Read a resource exposed by a specific MDP client.',
+      description: 'Read one exact legacy resource on one exact MDP client.',
       inputSchema: {
         clientId: z.string(),
         uri: z.string(),
-        args: argsSchema,
+        args: querySchema,
         auth: authSchema
       }
     },
     async ({ clientId, uri, args, auth }) =>
       invocationResult(
-        await handleRequest({
-          method: 'readResource',
-          params: {
-            clientId,
-            uri,
-            ...(args ? { args } : {}),
-            ...withAuth(auth)
-          }
+        await invokeLegacyPath(handleRequest, {
+          clientId,
+          kind: 'resource',
+          identifier: uri,
+          ...(args ? { args: normalizeQuery(args) } : {}),
+          ...withAuth(auth)
         })
       )
+  )
+
+  server.registerTool(
+    'callPaths',
+    {
+      description: 'Invoke one path on one or more MDP clients.',
+      inputSchema: {
+        clientIds: z.array(z.string()).optional(),
+        method: methodSchema,
+        path: z.string(),
+        query: querySchema,
+        body: bodySchema,
+        headers: headersSchema,
+        auth: authSchema
+      }
+    },
+    async ({ clientIds, method, path, query, body, headers, auth }) =>
+      successResult(asStructuredPayload(await handleRequest({
+        method: 'callPaths',
+        params: {
+          ...(clientIds ? { clientIds } : {}),
+          method,
+          path,
+          ...(query ? { query: normalizeQuery(query) } : {}),
+          ...(body !== undefined ? { body: normalizeBody(body) } : {}),
+          ...(headers ? { headers } : {}),
+          ...withAuth(auth)
+        }
+      })))
+  )
+
+  server.registerTool(
+    'callClients',
+    {
+      description: 'Invoke one legacy capability on one or more MDP clients.',
+      inputSchema: {
+        clientIds: z.array(z.string()).optional(),
+        kind: legacyCapabilityKindSchema,
+        name: z.string().optional(),
+        uri: z.string().optional(),
+        args: querySchema,
+        auth: authSchema
+      }
+    },
+    async ({ clientIds, kind, name, uri, args, auth }) =>
+      successResult(await invokeLegacyClients(handleRequest, {
+        ...(clientIds ? { clientIds } : {}),
+        kind,
+        identifier: requireLegacyIdentifier(kind, name, uri),
+        ...(args ? { args: normalizeQuery(args) } : {}),
+        ...withAuth(auth)
+      }))
   )
 
   return server
@@ -326,37 +469,283 @@ function normalizeAuth(
     return undefined
   }
 
-  const normalized: AuthContext = {}
+  const metadata = normalizeMetadata(auth.metadata)
 
-  if (auth.scheme) {
-    normalized.scheme = auth.scheme
+  return {
+    ...(auth.scheme ? { scheme: auth.scheme } : {}),
+    ...(auth.token ? { token: auth.token } : {}),
+    ...(auth.headers ? { headers: auth.headers } : {}),
+    ...(metadata ? { metadata } : {})
   }
-
-  if (auth.token) {
-    normalized.token = auth.token
-  }
-
-  if (auth.headers && Object.keys(auth.headers).length > 0) {
-    normalized.headers = auth.headers
-  }
-
-  if (auth.metadata && Object.keys(auth.metadata).length > 0) {
-    normalized.metadata = auth.metadata as NonNullable<AuthContext['metadata']>
-  }
-
-  return Object.keys(normalized).length > 0 ? normalized : undefined
 }
 
-function withAuth(
-  auth:
-    | {
-        scheme?: string | undefined
-        token?: string | undefined
-        headers?: Record<string, string> | undefined
-        metadata?: Record<string, unknown> | undefined
-      }
-    | undefined
-) {
+function withAuth(auth: Parameters<typeof normalizeAuth>[0]) {
   const normalized = normalizeAuth(auth)
   return normalized ? { auth: normalized } : {}
+}
+
+function normalizeQuery(query: Record<string, unknown>): RpcArguments {
+  return query
+}
+
+function normalizeBody(body: unknown): JsonValue {
+  if (!isJsonValue(body)) {
+    throw new Error('Bridge request body must be JSON-serializable')
+  }
+
+  return body
+}
+
+function normalizeMetadata(
+  metadata: Record<string, unknown> | undefined
+): JsonObject | undefined {
+  if (metadata === undefined) {
+    return undefined
+  }
+
+  if (!isJsonObject(metadata) || !Object.values(metadata).every((value) => isJsonValue(value))) {
+    throw new Error('Bridge auth metadata must be a JSON object')
+  }
+
+  return metadata
+}
+
+async function listIndexedPaths(
+  handleRequest: McpBridgeRequestHandler,
+  options: {
+    clientId?: string
+    search?: string
+    depth?: number
+  } = {}
+): Promise<IndexedPathDescriptor[]> {
+  const result = await handleRequest({
+    method: 'listPaths',
+    ...(options.clientId || options.search || options.depth !== undefined
+      ? { params: options }
+      : {})
+  })
+
+  if (
+    !isJsonObject(result) ||
+    !Array.isArray(result.paths) ||
+    !result.paths.every(isIndexedPathDescriptor)
+  ) {
+    throw new Error('Invalid listPaths payload received from bridge handler')
+  }
+
+  return result.paths as unknown as IndexedPathDescriptor[]
+}
+
+function isIndexedPathDescriptor(value: unknown): value is IndexedPathDescriptor {
+  return (
+    isJsonObject(value) &&
+    typeof value.clientId === 'string' &&
+    typeof value.clientName === 'string' &&
+    typeof value.path === 'string' &&
+    typeof value.type === 'string'
+  )
+}
+
+function isLegacyBridgeKind(
+  descriptor: IndexedPathDescriptor,
+  kind: 'tool' | 'prompt' | 'skill' | 'resource'
+): boolean {
+  switch (kind) {
+    case 'tool':
+      return descriptor.type === 'endpoint' && descriptor.legacy?.kind !== 'resource'
+    case 'prompt':
+      return descriptor.type === 'prompt'
+    case 'skill':
+      return descriptor.type === 'skill'
+    case 'resource':
+      return descriptor.type === 'endpoint' && descriptor.legacy?.kind === 'resource'
+  }
+}
+
+function getLegacyBridgeIdentifier(
+  descriptor: IndexedPathDescriptor,
+  kind: 'tool' | 'prompt' | 'skill' | 'resource'
+): string | undefined {
+  if (!isLegacyBridgeKind(descriptor, kind)) {
+    return undefined
+  }
+
+  switch (kind) {
+    case 'tool':
+      return descriptor.legacy?.kind === 'tool' ? descriptor.legacy.name : descriptor.path
+    case 'prompt':
+      return descriptor.legacy?.kind === 'prompt' ? descriptor.legacy.name : descriptor.path
+    case 'skill':
+      return descriptor.legacy?.kind === 'skill' ? descriptor.legacy.name : descriptor.path
+    case 'resource':
+      return descriptor.legacy?.kind === 'resource' ? descriptor.legacy.uri : undefined
+  }
+}
+
+async function invokeLegacyPath(
+  handleRequest: McpBridgeRequestHandler,
+  request: {
+    clientId: string
+    kind: 'tool' | 'prompt' | 'skill' | 'resource'
+    identifier: string
+    args?: RpcArguments
+    auth?: AuthContext
+  }
+) {
+  const descriptors = await listIndexedPaths(handleRequest, {
+    clientId: request.clientId,
+    depth: Number.MAX_SAFE_INTEGER
+  })
+  const descriptor = descriptors.find(
+    (entry) =>
+      entry.clientId === request.clientId &&
+      getLegacyBridgeIdentifier(entry, request.kind) === request.identifier
+  )
+
+  if (!descriptor) {
+    throw new Error(
+      `Unknown ${request.kind} "${request.identifier}" for client "${request.clientId}"`
+    )
+  }
+
+  return handleRequest({
+    method: 'callPath',
+    params: {
+      clientId: request.clientId,
+      method: descriptor.type === 'endpoint' ? descriptor.method : 'GET',
+      path: descriptor.path,
+      ...withLegacyArguments(descriptor, request.args),
+      ...(request.auth ? { auth: request.auth } : {})
+    }
+  })
+}
+
+async function invokeLegacyClients(
+  handleRequest: McpBridgeRequestHandler,
+  request: {
+    clientIds?: string[]
+    kind: 'tool' | 'prompt' | 'skill' | 'resource'
+    identifier: string
+    args?: RpcArguments
+    auth?: AuthContext
+  }
+): Promise<{ results: Array<{ clientId: string; ok: boolean; data?: unknown; error?: unknown }> }> {
+  const descriptors = (await listIndexedPaths(handleRequest, {
+    depth: Number.MAX_SAFE_INTEGER
+  })).filter(
+    (descriptor) =>
+      (!request.clientIds || request.clientIds.includes(descriptor.clientId)) &&
+      getLegacyBridgeIdentifier(descriptor, request.kind) === request.identifier
+  )
+
+  if (descriptors.length === 0) {
+    throw new Error('No matching MDP clients were found')
+  }
+
+  const results = await Promise.all(
+    descriptors.map(async (descriptor) => ({
+      clientId: descriptor.clientId,
+      ...(await invokeLegacyDescriptor(handleRequest, descriptor, request))
+    }))
+  )
+
+  return { results }
+}
+
+async function invokeLegacyDescriptor(
+  handleRequest: McpBridgeRequestHandler,
+  descriptor: IndexedPathDescriptor,
+  request: {
+    identifier: string
+    args?: RpcArguments
+    auth?: AuthContext
+  }
+): Promise<{ ok: boolean; data?: unknown; error?: unknown }> {
+  try {
+    const result = await handleRequest({
+      method: 'callPath',
+      params: {
+        clientId: descriptor.clientId,
+        method: descriptor.type === 'endpoint' ? descriptor.method : 'GET',
+        path: descriptor.path,
+        ...withLegacyArguments(descriptor, request.args),
+        ...(request.auth ? { auth: request.auth } : {})
+      }
+    })
+
+    return normalizeInvocationValue(result)
+  } catch (error) {
+    const normalized = error instanceof Error ? error : new Error(String(error))
+
+    return {
+      ok: false,
+      error: {
+        message: normalized.message
+      }
+    }
+  }
+}
+
+function withLegacyArguments(
+  descriptor: IndexedPathDescriptor,
+  args: RpcArguments | undefined
+) {
+  if (!args) {
+    return {}
+  }
+
+  if (descriptor.type === 'endpoint' && descriptor.method !== 'GET') {
+    return {
+      body: normalizeBody(args)
+    }
+  }
+
+  return {
+    query: normalizeQuery(args)
+  }
+}
+
+function normalizeInvocationValue(
+  result: unknown
+): { ok: boolean; data?: unknown; error?: unknown } {
+  if (!isInvocationResult(result)) {
+    return {
+      ok: false,
+      error: {
+        message: 'Invalid invocation result received from bridge handler'
+      }
+    }
+  }
+
+  if (result.ok) {
+    return {
+      ok: true,
+      ...(result.data !== undefined ? { data: result.data } : {})
+    }
+  }
+
+  return {
+    ok: false,
+    error: result.error ?? { message: 'Unknown client error' }
+  }
+}
+
+function requireLegacyIdentifier(
+  kind: 'tool' | 'prompt' | 'skill' | 'resource',
+  name: string | undefined,
+  uri: string | undefined
+): string {
+  if (kind === 'resource') {
+    if (!uri) {
+      throw new Error('uri is required when kind is "resource"')
+    }
+
+    return uri
+  }
+
+  if (!name) {
+    throw new Error('name is required unless kind is "resource"')
+  }
+
+  return name
 }

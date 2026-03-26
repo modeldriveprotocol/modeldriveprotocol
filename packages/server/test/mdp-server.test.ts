@@ -3,6 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ClientSessionTransport } from '../src/client-session.js'
 import { MdpServerRuntime } from '../src/mdp-server.js'
 
+const SEARCH_PATH = '/search'
+const PROMPT_PATH = '/summarize-selection/prompt.md'
+const SKILL_PATH = '/workspace/review/skill.md'
+const INFO_PATH = '/workspace/info'
+
 function createTransport(
   overrides: Partial<ClientSessionTransport> = {}
 ): ClientSessionTransport {
@@ -17,14 +22,21 @@ function createTransport(
   }
 }
 
-function createDescriptor(name = 'Browser Client', id = 'client-01') {
+function createDescriptor(
+  name = 'Browser Client',
+  id = 'client-01',
+  paths = [
+    {
+      type: 'endpoint' as const,
+      path: SEARCH_PATH,
+      method: 'GET' as const
+    }
+  ]
+) {
   return {
     id,
     name,
-    tools: [{ name: 'searchDom' }],
-    prompts: [],
-    skills: [],
-    resources: []
+    paths
   }
 }
 
@@ -43,11 +55,24 @@ describe('MdpServerRuntime', () => {
         id: 'client-01',
         name: 'Browser Client',
         status: 'online',
+        paths: [
+          {
+            type: 'endpoint',
+            path: SEARCH_PATH,
+            method: 'GET'
+          }
+        ],
         connection: {
           mode: 'ws',
           secure: false,
           authSource: 'none'
         }
+      })
+    ])
+    expect(runtime.listClients({ search: 'browser' })).toEqual([
+      expect.objectContaining({
+        id: 'client-01',
+        name: 'Browser Client'
       })
     ])
   })
@@ -96,47 +121,48 @@ describe('MdpServerRuntime', () => {
     expect(runtime.listClients()).toEqual([])
   })
 
-  it('updates registered capability catalogs in place', () => {
+  it('updates registered path catalogs in place', () => {
     const onClientRegistered = vi.fn()
     const runtime = new MdpServerRuntime({
       onClientRegistered
     })
     const session = runtime.createSession('conn-01', createTransport())
+    const updatedPaths = [
+      {
+        type: 'endpoint' as const,
+        path: SEARCH_PATH,
+        method: 'GET' as const
+      },
+      {
+        type: 'prompt' as const,
+        path: PROMPT_PATH
+      },
+      {
+        type: 'skill' as const,
+        path: SKILL_PATH,
+        contentType: 'text/markdown'
+      },
+      {
+        type: 'endpoint' as const,
+        path: INFO_PATH,
+        method: 'GET' as const
+      }
+    ]
 
     runtime.handleMessage(session, {
       type: 'registerClient',
       client: createDescriptor()
     })
     runtime.handleMessage(session, {
-      type: 'updateClientCapabilities',
+      type: 'updateClientCatalog',
       clientId: 'client-01',
-      capabilities: {
-        prompts: [
-          {
-            name: 'summarizeSelection'
-          }
-        ],
-        skills: [
-          {
-            name: 'workspace/review'
-          }
-        ],
-        resources: [
-          {
-            uri: 'workspace://root/info',
-            name: 'Workspace Info'
-          }
-        ]
-      }
+      paths: updatedPaths
     })
 
     expect(runtime.listClients()).toEqual([
       expect.objectContaining({
         id: 'client-01',
-        tools: [{ name: 'searchDom' }],
-        prompts: [{ name: 'summarizeSelection' }],
-        skills: [{ name: 'workspace/review' }],
-        resources: [{ uri: 'workspace://root/info', name: 'Workspace Info' }]
+        paths: updatedPaths
       })
     ])
     expect(onClientRegistered).toHaveBeenLastCalledWith(
@@ -144,13 +170,13 @@ describe('MdpServerRuntime', () => {
         session,
         client: expect.objectContaining({
           id: 'client-01',
-          prompts: [{ name: 'summarizeSelection' }]
+          paths: updatedPaths
         })
       })
     )
   })
 
-  it('rejects capability updates from a different logical client id', () => {
+  it('rejects path catalog updates from a different logical client id', () => {
     const runtime = new MdpServerRuntime()
     const session = runtime.createSession('conn-01', createTransport())
 
@@ -161,11 +187,9 @@ describe('MdpServerRuntime', () => {
 
     expect(() =>
       runtime.handleMessage(session, {
-        type: 'updateClientCapabilities',
+        type: 'updateClientCatalog',
         clientId: 'client-02',
-        capabilities: {
-          tools: []
-        }
+        paths: []
       })
     ).toThrow('Client "client-02" is not registered on this session')
   })
@@ -185,8 +209,8 @@ describe('MdpServerRuntime', () => {
 
     const invocation = runtime.invoke({
       clientId: 'client-01',
-      kind: 'tool',
-      name: 'searchDom'
+      method: 'GET',
+      path: SEARCH_PATH
     })
 
     runtime.handleMessage(session, {
@@ -194,7 +218,9 @@ describe('MdpServerRuntime', () => {
       client: createDescriptor('Second Client', 'client-02')
     })
 
-    await expect(invocation).rejects.toThrow('Client "client-01" was re-registered as "client-02"')
+    await expect(invocation).rejects.toThrow(
+      'Client "client-01" was re-registered as "client-02"'
+    )
     expect(runtime.listClients()).toEqual([
       expect.objectContaining({
         id: 'client-02',
@@ -285,8 +311,8 @@ describe('MdpServerRuntime', () => {
 
     const invocation = runtime.invoke({
       clientId: 'client-01',
-      kind: 'tool',
-      name: 'searchDom',
+      method: 'GET',
+      path: SEARCH_PATH,
       auth: {
         token: 'host-token'
       }
@@ -314,8 +340,10 @@ describe('MdpServerRuntime', () => {
     })
     expect(authorizeInvocation).toHaveBeenCalledWith({
       clientId: 'client-01',
-      kind: 'tool',
-      name: 'searchDom',
+      type: 'endpoint',
+      method: 'GET',
+      path: SEARCH_PATH,
+      params: {},
       auth: {
         token: 'host-token'
       },

@@ -1,13 +1,14 @@
 import type {
-  CapabilityKind,
   ClientConnectionDescriptor,
   ClientDescriptor,
-  IndexedPromptDescriptor,
-  IndexedResourceDescriptor,
-  IndexedSkillDescriptor,
-  IndexedToolDescriptor,
+  HttpMethod,
+  IndexedPathDescriptor,
   ListedClient,
-  SkillDescriptor
+  PathDescriptor
+} from '@modeldriveprotocol/protocol'
+import {
+  comparePathSpecificity,
+  matchPathPattern
 } from '@modeldriveprotocol/protocol'
 
 export interface RegisteredClientSnapshot {
@@ -17,11 +18,25 @@ export interface RegisteredClientSnapshot {
   connection: ClientConnectionDescriptor
 }
 
-export interface CapabilityTarget {
+export interface PathTarget {
   clientId: string
-  kind: CapabilityKind
-  name?: string
-  uri?: string
+  method: HttpMethod
+  path: string
+}
+
+export interface ResolvedPathTarget {
+  descriptor: PathDescriptor
+  params: Record<string, unknown>
+}
+
+export interface ListClientsOptions {
+  search?: string
+}
+
+export interface ListPathsOptions {
+  clientId?: string
+  search?: string
+  depth?: number
 }
 
 export class CapabilityIndex {
@@ -29,96 +44,121 @@ export class CapabilityIndex {
     private readonly listRegisteredClients: () => RegisteredClientSnapshot[]
   ) {}
 
-  listClients(): ListedClient[] {
-    return this.listRegisteredClients().map(
-      ({ descriptor, connectedAt, lastSeenAt, connection }) => ({
+  listClients(options: ListClientsOptions = {}): ListedClient[] {
+    const search = normalizeSearch(options.search)
+
+    return this.listRegisteredClients()
+      .map(({ descriptor, connectedAt, lastSeenAt, connection }) => ({
         ...descriptor,
-        status: 'online',
+        status: 'online' as const,
         connectedAt: connectedAt.toISOString(),
         lastSeenAt: lastSeenAt.toISOString(),
         connection
-      })
-    )
-  }
-
-  listTools(clientId?: string): IndexedToolDescriptor[] {
-    return this.filterClients(clientId).flatMap(({ descriptor }) =>
-      descriptor.tools.map((tool) => ({
-        clientId: descriptor.id,
-        clientName: descriptor.name,
-        ...tool
       }))
+      .filter((client) => !search || matchesClientSearch(client, search))
+  }
+
+  listPaths(optionsOrClientId?: string | ListPathsOptions): IndexedPathDescriptor[] {
+    const options = normalizeListPathsOptions(optionsOrClientId)
+    const search = normalizeSearch(options.search)
+    const depthLimit = resolveDepthLimit(options.depth, search)
+
+    return this.filterClients(options.clientId).flatMap(({ descriptor }) =>
+      descriptor.paths
+        .map((pathDescriptor) => ({
+          clientId: descriptor.id,
+          clientName: descriptor.name,
+          ...pathDescriptor
+        }))
+        .filter(
+          (pathDescriptor) =>
+            (depthLimit === undefined || getPathCatalogDepth(pathDescriptor.path) <= depthLimit) &&
+            (!search || matchesPathSearch(pathDescriptor, search))
+        )
     )
   }
 
-  listPrompts(clientId?: string): IndexedPromptDescriptor[] {
-    return this.filterClients(clientId).flatMap(({ descriptor }) =>
-      descriptor.prompts.map((prompt) => ({
-        clientId: descriptor.id,
-        clientName: descriptor.name,
-        ...prompt
-      }))
-    )
-  }
-
-  listSkills(clientId?: string): IndexedSkillDescriptor[] {
-    return this.filterClients(clientId).flatMap(({ descriptor }) =>
-      descriptor.skills.map((skill) => ({
-        clientId: descriptor.id,
-        clientName: descriptor.name,
-        ...skill
-      }))
-    )
-  }
-
-  listResources(clientId?: string): IndexedResourceDescriptor[] {
-    return this.filterClients(clientId).flatMap(({ descriptor }) =>
-      descriptor.resources.map((resource) => ({
-        clientId: descriptor.id,
-        clientName: descriptor.name,
-        ...resource
-      }))
-    )
-  }
-
-  getSkill(clientId: string, skillName: string): SkillDescriptor | undefined {
-    return this.findClient(clientId)?.skills.find((skill) => skill.name === skillName)
-  }
-
-  hasTarget(target: CapabilityTarget): boolean {
-    const client = this.findClient(target.clientId)
+  resolveTarget(
+    clientId: string,
+    method: HttpMethod,
+    path: string
+  ): ResolvedPathTarget | undefined {
+    const client = this.findClient(clientId)
 
     if (!client) {
-      return false
+      return undefined
     }
 
-    switch (target.kind) {
-      case 'tool':
-        return client.tools.some((item) => item.name === target.name)
-      case 'prompt':
-        return client.prompts.some((item) => item.name === target.name)
-      case 'skill':
-        return client.skills.some((item) => item.name === target.name)
-      case 'resource':
-        return client.resources.some((item) => item.uri === target.uri)
+    let bestMatch:
+      | (ResolvedPathTarget & {
+          specificity: number[]
+        })
+      | undefined
+
+    for (const descriptor of client.paths) {
+      if (!matchesMethod(descriptor, method)) {
+        continue
+      }
+
+      const match = matchPathPattern(descriptor.path, path)
+
+      if (!match) {
+        continue
+      }
+
+      if (
+        !bestMatch ||
+        comparePathSpecificity(match.specificity, bestMatch.specificity) > 0
+      ) {
+        bestMatch = {
+          descriptor,
+          params: match.params,
+          specificity: match.specificity
+        }
+      }
     }
+
+    return bestMatch
+      ? {
+          descriptor: bestMatch.descriptor,
+          params: bestMatch.params
+        }
+      : undefined
   }
 
-  findMatchingClientIds(target: Omit<CapabilityTarget, 'clientId'>): string[] {
+  listAllowedMethods(clientId: string, path: string): HttpMethod[] {
+    const client = this.findClient(clientId)
+
+    if (!client) {
+      return []
+    }
+
+    const methods = new Set<HttpMethod>()
+
+    for (const descriptor of client.paths) {
+      if (!matchPathPattern(descriptor.path, path)) {
+        continue
+      }
+
+      methods.add(descriptor.type === 'endpoint' ? descriptor.method : 'GET')
+    }
+
+    return [...methods]
+  }
+
+  hasTarget(target: PathTarget): boolean {
+    return this.resolveTarget(target.clientId, target.method, target.path) !== undefined
+  }
+
+  findMatchingClientIds(target: Omit<PathTarget, 'clientId'>): string[] {
     return this.listRegisteredClients()
       .map((snapshot) => snapshot.descriptor)
-      .filter((descriptor) => {
-        switch (target.kind) {
-          case 'tool':
-            return descriptor.tools.some((item) => item.name === target.name)
-          case 'prompt':
-            return descriptor.prompts.some((item) => item.name === target.name)
-          case 'skill':
-            return descriptor.skills.some((item) => item.name === target.name)
-          case 'resource':
-            return descriptor.resources.some((item) => item.uri === target.uri)
-        }
-      })
+      .filter((descriptor) =>
+        descriptor.paths.some((pathDescriptor) =>
+          matchesMethod(pathDescriptor, target.method) &&
+          matchPathPattern(pathDescriptor.path, target.path) !== undefined
+        )
+      )
       .map((descriptor) => descriptor.id)
   }
 
@@ -135,4 +175,154 @@ export class CapabilityIndex {
       ({ descriptor }) => descriptor.id === clientId
     )?.descriptor
   }
+}
+
+function matchesMethod(descriptor: PathDescriptor, method: HttpMethod): boolean {
+  return descriptor.type === 'endpoint' ? descriptor.method === method : method === 'GET'
+}
+
+function normalizeListPathsOptions(
+  optionsOrClientId: string | ListPathsOptions | undefined
+): ListPathsOptions {
+  if (typeof optionsOrClientId === 'string') {
+    return { clientId: optionsOrClientId }
+  }
+
+  return optionsOrClientId ?? {}
+}
+
+function normalizeSearch(search: string | undefined): string | undefined {
+  const normalized = search?.trim().toLowerCase()
+  return normalized ? normalized : undefined
+}
+
+function resolveDepthLimit(
+  depth: number | undefined,
+  search: string | undefined
+): number | undefined {
+  if (depth === undefined) {
+    return search ? undefined : 1
+  }
+
+  if (!Number.isSafeInteger(depth) || depth < 1) {
+    throw new Error('listPaths depth must be a positive integer')
+  }
+
+  return depth
+}
+
+function matchesClientSearch(client: ListedClient, search: string): boolean {
+  return matchesSearch(search, [
+    client.id,
+    client.name,
+    client.description,
+    client.version,
+    client.platform,
+    client.metadata,
+    client.status,
+    client.connectedAt,
+    client.lastSeenAt,
+    client.connection.mode,
+    client.connection.authSource,
+    client.connection.secure ? 'secure' : 'insecure',
+    ...client.paths.flatMap((pathDescriptor) => collectPathSearchTerms(pathDescriptor))
+  ])
+}
+
+function matchesPathSearch(descriptor: IndexedPathDescriptor, search: string): boolean {
+  return matchesSearch(search, collectPathSearchTerms(descriptor))
+}
+
+function collectPathSearchTerms(
+  descriptor: IndexedPathDescriptor | PathDescriptor
+): unknown[] {
+  const terms: unknown[] = [
+    'clientId' in descriptor ? descriptor.clientId : undefined,
+    'clientName' in descriptor ? descriptor.clientName : undefined,
+    descriptor.type,
+    descriptor.path,
+    descriptor.description,
+    descriptor.legacy,
+    'contentType' in descriptor ? descriptor.contentType : undefined
+  ]
+
+  if (descriptor.type === 'endpoint') {
+    terms.push(descriptor.method, descriptor.inputSchema, descriptor.outputSchema)
+  }
+
+  if (descriptor.type === 'prompt') {
+    terms.push(descriptor.inputSchema, descriptor.outputSchema)
+  }
+
+  if (
+    descriptor.legacy?.kind === 'tool' ||
+    descriptor.legacy?.kind === 'prompt' ||
+    descriptor.legacy?.kind === 'skill'
+  ) {
+    terms.push(descriptor.legacy.name)
+  }
+
+  if (descriptor.legacy?.kind === 'resource') {
+    terms.push(descriptor.legacy.uri, descriptor.legacy.name)
+  }
+
+  return terms
+}
+
+function matchesSearch(search: string, terms: unknown[]): boolean {
+  return terms.some((term) => normalizeSearchTerm(term)?.includes(search))
+}
+
+function normalizeSearchTerm(term: unknown): string | undefined {
+  if (term === undefined) {
+    return undefined
+  }
+
+  if (
+    term === null ||
+    typeof term === 'string' ||
+    typeof term === 'number' ||
+    typeof term === 'boolean'
+  ) {
+    return String(term).toLowerCase()
+  }
+
+  try {
+    return JSON.stringify(term).toLowerCase()
+  } catch {
+    return undefined
+  }
+}
+
+function getPathCatalogDepth(path: string): number {
+  const segments = path.split('/').filter(Boolean)
+
+  if (segments[0] === 'compat' && isCompatCategory(segments[1])) {
+    let logicalSegments = segments.slice(2)
+
+    if (logicalSegments[logicalSegments.length - 1] === 'prompt.md' || logicalSegments[logicalSegments.length - 1] === 'skill.md') {
+      logicalSegments = logicalSegments.slice(0, -1)
+    }
+
+    if (isCompatStableId(logicalSegments[logicalSegments.length - 1])) {
+      logicalSegments = logicalSegments.slice(0, -1)
+    }
+
+    return Math.max(1, logicalSegments.length - 1)
+  }
+
+  return Math.max(1, segments.length - 2)
+}
+
+function isCompatCategory(segment: string | undefined): boolean {
+  return (
+    segment === 'tools' ||
+    segment === 'prompts' ||
+    segment === 'skills' ||
+    segment === 'resources'
+  )
+}
+
+function isCompatStableId(segment: string | undefined): boolean {
+  return segment !== undefined && /^[0-9a-f]{8}$/i.test(segment)
 }

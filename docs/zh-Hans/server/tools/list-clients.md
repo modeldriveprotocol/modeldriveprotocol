@@ -11,31 +11,117 @@ status: MVP
 
 ## 输入
 
-`listClients` 不接收入参。
-
-```json
-{}
+```ts
+interface ListClientsInput {
+  search?: string
+}
 ```
 
 ## 输出
 
-```json
-{
-  "clients": []
+```ts
+type JsonPrimitive = boolean | number | string | null
+type JsonValue = JsonPrimitive | JsonObject | JsonValue[]
+
+interface JsonObject {
+  [key: string]: JsonValue
+}
+
+type JsonSchema = Record<string, unknown>
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+type ClientConnectionMode = 'ws' | 'http-loop'
+type ClientAuthSource =
+  | 'none'
+  | 'message'
+  | 'transport'
+  | 'transport+message'
+
+interface LegacyToolAlias {
+  kind: 'tool'
+  name: string
+}
+
+interface LegacyPromptAlias {
+  kind: 'prompt'
+  name: string
+}
+
+interface LegacySkillAlias {
+  kind: 'skill'
+  name: string
+}
+
+interface LegacyResourceAlias {
+  kind: 'resource'
+  uri: string
+  name?: string
+}
+
+type LegacyCapabilityAlias =
+  | LegacyToolAlias
+  | LegacyPromptAlias
+  | LegacySkillAlias
+  | LegacyResourceAlias
+
+interface BasePathDescriptor {
+  path: string
+  description?: string
+  legacy?: LegacyCapabilityAlias
+}
+
+interface EndpointPathDescriptor extends BasePathDescriptor {
+  type: 'endpoint'
+  method: HttpMethod
+  inputSchema?: JsonSchema
+  outputSchema?: JsonSchema
+  contentType?: string
+}
+
+interface SkillPathDescriptor extends BasePathDescriptor {
+  type: 'skill'
+  contentType?: string
+}
+
+interface PromptPathDescriptor extends BasePathDescriptor {
+  type: 'prompt'
+  inputSchema?: JsonSchema
+  outputSchema?: JsonSchema
+}
+
+type PathDescriptor =
+  | EndpointPathDescriptor
+  | SkillPathDescriptor
+  | PromptPathDescriptor
+
+interface ClientConnectionDescriptor {
+  mode: ClientConnectionMode
+  secure: boolean
+  authSource: ClientAuthSource
+}
+
+interface ListedClient {
+  id: string
+  name: string
+  description?: string
+  version?: string
+  platform?: string
+  metadata?: JsonObject
+  paths: PathDescriptor[]
+  status: 'online'
+  connectedAt: string
+  lastSeenAt: string
+  connection: ClientConnectionDescriptor
+}
+
+interface ListClientsOutput {
+  clients: ListedClient[]
 }
 ```
 
-`clients` 中的每个元素都是一个 `ListedClient`，包含：
-
-- `id`、`name` 与可选描述信息
-- `tools`、`prompts`、`skills`、`resources`
-- `status`、`connectedAt`、`lastSeenAt`
-- `connection.mode`、`connection.secure`、`connection.authSource`
-
-`connection.mode` 只会是 `ws` 或 `http-loop`。
+`search` 会按大小写不敏感的子串匹配 client 字段和已注册路径数据。
 
 ## 适合什么时候用
 
 - 先确认某个运行时是否真的连上了
-- 先看一眼能力摘要，再决定往哪个能力类型继续钻
+- 先看一眼路径摘要，再决定往哪个 client 或 descriptor 继续钻
 - 排查 transport 模式或 auth 来源

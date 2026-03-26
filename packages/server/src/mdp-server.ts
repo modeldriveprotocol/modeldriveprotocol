@@ -1,15 +1,24 @@
 import type {
   AuthContext,
-  ClientCapabilityUpdate,
   ClientDescriptor,
   ClientToServerMessage,
+  PathDescriptor,
   ListedClient
 } from '@modeldriveprotocol/protocol'
 import { createSerializedError } from '@modeldriveprotocol/protocol'
 
-import { type CapabilityTarget, type RegisteredClientSnapshot, CapabilityIndex } from './capability-index.js'
+import {
+  type ListClientsOptions,
+  type PathTarget,
+  type RegisteredClientSnapshot,
+  CapabilityIndex
+} from './capability-index.js'
 import { type ClientSessionTransport, ClientSession } from './client-session.js'
-import { type InvocationRequest, InvocationRouter } from './invocation-router.js'
+import {
+  type InvocationRequest,
+  type ResolvedInvocationRequest,
+  InvocationRouter
+} from './invocation-router.js'
 
 export interface RegistrationAuthorizationContext {
   session: ClientSession
@@ -18,7 +27,7 @@ export interface RegistrationAuthorizationContext {
   transportAuth?: AuthContext
 }
 
-export interface InvocationAuthorizationContext extends InvocationRequest {
+export interface InvocationAuthorizationContext extends ResolvedInvocationRequest {
   session: ClientSession
   registeredAuth?: AuthContext
   transportAuth?: AuthContext
@@ -81,7 +90,6 @@ export class MdpServerRuntime {
     this.capabilityIndex = new CapabilityIndex(() => this.getRegisteredSnapshots())
     this.invocationRouter = new InvocationRouter(
       (clientId) => this.sessionsByClientId.get(clientId),
-      this.capabilityIndex,
       options.invocationTimeoutMs ?? DEFAULT_INVOCATION_TIMEOUT_MS
     )
   }
@@ -105,8 +113,8 @@ export class MdpServerRuntime {
       case 'unregisterClient':
         this.unregisterClient(session, message.clientId)
         return
-      case 'updateClientCapabilities':
-        this.updateClientCapabilities(session, message.clientId, message.capabilities)
+      case 'updateClientCatalog':
+        this.updateClientCatalog(session, message.clientId, message.paths)
         return
       case 'callClientResult':
         this.invocationRouter.resolve(message)
@@ -154,8 +162,8 @@ export class MdpServerRuntime {
     session.close()
   }
 
-  listClients(): ListedClient[] {
-    return this.capabilityIndex.listClients()
+  listClients(options: ListClientsOptions = {}): ListedClient[] {
+    return this.capabilityIndex.listClients(options)
   }
 
   invoke(request: InvocationRequest) {
@@ -165,17 +173,19 @@ export class MdpServerRuntime {
       throw new Error(`Client "${request.clientId}" is not connected`)
     }
 
+    const resolved = this.resolveInvocation(request)
+
     this.authorizeInvocation?.({
-      ...request,
+      ...resolved,
       session,
       ...(session.registeredAuth ? { registeredAuth: session.registeredAuth } : {}),
       ...(session.transportAuth ? { transportAuth: session.transportAuth } : {})
     })
 
-    return this.invocationRouter.invoke(request)
+    return this.invocationRouter.invoke(resolved)
   }
 
-  findMatchingClientIds(target: Omit<CapabilityTarget, 'clientId'>): string[] {
+  findMatchingClientIds(target: Omit<PathTarget, 'clientId'>): string[] {
     return this.capabilityIndex.findMatchingClientIds(target)
   }
 
@@ -311,10 +321,10 @@ export class MdpServerRuntime {
     session.unregister()
   }
 
-  private updateClientCapabilities(
+  private updateClientCatalog(
     session: ClientSession,
     clientId: string,
-    capabilities: ClientCapabilityUpdate
+    paths: PathDescriptor[]
   ): void {
     if (!session.descriptor || session.clientId !== clientId) {
       throw new Error(`Client "${clientId}" is not registered on this session`)
@@ -323,10 +333,7 @@ export class MdpServerRuntime {
     const descriptor = session.descriptor
     const nextDescriptor: ClientDescriptor = {
       ...descriptor,
-      ...(capabilities.tools ? { tools: capabilities.tools } : {}),
-      ...(capabilities.prompts ? { prompts: capabilities.prompts } : {}),
-      ...(capabilities.skills ? { skills: capabilities.skills } : {}),
-      ...(capabilities.resources ? { resources: capabilities.resources } : {})
+      paths
     }
 
     session.register(nextDescriptor, session.registeredAuth)
@@ -347,6 +354,26 @@ export class MdpServerRuntime {
         lastSeenAt: session.lastSeenAt,
         connection: session.connection
       }))
+  }
+
+  private resolveInvocation(request: InvocationRequest): ResolvedInvocationRequest {
+    const resolved = this.capabilityIndex.resolveTarget(
+      request.clientId,
+      request.method,
+      request.path
+    )
+
+    if (!resolved) {
+      throw new Error(
+        `Path "${request.path}" with method "${request.method}" was not found on client "${request.clientId}"`
+      )
+    }
+
+    return {
+      ...request,
+      type: resolved.descriptor.type,
+      params: resolved.params
+    }
   }
 }
 

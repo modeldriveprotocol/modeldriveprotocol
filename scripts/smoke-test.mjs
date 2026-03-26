@@ -66,7 +66,7 @@ mdpClient
       }
     ]
   }))
-  .exposeSkill('page/review', async () => ({
+  .exposeSkill('page/review/files', async () => ({
     findings: ['No issues found']
   }))
   .exposeResource('webpage://active-tab/selection', async () => ({
@@ -103,12 +103,25 @@ try {
     'MCP bridge should expose listClients'
   )
   assert.ok(
+    listedTools.tools.some((tool) => tool.name === 'listPaths'),
+    'MCP bridge should expose listPaths'
+  )
+  assert.ok(
+    listedTools.tools.some((tool) => tool.name === 'callPath'),
+    'MCP bridge should expose callPath'
+  )
+  assert.ok(
+    listedTools.tools.some((tool) => tool.name === 'callPaths'),
+    'MCP bridge should expose callPaths'
+  )
+  assert.ok(
     listedTools.tools.some((tool) => tool.name === 'callTools'),
     'MCP bridge should expose callTools'
   )
 
   const listClientsResult = await mcpClient.callTool({
-    name: 'listClients'
+    name: 'listClients',
+    arguments: {}
   })
   assert.notEqual(listClientsResult.isError, true)
   assert.equal(listClientsResult.structuredContent?.clients?.length, 1)
@@ -120,6 +133,110 @@ try {
     listClientsResult.structuredContent?.clients?.[0]?.connection?.authSource,
     'message'
   )
+  const searchedClientsResult = await mcpClient.callTool({
+    name: 'listClients',
+    arguments: {
+      search: 'browser'
+    }
+  })
+  assert.notEqual(searchedClientsResult.isError, true)
+  assert.equal(searchedClientsResult.structuredContent?.clients?.length, 1)
+
+  const defaultListPathsResult = await mcpClient.callTool({
+    name: 'listPaths',
+    arguments: {
+      clientId: 'browser-01'
+    }
+  })
+  assert.notEqual(defaultListPathsResult.isError, true)
+  assert.equal(defaultListPathsResult.structuredContent?.paths?.length, 2)
+
+  const searchedPathsResult = await mcpClient.callTool({
+    name: 'listPaths',
+    arguments: {
+      clientId: 'browser-01',
+      search: 'review/files'
+    }
+  })
+  assert.notEqual(searchedPathsResult.isError, true)
+  assert.equal(searchedPathsResult.structuredContent?.paths?.length, 1)
+  assert.equal(
+    searchedPathsResult.structuredContent?.paths?.[0]?.legacy?.name,
+    'page/review/files'
+  )
+  assert.match(
+    searchedPathsResult.structuredContent?.paths?.[0]?.path ?? '',
+    /^\/compat\/skills\/page\/review\/files\/[0-9a-f]{8}\/skill\.md$/
+  )
+
+  const listPathsResult = await mcpClient.callTool({
+    name: 'listPaths',
+    arguments: {
+      clientId: 'browser-01',
+      depth: Number.MAX_SAFE_INTEGER
+    }
+  })
+  assert.notEqual(listPathsResult.isError, true)
+  assert.equal(listPathsResult.structuredContent?.paths?.length, 4)
+
+  const searchDomPath = findLegacyPath(
+    listPathsResult.structuredContent?.paths,
+    'tool',
+    'searchDom'
+  )
+  const summarizeSelectionPath = findLegacyPath(
+    listPathsResult.structuredContent?.paths,
+    'prompt',
+    'summarizeSelection'
+  )
+  const reviewSkillPath = findLegacyPath(
+    listPathsResult.structuredContent?.paths,
+    'skill',
+    'page/review/files'
+  )
+  const selectionResourcePath = findLegacyPath(
+    listPathsResult.structuredContent?.paths,
+    'resource',
+    'webpage://active-tab/selection'
+  )
+  assert.equal(searchDomPath?.method, 'POST')
+  assert.equal(summarizeSelectionPath?.type, 'prompt')
+  assert.equal(reviewSkillPath?.type, 'skill')
+  assert.equal(selectionResourcePath?.method, 'GET')
+
+  const callPathResult = await mcpClient.callTool({
+    name: 'callPath',
+    arguments: {
+      clientId: 'browser-01',
+      method: 'POST',
+      path: searchDomPath.path,
+      body: {
+        query: 'mdp'
+      },
+      auth: {
+        token: 'host-token'
+      }
+    }
+  })
+  assert.notEqual(callPathResult.isError, true)
+  assert.equal(callPathResult.structuredContent?.data?.matches, 3)
+  assert.equal(callPathResult.structuredContent?.data?.authToken, 'host-token')
+
+  const callPathsResult = await mcpClient.callTool({
+    name: 'callPaths',
+    arguments: {
+      method: 'POST',
+      path: searchDomPath.path,
+      body: {
+        query: 'mdp'
+      }
+    }
+  })
+  assert.notEqual(callPathsResult.isError, true)
+  assert.equal(callPathsResult.structuredContent?.results?.length, 1)
+  assert.equal(callPathsResult.structuredContent?.results?.[0]?.clientId, 'browser-01')
+  assert.equal(callPathsResult.structuredContent?.results?.[0]?.ok, true)
+  assert.equal(callPathsResult.structuredContent?.results?.[0]?.data?.matches, 3)
 
   const listRemoteToolsResult = await mcpClient.callTool({
     name: 'listTools',
@@ -216,5 +333,17 @@ async function allocatePort() {
         resolve(address.port)
       })
     })
+  })
+}
+
+function findLegacyPath(paths, kind, identifier) {
+  return paths?.find((path) => {
+    if (path?.legacy?.kind !== kind) {
+      return false
+    }
+
+    return kind === 'resource'
+      ? path.legacy.uri === identifier
+      : path.legacy.name === identifier
   })
 }

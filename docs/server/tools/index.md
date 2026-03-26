@@ -12,33 +12,29 @@ The server exposes one fixed MCP bridge surface. It does not generate one MCP to
 | Task                                            | Start here                                                                                                                                                               |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | See which clients are online                    | [listClients](/server/tools/list-clients)                                                                                                                                |
-| See a capability catalog by kind                | [listTools](/server/tools/list-tools), [listPrompts](/server/tools/list-prompts), [listSkills](/server/tools/list-skills), [listResources](/server/tools/list-resources) |
-| Invoke one exact capability on one exact client | [callTools](/server/tools/call-tools), [getPrompt](/server/tools/get-prompt), [callSkills](/server/tools/call-skills), [readResource](/server/tools/read-resource)       |
-| Fan out one invocation to multiple clients      | [callClients](/server/tools/call-clients)                                                                                                                                |
+| See the canonical path catalog                  | [listPaths](/server/tools/list-paths)                                                                                                                                     |
+| Invoke one exact path on one exact client       | [callPath](/server/tools/call-path)                                                                                                                                       |
+| Fan out one path invocation to multiple clients | [callPaths](/server/tools/call-paths)                                                                                                                                     |
+| Need migration context for legacy aliases       | Read the compatibility note below                                                                                                                                        |
 
 ## Discovery tools
 
-| Tool                                          | Returns                                            |
-| --------------------------------------------- | -------------------------------------------------- |
-| [listClients](/server/tools/list-clients)     | Connected client summaries and connection metadata |
-| [listTools](/server/tools/list-tools)         | Indexed tool descriptors                           |
-| [listPrompts](/server/tools/list-prompts)     | Indexed prompt descriptors                         |
-| [listSkills](/server/tools/list-skills)       | Indexed skill descriptors                          |
-| [listResources](/server/tools/list-resources) | Indexed resource descriptors                       |
+| Tool                                      | Returns                                            | Notes                                                                |
+| ----------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------- |
+| [listClients](/server/tools/list-clients) | Connected client summaries and connection metadata | Supports case-insensitive `search` across client fields and catalog  |
+| [listPaths](/server/tools/list-paths)     | Canonical indexed path descriptors                 | Supports `clientId`, `search`, and `depth`; default depth is one     |
 
 ## Invocation tools
 
 | Tool                                        | Use when                                               |
 | ------------------------------------------- | ------------------------------------------------------ |
-| [callTools](/server/tools/call-tools)       | You know one client ID and one tool name               |
-| [getPrompt](/server/tools/get-prompt)       | You know one client ID and one prompt name             |
-| [callSkills](/server/tools/call-skills)     | You know one client ID and one skill name              |
-| [readResource](/server/tools/read-resource) | You know one client ID and one resource URI            |
-| [callClients](/server/tools/call-clients)   | You want a generic entry point or multi-client fan-out |
+| [callPath](/server/tools/call-path)         | You know one client ID plus one exact `method + path`  |
+| [callPaths](/server/tools/call-paths)       | You want canonical fan-out by `method + path`          |
 
-## Shared input fields
+## Compatibility aliases
 
-Most invocation tools accept optional `args` and `auth`.
+The server still exposes legacy alias names such as `listTools`, `listPrompts`, `listSkills`, `listResources`, `callTools`, `getPrompt`, `callSkills`, `readResource`, and `callClients` for migration.
+They are compatibility shims on top of the canonical path model and are intentionally not documented as first-class pages anymore.
 
 `auth` is forwarded to the client as `callClient.auth`:
 
@@ -55,41 +51,7 @@ Most invocation tools accept optional `args` and `auth`.
 }
 ```
 
-`args` is a free-form JSON object:
-
-```json
-{
-  "query": "mdp",
-  "limit": 10
-}
-```
-
-## Shared result shapes
-
-Most invocation tools return one of these shapes:
-
-Success:
-
-```json
-{
-  "ok": true,
-  "data": {}
-}
-```
-
-Failure:
-
-```json
-{
-  "ok": false,
-  "error": {
-    "code": "handler_error",
-    "message": "Something failed"
-  }
-}
-```
-
-Discovery tools return named arrays such as `clients`, `tools`, `prompts`, `skills`, or `resources`.
+Legacy invocation aliases continue to accept `args` plus optional `auth`.
 
 ## Direct HTTP skill reads
 

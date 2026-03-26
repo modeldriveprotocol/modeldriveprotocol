@@ -1,8 +1,9 @@
 import type {
   AuthContext,
   CallClientResultMessage,
-  CapabilityKind,
-  RpcArguments,
+  HttpMethod,
+  JsonValue,
+  RpcArguments
 } from '@modeldriveprotocol/protocol'
 
 import type { MdpServerRuntime } from './mdp-server.js'
@@ -10,80 +11,44 @@ import type { MdpServerRuntime } from './mdp-server.js'
 export type BridgeRequest =
   | {
       method: 'listClients'
+      params?: {
+        search?: string
+      }
     }
   | {
-      method: 'callClients'
+      method: 'listPaths'
+      params?: {
+        clientId?: string
+        search?: string
+        depth?: number
+      }
+    }
+  | {
+      method: 'callPath'
+      params: {
+        clientId: string
+        method: HttpMethod
+        path: string
+        query?: RpcArguments
+        body?: JsonValue
+        headers?: Record<string, string>
+        auth?: AuthContext
+      }
+    }
+  | {
+      method: 'callPaths'
       params: {
         clientIds?: string[]
-        kind: CapabilityKind
-        name?: string
-        uri?: string
-        args?: RpcArguments
-        auth?: AuthContext
-      }
-    }
-  | {
-      method: 'listTools'
-      params?: {
-        clientId?: string
-      }
-    }
-  | {
-      method: 'callTools'
-      params: {
-        clientId: string
-        toolName: string
-        args?: RpcArguments
-        auth?: AuthContext
-      }
-    }
-  | {
-      method: 'listPrompts'
-      params?: {
-        clientId?: string
-      }
-    }
-  | {
-      method: 'getPrompt'
-      params: {
-        clientId: string
-        promptName: string
-        args?: RpcArguments
-        auth?: AuthContext
-      }
-    }
-  | {
-      method: 'listSkills'
-      params?: {
-        clientId?: string
-      }
-    }
-  | {
-      method: 'callSkills'
-      params: {
-        clientId: string
-        skillName: string
-        args?: RpcArguments
-        auth?: AuthContext
-      }
-    }
-  | {
-      method: 'listResources'
-      params?: {
-        clientId?: string
-      }
-    }
-  | {
-      method: 'readResource'
-      params: {
-        clientId: string
-        uri: string
-        args?: RpcArguments
+        method: HttpMethod
+        path: string
+        query?: RpcArguments
+        body?: JsonValue
+        headers?: Record<string, string>
         auth?: AuthContext
       }
     }
 
-export interface BridgeCallClientsResultEntry {
+export interface BridgeCallPathsResultEntry {
   clientId: string
   ok: boolean
   data?: unknown
@@ -97,15 +62,28 @@ export async function executeBridgeRequest(
   switch (request.method) {
     case 'listClients':
       return {
-        clients: runtime.listClients()
+        clients: runtime.listClients(request.params)
       }
-    case 'callClients': {
+    case 'listPaths':
+      return {
+        paths: runtime.capabilityIndex.listPaths(request.params)
+      }
+    case 'callPath':
+      return await runtime.invoke({
+        clientId: request.params.clientId,
+        method: request.params.method,
+        path: request.params.path,
+        ...(request.params.query ? { query: request.params.query } : {}),
+        ...(request.params.body !== undefined ? { body: request.params.body } : {}),
+        ...(request.params.headers ? { headers: request.params.headers } : {}),
+        ...(request.params.auth ? { auth: request.params.auth } : {})
+      })
+    case 'callPaths': {
       const targets = request.params.clientIds && request.params.clientIds.length > 0
         ? request.params.clientIds
         : runtime.findMatchingClientIds({
-            kind: request.params.kind,
-            ...(request.params.name ? { name: request.params.name } : {}),
-            ...(request.params.uri ? { uri: request.params.uri } : {})
+            method: request.params.method,
+            path: request.params.path
           })
 
       if (targets.length === 0) {
@@ -118,66 +96,19 @@ export async function executeBridgeRequest(
           ...(await unwrapInvocation(
             runtime.invoke({
               clientId,
-              kind: request.params.kind,
-              ...(request.params.name ? { name: request.params.name } : {}),
-              ...(request.params.uri ? { uri: request.params.uri } : {}),
-              ...(request.params.args ? { args: request.params.args } : {}),
+              method: request.params.method,
+              path: request.params.path,
+              ...(request.params.query ? { query: request.params.query } : {}),
+              ...(request.params.body !== undefined ? { body: request.params.body } : {}),
+              ...(request.params.headers ? { headers: request.params.headers } : {}),
               ...(request.params.auth ? { auth: request.params.auth } : {})
             })
           ))
         }))
       )
 
-      return { results: results as BridgeCallClientsResultEntry[] }
+      return { results: results as BridgeCallPathsResultEntry[] }
     }
-    case 'listTools':
-      return {
-        tools: runtime.capabilityIndex.listTools(request.params?.clientId)
-      }
-    case 'callTools':
-      return await runtime.invoke({
-        clientId: request.params.clientId,
-        kind: 'tool',
-        name: request.params.toolName,
-        ...(request.params.args ? { args: request.params.args } : {}),
-        ...(request.params.auth ? { auth: request.params.auth } : {})
-      })
-    case 'listPrompts':
-      return {
-        prompts: runtime.capabilityIndex.listPrompts(request.params?.clientId)
-      }
-    case 'getPrompt':
-      return await runtime.invoke({
-        clientId: request.params.clientId,
-        kind: 'prompt',
-        name: request.params.promptName,
-        ...(request.params.args ? { args: request.params.args } : {}),
-        ...(request.params.auth ? { auth: request.params.auth } : {})
-      })
-    case 'listSkills':
-      return {
-        skills: runtime.capabilityIndex.listSkills(request.params?.clientId)
-      }
-    case 'callSkills':
-      return await runtime.invoke({
-        clientId: request.params.clientId,
-        kind: 'skill',
-        name: request.params.skillName,
-        ...(request.params.args ? { args: request.params.args } : {}),
-        ...(request.params.auth ? { auth: request.params.auth } : {})
-      })
-    case 'listResources':
-      return {
-        resources: runtime.capabilityIndex.listResources(request.params?.clientId)
-      }
-    case 'readResource':
-      return await runtime.invoke({
-        clientId: request.params.clientId,
-        kind: 'resource',
-        uri: request.params.uri,
-        ...(request.params.args ? { args: request.params.args } : {}),
-        ...(request.params.auth ? { auth: request.params.auth } : {})
-      })
   }
 }
 
