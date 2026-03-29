@@ -86,7 +86,7 @@ apps/chrome-extension/dist/chrome-mv3-dev
 - `.github/workflows/chrome-extension-ci.yml`
   runs on pull requests, pushes to `main`, and manual dispatch when the extension or its shared client/protocol dependencies change. It typechecks, tests, builds with WXT, packages `dist/chrome-mv3` into a zip, and uploads the artifact.
 - `.github/workflows/chrome-extension-release.yml`
-  runs on tags that match `chrome-extension-v*`. It validates that the tag version matches `apps/chrome-extension/package.json`, builds the extension with WXT, checks the generated manifest version, then creates or updates a GitHub release with the packaged extension zip.
+  runs on tags that match `chrome-extension-v*`. It validates that the tag version matches `apps/chrome-extension/package.json`, builds the extension with WXT, checks the generated manifest version, and packages the extension zip. When `CHROME_WEB_STORE_*` repository variables and secrets are configured, it also uploads the zip to the Chrome Web Store and submits the item for publishing before creating or updating the GitHub release.
 
 Example release tag:
 

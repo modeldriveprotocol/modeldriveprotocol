@@ -97,6 +97,119 @@ jobs:
           name: ${{ needs.build.outputs.artifact_name }}
           path: dist
 
+      - name: Publish to Chrome Web Store
+        env:
+          ARCHIVE_PATH: dist/${{ needs.build.outputs.archive_file }}
+          CHROME_WEB_STORE_CLIENT_ID: ${{ secrets.CHROME_WEB_STORE_CLIENT_ID }}
+          CHROME_WEB_STORE_CLIENT_SECRET: ${{ secrets.CHROME_WEB_STORE_CLIENT_SECRET }}
+          CHROME_WEB_STORE_EXTENSION_ID: ${{ vars.CHROME_WEB_STORE_EXTENSION_ID }}
+          CHROME_WEB_STORE_PUBLISHER_ID: ${{ vars.CHROME_WEB_STORE_PUBLISHER_ID }}
+          CHROME_WEB_STORE_REFRESH_TOKEN: ${{ secrets.CHROME_WEB_STORE_REFRESH_TOKEN }}
+        run: |
+          for required in \
+            CHROME_WEB_STORE_EXTENSION_ID \
+            CHROME_WEB_STORE_PUBLISHER_ID \
+            CHROME_WEB_STORE_CLIENT_ID \
+            CHROME_WEB_STORE_CLIENT_SECRET \
+            CHROME_WEB_STORE_REFRESH_TOKEN
+          do
+            if [ -z "${!required}" ]; then
+              echo "Skipping Chrome Web Store publish because $required is not configured."
+              exit 0
+            fi
+          done
+
+          ACCESS_TOKEN_RESPONSE=$(curl --fail-with-body -sS https://oauth2.googleapis.com/token \
+            -d "client_id=$CHROME_WEB_STORE_CLIENT_ID" \
+            -d "client_secret=$CHROME_WEB_STORE_CLIENT_SECRET" \
+            -d "refresh_token=$CHROME_WEB_STORE_REFRESH_TOKEN" \
+            -d "grant_type=refresh_token")
+
+          ACCESS_TOKEN=$(node -e "
+            const data = JSON.parse(process.argv[1]);
+            if (!data.access_token) {
+              console.error('OAuth token response did not include access_token.');
+              process.exit(1);
+            }
+            process.stdout.write(data.access_token);
+          " "$ACCESS_TOKEN_RESPONSE")
+
+          ITEM_NAME="publishers/$CHROME_WEB_STORE_PUBLISHER_ID/items/$CHROME_WEB_STORE_EXTENSION_ID"
+
+          UPLOAD_RESPONSE=$(curl --fail-with-body -sS \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/zip" \
+            -X POST \
+            -T "$ARCHIVE_PATH" \
+            "https://chromewebstore.googleapis.com/upload/v2/$ITEM_NAME:upload")
+
+          UPLOAD_STATE=$(node -e "
+            const data = JSON.parse(process.argv[1]);
+            if (!data.uploadState) {
+              console.error('Upload response did not include uploadState.');
+              process.exit(1);
+            }
+            process.stdout.write(data.uploadState);
+          " "$UPLOAD_RESPONSE")
+
+          if [ "$UPLOAD_STATE" = "IN_PROGRESS" ]; then
+            echo "Chrome Web Store upload is processing asynchronously. Polling status."
+            for attempt in $(seq 1 12); do
+              sleep 10
+              STATUS_RESPONSE=$(curl --fail-with-body -sS \
+                -H "Authorization: Bearer $ACCESS_TOKEN" \
+                "https://chromewebstore.googleapis.com/v2/$ITEM_NAME:fetchStatus")
+
+              UPLOAD_STATE=$(node -e "
+                const data = JSON.parse(process.argv[1]);
+                process.stdout.write(data.lastAsyncUploadState || 'NOT_FOUND');
+              " "$STATUS_RESPONSE")
+
+              echo "Chrome Web Store upload state: $UPLOAD_STATE"
+
+              if [ "$UPLOAD_STATE" = "SUCCEEDED" ]; then
+                break
+              fi
+
+              if [ "$UPLOAD_STATE" = "FAILED" ]; then
+                echo "Chrome Web Store upload failed." >&2
+                exit 1
+              fi
+            done
+          fi
+
+          if [ "$UPLOAD_STATE" != "SUCCEEDED" ]; then
+            echo "Chrome Web Store upload did not reach SUCCEEDED. Final state: $UPLOAD_STATE" >&2
+            exit 1
+          fi
+
+          PUBLISH_RESPONSE=$(curl --fail-with-body -sS \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -X POST \
+            -d '{}' \
+            "https://chromewebstore.googleapis.com/v2/$ITEM_NAME:publish")
+
+          PUBLISH_STATE=$(node -e "
+            const data = JSON.parse(process.argv[1]);
+            if (!data.state) {
+              console.error('Publish response did not include state.');
+              process.exit(1);
+            }
+            process.stdout.write(data.state);
+          " "$PUBLISH_RESPONSE")
+
+          case "$PUBLISH_STATE" in
+            PENDING_REVIEW|STAGED|PUBLISHED|PUBLISHED_TO_TESTERS)
+              ;;
+            *)
+              echo "Chrome Web Store publish returned unexpected state: $PUBLISH_STATE" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "Chrome Web Store publish state: $PUBLISH_STATE"
+
       - name: Create or update GitHub release
         env:
           ARCHIVE_PATH: dist/${{ needs.build.outputs.archive_file }}

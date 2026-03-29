@@ -16,7 +16,7 @@ If the target is `@modeldriveprotocol/browser-simple-mdp-client`, do not use thi
 
 ## Chrome extension
 
-Use this path when you want a packaged Chrome extension zip attached to a GitHub release.
+Use this path when you want a packaged Chrome extension zip attached to a GitHub release and, when repository credentials are configured, submitted to the Chrome Web Store.
 
 ### Operator steps
 
@@ -36,6 +36,8 @@ Use this path when you want a packaged Chrome extension zip attached to a GitHub
 - builds the Chrome extension
 - packages `apps/chrome-extension/dist/chrome-mv3` into a zip
 - uploads the packaged artifact inside the workflow
+- refreshes an OAuth access token for the Chrome Web Store API when repository credentials are configured
+- uploads the zip to the configured Chrome Web Store item and submits it for publishing
 - creates or updates a GitHub release for the tag and attaches the zip
 
 ## VSCode extension
@@ -65,6 +67,11 @@ Use this path when you want to publish a VSIX to the VS Code Marketplace and als
 
 ## Required repository setup
 
+- repository variable `CHROME_WEB_STORE_EXTENSION_ID`
+- repository variable `CHROME_WEB_STORE_PUBLISHER_ID`
+- secret `CHROME_WEB_STORE_CLIENT_ID`
+- secret `CHROME_WEB_STORE_CLIENT_SECRET`
+- secret `CHROME_WEB_STORE_REFRESH_TOKEN`
 - repository variable `VSCODE_EXTENSION_PUBLISHER`
 - secret `VSCE_PAT`
 

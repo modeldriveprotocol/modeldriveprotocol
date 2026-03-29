@@ -16,7 +16,7 @@ status: Draft
 
 ## Chrome 插件发布
 
-当你要产出一个可下载的 Chrome 扩展 zip，并把它挂到 GitHub Release 时，走这条路径。
+当你要产出一个可下载的 Chrome 扩展 zip，并把它挂到 GitHub Release，且在仓库凭据已配置时同步提交到 Chrome Web Store 时，走这条路径。
 
 ### 操作步骤
 
@@ -36,6 +36,8 @@ status: Draft
 - 构建 Chrome 扩展
 - 把 `apps/chrome-extension/dist/chrome-mv3` 打成 zip
 - 在 workflow 内上传构件
+- 在仓库凭据存在时刷新 Chrome Web Store API access token
+- 把 zip 上传到配置好的 Chrome Web Store 条目并提交发布
 - 创建或更新对应 tag 的 GitHub Release，并附上 zip
 
 ## VSCode 插件发布
@@ -65,6 +67,11 @@ status: Draft
 
 ## 仓库前置条件
 
+- repository variable `CHROME_WEB_STORE_EXTENSION_ID`
+- repository variable `CHROME_WEB_STORE_PUBLISHER_ID`
+- secret `CHROME_WEB_STORE_CLIENT_ID`
+- secret `CHROME_WEB_STORE_CLIENT_SECRET`
+- secret `CHROME_WEB_STORE_REFRESH_TOKEN`
 - repository variable `VSCODE_EXTENSION_PUBLISHER`
 - secret `VSCE_PAT`
 
