@@ -52,7 +52,7 @@ interface HttpLoopSessionEntry {
 
 interface SkillHttpTarget {
   clientId: string
-  skillName: string
+  path: string
 }
 
 export interface MdpTransportServerOptions {
@@ -429,13 +429,14 @@ export class MdpTransportServer {
       return
     }
 
-    const descriptor = this.runtime.capabilityIndex.getSkill(
+    const resolved = this.runtime.capabilityIndex.resolveTarget(
       target.clientId,
-      target.skillName
+      'GET',
+      target.path
     )
     const requestAuth = this.extractTransportAuth(request)
 
-    if (!descriptor) {
+    if (!resolved || resolved.descriptor.type !== 'skill') {
       response.statusCode = 404
       response.end()
       return
@@ -443,12 +444,10 @@ export class MdpTransportServer {
 
     const result = await this.runtime.invoke({
       clientId: target.clientId,
-      kind: 'skill',
-      name: target.skillName,
-      args: {
-        query: readQueryParams(url),
-        headers: readRequestHeaders(request)
-      },
+      method: 'GET',
+      path: target.path,
+      query: readQueryParams(url),
+      headers: readRequestHeaders(request),
       ...(requestAuth ? { auth: requestAuth } : {})
     })
 
@@ -459,7 +458,7 @@ export class MdpTransportServer {
       return
     }
 
-    this.writeSkillResponse(response, descriptor.contentType, result.data)
+    this.writeSkillResponse(response, resolved.descriptor.contentType, result.data)
   }
 
   private async handleHttpLoopConnect(
@@ -953,7 +952,7 @@ function parseSkillHttpTarget(pathname: string): SkillHttpTarget | undefined {
 
     return {
       clientId: decodePathPart(parts[0] ?? ''),
-      skillName: decodeSkillPath(parts.slice(1))
+      path: decodeSkillPath(parts.slice(1))
     }
   }
 
@@ -972,12 +971,12 @@ function parseSkillHttpTarget(pathname: string): SkillHttpTarget | undefined {
 
   return {
     clientId: decodePathPart(clientId),
-    skillName: decodeSkillPath(remainder.split('/'))
+    path: decodeSkillPath(remainder.split('/'))
   }
 }
 
 function decodeSkillPath(parts: string[]): string {
-  return parts.map((part) => decodePathPart(part)).join('/')
+  return `/${parts.map((part) => decodePathPart(part)).join('/')}/skill.md`
 }
 
 function decodePathPart(value: string): string {

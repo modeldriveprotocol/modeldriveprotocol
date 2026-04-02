@@ -1,33 +1,43 @@
 import {
   type AuthContext,
   type CallClientMessage,
-  type ClientCapabilityUpdate,
+  type HttpMethod,
+  type PathDescriptor,
   type ServerToClientMessage,
   createSerializedError
 } from '@modeldriveprotocol/protocol'
 
-import {
-  createDefaultTransport,
-  hasCapabilityUpdate,
-  resolveServerUrl
-} from './transport/client-connection.js'
+import { createDefaultTransport, resolveServerUrl } from './transport/client-connection.js'
 import { ProcedureRegistry } from './runtime/procedure-registry.js'
+import {
+  createLegacyPromptPath,
+  createLegacyResourcePath,
+  createLegacySkillPath,
+  createLegacyToolPath
+} from './runtime/legacy-capability-paths.js'
 import { MdpClientReconnectController } from './runtime/reconnect-controller.js'
 import { authenticateTransport } from './transport/transport-auth.js'
 import type {
-  CapabilityHandler,
-  CapabilityInvocationMiddleware,
   ClientDescriptorOverride,
   ClientInfo,
   ClientTransport,
   ClientTransportAuthOptions,
-  ExposePromptOptions,
+  ExposeLegacyPromptOptions,
+  ExposePathOptions,
   ExposeResourceOptions,
-  ExposeSkillOptions,
   ExposeToolOptions,
+  ExposeLegacySkillOptions,
+  LegacyPromptHandler,
+  LegacyResourceHandler,
+  LegacySkillHandler,
+  LegacyToolHandler,
+  LegacyCapabilityContext,
   MdpClientOptions,
-  SkillDefinition,
-  SkillResolver
+  PathHandler,
+  PathInvocationContext,
+  PathRequest,
+  PathInvocationMiddleware,
+  StaticPathDefinition
 } from './types.js'
 
 export class MdpClient {
@@ -77,90 +87,156 @@ export class MdpClient {
     })
   }
 
-  useInvocationMiddleware(middleware: CapabilityInvocationMiddleware): this {
+  useInvocationMiddleware(middleware: PathInvocationMiddleware): this {
     this.registry.useInvocationMiddleware(middleware)
     return this
   }
 
-  removeInvocationMiddleware(middleware: CapabilityInvocationMiddleware): this {
+  removeInvocationMiddleware(middleware: PathInvocationMiddleware): this {
     this.registry.removeInvocationMiddleware(middleware)
+    return this
+  }
+
+  expose(
+    path: string,
+    definition: StaticPathDefinition | ExposePathOptions,
+    handler?: PathHandler
+  ): this {
+    this.registry.expose(path, definition, handler)
     return this
   }
 
   exposeTool(
     name: string,
-    handler: CapabilityHandler,
-    options?: ExposeToolOptions
+    handler: LegacyToolHandler,
+    options: ExposeToolOptions = {}
   ): this {
-    this.registry.exposeTool(name, handler, options)
-    return this
+    return this.expose(
+      createLegacyToolPath(name),
+      {
+        method: 'POST',
+        ...(options.description ? { description: options.description } : {}),
+        ...(options.inputSchema ? { inputSchema: options.inputSchema } : {}),
+        ...(options.outputSchema ? { outputSchema: options.outputSchema } : {}),
+        ...(options.contentType ? { contentType: options.contentType } : {}),
+        legacy: {
+          kind: 'tool',
+          name
+        }
+      },
+      async (request, context) => handler(readLegacyArgs(request), toLegacyContext(request, context))
+    )
   }
 
   exposePrompt(
     name: string,
-    handler: CapabilityHandler,
-    options?: ExposePromptOptions
+    definition: string | LegacyPromptHandler,
+    options: ExposeLegacyPromptOptions = {}
   ): this {
-    this.registry.exposePrompt(name, handler, options)
-    return this
+    const path = createLegacyPromptPath(name)
+
+    if (typeof definition === 'string') {
+      return this.expose(path, {
+        ...(options.description ? { description: options.description } : {}),
+        ...(options.inputSchema ? { inputSchema: options.inputSchema } : {}),
+        ...(options.outputSchema ? { outputSchema: options.outputSchema } : {}),
+        legacy: {
+          kind: 'prompt',
+          name
+        }
+      }, async () => ({
+        messages: [
+          {
+            role: 'user',
+            content: definition
+          }
+        ]
+      }))
+    }
+
+    return this.expose(
+      path,
+      {
+        ...(options.description ? { description: options.description } : {}),
+        ...(options.inputSchema ? { inputSchema: options.inputSchema } : {}),
+        ...(options.outputSchema ? { outputSchema: options.outputSchema } : {}),
+        legacy: {
+          kind: 'prompt',
+          name
+        }
+      },
+      async (request, context) => definition(
+        readLegacyArgs(request),
+        toLegacyContext(request, context)
+      )
+    )
   }
 
-  exposeSkill(name: string, content: string, options?: ExposeSkillOptions): this
   exposeSkill(
     name: string,
-    handler: CapabilityHandler,
-    options?: ExposeSkillOptions
-  ): this
-  exposeSkill(
-    name: string,
-    resolver: SkillResolver,
-    options?: ExposeSkillOptions
-  ): this
-  exposeSkill(
-    name: string,
-    definition: SkillDefinition,
-    options?: ExposeSkillOptions
+    definition: string | LegacySkillHandler | (() => unknown | Promise<unknown>),
+    options: ExposeLegacySkillOptions = {}
   ): this {
+    const path = createLegacySkillPath(name)
+
     if (typeof definition === 'string') {
-      this.registry.exposeSkill(name, definition, options)
-      return this
+      return this.expose(path, {
+        ...(options.description ? { description: options.description } : {}),
+        ...(options.contentType ? { contentType: options.contentType } : {}),
+        legacy: {
+          kind: 'skill',
+          name
+        }
+      }, async () => definition)
     }
 
-    if (options?.inputSchema === undefined) {
-      this.registry.exposeSkill(name, definition as SkillResolver, options)
-      return this
-    }
+    return this.expose(
+      path,
+      {
+        ...(options.description ? { description: options.description } : {}),
+        ...(options.contentType ? { contentType: options.contentType } : {}),
+        legacy: {
+          kind: 'skill',
+          name
+        }
+      },
+      async (request, context) => {
+        const legacyContext = toLegacyContext(request, context)
 
-    this.registry.exposeSkill(name, definition as CapabilityHandler, options)
-    return this
+        return definition.length <= 0
+          ? (definition as () => unknown | Promise<unknown>)()
+          : (definition as LegacySkillHandler)(
+              request.queries,
+              request.headers,
+              legacyContext
+            )
+      }
+    )
   }
 
   exposeResource(
     uri: string,
-    handler: CapabilityHandler,
-    options: ExposeResourceOptions
+    handler: LegacyResourceHandler,
+    options: ExposeResourceOptions = {}
   ): this {
-    this.registry.exposeResource(uri, handler, options)
-    return this
+    return this.expose(
+      createLegacyResourcePath(uri),
+      {
+        method: 'GET',
+        ...(options.description ? { description: options.description } : {}),
+        ...(options.mimeType ? { contentType: options.mimeType } : {}),
+        legacy: {
+          kind: 'resource',
+          uri,
+          ...(options.name ? { name: options.name } : {})
+        }
+      },
+      async (request, context) => handler(toLegacyContext(request, context))
+    )
   }
 
-  removeTool(name: string): this {
-    this.registry.removeTool(name)
-    return this
-  }
-
-  removePrompt(name: string): this {
-    this.registry.removePrompt(name)
-    return this
-  }
-
-  removeSkill(name: string): this {
-    this.registry.removeSkill(name)
-    return this
-  }
-
-  removeResource(uri: string): this {
-    this.registry.removeResource(uri)
+  unexpose(path: string, method?: HttpMethod): this {
+    this.registry.unexpose(path, method)
     return this
   }
 
@@ -215,43 +291,13 @@ export class MdpClient {
     return this.registry.describe(this.clientInfo)
   }
 
-  syncCapabilities(
-    capabilities: ClientCapabilityUpdate = this.registry.describeCapabilities()
-  ): void {
+  syncCatalog(paths: PathDescriptor[] = this.registry.describePaths()): void {
     this.ensureRegistered()
 
-    if (!hasCapabilityUpdate(capabilities)) {
-      throw new Error('Capability sync requires at least one capability group')
-    }
-
     this.transport.send({
-      type: 'updateClientCapabilities',
+      type: 'updateClientCatalog',
       clientId: this.clientInfo.id,
-      capabilities
-    })
-  }
-
-  syncTools(): void {
-    this.syncCapabilities({
-      tools: this.registry.describeTools()
-    })
-  }
-
-  syncPrompts(): void {
-    this.syncCapabilities({
-      prompts: this.registry.describePrompts()
-    })
-  }
-
-  syncSkills(): void {
-    this.syncCapabilities({
-      skills: this.registry.describeSkills()
-    })
-  }
-
-  syncResources(): void {
-    this.syncCapabilities({
-      resources: this.registry.describeResources()
+      paths
     })
   }
 
@@ -342,3 +388,31 @@ export function createMdpClient(options: MdpClientOptions): MdpClient {
 }
 
 export { resolveServerUrl } from './transport/client-connection.js'
+
+function readLegacyArgs(request: PathRequest) {
+  if (request.body !== undefined) {
+    if (isArgumentRecord(request.body)) {
+      return request.body
+    }
+
+    throw new Error('Legacy capability arguments must be a JSON object')
+  }
+
+  return request.queries
+}
+
+function toLegacyContext(
+  request: PathRequest,
+  context: PathInvocationContext
+): LegacyCapabilityContext {
+  return {
+    ...context,
+    params: request.params,
+    queries: request.queries,
+    headers: request.headers
+  }
+}
+
+function isArgumentRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}

@@ -171,15 +171,17 @@ describe('vscode extension capabilities', () => {
       log: () => {}
     })
 
-    const searchTool = client.tools.get('vscode.searchWorkspaceText')
+    const searchTool = client.paths.get('/vscode/search-workspace-text')
     expect(searchTool).toBeDefined()
 
     const result = await searchTool!.handler({
-      query: 'answer',
-      include: 'src/**/*.ts',
-      isCaseSensitive: true,
-      maxResults: 8,
-      previewChars: 120
+      body: {
+        query: 'answer',
+        include: 'src/**/*.ts',
+        isCaseSensitive: true,
+        maxResults: 8,
+        previewChars: 120
+      }
     })
 
     expect(result).toEqual({
@@ -224,9 +226,9 @@ describe('vscode extension capabilities', () => {
       log: () => {}
     })
 
-    const searchTool = client.tools.get('vscode.searchWorkspaceText')
+    const searchTool = client.paths.get('/vscode/search-workspace-text')
 
-    await expect(searchTool!.handler({})).rejects.toThrow(
+    await expect(searchTool!.handler({ body: {} })).rejects.toThrow(
       'Missing required "query" argument'
     )
   })
@@ -262,10 +264,12 @@ describe('vscode extension capabilities', () => {
       log: () => {}
     })
 
-    const readWorkspaceFileTool = client.tools.get('vscode.readWorkspaceFile')
+    const readWorkspaceFileTool = client.paths.get('/vscode/read-workspace-file')
     const result = await readWorkspaceFileTool!.handler({
-      path: './src/example.ts',
-      includeDiagnostics: true
+      body: {
+        path: './src/example.ts',
+        includeDiagnostics: true
+      }
     })
 
     expect(state.findFiles).toHaveBeenCalledWith('src/example.ts', undefined, 2)
@@ -299,41 +303,18 @@ describe('vscode extension capabilities', () => {
 })
 
 class FakeClient {
-  readonly tools = new Map<string, RegisteredCapability>()
-  readonly prompts = new Map<string, RegisteredCapability>()
-  readonly skills = new Map<string, RegisteredCapability>()
-  readonly resources = new Map<string, RegisteredCapability>()
+  readonly paths = new Map<string, RegisteredCapability>()
 
-  exposeTool(
-    name: string,
-    handler: RegisteredCapability['handler'],
-    options: unknown
+  expose(
+    path: string,
+    _definition: unknown,
+    handler?: RegisteredCapability['handler']
   ): void {
-    this.tools.set(name, { handler, options })
-  }
+    if (!handler) {
+      throw new Error(`Missing handler for ${path}`)
+    }
 
-  exposePrompt(
-    name: string,
-    handler: RegisteredCapability['handler'],
-    options: unknown
-  ): void {
-    this.prompts.set(name, { handler, options })
-  }
-
-  exposeSkill(
-    name: string,
-    handler: RegisteredCapability['handler'],
-    options: unknown
-  ): void {
-    this.skills.set(name, { handler, options })
-  }
-
-  exposeResource(
-    name: string,
-    handler: RegisteredCapability['handler'],
-    options: unknown
-  ): void {
-    this.resources.set(name, { handler, options })
+    this.paths.set(path, { handler, options: _definition })
   }
 }
 

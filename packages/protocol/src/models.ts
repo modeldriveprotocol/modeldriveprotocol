@@ -1,6 +1,7 @@
 import type { JsonObject, JsonSchema } from './json.js'
 
-export const capabilityKinds = ['tool', 'prompt', 'skill', 'resource'] as const
+export const pathNodeKinds = ['endpoint', 'skill', 'prompt'] as const
+export const httpMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const
 export const clientConnectionModes = ['ws', 'http-loop'] as const
 export const clientAuthSources = [
   'none',
@@ -8,10 +9,45 @@ export const clientAuthSources = [
   'transport',
   'transport+message'
 ] as const
+export const legacyCapabilityKinds = [
+  'tool',
+  'prompt',
+  'skill',
+  'resource'
+] as const
 
-export type CapabilityKind = (typeof capabilityKinds)[number]
+export type PathNodeKind = (typeof pathNodeKinds)[number]
+export type HttpMethod = (typeof httpMethods)[number]
 export type ClientConnectionMode = (typeof clientConnectionModes)[number]
 export type ClientAuthSource = (typeof clientAuthSources)[number]
+export type LegacyCapabilityKind = (typeof legacyCapabilityKinds)[number]
+
+export interface LegacyToolAlias {
+  kind: 'tool'
+  name: string
+}
+
+export interface LegacyPromptAlias {
+  kind: 'prompt'
+  name: string
+}
+
+export interface LegacySkillAlias {
+  kind: 'skill'
+  name: string
+}
+
+export interface LegacyResourceAlias {
+  kind: 'resource'
+  uri: string
+  name?: string
+}
+
+export type LegacyCapabilityAlias =
+  | LegacyToolAlias
+  | LegacyPromptAlias
+  | LegacySkillAlias
+  | LegacyResourceAlias
 
 export interface AuthContext {
   scheme?: string
@@ -26,53 +62,41 @@ export interface ClientConnectionDescriptor {
   authSource: ClientAuthSource
 }
 
-export interface ToolDescriptor {
-  name: string
+interface BasePathDescriptor {
+  path: string
   description?: string
+  legacy?: LegacyCapabilityAlias
+}
+
+export interface EndpointPathDescriptor extends BasePathDescriptor {
+  type: 'endpoint'
+  method: HttpMethod
   inputSchema?: JsonSchema
-}
-
-export interface PromptArgumentDescriptor {
-  name: string
-  description?: string
-  required?: boolean
-}
-
-export interface PromptDescriptor {
-  name: string
-  description?: string
-  arguments?: PromptArgumentDescriptor[]
-}
-
-export interface SkillDescriptor {
-  name: string
-  description?: string
+  outputSchema?: JsonSchema
   contentType?: string
+}
+
+export interface SkillPathDescriptor extends BasePathDescriptor {
+  type: 'skill'
+  contentType?: string
+}
+
+export interface PromptPathDescriptor extends BasePathDescriptor {
+  type: 'prompt'
   inputSchema?: JsonSchema
+  outputSchema?: JsonSchema
 }
 
-export interface ResourceDescriptor {
-  uri: string
-  name: string
-  description?: string
-  mimeType?: string
+export type PathDescriptor =
+  | EndpointPathDescriptor
+  | SkillPathDescriptor
+  | PromptPathDescriptor
+
+export interface ClientCatalog {
+  paths: PathDescriptor[]
 }
 
-export interface ClientCapabilities {
-  tools: ToolDescriptor[]
-  prompts: PromptDescriptor[]
-  skills: SkillDescriptor[]
-  resources: ResourceDescriptor[]
-}
-
-export interface ClientCapabilityUpdate {
-  tools?: ToolDescriptor[]
-  prompts?: PromptDescriptor[]
-  skills?: SkillDescriptor[]
-  resources?: ResourceDescriptor[]
-}
-
-export interface ClientDescriptor extends ClientCapabilities {
+export interface ClientDescriptor extends ClientCatalog {
   id: string
   name: string
   description?: string
@@ -88,22 +112,7 @@ export interface ListedClient extends ClientDescriptor {
   connection: ClientConnectionDescriptor
 }
 
-export interface IndexedToolDescriptor extends ToolDescriptor {
-  clientId: string
-  clientName: string
-}
-
-export interface IndexedPromptDescriptor extends PromptDescriptor {
-  clientId: string
-  clientName: string
-}
-
-export interface IndexedSkillDescriptor extends SkillDescriptor {
-  clientId: string
-  clientName: string
-}
-
-export interface IndexedResourceDescriptor extends ResourceDescriptor {
+export type IndexedPathDescriptor = PathDescriptor & {
   clientId: string
   clientName: string
 }

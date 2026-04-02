@@ -1,10 +1,10 @@
 import type { SerializedError } from './errors.js'
-import type { RpcArguments } from './json.js'
+import type { JsonValue, RpcArguments } from './json.js'
 import type {
   AuthContext,
-  CapabilityKind,
-  ClientCapabilityUpdate,
-  ClientDescriptor
+  ClientDescriptor,
+  HttpMethod,
+  PathDescriptor
 } from './models.js'
 
 export interface RegisterClientMessage {
@@ -18,20 +18,22 @@ export interface UnregisterClientMessage {
   clientId: string
 }
 
-export interface UpdateClientCapabilitiesMessage {
-  type: 'updateClientCapabilities'
+export interface UpdateClientCatalogMessage {
+  type: 'updateClientCatalog'
   clientId: string
-  capabilities: ClientCapabilityUpdate
+  paths: PathDescriptor[]
 }
 
 export interface CallClientMessage {
   type: 'callClient'
   requestId: string
   clientId: string
-  kind: CapabilityKind
-  name?: string
-  uri?: string
-  args?: RpcArguments
+  method: HttpMethod
+  path: string
+  params?: RpcArguments
+  query?: RpcArguments
+  body?: JsonValue
+  headers?: Record<string, string>
   auth?: AuthContext
 }
 
@@ -55,7 +57,7 @@ export interface PongMessage {
 
 export type ClientToServerMessage =
   | RegisterClientMessage
-  | UpdateClientCapabilitiesMessage
+  | UpdateClientCatalogMessage
   | UnregisterClientMessage
   | CallClientResultMessage
   | PingMessage

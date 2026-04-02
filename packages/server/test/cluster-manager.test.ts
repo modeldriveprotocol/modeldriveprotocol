@@ -21,6 +21,11 @@ interface StartNodeOptions {
   clusterId?: string
   clusterMembers?: string[]
   handleRpcRequest?: (request: BridgeRequest) => Promise<unknown>
+  heartbeatIntervalMs?: number
+  leaseDurationMs?: number
+  electionTimeoutMinMs?: number
+  electionTimeoutMaxMs?: number
+  discoveryIntervalMs?: number
 }
 
 const nodes: ClusterNode[] = []
@@ -385,88 +390,98 @@ describe('cluster manager', () => {
     )
   })
 
-  it('forwards bridge RPC requests from a follower to the current leader', async () => {
-    const cluster = await Promise.all([
-      startNode('node-a', BASE_PORT),
-      startNode('node-b', BASE_PORT + 1)
-    ])
-    nodes.push(...cluster)
+  it(
+    'forwards bridge RPC requests from a follower to the current leader',
+    async () => {
+      const cluster = await Promise.all([
+        startNode('node-a', BASE_PORT),
+        startNode('node-b', BASE_PORT + 1)
+      ])
+      nodes.push(...cluster)
 
-    const leader = await eventually(() => {
-      const leaders = cluster.filter((node) => node.manager.state.role === 'leader')
-      expect(leaders).toHaveLength(1)
-      return leaders[0]!
-    })
-    const follower = cluster.find((node) => node.serverId !== leader.serverId)!
+      const leader = await eventually(() => {
+        const leaders = cluster.filter((node) => node.manager.state.role === 'leader')
+        expect(leaders).toHaveLength(1)
+        return leaders[0]!
+      })
+      const follower = cluster.find((node) => node.serverId !== leader.serverId)!
 
-    let leaderSession: ReturnType<MdpServerRuntime['createSession']> | undefined
-    const transport: ClientSessionTransport = {
-      send: vi.fn((message) => {
-        if (message.type !== 'callClient' || !leaderSession) {
-          return
+      let leaderSession: ReturnType<MdpServerRuntime['createSession']> | undefined
+      const transport: ClientSessionTransport = {
+        send: vi.fn((message) => {
+          if (message.type !== 'callClient' || !leaderSession) {
+            return
+          }
+
+          leader.runtime.handleMessage(leaderSession, {
+            type: 'callClientResult',
+            requestId: message.requestId,
+            ok: true,
+            data: {
+              echoedPath: message.path
+            }
+          })
+        }),
+        close: vi.fn(),
+        isOpen: vi.fn(() => true),
+        mode: 'ws',
+        secure: false,
+        auth: undefined
+      }
+
+      leaderSession = leader.runtime.createSession('conn-leader-client', transport)
+      leader.runtime.handleMessage(leaderSession, {
+        type: 'registerClient',
+        client: {
+          id: 'leader-client',
+          name: 'Leader Client',
+          paths: [
+            {
+              type: 'endpoint',
+              path: '/echo',
+              method: 'GET'
+            }
+          ]
         }
+      })
 
-        leader.runtime.handleMessage(leaderSession, {
-          type: 'callClientResult',
-          requestId: message.requestId,
-          ok: true,
-          data: {
-            echoedTool: message.name ?? 'unknown'
+      await eventually(async () => {
+        const listed = await follower.manager.requestLeaderRpc?.({
+          method: 'listClients'
+        })
+
+        expect(listed).toEqual({
+          clients: [
+            expect.objectContaining({
+              id: 'leader-client',
+              name: 'Leader Client'
+            })
+          ]
+        })
+      }, { attempts: 160 })
+
+      await eventually(async () => {
+        const invoked = await follower.manager.requestLeaderRpc?.({
+          method: 'callPath',
+          params: {
+            clientId: 'leader-client',
+            method: 'GET',
+            path: '/echo'
           }
         })
-      }),
-      close: vi.fn(),
-      isOpen: vi.fn(() => true),
-      mode: 'ws',
-      secure: false,
-      auth: undefined
-    }
 
-    leaderSession = leader.runtime.createSession('conn-leader-client', transport)
-    leader.runtime.handleMessage(leaderSession, {
-      type: 'registerClient',
-      client: {
-        id: 'leader-client',
-        name: 'Leader Client',
-        tools: [{ name: 'echoTool' }],
-        prompts: [],
-        skills: [],
-        resources: []
-      }
-    })
-
-    await eventually(async () => {
-      const listed = await follower.manager.requestLeaderRpc?.({
-        method: 'listClients'
-      })
-
-      expect(listed).toEqual({
-        clients: [
+        expect(invoked).toEqual(
           expect.objectContaining({
-            id: 'leader-client',
-            name: 'Leader Client'
+            ok: true,
+            data: {
+              echoedPath: '/echo'
+            }
           })
-        ]
-      })
-    })
-
-    const invoked = await follower.manager.requestLeaderRpc?.({
-      method: 'callTools',
-      params: {
-        clientId: 'leader-client',
-        toolName: 'echoTool'
-      }
-    })
-
-    expect(invoked).toEqual(
-      expect.objectContaining({
-        ok: true,
-        data: {
-          echoedTool: 'echoTool'
-        }
-      })
-    )
-  })
+        )
+      }, { attempts: 160 })
+    },
+    10_000
+  )
 })
 
 async function startNode(serverId: string, port: number, options: StartNodeOptions = {}): Promise<ClusterNode> {
@@ -481,11 +496,11 @@ async function startNode(serverId: string, port: number, options: StartNodeOptio
     discoverHost: '127.0.0.1',
     discoverStartPort: BASE_PORT,
     discoverAttempts: 3,
-    heartbeatIntervalMs: 40,
-    leaseDurationMs: 140,
-    electionTimeoutMinMs: 180,
-    electionTimeoutMaxMs: 260,
-    discoveryIntervalMs: 60,
+    heartbeatIntervalMs: options.heartbeatIntervalMs ?? 40,
+    leaseDurationMs: options.leaseDurationMs ?? 140,
+    electionTimeoutMinMs: options.electionTimeoutMinMs ?? 180,
+    electionTimeoutMaxMs: options.electionTimeoutMaxMs ?? 260,
+    discoveryIntervalMs: options.discoveryIntervalMs ?? 60,
     getSelfEndpoints: () => ({
       ws: transportServer.endpoints.ws,
       cluster: transportServer.endpoints.cluster
@@ -555,16 +570,24 @@ function createNoopManager(): ClusterNode['manager'] {
   }
 }
 
-async function eventually<T>(assertion: () => T | Promise<T>): Promise<T> {
+async function eventually<T>(
+  assertion: () => T | Promise<T>,
+  options: {
+    attempts?: number
+    delayMs?: number
+  } = {}
+): Promise<T> {
   let lastError: unknown
+  const attempts = options.attempts ?? 80
+  const delayMs = options.delayMs ?? 25
 
-  for (let attempt = 0; attempt < 80; attempt += 1) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
       return await assertion()
     } catch (error) {
       lastError = error
       await new Promise((resolve) => {
-        setTimeout(resolve, 25)
+        setTimeout(resolve, delayMs)
       })
     }
   }

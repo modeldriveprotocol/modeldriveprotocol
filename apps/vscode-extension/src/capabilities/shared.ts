@@ -208,6 +208,18 @@ export function jsonResource(payload: unknown) {
   }
 }
 
+export function readRequestObject(request: {
+  params?: Record<string, unknown>
+  queries?: Record<string, unknown>
+  body?: unknown
+}): Record<string, unknown> {
+  return {
+    ...(request.params ?? {}),
+    ...(request.queries ?? {}),
+    ...asObject(request.body)
+  }
+}
+
 export function asObject(value: unknown): Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)

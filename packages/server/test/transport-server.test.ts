@@ -4,6 +4,9 @@ import WebSocket from 'ws'
 import { MdpServerRuntime } from '../src/mdp-server.js'
 import { MdpTransportServer } from '../src/transport-server.js'
 
+const SEARCH_PATH = '/search'
+const SKILL_PATH = '/docs/root/child/skill.md'
+
 const TEST_TLS_KEY = `-----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDEXsJqTUr4qlZi
 bEkvsEKwdSEZsA9kZBkkbgf4ylqAeeDA7wlfKctaCgbpni6SVHO02pHDqi1WTV8H
@@ -56,10 +59,13 @@ zeqKOGcTcVPtgQ15a7BnEIou51Nh9e0rSjol1Ooxp9mtMXcJGKl0GeO4D/S7ldcM
 const registeredClient = {
   id: 'client-01',
   name: 'HTTP Loop Client',
-  tools: [{ name: 'searchDom' }],
-  prompts: [],
-  skills: [],
-  resources: []
+  paths: [
+    {
+      type: 'endpoint' as const,
+      path: SEARCH_PATH,
+      method: 'GET' as const
+    }
+  ]
 }
 
 const servers: MdpTransportServer[] = []
@@ -211,8 +217,8 @@ describe('MdpTransportServer', () => {
 
     const invocation = runtime.invoke({
       clientId: 'client-01',
-      kind: 'tool',
-      name: 'searchDom',
+      method: 'GET',
+      path: SEARCH_PATH,
       auth: {
         token: 'host-token'
       }
@@ -438,9 +444,11 @@ describe('MdpTransportServer', () => {
       type: 'registerClient',
       client: {
         ...registeredClient,
-        skills: [
+        paths: [
+          ...registeredClient.paths,
           {
-            name: 'docs/root/child',
+            type: 'skill' as const,
+            path: SKILL_PATH,
             description: 'Child skill',
             contentType: 'text/markdown'
           }
@@ -462,15 +470,13 @@ describe('MdpTransportServer', () => {
     expect(nestedInvocation).toEqual(
       expect.objectContaining({
         type: 'callClient',
-        kind: 'skill',
-        name: 'docs/root/child',
-        args: expect.objectContaining({
-          query: {
-            a: '1'
-          },
-          headers: expect.objectContaining({
-            'x-test-header': 'nested'
-          })
+        method: 'GET',
+        path: SKILL_PATH,
+        query: {
+          a: '1'
+        },
+        headers: expect.objectContaining({
+          'x-test-header': 'nested'
         })
       })
     )
@@ -506,15 +512,13 @@ describe('MdpTransportServer', () => {
     expect(directInvocation).toEqual(
       expect.objectContaining({
         type: 'callClient',
-        kind: 'skill',
-        name: 'docs/root/child',
-        args: expect.objectContaining({
-          query: {
-            topic: 'mdp'
-          },
-          headers: expect.objectContaining({
-            'x-test-header': 'direct'
-          })
+        method: 'GET',
+        path: SKILL_PATH,
+        query: {
+          topic: 'mdp'
+        },
+        headers: expect.objectContaining({
+          'x-test-header': 'direct'
         })
       })
     )
@@ -595,9 +599,14 @@ async function pollHttpLoopMessage(
 ): Promise<{
   requestId: string
   type: 'callClient'
-  kind: 'skill' | 'tool' | 'prompt' | 'resource'
-  name?: string
-  args?: Record<string, unknown>
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+  path: string
+  params?: Record<string, unknown>
+  query?: Record<string, unknown>
+  headers?: Record<string, string>
+  auth?: {
+    token?: string
+  }
 }> {
   const response = await fetch(
     `${server.endpoints.httpLoop}/poll?sessionId=${sessionId}&waitMs=100`
@@ -606,9 +615,14 @@ async function pollHttpLoopMessage(
     message: {
       requestId: string
       type: 'callClient'
-      kind: 'skill' | 'tool' | 'prompt' | 'resource'
-      name?: string
-      args?: Record<string, unknown>
+      method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+      path: string
+      params?: Record<string, unknown>
+      query?: Record<string, unknown>
+      headers?: Record<string, string>
+      auth?: {
+        token?: string
+      }
     }
   }
 

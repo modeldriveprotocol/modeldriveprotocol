@@ -9,21 +9,26 @@ export function registerCapabilityResources(
 ): void {
   const { config } = environment
 
-  client.exposeResource(
-    'vscode://workspace/folders',
+  client.expose(
+    '/vscode/workspace/folders',
+    {
+      method: 'GET',
+      description: 'Workspace folders from the current VSCode window.',
+      contentType: 'application/json'
+    },
     async () =>
       jsonResource({
         workspaceFolders: listWorkspaceFolders()
-      }),
-    {
-      name: 'VSCode Workspace Folders',
-      description: 'Workspace folders from the current VSCode window.',
-      mimeType: 'application/json'
-    }
+      })
   )
 
-  client.exposeResource(
-    'vscode://active-editor/document',
+  client.expose(
+    '/vscode/active-editor/document',
+    {
+      method: 'GET',
+      description: 'Current active editor document metadata and text excerpt.',
+      contentType: 'application/json'
+    },
     async () =>
       jsonResource(
         getActiveEditorSnapshot({
@@ -31,16 +36,16 @@ export function registerCapabilityResources(
           includeSelectionText: false,
           textLimit: config.resourceTextLimit
         })
-      ),
-    {
-      name: 'Active VSCode Document',
-      description: 'Current active editor document metadata and text excerpt.',
-      mimeType: 'application/json'
-    }
+      )
   )
 
-  client.exposeResource(
-    'vscode://active-editor/selection',
+  client.expose(
+    '/vscode/active-editor/selection',
+    {
+      method: 'GET',
+      description: 'Current active editor selection and its surrounding metadata.',
+      contentType: 'application/json'
+    },
     async () =>
       jsonResource(
         getActiveEditorSnapshot({
@@ -48,11 +53,6 @@ export function registerCapabilityResources(
           includeSelectionText: true,
           textLimit: config.resourceTextLimit
         })
-      ),
-    {
-      name: 'Active VSCode Selection',
-      description: 'Current active editor selection and its surrounding metadata.',
-      mimeType: 'application/json'
-    }
+      )
   )
 }

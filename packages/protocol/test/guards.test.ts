@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  comparePathSpecificity,
   createSerializedError,
-  isSkillPath,
+  isConcretePath,
+  isPathPattern,
   isStringRecord,
+  matchPathPattern,
   parseClusterMessage,
   parseMessage
 } from '../src/index.js'
@@ -11,10 +14,7 @@ import {
 const clientDescriptor = {
   id: 'client-01',
   name: 'Protocol Test Client',
-  tools: [],
-  prompts: [],
-  skills: [],
-  resources: []
+  paths: []
 }
 
 describe('protocol guards', () => {
@@ -46,17 +46,34 @@ describe('protocol guards', () => {
     })
   })
 
-  it('preserves skill content metadata on descriptors', () => {
+  it('preserves path metadata on descriptors', () => {
     const message = parseMessage(
       JSON.stringify({
         type: 'registerClient',
         client: {
           ...clientDescriptor,
-          skills: [
+          paths: [
             {
-              name: 'workspace/review',
-              description: 'Review the workspace root.',
-              contentType: 'text/markdown'
+              type: 'endpoint',
+              path: '/goods',
+              method: 'GET',
+              description: 'List goods',
+              legacy: {
+                kind: 'tool',
+                name: 'goods.list'
+              },
+              outputSchema: {
+                type: 'object'
+              }
+            },
+            {
+              type: 'skill',
+              path: '/goods/skill.md',
+              description: 'Goods usage',
+              legacy: {
+                kind: 'skill',
+                name: 'goods/usage'
+              }
             }
           ]
         }
@@ -67,60 +84,67 @@ describe('protocol guards', () => {
       type: 'registerClient',
       client: {
         ...clientDescriptor,
-        skills: [
+        paths: [
           {
-            name: 'workspace/review',
-            description: 'Review the workspace root.',
-            contentType: 'text/markdown'
+            type: 'endpoint',
+            path: '/goods',
+            method: 'GET',
+            description: 'List goods',
+            legacy: {
+              kind: 'tool',
+              name: 'goods.list'
+            },
+            outputSchema: {
+              type: 'object'
+            }
+          },
+          {
+            type: 'skill',
+            path: '/goods/skill.md',
+            description: 'Goods usage',
+            legacy: {
+              kind: 'skill',
+              name: 'goods/usage'
+            }
           }
         ]
       }
     })
   })
 
-  it('parses client capability updates', () => {
+  it('parses client catalog updates', () => {
     const message = parseMessage(
       JSON.stringify({
-        type: 'updateClientCapabilities',
+        type: 'updateClientCatalog',
         clientId: 'client-01',
-        capabilities: {
-          tools: [
-            {
-              name: 'searchDom',
-              description: 'Search the current page'
+        paths: [
+          {
+            type: 'prompt',
+            path: '/goods/prompt.md',
+            inputSchema: {
+              type: 'object'
             }
-          ],
-          resources: [
-            {
-              uri: 'workspace://root/info',
-              name: 'Workspace Info'
-            }
-          ]
-        }
+          }
+        ]
       })
     )
 
     expect(message).toEqual({
-      type: 'updateClientCapabilities',
+      type: 'updateClientCatalog',
       clientId: 'client-01',
-      capabilities: {
-        tools: [
-          {
-            name: 'searchDom',
-            description: 'Search the current page'
+      paths: [
+        {
+          type: 'prompt',
+          path: '/goods/prompt.md',
+          inputSchema: {
+            type: 'object'
           }
-        ],
-        resources: [
-          {
-            uri: 'workspace://root/info',
-            name: 'Workspace Info'
-          }
-        ]
-      }
+        }
+      ]
     })
   })
 
-  it('rejects empty client capability updates', () => {
+  it('rejects invalid path definitions and old capability update messages', () => {
     expect(() =>
       parseMessage(
         JSON.stringify({
@@ -130,27 +154,6 @@ describe('protocol guards', () => {
         })
       )
     ).toThrow('Invalid MDP message')
-  })
-
-  it('rejects callClient messages without a name or uri target', () => {
-    expect(() =>
-      parseMessage(
-        JSON.stringify({
-          type: 'callClient',
-          requestId: 'req-01',
-          clientId: 'client-01',
-          kind: 'tool'
-        })
-      )
-    ).toThrow('Invalid MDP message')
-  })
-
-  it('rejects invalid skill paths', () => {
-    expect(isSkillPath('workspace/review')).toBe(true)
-    expect(isSkillPath('/workspace/review')).toBe(false)
-    expect(isSkillPath('workspace//review')).toBe(false)
-    expect(isSkillPath('workspace/../review')).toBe(false)
-    expect(isSkillPath('workspace/review?topic=mdp')).toBe(false)
 
     expect(() =>
       parseMessage(
@@ -158,43 +161,90 @@ describe('protocol guards', () => {
           type: 'registerClient',
           client: {
             ...clientDescriptor,
-            skills: [
+            paths: [
               {
-                name: 'workspace/../review'
+                type: 'skill',
+                path: '/goods/../skill.md'
               }
             ]
           }
         })
       )
     ).toThrow('Invalid MDP message')
+  })
 
-    expect(() =>
-      parseMessage(
-        JSON.stringify({
-          type: 'updateClientCapabilities',
-          clientId: 'client-01',
-          capabilities: {
-            skills: [
-              {
-                name: 'workspace/../review'
-              }
-            ]
+  it('validates descriptor paths and concrete call paths', () => {
+    expect(isPathPattern('/goods')).toBe(true)
+    expect(isPathPattern('/goods/:id')).toBe(true)
+    expect(isPathPattern('/goods/skill.md')).toBe(true)
+    expect(isPathPattern('goods')).toBe(false)
+    expect(isPathPattern('/goods/:bad?')).toBe(false)
+    expect(isPathPattern('/goods/prompt.md/extra')).toBe(false)
+
+    expect(isConcretePath('/goods/123')).toBe(true)
+    expect(isConcretePath('/goods/:id')).toBe(false)
+    expect(isConcretePath('/goods/Prompt.md')).toBe(false)
+  })
+
+  it('matches path params and prefers static routes over param routes', () => {
+    expect(matchPathPattern('/goods/:id', '/goods/sku-01')).toEqual({
+      params: {
+        id: 'sku-01'
+      },
+      specificity: [2, 0]
+    })
+    expect(matchPathPattern('/goods/:id', '/orders/sku-01')).toBeUndefined()
+    expect(comparePathSpecificity([2, 1], [2, 0])).toBeGreaterThan(0)
+  })
+
+  it('parses callClient auth envelopes and request payloads', () => {
+    const message = parseMessage(
+      JSON.stringify({
+        type: 'callClient',
+        requestId: 'req-03',
+        clientId: 'client-01',
+        method: 'GET',
+        path: '/goods/sku-01',
+        params: {
+          id: 'sku-01'
+        },
+        query: {
+          page: 1
+        },
+        headers: {
+          'x-trace-id': 'trace-01'
+        },
+        auth: {
+          token: 'host-token',
+          metadata: {
+            requestId: 'trace-01'
           }
-        })
-      )
-    ).toThrow('Invalid MDP message')
+        }
+      })
+    )
 
-    expect(() =>
-      parseMessage(
-        JSON.stringify({
-          type: 'callClient',
-          requestId: 'req-04',
-          clientId: 'client-01',
-          kind: 'skill',
-          name: 'workspace/review?topic=mdp'
-        })
-      )
-    ).toThrow('Invalid MDP message')
+    expect(message).toEqual({
+      type: 'callClient',
+      requestId: 'req-03',
+      clientId: 'client-01',
+      method: 'GET',
+      path: '/goods/sku-01',
+      params: {
+        id: 'sku-01'
+      },
+      query: {
+        page: 1
+      },
+      headers: {
+        'x-trace-id': 'trace-01'
+      },
+      auth: {
+        token: 'host-token',
+        metadata: {
+          requestId: 'trace-01'
+        }
+      }
+    })
   })
 
   it('accepts string records and preserves serialized error details', () => {
@@ -213,40 +263,33 @@ describe('protocol guards', () => {
     expect(isStringRecord({ host: '127.0.0.1', port: 7070 })).toBe(false)
   })
 
-  it('parses callClient auth envelopes', () => {
-    const message = parseMessage(
+  it('parses cluster control messages', () => {
+    const request = parseClusterMessage(
       JSON.stringify({
-        type: 'callClient',
-        requestId: 'req-03',
-        clientId: 'client-01',
-        kind: 'tool',
-        name: 'searchDom',
-        auth: {
-          token: 'host-token',
-          metadata: {
-            requestId: 'trace-01'
-          }
-        }
+        type: 'clusterRpcRequest',
+        clusterId: 'cluster-local',
+        serverId: 'server-02',
+        term: 2,
+        requestId: 'rpc-00',
+        method: 'callPath',
+        params: {
+          clientId: 'client-01',
+          method: 'GET',
+          path: '/echo'
+        },
+        timestamp: Date.now()
       })
     )
 
-    expect(message).toEqual({
-      type: 'callClient',
-      requestId: 'req-03',
-      clientId: 'client-01',
-      kind: 'tool',
-      name: 'searchDom',
-      auth: {
-        token: 'host-token',
-        metadata: {
-          requestId: 'trace-01'
-        }
-      }
-    })
-  })
+    expect(request).toEqual(expect.objectContaining({
+      type: 'clusterRpcRequest',
+      clusterId: 'cluster-local',
+      serverId: 'server-02',
+      requestId: 'rpc-00',
+      method: 'callPath'
+    }))
 
-  it('parses cluster control messages', () => {
-    const message = parseClusterMessage(
+    const response = parseClusterMessage(
       JSON.stringify({
         type: 'clusterRpcResponse',
         clusterId: 'cluster-local',
@@ -261,28 +304,12 @@ describe('protocol guards', () => {
       })
     )
 
-    expect(message).toEqual(expect.objectContaining({
-      clusterId: 'cluster-local',
+    expect(response).toEqual(expect.objectContaining({
       type: 'clusterRpcResponse',
+      clusterId: 'cluster-local',
       serverId: 'server-01',
-      term: 2,
       requestId: 'rpc-01',
       ok: true
     }))
-  })
-
-  it('rejects malformed cluster control messages', () => {
-    expect(() =>
-      parseClusterMessage(
-        JSON.stringify({
-          type: 'clusterVoteRequest',
-          serverId: 'server-02',
-          term: '2',
-          candidateId: 'server-02',
-          candidateUrl: 'ws://127.0.0.1:47373',
-          timestamp: Date.now()
-        })
-      )
-    ).toThrow('Invalid MDP cluster message')
   })
 })

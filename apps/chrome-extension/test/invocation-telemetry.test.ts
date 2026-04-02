@@ -22,11 +22,19 @@ describe('chrome extension invocation telemetry', () => {
       {
         requestId: 'req-success',
         clientId: 'route-client-alpha',
-        kind: 'tool',
-        name: 'searchDom',
-        args: {
+        type: 'endpoint',
+        method: 'POST',
+        path: '/compat/tools/search-dom/6f3e8f10',
+        legacy: {
+          kind: 'tool',
+          name: 'searchDom'
+        },
+        params: {},
+        queries: {},
+        body: {
           query: 'checkout'
-        }
+        },
+        headers: {}
       },
       async () => {
         vi.setSystemTime(new Date('2026-03-25T10:00:00.120Z'))
@@ -40,9 +48,16 @@ describe('chrome extension invocation telemetry', () => {
         {
           requestId: 'req-error',
           clientId: 'route-client-alpha',
-          kind: 'resource',
-          uri: 'webpage://selection',
-          args: undefined
+          type: 'endpoint',
+          method: 'GET',
+          path: '/compat/resources/webpage/selection/29c3c4cf',
+          legacy: {
+            kind: 'resource',
+            uri: 'webpage://selection'
+          },
+          params: {},
+          queries: {},
+          headers: {}
         },
         async () => {
           vi.setSystemTime(new Date('2026-03-25T10:00:01.240Z'))

@@ -16,6 +16,6 @@ export function registerCapabilities(
   registerCapabilityResources(client, environment)
 
   environment.log(
-    'Registered VSCode capabilities: getWorkspaceContext, findWorkspaceFiles, readWorkspaceFile, searchWorkspaceText, getDiagnostics, executeCommand, reviewSelection, vscode/review-active-editor, and 3 resources.'
+    'Registered VSCode paths: 6 POST endpoints, 3 GET endpoints, 1 prompt, and 1 skill.'
   )
 }

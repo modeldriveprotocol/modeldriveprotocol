@@ -38,13 +38,14 @@ export function createInvocationTelemetryMiddleware(
   return async (invocation, next) => {
     const startedAtMs = Date.now()
     const startedAt = new Date(startedAtMs).toISOString()
-    const target = invocation.name ?? invocation.uri ?? 'unknown'
+    const kind = resolveInvocationKind(invocation)
+    const target = resolveInvocationTarget(invocation)
 
     try {
       const result = await next()
       recordInvocationTelemetry(telemetry, clientKey, {
         requestId: invocation.requestId,
-        kind: invocation.kind,
+        kind,
         target,
         status: 'success',
         startedAt,
@@ -55,7 +56,7 @@ export function createInvocationTelemetryMiddleware(
     } catch (error) {
       recordInvocationTelemetry(telemetry, clientKey, {
         requestId: invocation.requestId,
-        kind: invocation.kind,
+        kind,
         target,
         status: 'error',
         startedAt,
@@ -66,6 +67,46 @@ export function createInvocationTelemetryMiddleware(
       throw error
     }
   }
+}
+
+function resolveInvocationKind(
+  invocation: Parameters<CapabilityInvocationMiddleware>[0]
+): InvocationCapabilityKind {
+  if (invocation.legacy?.kind === 'resource') {
+    return 'resource'
+  }
+
+  if (invocation.legacy?.kind === 'tool') {
+    return 'tool'
+  }
+
+  if (invocation.legacy?.kind === 'prompt') {
+    return 'prompt'
+  }
+
+  if (invocation.legacy?.kind === 'skill') {
+    return 'skill'
+  }
+
+  return invocation.type === 'endpoint' ? 'tool' : invocation.type
+}
+
+function resolveInvocationTarget(
+  invocation: Parameters<CapabilityInvocationMiddleware>[0]
+): string {
+  if (invocation.legacy?.kind === 'resource') {
+    return invocation.legacy.uri
+  }
+
+  if (
+    invocation.legacy?.kind === 'tool' ||
+    invocation.legacy?.kind === 'prompt' ||
+    invocation.legacy?.kind === 'skill'
+  ) {
+    return invocation.legacy.name
+  }
+
+  return invocation.path
 }
 
 export function recordInvocationTelemetry(

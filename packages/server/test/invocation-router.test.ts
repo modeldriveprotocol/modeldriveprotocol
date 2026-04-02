@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { CapabilityIndex } from '../src/capability-index.js'
 import type { ClientSession } from '../src/client-session.js'
 import { InvocationRouter } from '../src/invocation-router.js'
 
@@ -9,17 +8,24 @@ describe('InvocationRouter', () => {
     const session = {
       send: vi.fn()
     } as unknown as ClientSession
-    const capabilityIndex = {
-      hasTarget: vi.fn(() => true)
-    } as unknown as CapabilityIndex
-    const router = new InvocationRouter(() => session, capabilityIndex, 1_000)
+    const router = new InvocationRouter(() => session, 1_000)
 
     const invocation = router.invoke({
       clientId: 'client-01',
-      kind: 'tool',
-      name: 'searchDom',
-      args: {
-        query: 'mdp'
+      type: 'endpoint',
+      method: 'GET',
+      path: '/search',
+      params: {
+        section: 'docs'
+      },
+      query: {
+        q: 'mdp'
+      },
+      body: {
+        includeMeta: true
+      },
+      headers: {
+        'x-trace-id': 'trace-01'
       },
       auth: {
         token: 'host-token'
@@ -33,9 +39,27 @@ describe('InvocationRouter', () => {
       }
     }
 
-    expect(outboundMessage.requestId).toBeTypeOf('string')
-    expect(outboundMessage.auth).toEqual({
-      token: 'host-token'
+    expect(outboundMessage).toEqual({
+      type: 'callClient',
+      requestId: expect.any(String),
+      clientId: 'client-01',
+      method: 'GET',
+      path: '/search',
+      params: {
+        section: 'docs'
+      },
+      query: {
+        q: 'mdp'
+      },
+      body: {
+        includeMeta: true
+      },
+      headers: {
+        'x-trace-id': 'trace-01'
+      },
+      auth: {
+        token: 'host-token'
+      }
     })
 
     const resolved = router.resolve({
@@ -58,19 +82,18 @@ describe('InvocationRouter', () => {
     })
   })
 
-  it('rejects invalid targets before dispatch', () => {
-    const capabilityIndex = {
-      hasTarget: vi.fn(() => false)
-    } as unknown as CapabilityIndex
-    const router = new InvocationRouter(() => undefined, capabilityIndex, 1_000)
+  it('rejects dispatch when the client is not connected', () => {
+    const router = new InvocationRouter(() => undefined, 1_000)
 
     expect(() =>
       router.invoke({
         clientId: 'client-01',
-        kind: 'tool',
-        name: 'missingTool'
+        type: 'endpoint',
+        method: 'GET',
+        path: '/missing',
+        params: {}
       })
-    ).toThrow('Capability "missingTool" was not found on client "client-01"')
+    ).toThrow('Client "client-01" is not connected')
   })
 
   it('times out pending invocations', async () => {
@@ -80,15 +103,14 @@ describe('InvocationRouter', () => {
       const session = {
         send: vi.fn()
       } as unknown as ClientSession
-      const capabilityIndex = {
-        hasTarget: vi.fn(() => true)
-      } as unknown as CapabilityIndex
-      const router = new InvocationRouter(() => session, capabilityIndex, 50)
+      const router = new InvocationRouter(() => session, 50)
 
       const invocation = router.invoke({
         clientId: 'client-01',
-        kind: 'tool',
-        name: 'searchDom'
+        type: 'endpoint',
+        method: 'GET',
+        path: '/search',
+        params: {}
       })
       const rejection = expect(invocation).rejects.toThrow(
         'Invocation timed out for client "client-01"'

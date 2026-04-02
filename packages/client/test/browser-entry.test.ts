@@ -26,10 +26,7 @@ describe('browser entry', () => {
       name: 'Embedded Browser Client',
       description: 'Created from a script tag',
       platform: 'web',
-      tools: [],
-      prompts: [],
-      skills: [],
-      resources: []
+      paths: []
     })
     expect(
       resolveServerUrl({

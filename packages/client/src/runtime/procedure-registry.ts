@@ -1,48 +1,53 @@
 import type {
   CallClientMessage,
-  ClientCapabilities,
   ClientDescriptor,
-  PromptDescriptor,
-  ResourceDescriptor,
-  SkillDescriptor,
-  ToolDescriptor
+  PathDescriptor
 } from '@modeldriveprotocol/protocol'
-import { isSkillPath } from '@modeldriveprotocol/protocol'
+import {
+  comparePathSpecificity,
+  isJsonObject,
+  isPathPattern,
+  isPromptPath,
+  isSkillPath,
+  matchPathPattern
+} from '@modeldriveprotocol/protocol'
 
 import type {
-  CapabilityInvocation,
-  CapabilityInvocationContext,
-  CapabilityHandler,
-  CapabilityInvocationMiddleware,
   ClientInfo,
+  ExposeEndpointOptions,
+  ExposePathOptions,
   ExposePromptOptions,
-  ExposeResourceOptions,
   ExposeSkillOptions,
-  ExposeToolOptions,
-  SkillDefinition,
-  SkillHeaders,
-  SkillQuery,
-  SkillResolver
+  PathHandler,
+  PathInvocation,
+  PathInvocationContext,
+  PathInvocationMiddleware,
+  PathRequest,
+  StaticPathDefinition
 } from '../types.js'
 
-interface ProcedureEntry<TDescriptor> {
-  descriptor: TDescriptor
-  handler: CapabilityHandler
+interface ProcedureEntry {
+  descriptor: PathDescriptor
+  handler: PathHandler
+}
+
+interface ResolvedEntry {
+  descriptor: PathDescriptor
+  handler: PathHandler
+  params: Record<string, unknown>
+  specificity: number[]
 }
 
 export class ProcedureRegistry {
-  private readonly tools = new Map<string, ProcedureEntry<ToolDescriptor>>()
-  private readonly prompts = new Map<string, ProcedureEntry<PromptDescriptor>>()
-  private readonly skills = new Map<string, ProcedureEntry<SkillDescriptor>>()
-  private readonly resources = new Map<string, ProcedureEntry<ResourceDescriptor>>()
-  private readonly invocationMiddlewares: CapabilityInvocationMiddleware[] = []
+  private readonly entries: ProcedureEntry[] = []
+  private readonly invocationMiddlewares: PathInvocationMiddleware[] = []
 
-  useInvocationMiddleware(middleware: CapabilityInvocationMiddleware): this {
+  useInvocationMiddleware(middleware: PathInvocationMiddleware): this {
     this.invocationMiddlewares.push(middleware)
     return this
   }
 
-  removeInvocationMiddleware(middleware: CapabilityInvocationMiddleware): boolean {
+  removeInvocationMiddleware(middleware: PathInvocationMiddleware): boolean {
     const index = this.invocationMiddlewares.indexOf(middleware)
 
     if (index < 0) {
@@ -53,199 +58,131 @@ export class ProcedureRegistry {
     return true
   }
 
-  exposeTool(
-    name: string,
-    handler: CapabilityHandler,
-    options: ExposeToolOptions = {}
+  expose(
+    path: string,
+    definition: StaticPathDefinition | ExposePathOptions,
+    handler?: PathHandler
   ): this {
-    this.tools.set(name, {
-      descriptor: {
-        name,
-        ...(options.description ? { description: options.description } : {}),
-        ...(options.inputSchema ? { inputSchema: options.inputSchema } : {})
-      },
-      handler
-    })
+    const descriptor = createPathDescriptor(path, definition)
+    const resolvedHandler = createPathHandler(path, descriptor, definition, handler)
+    const entry: ProcedureEntry = {
+      descriptor,
+      handler: resolvedHandler
+    }
+    const key = createRegistrationKey(descriptor)
+    const existingIndex = this.entries.findIndex(
+      (current) => createRegistrationKey(current.descriptor) === key
+    )
+
+    if (existingIndex >= 0) {
+      this.entries.splice(existingIndex, 1, entry)
+    } else {
+      this.entries.push(entry)
+    }
 
     return this
   }
 
-  exposePrompt(
-    name: string,
-    handler: CapabilityHandler,
-    options: ExposePromptOptions = {}
-  ): this {
-    this.prompts.set(name, {
-      descriptor: {
-        name,
-        ...(options.description ? { description: options.description } : {}),
-        ...(options.arguments ? { arguments: options.arguments } : {})
-      },
-      handler
+  unexpose(path: string, method?: ExposeEndpointOptions['method']): boolean {
+    assertPathPattern(path)
+
+    const index = this.entries.findIndex((entry) => {
+      if (entry.descriptor.path !== path) {
+        return false
+      }
+
+      if (entry.descriptor.type === 'endpoint') {
+        return method !== undefined && entry.descriptor.method === method
+      }
+
+      return true
     })
 
-    return this
-  }
+    if (index < 0) {
+      return false
+    }
 
-  exposeSkill(name: string, content: string, options?: ExposeSkillOptions): this
-  exposeSkill(
-    name: string,
-    handler: CapabilityHandler,
-    options?: ExposeSkillOptions
-  ): this
-  exposeSkill(
-    name: string,
-    resolver: SkillResolver,
-    options?: ExposeSkillOptions
-  ): this
-  exposeSkill(
-    name: string,
-    definition: SkillDefinition,
-    options: ExposeSkillOptions = {}
-  ): this {
-    assertSkillPath(name)
-
-    const isStaticSkill = typeof definition === 'string'
-    const isResolverSkill = typeof definition === 'function' && options.inputSchema === undefined
-    const description = options.description ??
-      (isStaticSkill
-        ? deriveSkillDescription(definition)
-        : undefined)
-    const contentType = options.contentType ??
-      (isStaticSkill || isResolverSkill ? 'text/markdown' : undefined)
-
-    this.skills.set(name, {
-      descriptor: {
-        name,
-        ...(description ? { description } : {}),
-        ...(contentType ? { contentType } : {}),
-        ...(options.inputSchema ? { inputSchema: options.inputSchema } : {})
-      },
-      handler: toSkillHandler(definition)
-    })
-
-    return this
-  }
-
-  exposeResource(
-    uri: string,
-    handler: CapabilityHandler,
-    options: ExposeResourceOptions
-  ): this {
-    this.resources.set(uri, {
-      descriptor: {
-        uri,
-        name: options.name,
-        ...(options.description ? { description: options.description } : {}),
-        ...(options.mimeType ? { mimeType: options.mimeType } : {})
-      },
-      handler
-    })
-
-    return this
-  }
-
-  removeTool(name: string): boolean {
-    return this.tools.delete(name)
-  }
-
-  removePrompt(name: string): boolean {
-    return this.prompts.delete(name)
-  }
-
-  removeSkill(name: string): boolean {
-    return this.skills.delete(name)
-  }
-
-  removeResource(uri: string): boolean {
-    return this.resources.delete(uri)
+    this.entries.splice(index, 1)
+    return true
   }
 
   describe(client: ClientInfo): ClientDescriptor {
     return {
       ...client,
-      ...this.describeCapabilities()
+      paths: this.describePaths()
     }
   }
 
-  describeCapabilities(): ClientCapabilities {
-    return {
-      tools: this.describeTools(),
-      prompts: this.describePrompts(),
-      skills: this.describeSkills(),
-      resources: this.describeResources()
-    }
-  }
-
-  describeTools(): ToolDescriptor[] {
-    return [...this.tools.values()].map(({ descriptor }) => descriptor)
-  }
-
-  describePrompts(): PromptDescriptor[] {
-    return [...this.prompts.values()].map(({ descriptor }) => descriptor)
-  }
-
-  describeSkills(): SkillDescriptor[] {
-    return [...this.skills.values()].map(({ descriptor }) => descriptor)
-  }
-
-  describeResources(): ResourceDescriptor[] {
-    return [...this.resources.values()].map(({ descriptor }) => descriptor)
+  describePaths(): PathDescriptor[] {
+    return this.entries.map(({ descriptor }) => descriptor)
   }
 
   invoke(
     message: Pick<
       CallClientMessage,
-      'requestId' | 'clientId' | 'kind' | 'name' | 'uri' | 'args' | 'auth'
+      'requestId' | 'clientId' | 'method' | 'path' | 'params' | 'query' | 'body' | 'headers' | 'auth'
     >
   ): Promise<unknown> {
-    switch (message.kind) {
-      case 'tool':
-        return this.run(this.tools, message.name, 'tool', message)
-      case 'prompt':
-        return this.run(this.prompts, message.name, 'prompt', message)
-      case 'skill':
-        return this.run(this.skills, message.name, 'skill', message)
-      case 'resource':
-        return this.run(this.resources, message.uri, 'resource', message)
-    }
-  }
-
-  private async run<TDescriptor>(
-    entries: Map<string, ProcedureEntry<TDescriptor>>,
-    key: string | undefined,
-    kind: string,
-    message: Pick<
-      CallClientMessage,
-      'requestId' | 'clientId' | 'kind' | 'name' | 'uri' | 'args' | 'auth'
-    >
-  ): Promise<unknown> {
-    if (!key) {
-      throw new Error(`Missing ${kind} key`)
-    }
-
-    const entry = entries.get(key)
+    const entry = this.resolveEntry(message.method, message.path)
 
     if (!entry) {
-      throw new Error(`Unknown ${kind} "${key}"`)
+      throw new Error(`Unknown path "${message.path}" for method "${message.method}"`)
     }
 
-    const invocation: CapabilityInvocation = {
+    const invocation: PathInvocation = {
       requestId: message.requestId,
       clientId: message.clientId,
-      args: message.args,
-      kind: message.kind,
-      ...(message.name ? { name: message.name } : {}),
-      ...(message.uri ? { uri: message.uri } : {}),
+      type: entry.descriptor.type,
+      method: message.method,
+      path: message.path,
+      ...(entry.descriptor.legacy ? { legacy: entry.descriptor.legacy } : {}),
+      ...createLegacyInvocationShape(entry.descriptor, message),
+      params: asArgumentRecord(message.params ?? entry.params),
+      queries: asArgumentRecord(message.query),
+      ...(message.body !== undefined ? { body: message.body } : {}),
+      headers: message.headers ?? {},
       ...(message.auth ? { auth: message.auth } : {})
     }
 
     return this.runWithMiddlewares(invocation, entry.handler)
   }
 
+  private resolveEntry(
+    method: CallClientMessage['method'],
+    path: string
+  ): ResolvedEntry | undefined {
+    let bestMatch: ResolvedEntry | undefined
+
+    for (const entry of this.entries) {
+      if (!matchesMethod(entry.descriptor, method)) {
+        continue
+      }
+
+      const match = matchPathPattern(entry.descriptor.path, path)
+
+      if (!match) {
+        continue
+      }
+
+      if (
+        !bestMatch ||
+        comparePathSpecificity(match.specificity, bestMatch.specificity) > 0
+      ) {
+        bestMatch = {
+          descriptor: entry.descriptor,
+          handler: entry.handler,
+          params: match.params,
+          specificity: match.specificity
+        }
+      }
+    }
+
+    return bestMatch
+  }
+
   private async runWithMiddlewares(
-    invocation: CapabilityInvocation,
-    handler: CapabilityHandler
+    invocation: PathInvocation,
+    handler: PathHandler
   ): Promise<unknown> {
     let lastIndex = -1
 
@@ -259,7 +196,7 @@ export class ProcedureRegistry {
       const middleware = this.invocationMiddlewares[index]
 
       if (!middleware) {
-        return handler(invocation.args, createInvocationContext(invocation))
+        return handler(createPathRequest(invocation), createInvocationContext(invocation))
       }
 
       return middleware(invocation, async () => dispatch(index + 1))
@@ -269,22 +206,188 @@ export class ProcedureRegistry {
   }
 }
 
-function toSkillHandler(definition: SkillDefinition): CapabilityHandler {
-  if (typeof definition === 'string') {
-    return async () => definition
+function createPathDescriptor(
+  path: string,
+  definition: StaticPathDefinition | ExposePathOptions
+): PathDescriptor {
+  assertPathPattern(path)
+
+  if (isSkillPath(path)) {
+    const options = typeof definition === 'string'
+      ? {}
+      : definition as ExposeSkillOptions
+    const description = options.description ??
+      (typeof definition === 'string' ? deriveMarkdownDescription(definition) : undefined)
+
+    return {
+      type: 'skill',
+      path,
+      ...(description ? { description } : {}),
+      ...(options.legacy ? { legacy: options.legacy } : {}),
+      ...(options.contentType ? { contentType: options.contentType } : { contentType: 'text/markdown' })
+    }
   }
 
-  return async (args, context) => {
-    if (isSkillResolverDefinition(definition, args)) {
-      const { query, headers } = readSkillRequest(args)
-      return (definition as SkillResolver)(query, headers, context)
-    }
+  if (isPromptPath(path)) {
+    const options = typeof definition === 'string'
+      ? {}
+      : definition as ExposePromptOptions
+    const description = options.description ??
+      (typeof definition === 'string' ? deriveMarkdownDescription(definition) : undefined)
 
-    return (definition as CapabilityHandler)(args, context)
+    return {
+      type: 'prompt',
+      path,
+      ...(description ? { description } : {}),
+      ...(options.legacy ? { legacy: options.legacy } : {}),
+      ...(options.inputSchema ? { inputSchema: options.inputSchema } : {}),
+      ...(options.outputSchema ? { outputSchema: options.outputSchema } : {})
+    }
+  }
+
+  if (typeof definition === 'string' || !('method' in definition)) {
+    throw new Error(`Endpoint path "${path}" requires a descriptor with a method`)
+  }
+
+  const options = definition as ExposeEndpointOptions
+
+  return {
+    type: 'endpoint',
+    path,
+    method: options.method,
+    ...(options.description ? { description: options.description } : {}),
+    ...(options.legacy ? { legacy: options.legacy } : {}),
+    ...(options.inputSchema ? { inputSchema: options.inputSchema } : {}),
+    ...(options.outputSchema ? { outputSchema: options.outputSchema } : {}),
+    ...(options.contentType ? { contentType: options.contentType } : {})
   }
 }
 
-function deriveSkillDescription(content: string): string | undefined {
+function createPathHandler(
+  path: string,
+  descriptor: PathDescriptor,
+  definition: StaticPathDefinition | ExposePathOptions,
+  handler: PathHandler | undefined
+): PathHandler {
+  if (typeof definition === 'string') {
+    if (descriptor.type === 'prompt') {
+      return async () => ({
+        messages: [
+          {
+            role: 'user',
+            content: definition
+          }
+        ]
+      })
+    }
+
+    if (descriptor.type === 'skill') {
+      return async () => definition
+    }
+
+    throw new Error(`Endpoint path "${path}" requires a handler`)
+  }
+
+  if (!handler) {
+    throw new Error(`Path "${path}" requires a handler`)
+  }
+
+  return handler
+}
+
+function createRegistrationKey(descriptor: PathDescriptor): string {
+  return descriptor.type === 'endpoint'
+    ? `${descriptor.method} ${descriptor.path}`
+    : descriptor.path
+}
+
+function matchesMethod(
+  descriptor: PathDescriptor,
+  method: CallClientMessage['method']
+): boolean {
+  return descriptor.type === 'endpoint' ? descriptor.method === method : method === 'GET'
+}
+
+function assertPathPattern(path: string): void {
+  if (!isPathPattern(path)) {
+    throw new Error(
+      `Invalid path "${path}". Expected a leading slash, lowercase segments, optional :params, and reserved leaf names skill.md or prompt.md.`
+    )
+  }
+}
+
+function createPathRequest(invocation: PathInvocation): PathRequest {
+  return {
+    params: invocation.params,
+    queries: invocation.queries,
+    ...(invocation.body !== undefined ? { body: invocation.body } : {}),
+    headers: invocation.headers
+  }
+}
+
+function createLegacyInvocationShape(
+  descriptor: PathDescriptor,
+  message: Pick<CallClientMessage, 'method' | 'query' | 'body'>
+): Pick<PathInvocation, 'kind' | 'name' | 'uri' | 'args'> {
+  const args = message.body !== undefined
+    ? (isJsonObject(message.body) ? message.body : undefined)
+    : asArgumentRecord(message.query)
+
+  if (descriptor.legacy?.kind === 'resource') {
+    return {
+      kind: 'resource',
+      uri: descriptor.legacy.uri,
+      ...(args ? { args } : {})
+    }
+  }
+
+  if (descriptor.legacy?.kind === 'tool') {
+    return {
+      kind: 'tool',
+      name: descriptor.legacy.name,
+      ...(args ? { args } : {})
+    }
+  }
+
+  if (descriptor.legacy?.kind === 'prompt') {
+    return {
+      kind: 'prompt',
+      name: descriptor.legacy.name,
+      ...(args ? { args } : {})
+    }
+  }
+
+  if (descriptor.legacy?.kind === 'skill') {
+    return {
+      kind: 'skill',
+      name: descriptor.legacy.name,
+      ...(args ? { args } : {})
+    }
+  }
+
+  return {
+    kind: descriptor.type === 'endpoint' ? 'tool' : descriptor.type,
+    ...(descriptor.type === 'endpoint'
+      ? { name: descriptor.path }
+      : { name: descriptor.path }),
+    ...(args ? { args } : {})
+  }
+}
+
+function createInvocationContext(
+  invocation: PathInvocation
+): PathInvocationContext {
+  return {
+    requestId: invocation.requestId,
+    clientId: invocation.clientId,
+    type: invocation.type,
+    method: invocation.method,
+    path: invocation.path,
+    ...(invocation.auth ? { auth: invocation.auth } : {})
+  }
+}
+
+function deriveMarkdownDescription(content: string): string | undefined {
   const lines = content.split(/\r?\n/).map((line) => line.trim())
   const paragraph: string[] = []
 
@@ -307,83 +410,10 @@ function deriveSkillDescription(content: string): string | undefined {
   return paragraph.length > 0 ? paragraph.join(' ') : undefined
 }
 
-function assertSkillPath(name: string): void {
-  if (!isSkillPath(name)) {
-    throw new Error(
-      `Invalid skill path "${name}". Expected slash-separated lowercase segments using only a-z, 0-9, "-" and "_".`
-    )
-  }
-}
-
-function isSkillResolverDefinition(
-  definition: Exclude<SkillDefinition, string>,
-  args: unknown
-): boolean {
-  if (definition.length >= 3) {
-    return true
-  }
-
-  if (definition.length <= 1) {
-    return false
-  }
-
-  return !isPlainObject(args) || 'query' in args || 'headers' in args
-}
-
-function readSkillRequest(
-  args: unknown
-): {
-  query: SkillQuery
-  headers: SkillHeaders
-} {
-  if (!isPlainObject(args)) {
-    return {
-      query: {},
-      headers: {}
-    }
-  }
-
-  return {
-    query: readSkillValueRecord(args.query),
-    headers: readSkillValueRecord(args.headers)
-  }
-}
-
-function readSkillValueRecord(value: unknown): SkillQuery {
-  if (!isPlainObject(value)) {
+function asArgumentRecord(value: unknown): Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return {}
   }
 
-  const result: SkillQuery = {}
-
-  for (const [key, entry] of Object.entries(value)) {
-    if (
-      typeof entry === 'string' ||
-      typeof entry === 'number' ||
-      typeof entry === 'boolean'
-    ) {
-      result[key] = entry
-    }
-  }
-
-  return result
-}
-
-function isPlainObject(
-  value: unknown
-): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function createInvocationContext(
-  invocation: CapabilityInvocation
-): CapabilityInvocationContext {
-  return {
-    requestId: invocation.requestId,
-    clientId: invocation.clientId,
-    kind: invocation.kind,
-    ...(invocation.name ? { name: invocation.name } : {}),
-    ...(invocation.uri ? { uri: invocation.uri } : {}),
-    ...(invocation.auth ? { auth: invocation.auth } : {})
-  }
+  return value as Record<string, unknown>
 }

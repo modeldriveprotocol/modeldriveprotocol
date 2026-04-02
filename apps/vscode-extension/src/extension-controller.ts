@@ -282,10 +282,13 @@ function errorMessage(error: unknown): string {
 function capabilitySummary(
   descriptor: ReturnType<MdpClient['describe']>
 ): string {
+  const endpointCount = descriptor.paths.filter((path) => path.type === 'endpoint').length
+  const promptCount = descriptor.paths.filter((path) => path.type === 'prompt').length
+  const skillCount = descriptor.paths.filter((path) => path.type === 'skill').length
+
   return [
-    `${descriptor.tools.length} tools`,
-    `${descriptor.prompts.length} prompts`,
-    `${descriptor.skills.length} skills`,
-    `${descriptor.resources.length} resources`
+    `${endpointCount} endpoints`,
+    `${promptCount} prompts`,
+    `${skillCount} skills`
   ].join(', ')
 }

@@ -137,6 +137,7 @@ interface ClusterPeerLink {
 }
 
 interface PendingRpcRequest {
+  link: ClusterPeerLink
   timeout: NodeJS.Timeout
   resolve: (result: unknown) => void
   reject: (error: Error) => void
@@ -298,6 +299,7 @@ export class MdpClusterManager {
       }, RPC_TIMEOUT_MS)
 
       this.pendingRpcRequests.set(requestId, {
+        link,
         timeout,
         resolve,
         reject
@@ -528,7 +530,8 @@ export class MdpClusterManager {
 
       if (peerId === this.leaderId) {
         this.rejectPendingRpcRequests(
-          new Error(`Cluster control link to leader ${peerId} closed`)
+          new Error(`Cluster control link to leader ${peerId} closed`),
+          link
         )
       }
     }
@@ -1093,8 +1096,12 @@ export class MdpClusterManager {
     return this.activePeerCount() > 0
   }
 
-  private rejectPendingRpcRequests(error: Error): void {
+  private rejectPendingRpcRequests(error: Error, link?: ClusterPeerLink): void {
     for (const [requestId, pending] of this.pendingRpcRequests.entries()) {
+      if (link && pending.link !== link) {
+        continue
+      }
+
       clearTimeout(pending.timeout)
       this.pendingRpcRequests.delete(requestId)
       pending.reject(error)

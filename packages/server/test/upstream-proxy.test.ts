@@ -6,6 +6,8 @@ import { MdpTransportServer } from '../src/transport-server.js'
 import { discoverUpstreamMdpServer, probeMdpServer } from '../src/upstream-discovery.js'
 import { MdpUpstreamProxy } from '../src/upstream-proxy.js'
 
+const SEARCH_PATH = '/search'
+
 const servers: MdpTransportServer[] = []
 
 afterEach(async () => {
@@ -30,10 +32,13 @@ function createDescriptor() {
   return {
     id: 'client-01',
     name: 'Browser Client',
-    tools: [{ name: 'searchDom' }],
-    prompts: [],
-    skills: [],
-    resources: []
+    paths: [
+      {
+        type: 'endpoint' as const,
+        path: SEARCH_PATH,
+        method: 'GET' as const
+      }
+    ]
   }
 }
 
@@ -392,8 +397,8 @@ describe('upstream discovery and proxying', () => {
 
     const invocation = upstreamRuntime.invoke({
       clientId: mirroredClientId,
-      kind: 'tool',
-      name: 'searchDom',
+      method: 'GET',
+      path: SEARCH_PATH,
       auth: {
         token: 'host-token'
       }
@@ -408,8 +413,8 @@ describe('upstream discovery and proxying', () => {
         expect.objectContaining({
           type: 'callClient',
           clientId: descriptor.id,
-          kind: 'tool',
-          name: 'searchDom',
+          method: 'GET',
+          path: SEARCH_PATH,
           auth: {
             token: 'host-token'
           }

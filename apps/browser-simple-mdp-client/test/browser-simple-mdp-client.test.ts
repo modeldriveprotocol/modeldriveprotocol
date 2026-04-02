@@ -35,12 +35,19 @@ describe('browser simple mdp client', () => {
   it('boots from the current script tag through the global MDP API', async () => {
     const client = createFakeClient()
     const script = document.createElement('script')
+    const windowWithMdp = window as Window & {
+      MDP?: {
+        createClientFromScriptTag: (
+          script?: HTMLScriptElement
+        ) => ReturnType<typeof createFakeClient>
+      }
+    }
 
     Object.defineProperty(document, 'currentScript', {
       configurable: true,
       value: script
     })
-    ;(window as Window & { MDP?: { createClientFromScriptTag: typeof vi.fn } }).MDP = {
+    windowWithMdp.MDP = {
       createClientFromScriptTag: vi.fn(() => client)
     }
 

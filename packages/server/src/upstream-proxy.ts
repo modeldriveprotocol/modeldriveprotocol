@@ -266,10 +266,11 @@ class MirroredUpstreamClient {
     try {
       const result = await this.runtime.invoke({
         clientId: this.localClientId,
-        kind: message.kind,
-        ...(message.name ? { name: message.name } : {}),
-        ...(message.uri ? { uri: message.uri } : {}),
-        ...(message.args ? { args: message.args } : {}),
+        method: message.method,
+        path: message.path,
+        ...(message.query ? { query: message.query } : {}),
+        ...(message.body !== undefined ? { body: message.body } : {}),
+        ...(message.headers ? { headers: message.headers } : {}),
         ...(message.auth ? { auth: message.auth } : {})
       } satisfies InvocationRequest)
 

@@ -2,19 +2,30 @@ import { protocolErrorCodes } from './errors.js'
 import { isJsonObject, isJsonValue } from './json.js'
 import type { ClusterMessage } from './cluster-messages.js'
 import type { MdpMessage } from './messages.js'
-import { capabilityKinds, clientAuthSources, clientConnectionModes } from './models.js'
+import {
+  clientAuthSources,
+  clientConnectionModes,
+  httpMethods,
+  legacyCapabilityKinds,
+  pathNodeKinds
+} from './models.js'
 import type {
   AuthContext,
-  CapabilityKind,
   ClientAuthSource,
-  ClientCapabilityUpdate,
   ClientConnectionMode,
   ClientDescriptor,
-  ResourceDescriptor,
-  SkillDescriptor
+  HttpMethod,
+  LegacyCapabilityAlias,
+  LegacyCapabilityKind,
+  PathDescriptor,
+  PathNodeKind
 } from './models.js'
-
-const SKILL_PATH_PATTERN = /^[a-z0-9](?:[a-z0-9_-]*)(?:\/[a-z0-9](?:[a-z0-9_-]*))*$/
+import {
+  isConcretePath,
+  isPathPattern,
+  isPromptPath,
+  isSkillPath
+} from './path-utils.js'
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string')
@@ -24,8 +35,12 @@ function hasString(value: unknown, key: string): boolean {
   return isJsonObject(value) && typeof value[key] === 'string'
 }
 
-export function isCapabilityKind(value: unknown): value is CapabilityKind {
-  return typeof value === 'string' && capabilityKinds.includes(value as CapabilityKind)
+function isPathNodeKind(value: unknown): value is PathNodeKind {
+  return typeof value === 'string' && pathNodeKinds.includes(value as PathNodeKind)
+}
+
+export function isHttpMethod(value: unknown): value is HttpMethod {
+  return typeof value === 'string' && httpMethods.includes(value as HttpMethod)
 }
 
 function isClientConnectionMode(value: unknown): value is ClientConnectionMode {
@@ -34,6 +49,13 @@ function isClientConnectionMode(value: unknown): value is ClientConnectionMode {
 
 function isClientAuthSource(value: unknown): value is ClientAuthSource {
   return typeof value === 'string' && clientAuthSources.includes(value as ClientAuthSource)
+}
+
+function isLegacyCapabilityKind(value: unknown): value is LegacyCapabilityKind {
+  return (
+    typeof value === 'string' &&
+    legacyCapabilityKinds.includes(value as LegacyCapabilityKind)
+  )
 }
 
 function isAuthContext(value: unknown): value is AuthContext {
@@ -58,26 +80,69 @@ function isClientConnectionDescriptor(value: unknown): boolean {
   )
 }
 
-function isResourceDescriptor(value: unknown): value is ResourceDescriptor {
-  return hasString(value, 'uri') && hasString(value, 'name')
+function isLegacyCapabilityAlias(value: unknown): value is LegacyCapabilityAlias {
+  if (!isJsonObject(value) || !isLegacyCapabilityKind(value.kind)) {
+    return false
+  }
+
+  switch (value.kind) {
+    case 'resource':
+      return (
+        typeof value.uri === 'string' &&
+        (!('name' in value) || value.name === undefined || typeof value.name === 'string')
+      )
+    case 'tool':
+    case 'prompt':
+    case 'skill':
+      return typeof value.name === 'string'
+  }
 }
 
-function isNamedDescriptor(value: unknown): value is { name: string } {
-  return hasString(value, 'name')
+function isPathDescriptor(value: unknown): value is PathDescriptor {
+  if (!isJsonObject(value) || !isPathNodeKind(value.type) || !isPathPattern(value.path)) {
+    return false
+  }
+
+  if ('description' in value && value.description !== undefined && typeof value.description !== 'string') {
+    return false
+  }
+
+  if ('legacy' in value && value.legacy !== undefined && !isLegacyCapabilityAlias(value.legacy)) {
+    return false
+  }
+
+  const legacy = isLegacyCapabilityAlias(value.legacy) ? value.legacy : undefined
+
+  switch (value.type) {
+    case 'endpoint':
+      return (
+        !isSkillPath(value.path) &&
+        !isPromptPath(value.path) &&
+        isHttpMethod(value.method) &&
+        (!legacy || legacy.kind === 'tool' || legacy.kind === 'resource') &&
+        (!('inputSchema' in value) || isJsonObject(value.inputSchema)) &&
+        (!('outputSchema' in value) || isJsonObject(value.outputSchema)) &&
+        (!('contentType' in value) || typeof value.contentType === 'string')
+      )
+    case 'skill':
+      return (
+        isSkillPath(value.path) &&
+        (!legacy || legacy.kind === 'skill') &&
+        (!('contentType' in value) || typeof value.contentType === 'string')
+      )
+    case 'prompt':
+      return (
+        isPromptPath(value.path) &&
+        (!legacy || legacy.kind === 'prompt') &&
+        (!('inputSchema' in value) || isJsonObject(value.inputSchema)) &&
+        (!('outputSchema' in value) || isJsonObject(value.outputSchema))
+      )
+  }
 }
 
-export function isSkillPath(value: unknown): value is string {
-  return typeof value === 'string' && SKILL_PATH_PATTERN.test(value)
-}
-
-function isSkillDescriptor(value: unknown): value is SkillDescriptor {
-  return isNamedDescriptor(value) && isSkillPath(value.name)
-}
-
-function hasDescriptorArray(
+function hasPathDescriptorArray(
   value: unknown,
-  key: keyof ClientCapabilityUpdate,
-  itemGuard: (item: unknown) => boolean,
+  key: 'paths',
   required: boolean
 ): boolean {
   if (!isJsonObject(value)) {
@@ -90,27 +155,11 @@ function hasDescriptorArray(
 
   const entry = value[key]
 
-  return Array.isArray(entry) && entry.every(itemGuard)
+  return Array.isArray(entry) && entry.every(isPathDescriptor)
 }
 
-function hasClientCapabilities(
-  value: unknown,
-  required: boolean
-): boolean {
-  return (
-    hasDescriptorArray(value, 'tools', isNamedDescriptor, required) &&
-    hasDescriptorArray(value, 'prompts', isNamedDescriptor, required) &&
-    hasDescriptorArray(value, 'skills', isSkillDescriptor, required) &&
-    hasDescriptorArray(value, 'resources', isResourceDescriptor, required)
-  )
-}
-
-function isClientCapabilityUpdate(value: unknown): value is ClientCapabilityUpdate {
-  return (
-    isJsonObject(value) &&
-    ('tools' in value || 'prompts' in value || 'skills' in value || 'resources' in value) &&
-    hasClientCapabilities(value, false)
-  )
+function hasClientCatalog(value: unknown, required: boolean): boolean {
+  return hasPathDescriptorArray(value, 'paths', required)
 }
 
 export function isClientDescriptor(value: unknown): value is ClientDescriptor {
@@ -118,7 +167,7 @@ export function isClientDescriptor(value: unknown): value is ClientDescriptor {
     return false
   }
 
-  return hasClientCapabilities(value, true)
+  return hasClientCatalog(value, true)
 }
 
 export function isListedClient(value: unknown): boolean {
@@ -153,26 +202,20 @@ export function isMdpMessage(value: unknown): value is MdpMessage {
       )
     case 'unregisterClient':
       return hasString(value, 'clientId')
-    case 'updateClientCapabilities':
-      return hasString(value, 'clientId') && isClientCapabilityUpdate(value.capabilities)
+    case 'updateClientCatalog':
+      return hasString(value, 'clientId') && hasPathDescriptorArray(value, 'paths', true)
     case 'callClient':
-      if (
-        !hasString(object, 'requestId') ||
-        !hasString(object, 'clientId') ||
-        !isCapabilityKind(isJsonObject(object) ? object.kind : undefined) ||
-        ('auth' in object && !isAuthContext(object.auth))
-      ) {
-        return false
-      }
-
-      if (object.kind === 'skill') {
-        return hasString(object, 'name') && isSkillPath(object.name)
-      }
-
       return (
-        (hasString(object, 'name') && !('uri' in object && object.uri !== undefined)) ||
-        (hasString(object, 'uri') && !('name' in object && object.name !== undefined)) ||
-        (hasString(object, 'name') && hasString(object, 'uri'))
+        hasString(object, 'requestId') &&
+        hasString(object, 'clientId') &&
+        isHttpMethod(object.method) &&
+        hasString(object, 'path') &&
+        isConcretePath(object.path) &&
+        (!('params' in object) || isJsonObject(object.params)) &&
+        (!('query' in object) || isJsonObject(object.query)) &&
+        (!('body' in object) || isJsonValue(object.body)) &&
+        (!('headers' in object) || isStringRecord(object.headers)) &&
+        (!('auth' in object) || isAuthContext(object.auth))
       )
     case 'callClientResult':
       return (
@@ -204,6 +247,16 @@ export function parseMessage(raw: string): MdpMessage {
 
 export function isStringRecord(value: unknown): value is Record<string, string> {
   return isJsonObject(value) && isStringArray(Object.values(value))
+}
+
+export function parseClusterMessage(raw: string): ClusterMessage {
+  const parsed = JSON.parse(raw) as unknown
+
+  if (!isClusterMessage(parsed)) {
+    throw new Error('Invalid MDP cluster message')
+  }
+
+  return parsed
 }
 
 export function isClusterMessage(value: unknown): value is ClusterMessage {
@@ -316,25 +369,9 @@ export function isClusterMessage(value: unknown): value is ClusterMessage {
         typeof object.ok === 'boolean' &&
         typeof object.timestamp === 'number' &&
         (!('result' in object) || isJsonValue(object.result)) &&
-        (!('error' in object) ||
-          (
-            isJsonObject(object.error) &&
-            isProtocolErrorCode(object.error.code) &&
-            typeof object.error.message === 'string' &&
-            (!('details' in object.error) || isJsonValue(object.error.details))
-          ))
+        (!('error' in object) || isJsonValue(object.error))
       )
     default:
       return false
   }
-}
-
-export function parseClusterMessage(raw: string): ClusterMessage {
-  const parsed = JSON.parse(raw) as unknown
-
-  if (!isClusterMessage(parsed)) {
-    throw new Error('Invalid MDP cluster message')
-  }
-
-  return parsed
 }

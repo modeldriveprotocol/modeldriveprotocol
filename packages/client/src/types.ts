@@ -1,12 +1,12 @@
 import type {
   AuthContext,
-  CapabilityKind,
   ClientDescriptor,
-  ClientToServerMessage,
-  JsonPrimitive,
-  JsonObject,
+  HttpMethod,
   JsonSchema,
-  PromptArgumentDescriptor,
+  JsonValue,
+  LegacyCapabilityAlias,
+  PathDescriptor,
+  PathNodeKind,
   RpcArguments,
   ServerToClientMessage
 } from '@modeldriveprotocol/protocol'
@@ -22,71 +22,77 @@ export interface ClientInfo {
   description?: string
   version?: string
   platform?: string
-  metadata?: JsonObject
+  metadata?: Record<string, JsonValue>
 }
 
-export interface CapabilityInvocationContext {
+export interface PathInvocationContext {
   requestId: string
   clientId: string
-  kind: CapabilityKind
-  name?: string
-  uri?: string
+  type: PathNodeKind
+  method: HttpMethod
+  path: string
+  legacy?: LegacyCapabilityAlias
   auth?: AuthContext
 }
 
-export type CapabilityHandler<TResult = unknown> = (
-  args: RpcArguments | undefined,
-  context: CapabilityInvocationContext
-) => TResult | Promise<TResult>
-
-export interface CapabilityInvocation extends CapabilityInvocationContext {
-  args: RpcArguments | undefined
+export interface PathRequest {
+  params: RpcArguments
+  queries: RpcArguments
+  body?: JsonValue
+  headers: Record<string, string>
 }
 
-export type CapabilityInvocationNext<TResult = unknown> = () => Promise<TResult>
+export interface PathInvocation extends PathInvocationContext, PathRequest {
+  kind?: 'tool' | 'prompt' | 'skill' | 'resource'
+  name?: string
+  uri?: string
+  args?: RpcArguments
+}
 
-export type CapabilityInvocationMiddleware<TResult = unknown> = (
-  invocation: CapabilityInvocation,
-  next: CapabilityInvocationNext<TResult>
+export type PathHandler<TResult = unknown> = (
+  request: PathRequest,
+  context: PathInvocationContext
 ) => TResult | Promise<TResult>
 
-export type SkillParameterValue = Exclude<JsonPrimitive, null>
-export type SkillQuery = Record<string, SkillParameterValue>
-export type SkillHeaders = Record<string, SkillParameterValue>
+export type PathInvocationNext<TResult = unknown> = () => Promise<TResult>
 
-export type SkillResolver<TResult = string> = (
-  query: SkillQuery,
-  headers: SkillHeaders,
-  context: CapabilityInvocationContext
+export type PathInvocationMiddleware<TResult = unknown> = (
+  invocation: PathInvocation,
+  next: PathInvocationNext<TResult>
 ) => TResult | Promise<TResult>
 
-export type SkillDefinition = string | SkillResolver | CapabilityHandler
-
-export interface ExposeToolOptions {
+export interface ExposeEndpointOptions {
+  method: HttpMethod
   description?: string
   inputSchema?: JsonSchema
-}
-
-export interface ExposePromptOptions {
-  description?: string
-  arguments?: PromptArgumentDescriptor[]
+  outputSchema?: JsonSchema
+  contentType?: string
+  legacy?: LegacyCapabilityAlias
 }
 
 export interface ExposeSkillOptions {
   description?: string
   contentType?: string
-  inputSchema?: JsonSchema
+  legacy?: LegacyCapabilityAlias
 }
 
-export interface ExposeResourceOptions {
-  name: string
+export interface ExposePromptOptions {
   description?: string
-  mimeType?: string
+  inputSchema?: JsonSchema
+  outputSchema?: JsonSchema
+  legacy?: LegacyCapabilityAlias
 }
+
+export type ExposePathOptions =
+  | ExposeEndpointOptions
+  | ExposeSkillOptions
+  | ExposePromptOptions
+
+export type StaticPathDefinition = string
 
 export interface ClientTransport {
   connect(): Promise<void>
-  send(message: ClientToServerMessage): void
+  send(message: import('@modeldriveprotocol/protocol').ClientToServerMessage): void
   close(code?: number, reason?: string): Promise<void>
   onMessage(handler: (message: ServerToClientMessage) => void): void
   onClose(handler: () => void): void
@@ -105,27 +111,27 @@ export type ClientTransportAuthOptions = CookieTransportAuthOptions
 
 export type MdpClientReconnectEvent =
   | {
-    type: 'disconnected'
-  }
+      type: 'disconnected'
+    }
   | {
-    type: 'reconnectScheduled'
-    attempt: number
-    delayMs: number
-    error?: Error
-  }
+      type: 'reconnectScheduled'
+      attempt: number
+      delayMs: number
+      error?: Error
+    }
   | {
-    type: 'reconnectAttempt'
-    attempt: number
-  }
+      type: 'reconnectAttempt'
+      attempt: number
+    }
   | {
-    type: 'reconnected'
-    attempt: number
-  }
+      type: 'reconnected'
+      attempt: number
+    }
   | {
-    type: 'reconnectStopped'
-    attempt: number
-    error: Error
-  }
+      type: 'reconnectStopped'
+      attempt: number
+      error: Error
+    }
 
 export interface MdpClientReconnectOptions {
   enabled?: boolean
@@ -155,6 +161,63 @@ export interface BrowserScriptClientAttributes {
   clientDescription?: string
 }
 
-export type ClientDescriptorOverride = Partial<
-  Omit<ClientDescriptor, 'tools' | 'prompts' | 'skills' | 'resources'>
->
+export type ClientDescriptorOverride = Partial<Omit<ClientDescriptor, 'paths'>>
+
+export type ExposedPath = PathDescriptor
+
+export interface LegacyCapabilityContext extends PathInvocationContext {
+  params: RpcArguments
+  queries: RpcArguments
+  headers: Record<string, string>
+}
+
+export type CapabilityInvocationMiddleware<TResult = unknown> =
+  PathInvocationMiddleware<TResult>
+
+export type SkillQuery = RpcArguments
+export type SkillHeaders = Record<string, unknown>
+
+export interface ExposeToolOptions {
+  description?: string
+  inputSchema?: JsonSchema
+  outputSchema?: JsonSchema
+  contentType?: string
+}
+
+export interface ExposeLegacyPromptOptions {
+  description?: string
+  inputSchema?: JsonSchema
+  outputSchema?: JsonSchema
+}
+
+export interface ExposeLegacySkillOptions {
+  description?: string
+  inputSchema?: JsonSchema
+  contentType?: string
+}
+
+export interface ExposeResourceOptions {
+  name?: string
+  description?: string
+  mimeType?: string
+}
+
+export type LegacyToolHandler<TResult = unknown> = (
+  args: RpcArguments | undefined,
+  context: LegacyCapabilityContext
+) => TResult | Promise<TResult>
+
+export type LegacyPromptHandler<TResult = unknown> = (
+  args: RpcArguments | undefined,
+  context: LegacyCapabilityContext
+) => TResult | Promise<TResult>
+
+export type LegacySkillHandler<TResult = unknown> = (
+  query: SkillQuery,
+  headers: SkillHeaders,
+  context: LegacyCapabilityContext
+) => TResult | Promise<TResult>
+
+export type LegacyResourceHandler<TResult = unknown> = (
+  context: LegacyCapabilityContext
+) => TResult | Promise<TResult>

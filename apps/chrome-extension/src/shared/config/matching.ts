@@ -4,10 +4,12 @@ import { uniqueStrings } from '../utils.js'
 import { chromePatternToRegex } from './internal.js'
 
 export function parseMatchPatterns(text: string): string[] {
-  return text
-    .split(/\r?\n/g)
-    .map((pattern) => pattern.trim())
-    .filter((pattern) => pattern.length > 0)
+  return uniqueStrings(
+    text
+      .split(/\r?\n/g)
+      .map((pattern) => pattern.trim())
+      .filter((pattern) => pattern.length > 0)
+  )
 }
 
 export function stringifyMatchPatterns(patterns: string[]): string {

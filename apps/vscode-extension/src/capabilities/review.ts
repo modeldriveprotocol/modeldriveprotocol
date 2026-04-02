@@ -2,10 +2,10 @@ import type { MdpClient } from '@modeldriveprotocol/client'
 
 import { type PromptPayload, createReviewPrompt, createUnavailablePrompt } from '../model.js'
 import {
-  asObject,
   collectDiagnostics,
   getActiveEditorSnapshot,
   readPositiveNumber,
+  readRequestObject,
   readString,
   resolveReviewText
 } from './shared.js'
@@ -17,35 +17,36 @@ export function registerReviewCapabilities(
 ): void {
   const { config } = environment
 
-  client.exposePrompt(
-    'vscode.reviewSelection',
-    async (args) =>
-      buildReviewPrompt(
-        asObject(args),
-        config.resourceTextLimit,
-        config.diagnosticResultLimit
-      ),
+  client.expose(
+    '/vscode/review-selection/prompt.md',
     {
       description: 'Build a review prompt from the active VSCode selection or active document.',
-      arguments: [
-        {
-          name: 'goal',
-          description: 'What the review should optimize for',
-          required: false
-        },
-        {
-          name: 'tone',
-          description: 'How concise or direct the review should be',
-          required: false
+      inputSchema: {
+        type: 'object',
+        properties: {
+          goal: { type: 'string' },
+          tone: { type: 'string' },
+          textLimit: { type: 'number' },
+          diagnosticLimit: { type: 'number' }
         }
-      ]
-    }
+      }
+    },
+    async (request) =>
+      buildReviewPrompt(
+        readRequestObject(request),
+        config.resourceTextLimit,
+        config.diagnosticResultLimit
+      )
   )
 
-  client.exposeSkill(
-    'vscode/review-active-editor',
-    async (args) => {
-      const options = asObject(args)
+  client.expose(
+    '/vscode/review-active-editor/skill.md',
+    {
+      description: 'Collect active editor review context, diagnostics, and a ready-to-use review prompt.',
+      contentType: 'application/json'
+    },
+    async (request) => {
+      const options = readRequestObject(request)
       const textLimit = readPositiveNumber(
         options.textLimit,
         config.resourceTextLimit,
@@ -86,18 +87,6 @@ export function registerReviewCapabilities(
         suggestedPrompt: prompt,
         reviewSource: sourceKind,
         text
-      }
-    },
-    {
-      description: 'Collect active editor review context, diagnostics, and a ready-to-use review prompt.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          goal: { type: 'string' },
-          tone: { type: 'string' },
-          textLimit: { type: 'number' },
-          diagnosticLimit: { type: 'number' }
-        }
       }
     }
   )

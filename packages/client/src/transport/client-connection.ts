@@ -1,5 +1,3 @@
-import type { ClientCapabilityUpdate } from '@modeldriveprotocol/protocol'
-
 import { HttpLoopClientTransport } from './http-loop-client.js'
 import type { BrowserScriptClientAttributes, ClientTransport } from '../types.js'
 import { WebSocketClientTransport } from './ws-client.js'
@@ -17,15 +15,6 @@ export function createDefaultTransport(serverUrl: string): ClientTransport {
     default:
       throw new Error(`Unsupported MDP transport protocol: ${protocol}`)
   }
-}
-
-export function hasCapabilityUpdate(capabilities: ClientCapabilityUpdate): boolean {
-  return (
-    capabilities.tools !== undefined ||
-    capabilities.prompts !== undefined ||
-    capabilities.skills !== undefined ||
-    capabilities.resources !== undefined
-  )
 }
 
 export function resolveServerUrl(attributes: BrowserScriptClientAttributes): string {

@@ -243,7 +243,7 @@ export function ClientFlowsPanel({
               <ListItem disablePadding>
                 <ListItemButton
                   selected={selectedFlow.id === recording.id}
-                  onClick={() => setSelectedFlowId(recording.id)}
+                  onClick={() => commitSelectedFlowId(recording.id)}
                 >
                   <ListItemText
                     primary={recording.name}
