@@ -4,13 +4,13 @@ This example shows one practical split:
 
 - `pi-agent-core` runs the agent loop
 - MDP bridges runtime-local tools into that loop
-- a browser page owns the live inbox state and exposes tools/resources through MDP
+- a browser page owns the live inbox state and exposes canonical paths through MDP
 
 ## What you get
 
 - a browser runtime with local support tickets
-- MDP tools for `listTickets`, `getTicket`, and `saveDraft`
-- an MDP resource for the local reply playbook
+- canonical MDP endpoints for listing tickets, reading one ticket, and saving drafts
+- canonical MDP paths for the local reply playbook, prompt, and workflow skill
 - a Node runner that starts the MDP server, waits for the browser runtime, and lets a Pi agent draft and save a reply
 
 ## Run it
@@ -58,6 +58,6 @@ export PI_MODEL_ID=claude-sonnet-4-20250514
 ## Flow
 
 1. `agent-runner.mjs` launches `packages/server/dist/cli.js`
-2. the browser page connects to `ws://127.0.0.1:7070` and registers its capabilities
-3. the Pi agent uses MCP bridge tools such as `callTools` and `readResource`
+2. the browser page connects to `ws://127.0.0.1:7070` and registers its path catalog
+3. the Pi agent uses canonical MCP bridge tools such as `listClients` and `callPath`
 4. the browser runtime saves the draft locally so you can see the result immediately

@@ -175,7 +175,7 @@ describe('MdpClient', () => {
 
     client.useInvocationMiddleware(async (invocation, next) => {
       events.push(
-        `before:${invocation.type}:${invocation.method}:${invocation.path}:${invocation.kind}:${invocation.name}:${invocation.args?.page}`
+        `before:${invocation.type}:${invocation.method}:${invocation.path}:${invocation.queries.page}`
       )
       invocation.queries.page = 7
       const result = await next()
@@ -214,12 +214,12 @@ describe('MdpClient', () => {
     })
 
     expect(events).toEqual([
-      'before:endpoint:GET:/goods:tool:/goods:1',
+      'before:endpoint:GET:/goods:1',
       'after:{"page":7}'
     ])
   })
 
-  it('supports legacy capability registration wrappers', async () => {
+  it('registers diverse path descriptors through expose()', async () => {
     const transport = new FakeTransport()
     const client = createMdpClient({
       serverUrl: 'ws://127.0.0.1:7070',
@@ -231,80 +231,67 @@ describe('MdpClient', () => {
     })
 
     client
-      .exposeTool('searchDom', async (args, context) => ({
-        query: args?.query,
+      .expose('/search-dom', {
+        method: 'POST'
+      }, async (request, context) => ({
+        query:
+          request.body && typeof request.body === 'object'
+            ? (request.body as { query?: string }).query
+            : undefined,
         authToken: context.auth?.token
       }))
-      .exposePrompt('summarizeSelection', async (args) => ({
+      .expose('/summaries/prompt.md', {}, async () => ({
         messages: [
           {
             role: 'user',
-            content: `Summarize in a ${String(args?.tone ?? 'neutral')} tone.`
+            content: 'Summarize in a neutral tone.'
           }
         ]
       }))
-      .exposeSkill('page/review', async () => ({
-        findings: ['No issues found']
-      }), {
+      .expose('/page/review/skill.md', {
         contentType: 'application/json'
-      })
-      .exposeResource('webpage://active-tab/selection', async () => ({
+      }, async () => ({
+        findings: ['No issues found']
+      }))
+      .expose('/webpage/selection', {
+        method: 'GET',
+        contentType: 'text/plain'
+      }, async () => ({
         mimeType: 'text/plain',
         text: 'Selected text'
-      }), {
-        name: 'Active Selection',
-        mimeType: 'text/plain'
-      })
+      }))
 
     const paths = client.describe().paths
-    const toolPath = paths.find((descriptor) => descriptor.legacy?.kind === 'tool')?.path
-    const resourcePath = paths.find((descriptor) => descriptor.legacy?.kind === 'resource')?.path
 
     expect(paths).toEqual([
-      expect.objectContaining({
+      {
         type: 'endpoint',
+        path: '/search-dom',
         method: 'POST',
-        legacy: {
-          kind: 'tool',
-          name: 'searchDom'
-        }
-      }),
-      expect.objectContaining({
+      },
+      {
         type: 'prompt',
-        legacy: {
-          kind: 'prompt',
-          name: 'summarizeSelection'
-        }
-      }),
-      expect.objectContaining({
+        path: '/summaries/prompt.md',
+      },
+      {
         type: 'skill',
+        path: '/page/review/skill.md',
         contentType: 'application/json',
-        legacy: {
-          kind: 'skill',
-          name: 'page/review'
-        }
-      }),
-      expect.objectContaining({
+      },
+      {
         type: 'endpoint',
+        path: '/webpage/selection',
         method: 'GET',
         contentType: 'text/plain',
-        legacy: {
-          kind: 'resource',
-          uri: 'webpage://active-tab/selection',
-          name: 'Active Selection'
-        }
-      })
+      }
     ])
-
-    expect(toolPath).toBeTruthy()
-    expect(resourcePath).toBeTruthy()
 
     transport.emit({
       type: 'callClient',
-      requestId: 'req-legacy-tool',
+      requestId: 'req-search',
       clientId: 'browser-01',
       method: 'POST',
-      path: toolPath as string,
+      path: '/search-dom',
       body: {
         query: 'mdp'
       },
@@ -314,17 +301,17 @@ describe('MdpClient', () => {
     })
     transport.emit({
       type: 'callClient',
-      requestId: 'req-legacy-resource',
+      requestId: 'req-selection',
       clientId: 'browser-01',
       method: 'GET',
-      path: resourcePath as string
+      path: '/webpage/selection'
     })
 
     await vi.waitFor(() => {
       expect(transport.sent).toEqual([
         {
           type: 'callClientResult',
-          requestId: 'req-legacy-tool',
+          requestId: 'req-search',
           ok: true,
           data: {
             query: 'mdp',
@@ -333,7 +320,7 @@ describe('MdpClient', () => {
         },
         {
           type: 'callClientResult',
-          requestId: 'req-legacy-resource',
+          requestId: 'req-selection',
           ok: true,
           data: {
             mimeType: 'text/plain',

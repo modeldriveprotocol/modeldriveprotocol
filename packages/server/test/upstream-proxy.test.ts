@@ -1,3 +1,4 @@
+import { MDP_PROTOCOL_VERSION, MDP_SUPPORTED_PROTOCOL_RANGES } from '@modeldriveprotocol/protocol'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { ClientSessionTransport } from '../src/client-session.js'
@@ -63,12 +64,12 @@ function createMetaResponse(overrides: Partial<{
     leaderUrl?: string
     leaseDurationMs: number
   }
-}> = {}): Response {
-  return new Response(JSON.stringify({
-    protocol: 'mdp',
-    protocolVersion: overrides.protocolVersion ?? '1.0.0',
-    supportedProtocolRanges: overrides.supportedProtocolRanges ?? ['^1.0.0'],
-    serverId: overrides.serverId ?? 'hub',
+  }> = {}): Response {
+    return new Response(JSON.stringify({
+      protocol: 'mdp',
+      protocolVersion: overrides.protocolVersion ?? MDP_PROTOCOL_VERSION,
+      supportedProtocolRanges: overrides.supportedProtocolRanges ?? [...MDP_SUPPORTED_PROTOCOL_RANGES],
+      serverId: overrides.serverId ?? 'hub',
     endpoints: overrides.endpoints ?? {
       ws: 'ws://127.0.0.1:47372',
       httpLoop: 'http://127.0.0.1:47372/mdp/http-loop',
@@ -169,19 +170,19 @@ describe('upstream discovery and proxying', () => {
 
   it('accepts upstream servers whose semver ranges satisfy the required protocol version', async () => {
     const fetch = vi.fn(async () => createMetaResponse({
-      protocolVersion: '1.0.2',
-      supportedProtocolRanges: ['^1.0.0']
+      protocolVersion: '2.0.2',
+      supportedProtocolRanges: ['^2.0.0']
     }))
 
     await expect(probeMdpServer('ws://127.0.0.1:47372', {
       fetch,
-      requiredProtocolVersion: '1.0.5'
+      requiredProtocolVersion: '2.0.5'
     })).resolves.toEqual(
       expect.objectContaining({
         url: 'ws://127.0.0.1:47372',
         meta: expect.objectContaining({
           serverId: 'hub',
-          supportedProtocolRanges: ['^1.0.0']
+          supportedProtocolRanges: ['^2.0.0']
         })
       })
     )
@@ -218,7 +219,7 @@ describe('upstream discovery and proxying', () => {
     await expect(probeMdpServer('ws://127.0.0.1:47372', {
       fetch
     })).rejects.toThrow(
-      'MDP server at ws://127.0.0.1:47372 does not support protocol version 1.0.0.'
+      'MDP server at ws://127.0.0.1:47372 does not support protocol version 2.0.0.'
     )
   })
 

@@ -16,10 +16,11 @@ Bridge tools 包括：
 
 这样的 bridge surface 可以让 host 侧保持稳定，同时允许 client registry 在运行时动态变化。
 
-path-oriented bridge 是当前 canonical surface。当前 server 也保留了 legacy bridge 名称作为兼容别名：
+path-oriented bridge 就是当前 surface：
 
-- `listTools`、`listPrompts`、`listSkills`、`listResources`
-- `callTools`、`getPrompt`、`callSkills`、`readResource`
-- `callClients`
+- `listClients`
+- `listPaths`
+- `callPath`
+- `callPaths`
 
-`callPath`、`callPaths` 以及这些 legacy 调用型 bridge tools 都支持可选的 `auth` 对象。这个 payload 会原样下发给目标 client，体现在 `callClient.auth` 里。
+`callPath`、`callPaths` 支持可选的 `auth` 对象。这个 payload 会原样下发给目标 client，体现在 `callClient.auth` 里。

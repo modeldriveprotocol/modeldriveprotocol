@@ -36,7 +36,7 @@ The app is built as an MDP client:
 
 - the background service worker connects to the MDP server
 - matched pages receive a content script for DOM operations
-- the extension can inject a main-world bridge so page-local code can register tools
+- the extension can inject a main-world bridge so page-local code can register paths
 - the local development workflow is powered by WXT
 
 ## What it exposes
@@ -46,7 +46,7 @@ The current extension app can expose capabilities such as:
 - Chrome-side endpoint paths for tab management, notifications, and config status
 - DOM-oriented endpoint paths through the content script
 - injected main-world endpoint paths through `window.__MDP_EXTENSION_BRIDGE__`
-- bridge tools such as `page.listInjectedTools`, `page.callInjectedTool`, and `page.getSnapshot`
+- bridge-facing endpoint paths such as `GET /page/injected-paths`, `POST /page/call-injected-path`, and `POST /page/snapshot`
 
 ## Build and load
 
@@ -72,7 +72,7 @@ Use the extension options page to set:
 
 - the MDP server URL
 - target match patterns
-- the optional default tool script for main-world registration
+- the optional default bridge script for main-world registration
 
 - [JavaScript Quick Start](/sdk/javascript/quick-start)
 - [Usage](/sdk/javascript/usage)

@@ -43,7 +43,7 @@ describe('route skill assets', () => {
         attempt: 3
       },
       {
-        'X-Preview': true
+        'X-Preview': 'true'
       }
     )
 

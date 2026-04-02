@@ -59,7 +59,7 @@ Once the client is registered, an MCP host can use bridge tools such as:
 - `callPath`
 - `callPaths`
 
-Legacy aliases such as `listTools` and `callTools` still exist for migration, but the canonical bridge surface is path-based.
+Those four bridge tools are the surface to target.
 
 If the runtime changes its catalog later, update the local registry and push the current path catalog:
 

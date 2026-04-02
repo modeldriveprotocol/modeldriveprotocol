@@ -7,7 +7,7 @@ status: Draft
 
 `registerClient` 是一个从 client 发往 server 的生命周期事件，用来上报一个 client 身份以及当前完整的路径目录。
 
-如果同一个已连接 client 之后只需要修改已注册路径，优先使用 [updateClientCatalog](/zh-Hans/server/api/update-client-capabilities)，而不是重新发送整份身份描述。
+如果同一个已连接 client 之后只需要修改已注册路径，优先使用 [updateClientCatalog](/zh-Hans/server/api/update-client-catalog)，而不是重新发送整份身份描述。
 
 | 事件类型         | 事件流向         |
 | ---------------- | ---------------- |

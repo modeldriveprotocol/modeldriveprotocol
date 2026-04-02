@@ -28,19 +28,19 @@ describe('nodejs simple mdp client', () => {
 
     registerNodejsSimpleCapabilities(client)
 
-    expect(Object.keys(client.tools)).toEqual([
-      'nodejs.getRuntimeInfo',
-      'workspace.listSubpackages',
-      'workspace.readPackageManifest',
-      'workspace.updatePackageManifest'
+    expect(Object.keys(client.endpoints)).toEqual([
+      '/nodejs/runtime-info',
+      '/workspace/subpackages',
+      '/workspace/package-manifest',
+      '/workspace/update-package-manifest'
     ])
     expect(Object.keys(client.skills)).toEqual([
-      'nodejs-simple/overview',
-      'nodejs-simple/tools',
-      'nodejs-simple/package-json'
+      '/nodejs-simple/overview/skill.md',
+      '/nodejs-simple/tools/skill.md',
+      '/nodejs-simple/package-json/skill.md'
     ])
 
-    await expect(client.skills['nodejs-simple/overview']?.()).resolves.toContain(
+    await expect(client.skills['/nodejs-simple/overview/skill.md']?.()).resolves.toContain(
       '# Node.js Simple Client'
     )
   })
@@ -257,23 +257,42 @@ describe('nodejs simple mdp client', () => {
 })
 
 function createFakeClient() {
-  const tools: Record<string, (args?: Record<string, unknown>) => unknown | Promise<unknown>> = {}
+  const endpoints: Record<string, (request: {
+    params: Record<string, unknown>
+    queries: Record<string, unknown>
+    headers: Record<string, string>
+    body?: unknown
+  }) => unknown | Promise<unknown>> = {}
   const skills: Record<string, (() => Promise<string>) | undefined> = {}
 
   return {
-    tools,
+    endpoints,
     skills,
-    exposeTool(name: string, handler: (args?: Record<string, unknown>) => unknown | Promise<unknown>) {
-      tools[name] = handler
-      return this
-    },
-    exposeSkill(name: string, definition: string | (() => Promise<string>)) {
-      if (typeof definition === 'string') {
-        skills[name] = async () => definition
+    expose(path: string, definition: string | { method?: string }, handler?: (...args: any[]) => unknown | Promise<unknown>) {
+      if (path.endsWith('/skill.md')) {
+        if (typeof definition === 'string') {
+          skills[path] = async () => definition
+        }
+        else if (handler) {
+          skills[path] = async () => String(await handler())
+        }
+        else {
+          throw new Error(`Expected skill handler for ${path}`)
+        }
+
+        return this
       }
-      else {
-        skills[name] = definition
+
+      if (typeof definition === 'string' || !handler) {
+        throw new Error(`Expected endpoint descriptor and handler for ${path}`)
       }
+
+      endpoints[path] = handler as (request: {
+        params: Record<string, unknown>
+        queries: Record<string, unknown>
+        headers: Record<string, string>
+        body?: unknown
+      }) => unknown | Promise<unknown>
       return this
     },
     async connect() {},

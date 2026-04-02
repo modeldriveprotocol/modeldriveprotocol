@@ -20,15 +20,15 @@ describe('browser simple mdp client', () => {
 
     registerBrowserSimpleCapabilities(client)
 
-    expect(Object.keys(client.tools)).toEqual([
-      'browser.getPageBasics',
-      'browser.clickElement',
-      'browser.alertMessage'
+    expect(Object.keys(client.endpoints)).toEqual([
+      '/browser/page-basics',
+      '/browser/click-element',
+      '/browser/alert-message'
     ])
     expect(Object.keys(client.skills)).toEqual([
-      'browser-simple/overview',
-      'browser-simple/tools',
-      'browser-simple/examples'
+      '/browser-simple/overview/skill.md',
+      '/browser-simple/tools/skill.md',
+      '/browser-simple/examples/skill.md'
     ])
   })
 
@@ -69,7 +69,11 @@ describe('browser simple mdp client', () => {
 
     registerBrowserSimpleCapabilities(client)
 
-    await expect(client.tools['browser.getPageBasics']?.()).resolves.toEqual({
+    await expect(client.endpoints['/browser/page-basics']?.({
+      params: {},
+      queries: {},
+      headers: {}
+    })).resolves.toEqual({
       title: 'Simple Browser Client Test',
       url: currentLocation.href,
       origin: currentLocation.origin,
@@ -81,7 +85,12 @@ describe('browser simple mdp client', () => {
     })
 
     await expect(
-      client.tools['browser.clickElement']?.({ selector: 'button.primary' })
+      client.endpoints['/browser/click-element']?.({
+        params: {},
+        queries: {},
+        headers: {},
+        body: { selector: 'button.primary' }
+      })
     ).resolves.toEqual({
       selector: 'button.primary',
       tagName: 'button',
@@ -89,7 +98,12 @@ describe('browser simple mdp client', () => {
     })
 
     await expect(
-      client.tools['browser.alertMessage']?.({ message: 'hello from mdp' })
+      client.endpoints['/browser/alert-message']?.({
+        params: {},
+        queries: {},
+        headers: {},
+        body: { message: 'hello from mdp' }
+      })
     ).resolves.toEqual({
       delivered: true,
       message: 'hello from mdp'
@@ -99,13 +113,18 @@ describe('browser simple mdp client', () => {
 })
 
 function createFakeClient() {
-  const tools: Record<string, (args?: Record<string, unknown>) => unknown | Promise<unknown>> = {}
-  const skills: Record<string, string> = {}
+  const endpoints: Record<string, (request: {
+    params: Record<string, unknown>
+    queries: Record<string, unknown>
+    headers: Record<string, string>
+    body?: unknown
+  }) => unknown | Promise<unknown>> = {}
+  const skills: Record<string, () => Promise<string>> = {}
   let connected = false
   let registered = false
 
   return {
-    tools,
+    endpoints,
     skills,
     get connected() {
       return connected
@@ -113,12 +132,31 @@ function createFakeClient() {
     get registered() {
       return registered
     },
-    exposeTool(name: string, handler: (args?: Record<string, unknown>) => unknown | Promise<unknown>) {
-      tools[name] = handler
-      return this
-    },
-    exposeSkill(name: string, content: string) {
-      skills[name] = content
+    expose(path: string, definition: string | { method?: string }, handler?: (...args: any[]) => unknown | Promise<unknown>) {
+      if (path.endsWith('/skill.md')) {
+        if (typeof definition === 'string') {
+          skills[path] = async () => definition
+          return this
+        }
+
+        if (!handler) {
+          throw new Error(`Expected skill handler for ${path}`)
+        }
+
+        skills[path] = async () => String(await handler())
+        return this
+      }
+
+      if (typeof definition === 'string' || !handler) {
+        throw new Error(`Expected endpoint descriptor and handler for ${path}`)
+      }
+
+      endpoints[path] = handler as (request: {
+        params: Record<string, unknown>
+        queries: Record<string, unknown>
+        headers: Record<string, string>
+        body?: unknown
+      }) => unknown | Promise<unknown>
       return this
     },
     async connect() {
@@ -131,7 +169,18 @@ function createFakeClient() {
       return {
         id: 'browser-simple-01',
         name: 'Browser Simple Client',
-        platform: 'web'
+        platform: 'web',
+        paths: [
+          ...Object.keys(endpoints).map((path) => ({
+            type: 'endpoint' as const,
+            method: 'GET',
+            path
+          })),
+          ...Object.keys(skills).map((path) => ({
+            type: 'skill' as const,
+            path
+          }))
+        ]
       }
     }
   }

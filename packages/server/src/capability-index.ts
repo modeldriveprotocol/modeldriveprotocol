@@ -242,7 +242,6 @@ function collectPathSearchTerms(
     descriptor.type,
     descriptor.path,
     descriptor.description,
-    descriptor.legacy,
     'contentType' in descriptor ? descriptor.contentType : undefined
   ]
 
@@ -252,18 +251,6 @@ function collectPathSearchTerms(
 
   if (descriptor.type === 'prompt') {
     terms.push(descriptor.inputSchema, descriptor.outputSchema)
-  }
-
-  if (
-    descriptor.legacy?.kind === 'tool' ||
-    descriptor.legacy?.kind === 'prompt' ||
-    descriptor.legacy?.kind === 'skill'
-  ) {
-    terms.push(descriptor.legacy.name)
-  }
-
-  if (descriptor.legacy?.kind === 'resource') {
-    terms.push(descriptor.legacy.uri, descriptor.legacy.name)
   }
 
   return terms
@@ -296,33 +283,5 @@ function normalizeSearchTerm(term: unknown): string | undefined {
 
 function getPathCatalogDepth(path: string): number {
   const segments = path.split('/').filter(Boolean)
-
-  if (segments[0] === 'compat' && isCompatCategory(segments[1])) {
-    let logicalSegments = segments.slice(2)
-
-    if (logicalSegments[logicalSegments.length - 1] === 'prompt.md' || logicalSegments[logicalSegments.length - 1] === 'skill.md') {
-      logicalSegments = logicalSegments.slice(0, -1)
-    }
-
-    if (isCompatStableId(logicalSegments[logicalSegments.length - 1])) {
-      logicalSegments = logicalSegments.slice(0, -1)
-    }
-
-    return Math.max(1, logicalSegments.length - 1)
-  }
-
   return Math.max(1, segments.length - 2)
-}
-
-function isCompatCategory(segment: string | undefined): boolean {
-  return (
-    segment === 'tools' ||
-    segment === 'prompts' ||
-    segment === 'skills' ||
-    segment === 'resources'
-  )
-}
-
-function isCompatStableId(segment: string | undefined): boolean {
-  return segment !== undefined && /^[0-9a-f]{8}$/i.test(segment)
 }

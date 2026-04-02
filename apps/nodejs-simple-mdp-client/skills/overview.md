@@ -1,12 +1,12 @@
 # Node.js Simple Client
 
-This client exposes a small set of Node.js and workspace tools over MDP.
+This client exposes a small set of Node.js and workspace endpoints over MDP.
 
-Available tools:
+Available endpoints:
 
-- `nodejs.getRuntimeInfo` returns the current Node.js runtime, workspace root, root manifest metadata, and dependency summaries.
-- `workspace.listSubpackages` lists workspace packages discovered from `pnpm-workspace.yaml` or a recursive fallback scan.
-- `workspace.readPackageManifest` reads one `package.json` from the current workspace.
-- `workspace.updatePackageManifest` updates package metadata and dependency sections in one `package.json`.
+- `GET /nodejs/runtime-info` returns the current Node.js runtime, workspace root, root manifest metadata, and dependency summaries.
+- `GET /workspace/subpackages` lists workspace packages discovered from `pnpm-workspace.yaml` or a recursive fallback scan.
+- `POST /workspace/package-manifest` reads one `package.json` from the current workspace.
+- `POST /workspace/update-package-manifest` updates package metadata and dependency sections in one `package.json`.
 
-Use `nodejs-simple/tools` for exact tool behavior and `nodejs-simple/package-json` for manifest editing workflows.
+Use `/nodejs-simple/tools/skill.md` for exact endpoint behavior and `/nodejs-simple/package-json/skill.md` for manifest editing workflows.

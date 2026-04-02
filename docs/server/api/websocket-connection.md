@@ -35,7 +35,7 @@ The websocket transport uses the `type` field as the event discriminator.
 Client-to-server events:
 
 - [registerClient](/server/api/register-client)
-- [updateClientCatalog](/server/api/update-client-capabilities)
+- [updateClientCatalog](/server/api/update-client-catalog)
 - [unregisterClient](/server/api/unregister-client)
 - [callClientResult](/server/api/call-client-result)
 - [ping](/server/api/ping)

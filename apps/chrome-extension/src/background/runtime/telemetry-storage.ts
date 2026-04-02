@@ -12,8 +12,9 @@ import type { ClientInvocationTelemetryState } from './telemetry.js'
 
 const INVOCATION_TELEMETRY_STORAGE_KEY = 'invocationTelemetry'
 const INVOCATION_TELEMETRY_PERSIST_DELAY_MS = 500
-const INVOCATION_KIND_ORDER: InvocationCapabilityKind[] = ['tool', 'prompt', 'skill', 'resource']
+const INVOCATION_KIND_ORDER: InvocationCapabilityKind[] = ['endpoint', 'prompt', 'skill']
 const MAX_RECENT_INVOCATIONS_PER_CLIENT = 16
+type StoredInvocationCapabilityKind = InvocationCapabilityKind | 'tool' | 'resource'
 
 export async function ensureInvocationTelemetryLoaded(
   runtime: ChromeExtensionRuntime
@@ -163,7 +164,12 @@ function parseClientInvocationTelemetryState(
   const byKind = Object.fromEntries(
     INVOCATION_KIND_ORDER.map((kind) => [
       kind,
-      parseInvocationKindStats(kind, byKindRecord?.[kind])
+      parseInvocationKindStats(
+        kind,
+        kind === 'endpoint'
+          ? [byKindRecord?.endpoint, byKindRecord?.tool, byKindRecord?.resource]
+          : [byKindRecord?.[kind]]
+      )
     ])
   ) as ClientInvocationTelemetryState['byKind']
 
@@ -197,32 +203,54 @@ function parseClientInvocationTelemetryState(
   }
 }
 
-function parseInvocationKindStats(kind: InvocationCapabilityKind, value: unknown) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {
-      kind,
-      totalCount: 0,
-      successCount: 0,
-      errorCount: 0,
-      totalDurationMs: 0
-    }
-  }
-
-  const record = value as Record<string, unknown>
-
-  return {
+function parseInvocationKindStats(
+  kind: InvocationCapabilityKind,
+  values: unknown[]
+) {
+  const stats: {
+    kind: InvocationCapabilityKind
+    totalCount: number
+    successCount: number
+    errorCount: number
+    totalDurationMs: number
+    minDurationMs?: number
+    maxDurationMs?: number
+  } = {
     kind,
-    totalCount: readNumber(record, 'totalCount') ?? 0,
-    successCount: readNumber(record, 'successCount') ?? 0,
-    errorCount: readNumber(record, 'errorCount') ?? 0,
-    totalDurationMs: readNumber(record, 'totalDurationMs') ?? 0,
-    ...(readNumber(record, 'minDurationMs') !== undefined
-      ? { minDurationMs: readNumber(record, 'minDurationMs') }
-      : {}),
-    ...(readNumber(record, 'maxDurationMs') !== undefined
-      ? { maxDurationMs: readNumber(record, 'maxDurationMs') }
-      : {})
+    totalCount: 0,
+    successCount: 0,
+    errorCount: 0,
+    totalDurationMs: 0
   }
+
+  for (const value of values) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      continue
+    }
+
+    const record = value as Record<string, unknown>
+    const minDurationMs = readNumber(record, 'minDurationMs')
+    const maxDurationMs = readNumber(record, 'maxDurationMs')
+
+    stats.totalCount += readNumber(record, 'totalCount') ?? 0
+    stats.successCount += readNumber(record, 'successCount') ?? 0
+    stats.errorCount += readNumber(record, 'errorCount') ?? 0
+    stats.totalDurationMs += readNumber(record, 'totalDurationMs') ?? 0
+    stats.minDurationMs =
+      minDurationMs === undefined
+        ? stats.minDurationMs
+        : stats.minDurationMs === undefined
+          ? minDurationMs
+          : Math.min(stats.minDurationMs, minDurationMs)
+    stats.maxDurationMs =
+      maxDurationMs === undefined
+        ? stats.maxDurationMs
+        : stats.maxDurationMs === undefined
+          ? maxDurationMs
+          : Math.max(stats.maxDurationMs, maxDurationMs)
+  }
+
+  return stats
 }
 
 function parseInvocationRecord(value: unknown): InvocationRecord | undefined {
@@ -236,10 +264,11 @@ function parseInvocationRecord(value: unknown): InvocationRecord | undefined {
   const durationMs = readNumber(record, 'durationMs')
   const startedAt = readString(record, 'startedAt')
   const finishedAt = readString(record, 'finishedAt')
+  const kind = normalizeStoredInvocationCapabilityKind(record.kind)
 
   if (
     !requestId ||
-    !isInvocationCapabilityKind(record.kind) ||
+    !kind ||
     !target ||
     !isInvocationResultStatus(record.status) ||
     durationMs === undefined ||
@@ -251,7 +280,7 @@ function parseInvocationRecord(value: unknown): InvocationRecord | undefined {
 
   return {
     requestId,
-    kind: record.kind,
+    kind,
     target,
     status: record.status,
     durationMs,
@@ -262,7 +291,21 @@ function parseInvocationRecord(value: unknown): InvocationRecord | undefined {
 }
 
 function isInvocationCapabilityKind(value: unknown): value is InvocationCapabilityKind {
-  return value === 'tool' || value === 'prompt' || value === 'skill' || value === 'resource'
+  return value === 'endpoint' || value === 'prompt' || value === 'skill'
+}
+
+function normalizeStoredInvocationCapabilityKind(
+  value: unknown
+): InvocationCapabilityKind | undefined {
+  if (isInvocationCapabilityKind(value)) {
+    return value
+  }
+
+  if (value === 'tool' || value === 'resource') {
+    return 'endpoint'
+  }
+
+  return undefined
 }
 
 function isInvocationResultStatus(value: unknown): value is InvocationResultStatus {

@@ -2,7 +2,7 @@ import process from 'node:process'
 
 import { MockLanguageModelV3 } from 'ai/test'
 
-export function createMockModel({ userInput, runtimeClientId }) {
+export function createMockModel({ userInput, runtimeClientId, packageManifestPath }) {
   let callCount = 0
 
   return new MockLanguageModelV3({
@@ -13,11 +13,12 @@ export function createMockModel({ userInput, runtimeClientId }) {
         if (isGetPackageVersionRequest(userInput)) {
           return createToolCallResult({
             toolCallId: 'call-get-package-version',
-            toolName: 'callTools',
+            toolName: 'callPath',
             input: {
               clientId: runtimeClientId,
-              toolName: 'workspace.readPackageManifest',
-              args: {
+              method: 'POST',
+              path: packageManifestPath,
+              body: {
                 packageDir: 'packages/server'
               }
             }

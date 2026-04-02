@@ -5,9 +5,9 @@ This app adds a Manifest V3 Chrome extension under `apps/chrome-extension`.
 It is designed as an MDP client:
 
 - the background service worker connects to an MDP server
-- the extension exposes Chrome extension tools such as tab management, notifications, and config status
+- the extension exposes canonical Chrome extension paths for tab management, notifications, and config status
 - matched pages receive a content script for DOM operations
-- the extension can inject a main-world bridge so page-local scripts can register tools through `window.__MDP_EXTENSION_BRIDGE__`
+- the extension can inject a main-world bridge so page-local scripts can register paths through `window.__MDP_EXTENSION_BRIDGE__`
 - default managed page scripts are deduplicated per page load so the same bootstrap script is not re-run on every command
 
 ## Build
@@ -107,9 +107,9 @@ git push origin chrome-extension-v1.0.0
 Open the extension options page and configure a workspace:
 
 - one shared `MDP Server URL`
-- one singleton background client for browser-level tools such as tabs, notifications, and config status
+- one singleton background client for browser-level endpoint paths such as tabs, notifications, and config status
 - one or more route-scoped clients with host match patterns plus path rules such as `https://app.example.com/*` + `/billing`
-- optional default tool scripts for each route client
+- optional default bridge scripts for each route client
 - route-local skill entries, selector resources, and recorded flows
 
 Saving the options page requests host permissions for every configured route-client pattern.
@@ -122,53 +122,53 @@ The popup now acts as a quick control surface:
 - start/stop a recorded flow
 - capture an element selector into a serializable route resource
 
-## Page Tool Injection
+## Page Path Injection
 
-Injected page scripts can register tools like this:
+Injected page scripts can register paths like this:
 
 ```js
-window.__MDP_EXTENSION_BRIDGE__.registerTool('readAppState', () => {
+window.__MDP_EXTENSION_BRIDGE__.registerPath('/app/state', () => {
   return window.app.store.getState()
 })
 ```
 
-After injection, each route-scoped client exposes MDP tools such as:
+After injection, each route-scoped client exposes canonical MDP paths such as:
 
-- `page.listInjectedTools`
-- `page.callInjectedTool`
-- `page.runMainWorldScript`
-- `page.injectToolScript`
-- `page.getInjectedState`
-- `page.click`
-- `page.fill`
-- `page.focus`
-- `page.pressKey`
-- `page.scrollIntoView`
-- `page.scrollTo`
-- `page.waitForText`
-- `page.waitForSelector`
-- `page.waitForVisible`
-- `page.waitForHidden`
-- `page.waitForUrl`
-- `page.getSnapshot`
+- `GET /page/injected-paths`
+- `POST /page/call-injected-path`
+- `POST /page/run-main-world-script`
+- `POST /page/inject-path-script`
+- `GET /page/injected-state`
+- `POST /page/click`
+- `POST /page/fill`
+- `POST /page/focus`
+- `POST /page/press-key`
+- `POST /page/scroll-into-view`
+- `POST /page/scroll-to`
+- `POST /page/wait-for-text`
+- `POST /page/wait-for-selector`
+- `POST /page/wait-for-visible`
+- `POST /page/wait-for-hidden`
+- `POST /page/wait-for-url`
+- `POST /page/snapshot`
 
-Recorded flows are exposed back through MDP as route-client-local `flow.*` tools, selector captures
-are exposed as route-client resources, and skill entries are published as hierarchical MDP skills.
+Recorded flows are exposed back through MDP on their configured canonical flow paths, selector captures
+are exposed on their configured canonical GET paths, and skill entries are published as hierarchical MDP skills.
 
 The popup also surfaces bridge health for the active tab, the currently matched route clients, and
 the latest selector capture / recording session state.
 
 Background resource readers can also fetch:
 
-- `chrome-extension://active-tab`
-- `chrome-extension://active-bridge`
-- `chrome-extension://tabs`
+- `GET /extension/resources/status`
+- `GET /extension/resources/config`
+- `GET /extension/resources/tabs`
 
-It also exposes extension-oriented tools such as:
+It also exposes extension-oriented endpoint paths such as:
 
-- `extension.getStatus`
-- `extension.listTabs`
-- `extension.createTab`
-- `extension.closeTab`
-- `extension.activateTab`
-- `extension.showNotification`
+- `GET /extension/status`
+- `GET /extension/tabs`
+- `POST /extension/create-tab`
+- `POST /extension/close-tab`
+- `POST /extension/activate-tab`
+- `POST /extension/show-notification`

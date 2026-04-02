@@ -1,5 +1,5 @@
 import type {
-  InjectedToolDescriptor,
+  InjectedPathDescriptor,
   MainWorldBridgeState,
   PageCommand,
   PageCommandEnvelope,
@@ -48,7 +48,7 @@ export async function ensureScriptsInjected(
   }
 
   if (routeClient.toolScriptSource.trim()) {
-    const managedScriptId = createManagedScriptId(`route-tool-script-${routeClient.id}`, routeClient.toolScriptSource)
+    const managedScriptId = createManagedScriptId(`route-path-script-${routeClient.id}`, routeClient.toolScriptSource)
     if (!state.appliedManagedScriptIds.includes(managedScriptId)) {
       await dispatchPageCommand(tabId, {
         type: 'runMainWorld',
@@ -93,14 +93,14 @@ export async function sendPageCommand<TResult>(
   }
 }
 
-export async function listInjectedTools(
+export async function listInjectedPaths(
   runtime: ChromeExtensionRuntime,
   tabId: number,
   routeClient: RouteClientConfig
-): Promise<InjectedToolDescriptor[]> {
+): Promise<InjectedPathDescriptor[]> {
   return runtime.sendPageCommand(tabId, routeClient, {
     type: 'runMainWorld',
-    action: 'listTools'
+    action: 'listPaths'
   })
 }
 

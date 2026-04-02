@@ -1,6 +1,6 @@
 # Node.js Simple Tools
 
-## `nodejs.getRuntimeInfo`
+## `GET /nodejs/runtime-info`
 
 Call with no arguments.
 
@@ -15,7 +15,7 @@ Returns:
 - `rootPackage`
 - `dependencySummary`
 
-## `workspace.listSubpackages`
+## `GET /workspace/subpackages`
 
 Call with no arguments.
 
@@ -27,7 +27,7 @@ Returns one entry per discovered workspace package:
 - `relativeDir`
 - `manifestPath`
 
-## `workspace.readPackageManifest`
+## `POST /workspace/package-manifest`
 
 Input:
 
@@ -37,7 +37,7 @@ Input:
 
 `packageDir` is optional. When omitted, the workspace root package is used.
 
-## `workspace.updatePackageManifest`
+## `POST /workspace/update-package-manifest`
 
 Input example:
 

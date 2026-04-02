@@ -67,8 +67,6 @@ The server stays intentionally simple:
 - it forwards `callPath` to the target client unchanged
 - it does not need to understand skill hierarchy beyond the path string
 
-Legacy `listSkills` and `callSkills` aliases can still sit on top of that path model for compatibility.
-
 This keeps progressive disclosure as a naming and authoring convention instead of a protocol state machine.
 
 ## Design rules

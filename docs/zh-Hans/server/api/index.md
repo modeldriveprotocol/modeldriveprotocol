@@ -15,7 +15,7 @@ status: Draft
 | 用请求响应方式代替 socket    | [HTTP Loop 建立链接](/zh-Hans/server/api/http-loop-connection)                                                                                                      |
 | 浏览器在开 websocket 前先鉴权 | [鉴权引导](/zh-Hans/server/api/auth-bootstrap)                                                                                                                      |
 | 判断某个端口是不是 MDP 服务  | [GET /mdp/meta](/zh-Hans/server/api/meta)                                                                                                                           |
-| 更新一个已连接 client 的路径目录 | [updateClientCatalog](/zh-Hans/server/api/update-client-capabilities)                                                                                               |
+| 更新一个已连接 client 的路径目录 | [updateClientCatalog](/zh-Hans/server/api/update-client-catalog)                                                                                                    |
 | 查看 websocket 有哪些消息事件 | [registerClient](/zh-Hans/server/api/register-client)、[callClient](/zh-Hans/server/api/call-client)、[ping](/zh-Hans/server/api/ping)                          |
 | 查看精确的 HTTP 接口契约     | [POST /mdp/http-loop/connect](/zh-Hans/server/api/http-loop-connect)、[POST /mdp/auth](/zh-Hans/server/api/auth-issue)、[GET /mdp/meta](/zh-Hans/server/api/meta) |
 
@@ -33,7 +33,7 @@ status: Draft
 | 事件                                                       | 方向             | 作用                         |
 | ---------------------------------------------------------- | ---------------- | ---------------------------- |
 | [registerClient](/zh-Hans/server/api/register-client)      | Client -> Server | 注册一个 client descriptor 与路径 |
-| [updateClientCatalog](/zh-Hans/server/api/update-client-capabilities) | Client -> Server | 替换一个已注册的路径目录     |
+| [updateClientCatalog](/zh-Hans/server/api/update-client-catalog) | Client -> Server | 替换一个已注册的路径目录     |
 | [unregisterClient](/zh-Hans/server/api/unregister-client)  | Client -> Server | 删除一个已注册 client 会话   |
 | [callClient](/zh-Hans/server/api/call-client)              | Server -> Client | 调用一个 `method + path` 目标 |
 | [callClientResult](/zh-Hans/server/api/call-client-result) | Client -> Server | 回传调用结果                 |

@@ -5,8 +5,6 @@ status: Draft
 
 # `updateClientCatalog`
 
-这个页面保留了历史 URL，但当前 canonical 事件名是 `updateClientCatalog`。
-
 `updateClientCatalog` 是一个从 client 发往 server 的生命周期事件，用来在不改变 client 身份的前提下，替换一个已注册的路径目录。
 
 | 事件类型               | 事件流向         |

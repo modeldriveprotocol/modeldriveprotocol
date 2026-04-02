@@ -1,6 +1,6 @@
 import { type SerializedError, normalizeForMessaging, serializeError } from '#~/shared/utils.js'
 import {
-  type InjectedToolDescriptor,
+  type InjectedPathDescriptor,
   type MainWorldBridgeState,
   type MainWorldRequest,
   type MainWorldResponse,
@@ -9,23 +9,23 @@ import {
   MAIN_WORLD_RESPONSE_EVENT
 } from './messages.js'
 
-interface RegisteredTool {
+interface RegisteredPath {
   description?: string
   handler: (args: unknown) => unknown | Promise<unknown>
 }
 
 interface ExtensionBridgeApi {
-  registerTool(
-    name: string,
+  registerPath(
+    path: string,
     handler: (args: unknown) => unknown | Promise<unknown>,
     options?: {
       description?: string
     }
   ): void
-  unregisterTool(name: string): void
-  listTools(): InjectedToolDescriptor[]
+  unregisterPath(path: string): void
+  listPaths(): InjectedPathDescriptor[]
+  callPath(path: string, args?: unknown): Promise<unknown>
   getState(): MainWorldBridgeState
-  invokeTool(name: string, args?: unknown): Promise<unknown>
 }
 
 declare global {
@@ -41,42 +41,50 @@ export function installInjectedMainWorldBridge(): void {
     return
   }
 
-  const registeredTools = new Map<string, RegisteredTool>()
+  const registeredPaths = new Map<string, RegisteredPath>()
   const executedScriptIds = (window.__MDP_EXTENSION_EXECUTED_SCRIPT_IDS__ ??= {})
 
   window.__MDP_EXTENSION_BRIDGE_INSTALLED__ = true
   window.__MDP_EXTENSION_BRIDGE__ = {
-    registerTool(name, handler, options) {
-      if (!name.trim()) {
-        throw new Error('Tool name must not be empty')
+    registerPath(path, handler, options) {
+      const canonicalPath = normalizeInjectedPath(path)
+
+      if (!canonicalPath) {
+        throw new Error('Injected path must not be empty')
       }
 
-      registeredTools.set(name, {
+      registeredPaths.set(canonicalPath, {
         handler,
         ...(options?.description ? { description: options.description } : {})
       })
     },
 
-    unregisterTool(name) {
-      registeredTools.delete(name)
+    unregisterPath(path) {
+      const canonicalPath = normalizeInjectedPath(path)
+
+      if (!canonicalPath) {
+        return
+      }
+
+      registeredPaths.delete(canonicalPath)
     },
 
-    listTools() {
-      return listRegisteredTools(registeredTools)
+    listPaths() {
+      return listRegisteredPaths(registeredPaths)
+    },
+
+    async callPath(path, args) {
+      return callRegisteredPath(
+        {
+          path,
+          ...(args !== undefined ? { pathArgs: args } : {})
+        },
+        registeredPaths
+      )
     },
 
     getState() {
-      return buildBridgeState(registeredTools)
-    },
-
-    async invokeTool(name, args) {
-      const tool = registeredTools.get(name)
-
-      if (!tool) {
-        throw new Error(`Unknown injected tool "${name}"`)
-      }
-
-      return tool.handler(args)
+      return buildBridgeState(registeredPaths)
     }
   }
 
@@ -87,7 +95,7 @@ export function installInjectedMainWorldBridge(): void {
       return
     }
 
-    void handleMainWorldRequest(detail, registeredTools)
+    void handleMainWorldRequest(detail, registeredPaths)
   })
 
   window.dispatchEvent(new CustomEvent(MAIN_WORLD_READY_EVENT))
@@ -95,20 +103,20 @@ export function installInjectedMainWorldBridge(): void {
 
 async function handleMainWorldRequest(
   request: MainWorldRequest,
-  registeredTools: Map<string, RegisteredTool>
+  registeredPaths: Map<string, RegisteredPath>
 ): Promise<void> {
   try {
     let data: unknown
 
     switch (request.action) {
-      case 'listTools':
-        data = listRegisteredTools(registeredTools)
+      case 'listPaths':
+        data = listRegisteredPaths(registeredPaths)
         break
       case 'getState':
-        data = buildBridgeState(registeredTools)
+        data = buildBridgeState(registeredPaths)
         break
-      case 'invokeTool':
-        data = await invokeRegisteredTool(request.args, registeredTools)
+      case 'callPath':
+        data = await callRegisteredPath(request.args, registeredPaths)
         break
       case 'runScript':
         data = await runInjectedScript(request.args)
@@ -131,27 +139,34 @@ async function handleMainWorldRequest(
   }
 }
 
-async function invokeRegisteredTool(
+async function callRegisteredPath(
   args: unknown,
-  registeredTools: Map<string, RegisteredTool>
+  registeredPaths: Map<string, RegisteredPath>
 ): Promise<unknown> {
   if (!isPlainObject(args)) {
-    throw new Error('Injected tool invocation args must be an object')
+    throw new Error('Injected path invocation args must be an object')
   }
 
-  const name = typeof args.name === 'string' ? args.name : ''
+  const identifier =
+    typeof args.path === 'string'
+      ? args.path
+      : ''
 
-  if (!name) {
-    throw new Error('Injected tool name is required')
+  if (!identifier.trim()) {
+    throw new Error('Injected path is required')
   }
 
-  const tool = registeredTools.get(name)
+  const registeredPath = resolveRegisteredPath(identifier, registeredPaths)
 
-  if (!tool) {
-    throw new Error(`Unknown injected tool "${name}"`)
+  if (!registeredPath) {
+    throw new Error(`Unknown injected path "${identifier}"`)
   }
 
-  return tool.handler(args.toolArgs)
+  const pathArgs = Object.prototype.hasOwnProperty.call(args, 'pathArgs')
+    ? args.pathArgs
+    : args.toolArgs
+
+  return registeredPath.handler(pathArgs)
 }
 
 async function runInjectedScript(args: unknown): Promise<unknown> {
@@ -194,23 +209,60 @@ async function runInjectedScript(args: unknown): Promise<unknown> {
   return result
 }
 
-function listRegisteredTools(
-  registeredTools: Map<string, RegisteredTool>
-): InjectedToolDescriptor[] {
-  return [...registeredTools.entries()].map(([name, tool]) => ({
-    name,
-    ...(tool.description ? { description: tool.description } : {})
+function listRegisteredPaths(
+  registeredPaths: Map<string, RegisteredPath>
+): InjectedPathDescriptor[] {
+  return [...registeredPaths.entries()].map(([path, entry]) => ({
+    path,
+    ...(entry.description ? { description: entry.description } : {})
   }))
 }
 
 function buildBridgeState(
-  registeredTools: Map<string, RegisteredTool>
+  registeredPaths: Map<string, RegisteredPath>
 ): MainWorldBridgeState {
   return {
     bridgeInstalled: true,
-    tools: listRegisteredTools(registeredTools),
+    paths: listRegisteredPaths(registeredPaths),
     executedScriptIds: Object.keys(window.__MDP_EXTENSION_EXECUTED_SCRIPT_IDS__ ?? {}).sort()
   }
+}
+
+function resolveRegisteredPath(
+  identifier: string,
+  registeredPaths: Map<string, RegisteredPath>
+): RegisteredPath | undefined {
+  const normalizedIdentifier = identifier.trim()
+
+  if (!normalizedIdentifier) {
+    return undefined
+  }
+
+  const canonicalPath = normalizeInjectedPath(
+    normalizedIdentifier.startsWith('/')
+      ? normalizedIdentifier
+      : normalizedIdentifier.replaceAll('.', '/')
+  )
+
+  if (canonicalPath) {
+    const directMatch = registeredPaths.get(canonicalPath)
+    if (directMatch) {
+      return directMatch
+    }
+  }
+
+  return undefined
+}
+
+function normalizeInjectedPath(path: string): string {
+  const normalized = path
+    .trim()
+    .split('/')
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .join('/')
+
+  return normalized ? `/${normalized}` : ''
 }
 
 function dispatchResponse(response: {

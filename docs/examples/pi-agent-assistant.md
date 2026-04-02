@@ -15,12 +15,12 @@ This example shows one concrete way to combine MDP with the Pi agent stack from 
 
 The browser page keeps a small support inbox locally and exposes these capabilities through MDP:
 
-- tools: `listTickets`, `getTicket`, `saveDraft`
-- prompt: `replyTicket`
-- skill: `support/reply-workflow`
-- resources: `inbox://support/playbook`, `inbox://support/open-queue`
+- endpoints: `POST /inbox/list-tickets`, `POST /inbox/get-ticket`, `POST /inbox/save-draft`
+- prompt: `/inbox/reply-ticket/prompt.md`
+- skill: `/inbox/support/reply-workflow/skill.md`
+- GET endpoints that return resource-style payloads: `/inbox/support/playbook`, `/inbox/support/open-queue`
 
-The Pi agent runner starts the local MDP server, waits for the browser runtime to register, then uses the MCP bridge tools to call those browser-owned capabilities.
+The Pi agent runner starts the local MDP server, waits for the browser runtime to register, then uses `listClients` plus `callPath` to call those browser-owned capabilities.
 
 ```mermaid
 flowchart LR

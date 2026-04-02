@@ -92,10 +92,10 @@ interface ListPathsOutput {
 
 `clientId` is optional. `depth` must be a positive integer. If `depth` is omitted, `listPaths` returns one catalog layer by default. If `search` is provided and `depth` is omitted, the server searches the full catalog and returns every matching descriptor.
 
-`search` uses case-insensitive substring matching against client IDs, client names, path strings, descriptions, methods, content types, schemas, and legacy aliases.
+`search` uses case-insensitive substring matching against client IDs, client names, path strings, descriptions, methods, content types, and schemas.
 
 ## Use it when
 
-- you want the canonical catalog view instead of legacy tool/prompt/resource aliases
+- you want the canonical catalog view of registered paths
 - you want to filter one client's registered paths
 - you need an exact `method + path` target before calling [callPath](/server/tools/call-path)

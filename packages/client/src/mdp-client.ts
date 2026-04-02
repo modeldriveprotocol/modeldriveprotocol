@@ -9,12 +9,6 @@ import {
 
 import { createDefaultTransport, resolveServerUrl } from './transport/client-connection.js'
 import { ProcedureRegistry } from './runtime/procedure-registry.js'
-import {
-  createLegacyPromptPath,
-  createLegacyResourcePath,
-  createLegacySkillPath,
-  createLegacyToolPath
-} from './runtime/legacy-capability-paths.js'
 import { MdpClientReconnectController } from './runtime/reconnect-controller.js'
 import { authenticateTransport } from './transport/transport-auth.js'
 import type {
@@ -22,20 +16,9 @@ import type {
   ClientInfo,
   ClientTransport,
   ClientTransportAuthOptions,
-  ExposeLegacyPromptOptions,
   ExposePathOptions,
-  ExposeResourceOptions,
-  ExposeToolOptions,
-  ExposeLegacySkillOptions,
-  LegacyPromptHandler,
-  LegacyResourceHandler,
-  LegacySkillHandler,
-  LegacyToolHandler,
-  LegacyCapabilityContext,
   MdpClientOptions,
   PathHandler,
-  PathInvocationContext,
-  PathRequest,
   PathInvocationMiddleware,
   StaticPathDefinition
 } from './types.js'
@@ -104,135 +87,6 @@ export class MdpClient {
   ): this {
     this.registry.expose(path, definition, handler)
     return this
-  }
-
-  exposeTool(
-    name: string,
-    handler: LegacyToolHandler,
-    options: ExposeToolOptions = {}
-  ): this {
-    return this.expose(
-      createLegacyToolPath(name),
-      {
-        method: 'POST',
-        ...(options.description ? { description: options.description } : {}),
-        ...(options.inputSchema ? { inputSchema: options.inputSchema } : {}),
-        ...(options.outputSchema ? { outputSchema: options.outputSchema } : {}),
-        ...(options.contentType ? { contentType: options.contentType } : {}),
-        legacy: {
-          kind: 'tool',
-          name
-        }
-      },
-      async (request, context) => handler(readLegacyArgs(request), toLegacyContext(request, context))
-    )
-  }
-
-  exposePrompt(
-    name: string,
-    definition: string | LegacyPromptHandler,
-    options: ExposeLegacyPromptOptions = {}
-  ): this {
-    const path = createLegacyPromptPath(name)
-
-    if (typeof definition === 'string') {
-      return this.expose(path, {
-        ...(options.description ? { description: options.description } : {}),
-        ...(options.inputSchema ? { inputSchema: options.inputSchema } : {}),
-        ...(options.outputSchema ? { outputSchema: options.outputSchema } : {}),
-        legacy: {
-          kind: 'prompt',
-          name
-        }
-      }, async () => ({
-        messages: [
-          {
-            role: 'user',
-            content: definition
-          }
-        ]
-      }))
-    }
-
-    return this.expose(
-      path,
-      {
-        ...(options.description ? { description: options.description } : {}),
-        ...(options.inputSchema ? { inputSchema: options.inputSchema } : {}),
-        ...(options.outputSchema ? { outputSchema: options.outputSchema } : {}),
-        legacy: {
-          kind: 'prompt',
-          name
-        }
-      },
-      async (request, context) => definition(
-        readLegacyArgs(request),
-        toLegacyContext(request, context)
-      )
-    )
-  }
-
-  exposeSkill(
-    name: string,
-    definition: string | LegacySkillHandler | (() => unknown | Promise<unknown>),
-    options: ExposeLegacySkillOptions = {}
-  ): this {
-    const path = createLegacySkillPath(name)
-
-    if (typeof definition === 'string') {
-      return this.expose(path, {
-        ...(options.description ? { description: options.description } : {}),
-        ...(options.contentType ? { contentType: options.contentType } : {}),
-        legacy: {
-          kind: 'skill',
-          name
-        }
-      }, async () => definition)
-    }
-
-    return this.expose(
-      path,
-      {
-        ...(options.description ? { description: options.description } : {}),
-        ...(options.contentType ? { contentType: options.contentType } : {}),
-        legacy: {
-          kind: 'skill',
-          name
-        }
-      },
-      async (request, context) => {
-        const legacyContext = toLegacyContext(request, context)
-
-        return definition.length <= 0
-          ? (definition as () => unknown | Promise<unknown>)()
-          : (definition as LegacySkillHandler)(
-              request.queries,
-              request.headers,
-              legacyContext
-            )
-      }
-    )
-  }
-
-  exposeResource(
-    uri: string,
-    handler: LegacyResourceHandler,
-    options: ExposeResourceOptions = {}
-  ): this {
-    return this.expose(
-      createLegacyResourcePath(uri),
-      {
-        method: 'GET',
-        ...(options.description ? { description: options.description } : {}),
-        ...(options.mimeType ? { contentType: options.mimeType } : {}),
-        legacy: {
-          kind: 'resource',
-          uri,
-          ...(options.name ? { name: options.name } : {})
-        }
-      },
-      async (request, context) => handler(toLegacyContext(request, context))
-    )
   }
 
   unexpose(path: string, method?: HttpMethod): this {
@@ -388,31 +242,3 @@ export function createMdpClient(options: MdpClientOptions): MdpClient {
 }
 
 export { resolveServerUrl } from './transport/client-connection.js'
-
-function readLegacyArgs(request: PathRequest) {
-  if (request.body !== undefined) {
-    if (isArgumentRecord(request.body)) {
-      return request.body
-    }
-
-    throw new Error('Legacy capability arguments must be a JSON object')
-  }
-
-  return request.queries
-}
-
-function toLegacyContext(
-  request: PathRequest,
-  context: PathInvocationContext
-): LegacyCapabilityContext {
-  return {
-    ...context,
-    params: request.params,
-    queries: request.queries,
-    headers: request.headers
-  }
-}
-
-function isArgumentRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}

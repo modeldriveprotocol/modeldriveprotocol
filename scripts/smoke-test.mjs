@@ -53,29 +53,45 @@ const mdpClient = createMdpClient({
 })
 
 mdpClient
-  .exposeTool('searchDom', async ({ query } = {}, context) => ({
-    query,
+  .expose('/search-dom', {
+    method: 'POST'
+  }, async ({ body }, context) => ({
+    query:
+      body && typeof body === 'object' && !Array.isArray(body)
+        ? body.query
+        : undefined,
     matches: 3,
     authToken: context.auth?.token
   }))
-  .exposePrompt('summarizeSelection', async ({ tone } = {}) => ({
+  .expose('/summaries/prompt.md', {
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        tone: {
+          type: 'string'
+        }
+      }
+    }
+  }, async ({ queries }) => ({
     messages: [
       {
         role: 'user',
-        content: `Summarize the current selection in a ${tone ?? 'neutral'} tone.`
+        content: `Summarize the current selection in a ${queries.tone ?? 'neutral'} tone.`
       }
     ]
   }))
-  .exposeSkill('page/review/files', async () => ({
-    findings: ['No issues found']
-  }))
-  .exposeResource('webpage://active-tab/selection', async () => ({
+  .expose(
+    '/page/review/files/skill.md',
+    '# Review Files\n\nInspect `/workspace/review/files/download` for raw file output.'
+  )
+  .expose('/workspace/review/files/download', {
+    method: 'GET',
+    contentType: 'text/plain'
+  }, async () => ({
     mimeType: 'text/plain',
     text: 'Selected text'
-  }), {
-    name: 'Active Selection',
-    mimeType: 'text/plain'
-  })
+  }))
 
 try {
   const browserBundle = await readFile(
@@ -114,9 +130,9 @@ try {
     listedTools.tools.some((tool) => tool.name === 'callPaths'),
     'MCP bridge should expose callPaths'
   )
-  assert.ok(
-    listedTools.tools.some((tool) => tool.name === 'callTools'),
-    'MCP bridge should expose callTools'
+  assert.deepEqual(
+    listedTools.tools.map((tool) => tool.name).sort(),
+    ['callPath', 'callPaths', 'listClients', 'listPaths']
   )
 
   const listClientsResult = await mcpClient.callTool({
@@ -159,14 +175,10 @@ try {
     }
   })
   assert.notEqual(searchedPathsResult.isError, true)
-  assert.equal(searchedPathsResult.structuredContent?.paths?.length, 1)
-  assert.equal(
-    searchedPathsResult.structuredContent?.paths?.[0]?.legacy?.name,
-    'page/review/files'
-  )
-  assert.match(
-    searchedPathsResult.structuredContent?.paths?.[0]?.path ?? '',
-    /^\/compat\/skills\/page\/review\/files\/[0-9a-f]{8}\/skill\.md$/
+  assert.equal(searchedPathsResult.structuredContent?.paths?.length, 2)
+  assert.deepEqual(
+    searchedPathsResult.structuredContent?.paths?.map((path) => path.path),
+    ['/page/review/files/skill.md', '/workspace/review/files/download']
   )
 
   const listPathsResult = await mcpClient.callTool({
@@ -179,25 +191,18 @@ try {
   assert.notEqual(listPathsResult.isError, true)
   assert.equal(listPathsResult.structuredContent?.paths?.length, 4)
 
-  const searchDomPath = findLegacyPath(
+  const searchDomPath = findPath(listPathsResult.structuredContent?.paths, '/search-dom')
+  const summarizeSelectionPath = findPath(
     listPathsResult.structuredContent?.paths,
-    'tool',
-    'searchDom'
+    '/summaries/prompt.md'
   )
-  const summarizeSelectionPath = findLegacyPath(
+  const reviewSkillPath = findPath(
     listPathsResult.structuredContent?.paths,
-    'prompt',
-    'summarizeSelection'
+    '/page/review/files/skill.md'
   )
-  const reviewSkillPath = findLegacyPath(
+  const selectionResourcePath = findPath(
     listPathsResult.structuredContent?.paths,
-    'skill',
-    'page/review/files'
-  )
-  const selectionResourcePath = findLegacyPath(
-    listPathsResult.structuredContent?.paths,
-    'resource',
-    'webpage://active-tab/selection'
+    '/workspace/review/files/download'
   )
   assert.equal(searchDomPath?.method, 'POST')
   assert.equal(summarizeSelectionPath?.type, 'prompt')
@@ -222,6 +227,21 @@ try {
   assert.equal(callPathResult.structuredContent?.data?.matches, 3)
   assert.equal(callPathResult.structuredContent?.data?.authToken, 'host-token')
 
+  const promptResult = await mcpClient.callTool({
+    name: 'callPath',
+    arguments: {
+      clientId: 'browser-01',
+      method: 'GET',
+      path: summarizeSelectionPath.path,
+      query: {
+        tone: 'concise'
+      }
+    }
+  })
+  assert.notEqual(promptResult.isError, true)
+  assert.equal(promptResult.structuredContent?.data?.messages?.[0]?.role, 'user')
+  assert.match(promptResult.structuredContent?.data?.messages?.[0]?.content ?? '', /concise/)
+
   const callPathsResult = await mcpClient.callTool({
     name: 'callPaths',
     arguments: {
@@ -238,53 +258,23 @@ try {
   assert.equal(callPathsResult.structuredContent?.results?.[0]?.ok, true)
   assert.equal(callPathsResult.structuredContent?.results?.[0]?.data?.matches, 3)
 
-  const listRemoteToolsResult = await mcpClient.callTool({
-    name: 'listTools',
-    arguments: {}
-  })
-  assert.notEqual(listRemoteToolsResult.isError, true)
-  assert.ok(
-    listRemoteToolsResult.structuredContent?.tools?.some(
-      (tool) => tool.clientId === 'browser-01' && tool.name === 'searchDom'
-    ),
-    'Bridge should list client-exposed tools'
-  )
-
-  const toolCallResult = await mcpClient.callTool({
-    name: 'callTools',
+  const skillResult = await mcpClient.callTool({
+    name: 'callPath',
     arguments: {
       clientId: 'browser-01',
-      toolName: 'searchDom',
-      args: {
-        query: 'mdp'
-      },
-      auth: {
-        token: 'host-token'
-      }
+      method: 'GET',
+      path: reviewSkillPath.path
     }
   })
-  assert.notEqual(toolCallResult.isError, true)
-  assert.equal(toolCallResult.structuredContent?.data?.matches, 3)
-  assert.equal(toolCallResult.structuredContent?.data?.authToken, 'host-token')
-
-  const promptResult = await mcpClient.callTool({
-    name: 'getPrompt',
-    arguments: {
-      clientId: 'browser-01',
-      promptName: 'summarizeSelection',
-      args: {
-        tone: 'concise'
-      }
-    }
-  })
-  assert.notEqual(promptResult.isError, true)
-  assert.equal(promptResult.structuredContent?.data?.messages?.[0]?.role, 'user')
+  assert.notEqual(skillResult.isError, true)
+  assert.match(skillResult.structuredContent?.data ?? '', /Review Files/)
 
   const resourceResult = await mcpClient.callTool({
-    name: 'readResource',
+    name: 'callPath',
     arguments: {
       clientId: 'browser-01',
-      uri: 'webpage://active-tab/selection'
+      method: 'GET',
+      path: selectionResourcePath.path
     }
   })
   assert.notEqual(resourceResult.isError, true)
@@ -336,14 +326,6 @@ async function allocatePort() {
   })
 }
 
-function findLegacyPath(paths, kind, identifier) {
-  return paths?.find((path) => {
-    if (path?.legacy?.kind !== kind) {
-      return false
-    }
-
-    return kind === 'resource'
-      ? path.legacy.uri === identifier
-      : path.legacy.name === identifier
-  })
+function findPath(paths, targetPath) {
+  return paths?.find((path) => path?.path === targetPath)
 }

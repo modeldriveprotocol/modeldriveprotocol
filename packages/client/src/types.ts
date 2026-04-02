@@ -4,7 +4,6 @@ import type {
   HttpMethod,
   JsonSchema,
   JsonValue,
-  LegacyCapabilityAlias,
   PathDescriptor,
   PathNodeKind,
   RpcArguments,
@@ -31,7 +30,6 @@ export interface PathInvocationContext {
   type: PathNodeKind
   method: HttpMethod
   path: string
-  legacy?: LegacyCapabilityAlias
   auth?: AuthContext
 }
 
@@ -43,10 +41,6 @@ export interface PathRequest {
 }
 
 export interface PathInvocation extends PathInvocationContext, PathRequest {
-  kind?: 'tool' | 'prompt' | 'skill' | 'resource'
-  name?: string
-  uri?: string
-  args?: RpcArguments
 }
 
 export type PathHandler<TResult = unknown> = (
@@ -67,20 +61,17 @@ export interface ExposeEndpointOptions {
   inputSchema?: JsonSchema
   outputSchema?: JsonSchema
   contentType?: string
-  legacy?: LegacyCapabilityAlias
 }
 
 export interface ExposeSkillOptions {
   description?: string
   contentType?: string
-  legacy?: LegacyCapabilityAlias
 }
 
 export interface ExposePromptOptions {
   description?: string
   inputSchema?: JsonSchema
   outputSchema?: JsonSchema
-  legacy?: LegacyCapabilityAlias
 }
 
 export type ExposePathOptions =
@@ -165,59 +156,5 @@ export type ClientDescriptorOverride = Partial<Omit<ClientDescriptor, 'paths'>>
 
 export type ExposedPath = PathDescriptor
 
-export interface LegacyCapabilityContext extends PathInvocationContext {
-  params: RpcArguments
-  queries: RpcArguments
-  headers: Record<string, string>
-}
-
 export type CapabilityInvocationMiddleware<TResult = unknown> =
   PathInvocationMiddleware<TResult>
-
-export type SkillQuery = RpcArguments
-export type SkillHeaders = Record<string, unknown>
-
-export interface ExposeToolOptions {
-  description?: string
-  inputSchema?: JsonSchema
-  outputSchema?: JsonSchema
-  contentType?: string
-}
-
-export interface ExposeLegacyPromptOptions {
-  description?: string
-  inputSchema?: JsonSchema
-  outputSchema?: JsonSchema
-}
-
-export interface ExposeLegacySkillOptions {
-  description?: string
-  inputSchema?: JsonSchema
-  contentType?: string
-}
-
-export interface ExposeResourceOptions {
-  name?: string
-  description?: string
-  mimeType?: string
-}
-
-export type LegacyToolHandler<TResult = unknown> = (
-  args: RpcArguments | undefined,
-  context: LegacyCapabilityContext
-) => TResult | Promise<TResult>
-
-export type LegacyPromptHandler<TResult = unknown> = (
-  args: RpcArguments | undefined,
-  context: LegacyCapabilityContext
-) => TResult | Promise<TResult>
-
-export type LegacySkillHandler<TResult = unknown> = (
-  query: SkillQuery,
-  headers: SkillHeaders,
-  context: LegacyCapabilityContext
-) => TResult | Promise<TResult>
-
-export type LegacyResourceHandler<TResult = unknown> = (
-  context: LegacyCapabilityContext
-) => TResult | Promise<TResult>

@@ -62,10 +62,6 @@ That bundle exposes `MDP` on `window`, so a plain page can register capabilities
 The main SDK methods are:
 
 - `expose`
-- `exposeTool`
-- `exposePrompt`
-- `exposeSkill`
-- `exposeResource`
 - `unexpose`
 - `useInvocationMiddleware`
 - `removeInvocationMiddleware`
@@ -76,8 +72,7 @@ The main SDK methods are:
 - `syncCatalog`
 - `disconnect`
 
-`expose()` and `unexpose()` are the primary path-based APIs.
-`exposeTool()` / `exposePrompt()` / `exposeSkill()` / `exposeResource()` remain as legacy wrappers that register compat paths plus legacy aliases.
+`expose()` and `unexpose()` are the path-based registration APIs.
 
 ## Updating capability catalogs
 
@@ -99,7 +94,7 @@ Use `useInvocationMiddleware` to observe or wrap routed method+path calls in one
 
 ```ts
 client.useInvocationMiddleware(async (invocation, next) => {
-  console.log('before', invocation.method, invocation.path, invocation.legacy?.kind)
+  console.log('before', invocation.type, invocation.method, invocation.path)
 
   const result = await next()
 
@@ -108,6 +103,6 @@ client.useInvocationMiddleware(async (invocation, next) => {
 })
 ```
 
-Middleware can inspect `invocation.type`, `invocation.method`, `invocation.path`, `invocation.params`, `invocation.queries`, `invocation.body`, `invocation.headers`, and `invocation.auth`. For legacy-wrapped entries it also exposes compatibility fields such as `invocation.legacy`, `invocation.kind`, `invocation.name`, `invocation.uri`, and `invocation.args`. Middleware can short-circuit by returning without calling `next()`.
+Middleware can inspect `invocation.type`, `invocation.method`, `invocation.path`, `invocation.params`, `invocation.queries`, `invocation.body`, `invocation.headers`, and `invocation.auth`. Middleware can short-circuit by returning without calling `next()`.
 
 For capability metadata details, continue with [MCP Definitions](/sdk/javascript/mcp-definitions) and [Skills Definitions](/sdk/javascript/skills-definitions).

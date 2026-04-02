@@ -5,7 +5,6 @@ import type {
 } from '@modeldriveprotocol/protocol'
 import {
   comparePathSpecificity,
-  isJsonObject,
   isPathPattern,
   isPromptPath,
   isSkillPath,
@@ -135,8 +134,6 @@ export class ProcedureRegistry {
       type: entry.descriptor.type,
       method: message.method,
       path: message.path,
-      ...(entry.descriptor.legacy ? { legacy: entry.descriptor.legacy } : {}),
-      ...createLegacyInvocationShape(entry.descriptor, message),
       params: asArgumentRecord(message.params ?? entry.params),
       queries: asArgumentRecord(message.query),
       ...(message.body !== undefined ? { body: message.body } : {}),
@@ -223,7 +220,6 @@ function createPathDescriptor(
       type: 'skill',
       path,
       ...(description ? { description } : {}),
-      ...(options.legacy ? { legacy: options.legacy } : {}),
       ...(options.contentType ? { contentType: options.contentType } : { contentType: 'text/markdown' })
     }
   }
@@ -239,7 +235,6 @@ function createPathDescriptor(
       type: 'prompt',
       path,
       ...(description ? { description } : {}),
-      ...(options.legacy ? { legacy: options.legacy } : {}),
       ...(options.inputSchema ? { inputSchema: options.inputSchema } : {}),
       ...(options.outputSchema ? { outputSchema: options.outputSchema } : {})
     }
@@ -256,7 +251,6 @@ function createPathDescriptor(
     path,
     method: options.method,
     ...(options.description ? { description: options.description } : {}),
-    ...(options.legacy ? { legacy: options.legacy } : {}),
     ...(options.inputSchema ? { inputSchema: options.inputSchema } : {}),
     ...(options.outputSchema ? { outputSchema: options.outputSchema } : {}),
     ...(options.contentType ? { contentType: options.contentType } : {})
@@ -322,55 +316,6 @@ function createPathRequest(invocation: PathInvocation): PathRequest {
     queries: invocation.queries,
     ...(invocation.body !== undefined ? { body: invocation.body } : {}),
     headers: invocation.headers
-  }
-}
-
-function createLegacyInvocationShape(
-  descriptor: PathDescriptor,
-  message: Pick<CallClientMessage, 'method' | 'query' | 'body'>
-): Pick<PathInvocation, 'kind' | 'name' | 'uri' | 'args'> {
-  const args = message.body !== undefined
-    ? (isJsonObject(message.body) ? message.body : undefined)
-    : asArgumentRecord(message.query)
-
-  if (descriptor.legacy?.kind === 'resource') {
-    return {
-      kind: 'resource',
-      uri: descriptor.legacy.uri,
-      ...(args ? { args } : {})
-    }
-  }
-
-  if (descriptor.legacy?.kind === 'tool') {
-    return {
-      kind: 'tool',
-      name: descriptor.legacy.name,
-      ...(args ? { args } : {})
-    }
-  }
-
-  if (descriptor.legacy?.kind === 'prompt') {
-    return {
-      kind: 'prompt',
-      name: descriptor.legacy.name,
-      ...(args ? { args } : {})
-    }
-  }
-
-  if (descriptor.legacy?.kind === 'skill') {
-    return {
-      kind: 'skill',
-      name: descriptor.legacy.name,
-      ...(args ? { args } : {})
-    }
-  }
-
-  return {
-    kind: descriptor.type === 'endpoint' ? 'tool' : descriptor.type,
-    ...(descriptor.type === 'endpoint'
-      ? { name: descriptor.path }
-      : { name: descriptor.path }),
-    ...(args ? { args } : {})
   }
 }
 

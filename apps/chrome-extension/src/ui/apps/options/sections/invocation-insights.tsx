@@ -10,7 +10,7 @@ import type {
 } from '#~/background/shared.js'
 import { useI18n } from '../../../i18n/provider.js'
 
-const KIND_ORDER: InvocationCapabilityKind[] = ['tool', 'prompt', 'skill', 'resource']
+const KIND_ORDER: InvocationCapabilityKind[] = ['endpoint', 'prompt', 'skill']
 
 export function ClientInvocationPanel({
   description,

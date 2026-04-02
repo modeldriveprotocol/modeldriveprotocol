@@ -15,7 +15,6 @@ The server exposes one fixed MCP bridge surface. It does not generate one MCP to
 | See the canonical path catalog                  | [listPaths](/server/tools/list-paths)                                                                                                                                     |
 | Invoke one exact path on one exact client       | [callPath](/server/tools/call-path)                                                                                                                                       |
 | Fan out one path invocation to multiple clients | [callPaths](/server/tools/call-paths)                                                                                                                                     |
-| Need migration context for legacy aliases       | Read the compatibility note below                                                                                                                                        |
 
 ## Discovery tools
 
@@ -31,10 +30,7 @@ The server exposes one fixed MCP bridge surface. It does not generate one MCP to
 | [callPath](/server/tools/call-path)         | You know one client ID plus one exact `method + path`  |
 | [callPaths](/server/tools/call-paths)       | You want canonical fan-out by `method + path`          |
 
-## Compatibility aliases
-
-The server still exposes legacy alias names such as `listTools`, `listPrompts`, `listSkills`, `listResources`, `callTools`, `getPrompt`, `callSkills`, `readResource`, and `callClients` for migration.
-They are compatibility shims on top of the canonical path model and are intentionally not documented as first-class pages anymore.
+These four tools are the complete canonical bridge surface.
 
 `auth` is forwarded to the client as `callClient.auth`:
 

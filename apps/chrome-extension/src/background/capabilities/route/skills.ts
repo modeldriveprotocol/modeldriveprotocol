@@ -1,4 +1,3 @@
-import type { SkillHeaders, SkillQuery } from '@modeldriveprotocol/client'
 import type { JsonSchema } from '@modeldriveprotocol/protocol'
 import { z } from 'zod'
 
@@ -9,8 +8,8 @@ const SKILL_TEMPLATE_TOKEN_PATTERN = /\{\{\s*(query|header)\.([^}]+?)\s*\}\}/g
 
 export function renderRouteSkillContent(
   skill: RouteSkillEntry,
-  query: SkillQuery,
-  headers: SkillHeaders
+  query: Record<string, unknown>,
+  headers: Record<string, string>
 ): string {
   return skill.content.replace(
     SKILL_TEMPLATE_TOKEN_PATTERN,
