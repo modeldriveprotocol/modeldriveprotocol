@@ -30,7 +30,7 @@ pnpm --dir examples/vercel-ai-cli-agent start -- get-package-version
 输出类似：
 
 ```text
-版本是 1.0.0。
+版本是 2.0.0。
 ```
 
 也支持下面这种关键词形式：
@@ -53,4 +53,4 @@ mdp-test get-package-version
 - 通过 `mcpClient.tools()` 直接自动发现 MDP MCP tools，没有在示例里额外定义本地 tool schema
 - agent 会直接调用 runtime 的 canonical endpoint `/workspace/package-manifest`
 - 整个链路只经过 bridge 的 `callPath`
-- 示例默认读取的是 `packages/server/package.json` 的版本号，所以可以稳定得到 `1.0.0` 这类结果
+- 示例默认读取的是 `packages/server/package.json` 的版本号，所以可以稳定得到 `2.0.0` 这类结果

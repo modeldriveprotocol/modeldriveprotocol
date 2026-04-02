@@ -21,8 +21,8 @@ Accept: application/json
 ```json
 {
   "protocol": "mdp",
-  "protocolVersion": "1.0.0",
-  "supportedProtocolRanges": ["^1.0.0"],
+  "protocolVersion": "2.0.0",
+  "supportedProtocolRanges": ["^2.0.0"],
   "serverId": "127.0.0.1:47372",
   "endpoints": {
     "ws": "ws://127.0.0.1:47372",
