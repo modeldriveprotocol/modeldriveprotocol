@@ -1,3 +1,4 @@
+import { MDP_PROTOCOL_VERSION, MDP_SUPPORTED_PROTOCOL_RANGES } from '@modeldriveprotocol/protocol'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import WebSocket from 'ws'
 
@@ -116,8 +117,8 @@ describe('MdpTransportServer', () => {
     expect(response.status).toBe(200)
     expect(payload).toEqual(expect.objectContaining({
       protocol: 'mdp',
-      protocolVersion: '1.0.0',
-      supportedProtocolRanges: ['^1.0.0'],
+      protocolVersion: MDP_PROTOCOL_VERSION,
+      supportedProtocolRanges: [...MDP_SUPPORTED_PROTOCOL_RANGES],
       serverId: 'probe-server',
       endpoints: expect.objectContaining({
         ws: server.endpoints.ws,

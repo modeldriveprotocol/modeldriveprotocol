@@ -36,7 +36,7 @@ SDK 仍然保留 `exposeTool` / `exposePrompt` / `exposeSkill` / `exposeResource
 
 - background service worker 负责连接 MDP server
 - 命中的页面会注入 content script 处理 DOM 相关操作
-- 插件还能注入 main-world bridge，让页面脚本自行注册工具
+- 插件还能注入 main-world bridge，让页面脚本自行注册路径
 - 本地开发回路由 WXT 驱动
 
 ## 默认暴露的能力
@@ -46,7 +46,7 @@ SDK 仍然保留 `exposeTool` / `exposePrompt` / `exposeSkill` / `exposeResource
 - 标签页管理、通知、配置状态等 Chrome 侧 endpoint path
 - 通过 content script 提供的页面 DOM endpoint path
 - 通过 `window.__MDP_EXTENSION_BRIDGE__` 注册的 injected endpoint path
-- `page.listInjectedTools`、`page.callInjectedTool`、`page.getSnapshot` 这类桥接工具
+- `GET /page/injected-paths`、`POST /page/call-injected-path`、`POST /page/snapshot` 这类桥接 endpoint
 
 ## 构建与加载
 
@@ -72,7 +72,7 @@ pnpm --filter @modeldriveprotocol/chrome-extension dev
 
 - MDP server URL
 - 目标页面匹配规则
-- 可选的默认 main-world tool 脚本
+- 可选的默认 main-world bridge 脚本
 
 - [JavaScript / 简易上手](/zh-Hans/sdk/javascript/quick-start)
 - [JavaScript / 如何使用](/zh-Hans/sdk/javascript/usage)

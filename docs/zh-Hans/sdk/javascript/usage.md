@@ -62,10 +62,6 @@ client.register()
 最常用的方法包括：
 
 - `expose`
-- `exposeTool`
-- `exposePrompt`
-- `exposeSkill`
-- `exposeResource`
 - `unexpose`
 - `useInvocationMiddleware`
 - `removeInvocationMiddleware`
@@ -76,8 +72,7 @@ client.register()
 - `syncCatalog`
 - `disconnect`
 
-`expose()` 和 `unexpose()` 是主路径上的 path-first API。
-`exposeTool()` / `exposePrompt()` / `exposeSkill()` / `exposeResource()` 仍然保留为 legacy 包装层，会自动注册 compat path 和 legacy alias。
+`expose()` 和 `unexpose()` 是 path-first 的注册 API。
 
 ## 更新 capability 目录
 
@@ -99,7 +94,7 @@ client.syncCatalog()
 
 ```ts
 client.useInvocationMiddleware(async (invocation, next) => {
-  console.log('before', invocation.method, invocation.path, invocation.legacy?.kind)
+  console.log('before', invocation.type, invocation.method, invocation.path)
 
   const result = await next()
 
@@ -108,6 +103,6 @@ client.useInvocationMiddleware(async (invocation, next) => {
 })
 ```
 
-中间件可以读取 `invocation.type`、`invocation.method`、`invocation.path`、`invocation.params`、`invocation.queries`、`invocation.body`、`invocation.headers` 和 `invocation.auth`。对于 legacy 包装层暴露出来的条目，还会补充 `invocation.legacy`、`invocation.kind`、`invocation.name`、`invocation.uri`、`invocation.args` 这些兼容字段。如果直接返回而不调用 `next()`，也可以实现短路处理。
+中间件可以读取 `invocation.type`、`invocation.method`、`invocation.path`、`invocation.params`、`invocation.queries`、`invocation.body`、`invocation.headers` 和 `invocation.auth`。如果直接返回而不调用 `next()`，也可以实现短路处理。
 
 如果你要看能力元数据如何定义，继续阅读 [MCP 定义](/zh-Hans/sdk/javascript/mcp-definitions) 和 [Skills 定义](/zh-Hans/sdk/javascript/skills-definitions)。

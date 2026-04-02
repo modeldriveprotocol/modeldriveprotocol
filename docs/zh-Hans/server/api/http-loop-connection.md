@@ -43,7 +43,7 @@ HTTP loop 是 websocket 之外的 request-response 传输方式。
 
 1. `POST /connect`
 2. 通过 `/send` 发送 [registerClient](/zh-Hans/server/api/register-client)
-3. 当本地路径目录变化时，可选通过 `/send` 发送 [updateClientCatalog](/zh-Hans/server/api/update-client-capabilities)
+3. 当本地路径目录变化时，可选通过 `/send` 发送 [updateClientCatalog](/zh-Hans/server/api/update-client-catalog)
 4. 持续 `GET /poll`，直到拿到 [callClient](/zh-Hans/server/api/call-client) 或 `204`
 5. 通过 `/send` 回传 [callClientResult](/zh-Hans/server/api/call-client-result)
 6. `POST /disconnect`

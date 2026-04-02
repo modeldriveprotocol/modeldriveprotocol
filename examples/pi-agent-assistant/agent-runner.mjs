@@ -18,6 +18,10 @@ const prompt = process.argv.slice(2).join(' ') ||
   'Review open tickets, read the playbook, and save a calm reply draft for the most urgent unresolved ticket.'
 const provider = process.env.PI_MODEL_PROVIDER ?? 'openai'
 const modelId = process.env.PI_MODEL_ID ?? 'gpt-4o-mini'
+const LIST_TICKETS_PATH = '/inbox/list-tickets'
+const GET_TICKET_PATH = '/inbox/get-ticket'
+const SAVE_DRAFT_PATH = '/inbox/save-draft'
+const PLAYBOOK_PATH = '/inbox/support/playbook'
 
 const transport = new StdioClientTransport({
   command: process.execPath,
@@ -108,7 +112,11 @@ function createInboxTools(clientId) {
         )
       }),
       execute: async (_toolCallId, params = {}) => {
-        const data = await callRemoteTool(clientId, 'listTickets', params)
+        const data = await callRemotePath(clientId, {
+          method: 'POST',
+          path: LIST_TICKETS_PATH,
+          body: params
+        })
         return toAgentResult(data)
       }
     },
@@ -120,20 +128,27 @@ function createInboxTools(clientId) {
         ticketId: Type.String({ description: 'Ticket ID like T-102.' })
       }),
       execute: async (_toolCallId, params) => {
-        const data = await callRemoteTool(clientId, 'getTicket', params)
+        const data = await callRemotePath(clientId, {
+          method: 'POST',
+          path: GET_TICKET_PATH,
+          body: params
+        })
         return toAgentResult(data)
       }
     },
     {
       name: 'read_reply_playbook',
       label: 'Read Reply Playbook',
-      description: 'Read the support-team playbook stored as an MDP resource.',
+      description: 'Read the support-team playbook stored as a canonical MDP path.',
       parameters: Type.Object({}),
       execute: async () => {
-        const data = await readRemoteResource(clientId, 'inbox://support/playbook')
+        const data = await callRemotePath(clientId, {
+          method: 'GET',
+          path: PLAYBOOK_PATH
+        })
         return {
           content: [{ type: 'text', text: data.text }],
-          details: { mimeType: data.mimeType, uri: 'inbox://support/playbook' }
+          details: { mimeType: data.mimeType, path: PLAYBOOK_PATH }
         }
       }
     },
@@ -146,9 +161,13 @@ function createInboxTools(clientId) {
         draft: Type.String({ description: 'The reply draft to save.' })
       }),
       execute: async (_toolCallId, params) => {
-        const data = await callRemoteTool(clientId, 'saveDraft', {
-          ...params,
-          author: 'pi-agent'
+        const data = await callRemotePath(clientId, {
+          method: 'POST',
+          path: SAVE_DRAFT_PATH,
+          body: {
+            ...params,
+            author: 'pi-agent'
+          }
         })
         return toAgentResult(data)
       }
@@ -156,25 +175,15 @@ function createInboxTools(clientId) {
   ]
 }
 
-async function callRemoteTool(clientId, toolName, args) {
+async function callRemotePath(clientId, request) {
   const result = await mcpClient.callTool({
-    name: 'callTools',
+    name: 'callPath',
     arguments: {
       clientId,
-      toolName,
-      ...(args ? { args } : {})
-    }
-  })
-
-  return unwrapInvocation(result)
-}
-
-async function readRemoteResource(clientId, uri) {
-  const result = await mcpClient.callTool({
-    name: 'readResource',
-    arguments: {
-      clientId,
-      uri
+      method: request.method,
+      path: request.path,
+      ...(request.query ? { query: request.query } : {}),
+      ...(request.body ? { body: request.body } : {})
     }
   })
 
@@ -219,7 +228,8 @@ async function waitForServerReady(expectedPort) {
 async function waitForRuntime(clientId) {
   for (let attempt = 0; attempt < 120; attempt += 1) {
     const result = await mcpClient.callTool({
-      name: 'listClients'
+      name: 'listClients',
+      arguments: {}
     })
 
     if (!result.isError && result.structuredContent?.clients?.some((client) => client.id === clientId)) {

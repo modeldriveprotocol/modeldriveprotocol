@@ -35,7 +35,7 @@ websocket transport 通过 `type` 字段区分事件类型。
 client 发给 server 的事件：
 
 - [registerClient](/zh-Hans/server/api/register-client)
-- [updateClientCatalog](/zh-Hans/server/api/update-client-capabilities)
+- [updateClientCatalog](/zh-Hans/server/api/update-client-catalog)
 - [unregisterClient](/zh-Hans/server/api/unregister-client)
 - [callClientResult](/zh-Hans/server/api/call-client-result)
 - [ping](/zh-Hans/server/api/ping)

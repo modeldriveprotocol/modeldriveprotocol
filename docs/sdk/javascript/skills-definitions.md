@@ -58,7 +58,7 @@ Skill path format is intentionally strict:
 - no empty segments, trailing slash, `.`, `..`, spaces, `?`, or `#`
 - the last segment must be `skill.md`
 
-The SDK still allows `exposeSkill(name, markdownOrHandler, options?)` as compatibility sugar. It maps the legacy name to a canonical compat path and keeps the legacy alias for bridge hosts that still expect skill names.
+Register skills directly at canonical paths such as `/workspace/review/files/skill.md`.
 
 ## Recommended progressive-disclosure pattern
 
@@ -94,8 +94,6 @@ The server indexes skill metadata and exposes it through:
 - `callPaths`
 - `GET /skills/:clientId/*skillPath`
 - `GET /:clientId/skills/*skillPath`
-
-Legacy `listSkills` and `callSkills` aliases still exist for older hosts.
 
 The underlying client invocation still routes through `callClient` as a `GET` against the canonical skill path.
 For document-style skills, the HTTP routes return Markdown directly.

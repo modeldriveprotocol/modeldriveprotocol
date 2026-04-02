@@ -4,7 +4,11 @@ import type {
   RouteClientRecording,
   RouteSelectorResource
 } from '#~/shared/config.js'
-import type { InjectedToolDescriptor, MainWorldBridgeState, PageCommand } from '#~/page/messages.js'
+import type {
+  InjectedPathDescriptor,
+  MainWorldBridgeState,
+  PageCommand
+} from '#~/page/messages.js'
 import type { BrowserTabSummary, PopupState } from './shared.js'
 
 export interface ChromeExtensionRuntimeApi {
@@ -37,7 +41,7 @@ export interface ChromeExtensionRuntimeApi {
     args: unknown,
     command: PageCommand
   ): Promise<TResult>
-  injectToolScriptForRouteClient(
+  injectPathScriptForRouteClient(
     routeClientId: string,
     input: {
       tabId?: number
@@ -46,21 +50,21 @@ export interface ChromeExtensionRuntimeApi {
       scriptId?: string
       force?: boolean
     }
-  ): Promise<InjectedToolDescriptor[]>
+  ): Promise<InjectedPathDescriptor[]>
   getInjectedStateForRouteClient(
     routeClientId: string,
     args: unknown
   ): Promise<MainWorldBridgeState>
-  listInjectedToolsForRouteClient(
+  listInjectedPathsForRouteClient(
     routeClientId: string,
     args: unknown
-  ): Promise<InjectedToolDescriptor[]>
-  callInjectedToolForRouteClient(
+  ): Promise<InjectedPathDescriptor[]>
+  callInjectedPathForRouteClient(
     routeClientId: string,
     input: {
       tabId?: number
-      name: string
-      toolArgs?: unknown
+      path: string
+      pathArgs?: unknown
     }
   ): Promise<unknown>
   getRouteClient(routeClientId: string): Promise<RouteClientConfig>

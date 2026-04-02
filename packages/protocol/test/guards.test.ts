@@ -58,10 +58,6 @@ describe('protocol guards', () => {
               path: '/goods',
               method: 'GET',
               description: 'List goods',
-              legacy: {
-                kind: 'tool',
-                name: 'goods.list'
-              },
               outputSchema: {
                 type: 'object'
               }
@@ -69,11 +65,7 @@ describe('protocol guards', () => {
             {
               type: 'skill',
               path: '/goods/skill.md',
-              description: 'Goods usage',
-              legacy: {
-                kind: 'skill',
-                name: 'goods/usage'
-              }
+              description: 'Goods usage'
             }
           ]
         }
@@ -90,10 +82,6 @@ describe('protocol guards', () => {
             path: '/goods',
             method: 'GET',
             description: 'List goods',
-            legacy: {
-              kind: 'tool',
-              name: 'goods.list'
-            },
             outputSchema: {
               type: 'object'
             }
@@ -101,11 +89,7 @@ describe('protocol guards', () => {
           {
             type: 'skill',
             path: '/goods/skill.md',
-            description: 'Goods usage',
-            legacy: {
-              kind: 'skill',
-              name: 'goods/usage'
-            }
+            description: 'Goods usage'
           }
         ]
       }

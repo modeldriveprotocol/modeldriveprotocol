@@ -9,45 +9,11 @@ export const clientAuthSources = [
   'transport',
   'transport+message'
 ] as const
-export const legacyCapabilityKinds = [
-  'tool',
-  'prompt',
-  'skill',
-  'resource'
-] as const
 
 export type PathNodeKind = (typeof pathNodeKinds)[number]
 export type HttpMethod = (typeof httpMethods)[number]
 export type ClientConnectionMode = (typeof clientConnectionModes)[number]
 export type ClientAuthSource = (typeof clientAuthSources)[number]
-export type LegacyCapabilityKind = (typeof legacyCapabilityKinds)[number]
-
-export interface LegacyToolAlias {
-  kind: 'tool'
-  name: string
-}
-
-export interface LegacyPromptAlias {
-  kind: 'prompt'
-  name: string
-}
-
-export interface LegacySkillAlias {
-  kind: 'skill'
-  name: string
-}
-
-export interface LegacyResourceAlias {
-  kind: 'resource'
-  uri: string
-  name?: string
-}
-
-export type LegacyCapabilityAlias =
-  | LegacyToolAlias
-  | LegacyPromptAlias
-  | LegacySkillAlias
-  | LegacyResourceAlias
 
 export interface AuthContext {
   scheme?: string
@@ -65,7 +31,6 @@ export interface ClientConnectionDescriptor {
 interface BasePathDescriptor {
   path: string
   description?: string
-  legacy?: LegacyCapabilityAlias
 }
 
 export interface EndpointPathDescriptor extends BasePathDescriptor {

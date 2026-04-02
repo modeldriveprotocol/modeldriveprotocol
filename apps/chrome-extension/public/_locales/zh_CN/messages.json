@@ -6,7 +6,7 @@
     "message": "MDP Chrome"
   },
   "appDescription": {
-    "message": "将 Chrome 标签页、扩展动作和页面本地工具连接到 Model Drive Protocol。"
+    "message": "将 Chrome 标签页、扩展动作和页面本地路径连接到 Model Drive Protocol。"
   },
   "appActionTitle": {
     "message": "Model Drive Protocol for Chrome"

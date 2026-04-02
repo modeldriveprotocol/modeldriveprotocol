@@ -7,7 +7,7 @@ status: Draft
 
 `registerClient` is the client-to-server lifecycle event used to publish one client identity plus its current path catalog.
 
-If the same connected client needs to change only its registered paths later, use [updateClientCatalog](/server/api/update-client-capabilities) instead of sending a whole new identity document.
+If the same connected client needs to change only its registered paths later, use [updateClientCatalog](/server/api/update-client-catalog) instead of sending a whole new identity document.
 
 | Event Type       | Flow Direction   |
 | ---------------- | ---------------- |

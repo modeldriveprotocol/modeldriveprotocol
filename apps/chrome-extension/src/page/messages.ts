@@ -5,14 +5,14 @@ export const MAIN_WORLD_REQUEST_EVENT = 'mdp-chrome-extension:main-request'
 export const MAIN_WORLD_RESPONSE_EVENT = 'mdp-chrome-extension:main-response'
 export const MAIN_WORLD_READY_EVENT = 'mdp-chrome-extension:main-ready'
 
-export interface InjectedToolDescriptor {
-  name: string
+export interface InjectedPathDescriptor {
+  path: string
   description?: string
 }
 
 export interface MainWorldBridgeState {
   bridgeInstalled: true
-  tools: InjectedToolDescriptor[]
+  paths: InjectedPathDescriptor[]
   executedScriptIds: string[]
 }
 
@@ -83,7 +83,11 @@ export interface PageSelectorCaptureState {
   active: boolean
 }
 
-export type MainWorldAction = 'listTools' | 'invokeTool' | 'runScript' | 'getState'
+export type MainWorldAction =
+  | 'listPaths'
+  | 'callPath'
+  | 'runScript'
+  | 'getState'
 
 export interface MainWorldRequest {
   requestId: string

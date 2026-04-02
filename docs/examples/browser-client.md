@@ -18,8 +18,8 @@ This path is kept for compatibility with older links. In the current docs struct
 
 A browser client can expose:
 
-- page selection as a resource
-- DOM search as a tool
+- page information as a GET endpoint
+- DOM search as a POST endpoint
 - page summarization as a prompt
 - page inspection workflow as a skill
 
@@ -46,6 +46,12 @@ This is the simplest path for proving the bridge model end to end.
           url: window.location.href,
           heading: document.querySelector("h1")?.textContent?.trim() ?? ""
         });
+        const readInput = (request) => ({
+          ...request.queries,
+          ...(request.body && typeof request.body === "object" && !Array.isArray(request.body)
+            ? request.body
+            : {})
+        });
 
         const client = MDP.createMdpClient({
           serverUrl: "ws://127.0.0.1:47372",
@@ -58,29 +64,30 @@ This is the simplest path for proving the bridge model end to end.
           }
         });
 
-        client.exposeTool("getPageInfo", async (_args, context) => ({
+        client.expose("/page/info", { method: "GET" }, async (_request, context) => ({
           ...readPageInfo(),
           authToken: context.auth?.token
         }));
 
-        client.exposeTool("searchDom", async ({ query }, context) => ({
-          query,
-          matches: document.body.innerText.includes(query) ? 1 : 0,
-          title: document.title,
-          url: window.location.href,
-          authToken: context.auth?.token
-        }));
+        client.expose("/page/search", { method: "POST" }, async (request, context) => {
+          const { query } = readInput(request);
 
-        client.exposeResource(
-          "webpage://active-tab/page-info",
+          return {
+            query,
+            matches: typeof query === "string" && document.body.innerText.includes(query) ? 1 : 0,
+            title: document.title,
+            url: window.location.href,
+            authToken: context.auth?.token
+          };
+        });
+
+        client.expose(
+          "/page/info/resource",
+          { method: "GET", contentType: "application/json" },
           async () => ({
             mimeType: "application/json",
             text: JSON.stringify(readPageInfo(), null, 2)
-          }),
-          {
-            name: "Current Page Info",
-            mimeType: "application/json"
-          }
+          })
         );
 
         await client.connect();
@@ -116,7 +123,7 @@ This is the simplest path for proving the bridge model end to end.
           }
         });
 
-        client.exposeTool("getPageInfo", async (_args, context) => ({
+        client.expose("/page/info", { method: "GET" }, async (_request, context) => ({
           ...readPageInfo(),
           authToken: context.auth?.token
         }));
@@ -133,7 +140,7 @@ This is the simplest path for proving the bridge model end to end.
 
 For browser websocket auth, passing `auth` is enough. The client will bootstrap `/mdp/auth` before `connect()`.
 
-The example starts by exposing `getPageInfo`, so the host can retrieve page title and URL before calling more specific tools.
+The example starts by exposing `GET /page/info`, so the host can retrieve page title and URL before calling more specific endpoints.
 
 See [the Pages-hosted browser example](/examples/browser/index.html) for a concrete starter file.
 If you want the browser runtime to be consumed by a Pi-hosted agent, see [Pi Agent Assistant](/examples/pi-agent-assistant).

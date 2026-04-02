@@ -18,8 +18,8 @@ status: MVP
 
 浏览器 client 可以暴露：
 
-- 页面选区作为 resource
-- DOM 搜索作为 tool
+- 页面信息作为 GET endpoint
+- DOM 搜索作为 POST endpoint
 - 页面摘要作为 prompt
 - 页面检查工作流作为 skill
 
@@ -46,6 +46,12 @@ status: MVP
           url: window.location.href,
           heading: document.querySelector("h1")?.textContent?.trim() ?? ""
         });
+        const readInput = (request) => ({
+          ...request.queries,
+          ...(request.body && typeof request.body === "object" && !Array.isArray(request.body)
+            ? request.body
+            : {})
+        });
 
         const client = MDP.createMdpClient({
           serverUrl: "ws://127.0.0.1:47372",
@@ -58,29 +64,30 @@ status: MVP
           }
         });
 
-        client.exposeTool("getPageInfo", async (_args, context) => ({
+        client.expose("/page/info", { method: "GET" }, async (_request, context) => ({
           ...readPageInfo(),
           authToken: context.auth?.token
         }));
 
-        client.exposeTool("searchDom", async ({ query }, context) => ({
-          query,
-          matches: document.body.innerText.includes(query) ? 1 : 0,
-          title: document.title,
-          url: window.location.href,
-          authToken: context.auth?.token
-        }));
+        client.expose("/page/search", { method: "POST" }, async (request, context) => {
+          const { query } = readInput(request);
 
-        client.exposeResource(
-          "webpage://active-tab/page-info",
+          return {
+            query,
+            matches: typeof query === "string" && document.body.innerText.includes(query) ? 1 : 0,
+            title: document.title,
+            url: window.location.href,
+            authToken: context.auth?.token
+          };
+        });
+
+        client.expose(
+          "/page/info/resource",
+          { method: "GET", contentType: "application/json" },
           async () => ({
             mimeType: "application/json",
             text: JSON.stringify(readPageInfo(), null, 2)
-          }),
-          {
-            name: "Current Page Info",
-            mimeType: "application/json"
-          }
+          })
         );
 
         await client.connect();
@@ -116,7 +123,7 @@ status: MVP
           }
         });
 
-        client.exposeTool("getPageInfo", async (_args, context) => ({
+        client.expose("/page/info", { method: "GET" }, async (_request, context) => ({
           ...readPageInfo(),
           authToken: context.auth?.token
         }));
@@ -133,7 +140,7 @@ status: MVP
 
 如果浏览器里的 WebSocket 需要带认证，这个示例只要传 `auth` 即可，client 会在 `connect()` 前自动 bootstrap `/mdp/auth`。
 
-这个示例会先暴露 `getPageInfo`，这样 host 可以先拿到页面标题和 URL，再决定是否调用更具体的工具。
+这个示例会先暴露 `GET /page/info`，这样 host 可以先拿到页面标题和 URL，再决定是否调用更具体的 endpoint。
 
 可直接查看[部署在 Pages 上的浏览器示例](/examples/browser/index.html)作为启动模板。
 如果你想看浏览器 runtime 如何接到 Pi 风格的 agent loop，可继续看 [Pi Agent Assistant](/zh-Hans/examples/pi-agent-assistant)。

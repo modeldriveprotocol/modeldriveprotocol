@@ -1,8 +1,8 @@
 # Package JSON Workflows
 
-Use `workspace.readPackageManifest` before making edits when you need to inspect current values.
+Use `POST /workspace/package-manifest` before making edits when you need to inspect current values.
 
-Use `workspace.updatePackageManifest` for:
+Use `POST /workspace/update-package-manifest` for:
 
 - renaming a package with `name`
 - updating package text with `description`
@@ -13,6 +13,6 @@ The tool writes the manifest back to disk with two-space indentation and a trail
 
 Recommended sequence:
 
-1. Call `workspace.listSubpackages` if you are not sure which package directory to target.
-2. Call `workspace.readPackageManifest` for the selected package.
-3. Call `workspace.updatePackageManifest` with the smallest possible change set.
+1. Call `GET /workspace/subpackages` if you are not sure which package directory to target.
+2. Call `POST /workspace/package-manifest` for the selected package.
+3. Call `POST /workspace/update-package-manifest` with the smallest possible change set.

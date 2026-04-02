@@ -41,8 +41,8 @@ describe('chrome extension invocation telemetry storage', () => {
           totalDurationMs: 360,
           maxDurationMs: 240,
           byKind: {
-            tool: {
-              kind: 'tool',
+            endpoint: {
+              kind: 'endpoint',
               totalCount: 1,
               successCount: 1,
               errorCount: 0,
@@ -61,20 +61,13 @@ describe('chrome extension invocation telemetry storage', () => {
               successCount: 0,
               errorCount: 0,
               totalDurationMs: 0
-            },
-            resource: {
-              kind: 'resource',
-              totalCount: 1,
-              successCount: 0,
-              errorCount: 1,
-              totalDurationMs: 240
             }
           },
           recentInvocations: [
             {
               requestId: 'req-2',
-              kind: 'resource',
-              target: 'webpage://selection',
+              kind: 'prompt',
+              target: '/summaries/prompt.md',
               status: 'error',
               durationMs: 240,
               startedAt: '2026-03-25T10:00:01.000Z',
@@ -111,10 +104,15 @@ describe('chrome extension invocation telemetry storage', () => {
           errorCount: 0,
           totalDurationMs: 30,
           byKind: {
-            tool: { kind: 'tool', totalCount: 1, successCount: 1, errorCount: 0, totalDurationMs: 30 },
+            endpoint: {
+              kind: 'endpoint',
+              totalCount: 1,
+              successCount: 1,
+              errorCount: 0,
+              totalDurationMs: 30
+            },
             prompt: { kind: 'prompt', totalCount: 0, successCount: 0, errorCount: 0, totalDurationMs: 0 },
-            skill: { kind: 'skill', totalCount: 0, successCount: 0, errorCount: 0, totalDurationMs: 0 },
-            resource: { kind: 'resource', totalCount: 0, successCount: 0, errorCount: 0, totalDurationMs: 0 }
+            skill: { kind: 'skill', totalCount: 0, successCount: 0, errorCount: 0, totalDurationMs: 0 }
           },
           recentInvocations: []
         }
@@ -133,6 +131,107 @@ describe('chrome extension invocation telemetry storage', () => {
     expect(runtime.clientTelemetry.has('background')).toBe(false)
   })
 
+  it('maps legacy tool and resource telemetry into endpoint telemetry on load', async () => {
+    get.mockResolvedValue({
+      invocationTelemetry: {
+        'route:alpha': {
+          totalCount: 3,
+          successCount: 2,
+          errorCount: 1,
+          totalDurationMs: 390,
+          byKind: {
+            tool: {
+              kind: 'tool',
+              totalCount: 1,
+              successCount: 1,
+              errorCount: 0,
+              totalDurationMs: 120,
+              minDurationMs: 120,
+              maxDurationMs: 120
+            },
+            prompt: {
+              kind: 'prompt',
+              totalCount: 0,
+              successCount: 0,
+              errorCount: 0,
+              totalDurationMs: 0
+            },
+            skill: {
+              kind: 'skill',
+              totalCount: 0,
+              successCount: 0,
+              errorCount: 0,
+              totalDurationMs: 0
+            },
+            resource: {
+              kind: 'resource',
+              totalCount: 2,
+              successCount: 1,
+              errorCount: 1,
+              totalDurationMs: 270,
+              minDurationMs: 90,
+              maxDurationMs: 180
+            }
+          },
+          recentInvocations: [
+            {
+              requestId: 'req-tool',
+              kind: 'tool',
+              target: 'route.getStatus',
+              status: 'success',
+              durationMs: 120,
+              startedAt: '2026-03-25T10:00:00.000Z',
+              finishedAt: '2026-03-25T10:00:00.120Z'
+            },
+            {
+              requestId: 'req-resource',
+              kind: 'resource',
+              target: 'chrome-extension://route-client/alpha/summary',
+              status: 'error',
+              durationMs: 180,
+              startedAt: '2026-03-25T10:00:01.000Z',
+              finishedAt: '2026-03-25T10:00:01.180Z',
+              errorMessage: 'not available'
+            }
+          ]
+        }
+      }
+    })
+
+    const runtime = {
+      telemetryLoaded: false,
+      clientTelemetry: new Map(),
+      telemetryPersistTimer: undefined
+    } as any
+
+    await ensureInvocationTelemetryLoaded(runtime)
+
+    expect(runtime.clientTelemetry.get('route:alpha')).toMatchObject({
+      byKind: {
+        endpoint: {
+          totalCount: 3,
+          successCount: 2,
+          errorCount: 1,
+          totalDurationMs: 390,
+          minDurationMs: 90,
+          maxDurationMs: 180
+        }
+      }
+    })
+    expect(runtime.clientTelemetry.get('route:alpha')?.recentInvocations).toEqual([
+      expect.objectContaining({
+        requestId: 'req-tool',
+        kind: 'endpoint',
+        target: 'route.getStatus'
+      }),
+      expect.objectContaining({
+        requestId: 'req-resource',
+        kind: 'endpoint',
+        target: 'chrome-extension://route-client/alpha/summary'
+      })
+    ])
+  })
+
   it('persists telemetry with debounce', async () => {
     const runtime = {
       telemetryLoaded: true,
@@ -147,14 +246,14 @@ describe('chrome extension invocation telemetry storage', () => {
             lastInvokedAt: '2026-03-25T10:00:03.030Z',
             lastStatus: 'success',
             lastDurationMs: 30,
-            lastTarget: 'chrome-extension://tabs',
+            lastTarget: '/extension/resources/tabs',
             byKind: {
-              tool: {
-                kind: 'tool',
-                totalCount: 0,
-                successCount: 0,
+              endpoint: {
+                kind: 'endpoint',
+                totalCount: 1,
+                successCount: 1,
                 errorCount: 0,
-                totalDurationMs: 0
+                totalDurationMs: 30
               },
               prompt: {
                 kind: 'prompt',
@@ -169,20 +268,13 @@ describe('chrome extension invocation telemetry storage', () => {
                 successCount: 0,
                 errorCount: 0,
                 totalDurationMs: 0
-              },
-              resource: {
-                kind: 'resource',
-                totalCount: 1,
-                successCount: 1,
-                errorCount: 0,
-                totalDurationMs: 30
               }
             },
             recentInvocations: [
               {
                 requestId: 'req-3',
-                kind: 'resource',
-                target: 'chrome-extension://tabs',
+                kind: 'endpoint',
+                target: '/extension/resources/tabs',
                 status: 'success',
                 durationMs: 30,
                 startedAt: '2026-03-25T10:00:03.000Z',
@@ -207,7 +299,7 @@ describe('chrome extension invocation telemetry storage', () => {
       invocationTelemetry: {
         background: expect.objectContaining({
           totalCount: 1,
-          lastTarget: 'chrome-extension://tabs'
+          lastTarget: '/extension/resources/tabs'
         })
       }
     })
@@ -225,10 +317,15 @@ describe('chrome extension invocation telemetry storage', () => {
             errorCount: 0,
             totalDurationMs: 30,
             byKind: {
-              tool: { kind: 'tool', totalCount: 0, successCount: 0, errorCount: 0, totalDurationMs: 0 },
+              endpoint: {
+                kind: 'endpoint',
+                totalCount: 1,
+                successCount: 1,
+                errorCount: 0,
+                totalDurationMs: 30
+              },
               prompt: { kind: 'prompt', totalCount: 0, successCount: 0, errorCount: 0, totalDurationMs: 0 },
-              skill: { kind: 'skill', totalCount: 0, successCount: 0, errorCount: 0, totalDurationMs: 0 },
-              resource: { kind: 'resource', totalCount: 1, successCount: 1, errorCount: 0, totalDurationMs: 30 }
+              skill: { kind: 'skill', totalCount: 0, successCount: 0, errorCount: 0, totalDurationMs: 0 }
             },
             recentInvocations: []
           }
@@ -241,10 +338,9 @@ describe('chrome extension invocation telemetry storage', () => {
             errorCount: 1,
             totalDurationMs: 360,
             byKind: {
-              tool: { kind: 'tool', totalCount: 1, successCount: 1, errorCount: 0, totalDurationMs: 120 },
-              prompt: { kind: 'prompt', totalCount: 0, successCount: 0, errorCount: 0, totalDurationMs: 0 },
-              skill: { kind: 'skill', totalCount: 0, successCount: 0, errorCount: 0, totalDurationMs: 0 },
-              resource: { kind: 'resource', totalCount: 1, successCount: 0, errorCount: 1, totalDurationMs: 240 }
+              endpoint: { kind: 'endpoint', totalCount: 1, successCount: 1, errorCount: 0, totalDurationMs: 120 },
+              prompt: { kind: 'prompt', totalCount: 1, successCount: 0, errorCount: 1, totalDurationMs: 240 },
+              skill: { kind: 'skill', totalCount: 0, successCount: 0, errorCount: 0, totalDurationMs: 0 }
             },
             recentInvocations: []
           }

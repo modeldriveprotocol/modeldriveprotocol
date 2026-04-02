@@ -36,4 +36,4 @@ Endpoint nodes use an HTTP-like shape with a concrete method plus a path pattern
 Prompt nodes use reserved leaf names that end with `/prompt.md`.
 Skill nodes use reserved leaf names that end with `/skill.md`, which works well for hierarchical Markdown documents such as `/topic/skill.md` and `/topic/detail/skill.md`.
 
-The path model is the canonical API. The JavaScript client SDK and MCP bridge still expose the older tool/prompt/skill/resource names as compatibility aliases so existing integrations can migrate incrementally.
+The path model is the API surface. Clients register descriptors directly as endpoint, prompt, and skill paths, and hosts consume them through the canonical path-oriented bridge.

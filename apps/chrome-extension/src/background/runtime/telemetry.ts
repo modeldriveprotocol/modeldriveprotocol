@@ -8,7 +8,7 @@ import type {
   InvocationResultStatus
 } from '#~/background/shared.js'
 
-const INVOCATION_KIND_ORDER: InvocationCapabilityKind[] = ['tool', 'prompt', 'skill', 'resource']
+const INVOCATION_KIND_ORDER: InvocationCapabilityKind[] = ['endpoint', 'prompt', 'skill']
 const MAX_RECENT_INVOCATIONS_PER_CLIENT = 16
 const MAX_RECENT_INVOCATIONS_OVERVIEW = 20
 
@@ -72,40 +72,12 @@ export function createInvocationTelemetryMiddleware(
 function resolveInvocationKind(
   invocation: Parameters<CapabilityInvocationMiddleware>[0]
 ): InvocationCapabilityKind {
-  if (invocation.legacy?.kind === 'resource') {
-    return 'resource'
-  }
-
-  if (invocation.legacy?.kind === 'tool') {
-    return 'tool'
-  }
-
-  if (invocation.legacy?.kind === 'prompt') {
-    return 'prompt'
-  }
-
-  if (invocation.legacy?.kind === 'skill') {
-    return 'skill'
-  }
-
-  return invocation.type === 'endpoint' ? 'tool' : invocation.type
+  return invocation.type
 }
 
 function resolveInvocationTarget(
   invocation: Parameters<CapabilityInvocationMiddleware>[0]
 ): string {
-  if (invocation.legacy?.kind === 'resource') {
-    return invocation.legacy.uri
-  }
-
-  if (
-    invocation.legacy?.kind === 'tool' ||
-    invocation.legacy?.kind === 'prompt' ||
-    invocation.legacy?.kind === 'skill'
-  ) {
-    return invocation.legacy.name
-  }
-
   return invocation.path
 }
 
@@ -341,10 +313,9 @@ function createEmptyTelemetryState(): ClientInvocationTelemetryState {
     errorCount: 0,
     totalDurationMs: 0,
     byKind: {
-      tool: createEmptyKindStats('tool'),
+      endpoint: createEmptyKindStats('endpoint'),
       prompt: createEmptyKindStats('prompt'),
-      skill: createEmptyKindStats('skill'),
-      resource: createEmptyKindStats('resource')
+      skill: createEmptyKindStats('skill')
     },
     recentInvocations: []
   }

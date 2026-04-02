@@ -138,6 +138,6 @@ export async function getRuntimeStatus(runtime: ChromeExtensionRuntime) {
           }
         }
       : {}),
-    injectedTools: bridgeState?.tools ?? []
+    injectedPaths: bridgeState?.paths ?? []
   }
 }

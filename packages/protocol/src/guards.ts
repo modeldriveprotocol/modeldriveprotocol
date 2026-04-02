@@ -6,7 +6,6 @@ import {
   clientAuthSources,
   clientConnectionModes,
   httpMethods,
-  legacyCapabilityKinds,
   pathNodeKinds
 } from './models.js'
 import type {
@@ -15,8 +14,6 @@ import type {
   ClientConnectionMode,
   ClientDescriptor,
   HttpMethod,
-  LegacyCapabilityAlias,
-  LegacyCapabilityKind,
   PathDescriptor,
   PathNodeKind
 } from './models.js'
@@ -51,13 +48,6 @@ function isClientAuthSource(value: unknown): value is ClientAuthSource {
   return typeof value === 'string' && clientAuthSources.includes(value as ClientAuthSource)
 }
 
-function isLegacyCapabilityKind(value: unknown): value is LegacyCapabilityKind {
-  return (
-    typeof value === 'string' &&
-    legacyCapabilityKinds.includes(value as LegacyCapabilityKind)
-  )
-}
-
 function isAuthContext(value: unknown): value is AuthContext {
   if (!isJsonObject(value)) {
     return false
@@ -80,24 +70,6 @@ function isClientConnectionDescriptor(value: unknown): boolean {
   )
 }
 
-function isLegacyCapabilityAlias(value: unknown): value is LegacyCapabilityAlias {
-  if (!isJsonObject(value) || !isLegacyCapabilityKind(value.kind)) {
-    return false
-  }
-
-  switch (value.kind) {
-    case 'resource':
-      return (
-        typeof value.uri === 'string' &&
-        (!('name' in value) || value.name === undefined || typeof value.name === 'string')
-      )
-    case 'tool':
-    case 'prompt':
-    case 'skill':
-      return typeof value.name === 'string'
-  }
-}
-
 function isPathDescriptor(value: unknown): value is PathDescriptor {
   if (!isJsonObject(value) || !isPathNodeKind(value.type) || !isPathPattern(value.path)) {
     return false
@@ -107,19 +79,12 @@ function isPathDescriptor(value: unknown): value is PathDescriptor {
     return false
   }
 
-  if ('legacy' in value && value.legacy !== undefined && !isLegacyCapabilityAlias(value.legacy)) {
-    return false
-  }
-
-  const legacy = isLegacyCapabilityAlias(value.legacy) ? value.legacy : undefined
-
   switch (value.type) {
     case 'endpoint':
       return (
         !isSkillPath(value.path) &&
         !isPromptPath(value.path) &&
         isHttpMethod(value.method) &&
-        (!legacy || legacy.kind === 'tool' || legacy.kind === 'resource') &&
         (!('inputSchema' in value) || isJsonObject(value.inputSchema)) &&
         (!('outputSchema' in value) || isJsonObject(value.outputSchema)) &&
         (!('contentType' in value) || typeof value.contentType === 'string')
@@ -127,13 +92,11 @@ function isPathDescriptor(value: unknown): value is PathDescriptor {
     case 'skill':
       return (
         isSkillPath(value.path) &&
-        (!legacy || legacy.kind === 'skill') &&
         (!('contentType' in value) || typeof value.contentType === 'string')
       )
     case 'prompt':
       return (
         isPromptPath(value.path) &&
-        (!legacy || legacy.kind === 'prompt') &&
         (!('inputSchema' in value) || isJsonObject(value.inputSchema)) &&
         (!('outputSchema' in value) || isJsonObject(value.outputSchema))
       )

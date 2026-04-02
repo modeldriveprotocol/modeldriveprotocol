@@ -535,7 +535,15 @@
         '5. End with one concrete follow-up expectation.'
       ].join('\n')
 
-      const replyPrompt = 'Review the open queue, identify the highest-priority ticket, and draft a reply that follows the playbook. Save the final reply with the saveDraft tool before finishing.'
+      const LIST_TICKETS_PATH = '/inbox/list-tickets'
+      const GET_TICKET_PATH = '/inbox/get-ticket'
+      const SAVE_DRAFT_PATH = '/inbox/save-draft'
+      const REPLY_TICKET_PROMPT_PATH = '/inbox/reply-ticket/prompt.md'
+      const REPLY_WORKFLOW_SKILL_PATH = '/inbox/support/reply-workflow/skill.md'
+      const PLAYBOOK_PATH = '/inbox/support/playbook'
+      const OPEN_QUEUE_PATH = '/inbox/support/open-queue'
+
+      const replyPrompt = 'Review the open queue, identify the highest-priority ticket, and draft a reply that follows the playbook. Save the final reply back through the inbox draft path before finishing.'
 
       const state = {
         connected: false,
@@ -643,9 +651,24 @@
         }
       })
 
-      client.exposeTool(
-        'listTickets',
-        async ({ status } = {}, context) => {
+      client.expose(
+        LIST_TICKETS_PATH,
+        {
+          method: 'POST',
+          description: 'List local support tickets currently held inside the browser runtime.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              status: {
+                type: 'string',
+                enum: ['open', 'closed', 'all'],
+                description: 'Optional ticket status filter.'
+              }
+            }
+          }
+        },
+        async (request, context) => {
+          const { status } = readRequestObject(request)
           const normalized = typeof status === 'string' ? status : 'open'
           const tickets = state.tickets
             .filter((ticket) => normalized === 'all' ? true : ticket.status === normalized)
@@ -660,35 +683,18 @@
               hasDraft: Boolean(ticket.draft)
             }))
 
-          pushEvent(`tool:listTickets status=${normalized}`, context.auth?.token)
+          pushEvent(`path:${LIST_TICKETS_PATH} status=${normalized}`, context.auth?.token)
           return {
             tickets,
             count: tickets.length
           }
-        },
-        {
-          description: 'List local support tickets currently held inside the browser runtime.',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              status: {
-                type: 'string',
-                enum: ['open', 'closed', 'all'],
-                description: 'Optional ticket status filter.'
-              }
-            }
-          }
         }
       )
 
-      client.exposeTool(
-        'getTicket',
-        async ({ ticketId } = {}, context) => {
-          const ticket = findTicket(ticketId)
-          pushEvent(`tool:getTicket ${ticket.id}`, context.auth?.token)
-          return ticket
-        },
+      client.expose(
+        GET_TICKET_PATH,
         {
+          method: 'POST',
           description: 'Read the full ticket thread, summary, and current draft for one ticket.',
           inputSchema: {
             type: 'object',
@@ -700,32 +706,19 @@
               }
             }
           }
+        },
+        async (request, context) => {
+          const { ticketId } = readRequestObject(request)
+          const ticket = findTicket(ticketId)
+          pushEvent(`path:${GET_TICKET_PATH} ${ticket.id}`, context.auth?.token)
+          return ticket
         }
       )
 
-      client.exposeTool(
-        'saveDraft',
-        async ({ ticketId, draft, author } = {}, context) => {
-          const ticket = findTicket(ticketId)
-
-          if (typeof draft !== 'string' || draft.trim().length === 0) {
-            throw new Error('saveDraft requires a non-empty draft string')
-          }
-
-          ticket.draft = draft.trim()
-          ticket.draftAuthor = typeof author === 'string' && author ? author : 'unknown'
-          state.selectedTicketId = ticket.id
-          render()
-          pushEvent(`tool:saveDraft ${ticket.id}`, context.auth?.token)
-
-          return {
-            ticketId: ticket.id,
-            saved: true,
-            author: ticket.draftAuthor,
-            preview: ticket.draft
-          }
-        },
+      client.expose(
+        SAVE_DRAFT_PATH,
         {
+          method: 'POST',
           description: 'Save a reply draft back into the browser runtime so a human can review it.',
           inputSchema: {
             type: 'object',
@@ -745,12 +738,47 @@
               }
             }
           }
+        },
+        async (request, context) => {
+          const { ticketId, draft, author } = readRequestObject(request)
+          const ticket = findTicket(ticketId)
+
+          if (typeof draft !== 'string' || draft.trim().length === 0) {
+            throw new Error(`${SAVE_DRAFT_PATH} requires a non-empty draft string`)
+          }
+
+          ticket.draft = draft.trim()
+          ticket.draftAuthor = typeof author === 'string' && author ? author : 'unknown'
+          state.selectedTicketId = ticket.id
+          render()
+          pushEvent(`path:${SAVE_DRAFT_PATH} ${ticket.id}`, context.auth?.token)
+
+          return {
+            ticketId: ticket.id,
+            saved: true,
+            author: ticket.draftAuthor,
+            preview: ticket.draft
+          }
         }
       )
 
-      client.exposePrompt(
-        'replyTicket',
-        async ({ ticketId } = {}) => {
+      client.expose(
+        REPLY_TICKET_PROMPT_PATH,
+        {
+          description: 'Return a ready-to-use prompt for drafting one support reply.',
+          inputSchema: {
+            type: 'object',
+            required: ['ticketId'],
+            properties: {
+              ticketId: {
+                type: 'string',
+                description: 'Ticket ID like T-102.'
+              }
+            }
+          }
+        },
+        async (request) => {
+          const { ticketId } = readRequestObject(request)
           const ticket = findTicket(ticketId)
           return {
             messages: [
@@ -766,52 +794,47 @@
               }
             ]
           }
-        },
-        {
-          description: 'Return a ready-to-use prompt for drafting one support reply.',
-          arguments: [
-            {
-              name: 'ticketId',
-              description: 'Ticket ID like T-102.',
-              required: true
-            }
-          ]
         }
       )
 
-      client.exposeSkill(
-        'support/reply-workflow',
-        [
+      client.expose(
+        REPLY_WORKFLOW_SKILL_PATH,
+        {
+          description: 'Step-by-step workflow for triaging and drafting one support reply.',
+          contentType: 'text/markdown'
+        },
+        async () => [
           '# Reply workflow',
           '',
           '1. List open tickets.',
           '2. Read the ticket you want to handle.',
-          '3. Read inbox://support/playbook.',
+          `3. Read ${PLAYBOOK_PATH}.`,
           '4. Draft the reply.',
           '5. Save the draft back into the runtime.',
           '6. Tell the human operator why that ticket was prioritized.'
-        ].join('\n'),
-        {
-          description: 'Step-by-step workflow for triaging and drafting one support reply.',
-          contentType: 'text/markdown'
-        }
+        ].join('\n')
       )
 
-      client.exposeResource(
-        'inbox://support/playbook',
+      client.expose(
+        PLAYBOOK_PATH,
+        {
+          method: 'GET',
+          description: 'Local support-team drafting rules.',
+          contentType: 'text/markdown'
+        },
         async () => ({
           mimeType: 'text/markdown',
           text: playbook
-        }),
-        {
-          name: 'Support Reply Playbook',
-          description: 'Local support-team drafting rules.',
-          mimeType: 'text/markdown'
-        }
+        })
       )
 
-      client.exposeResource(
-        'inbox://support/open-queue',
+      client.expose(
+        OPEN_QUEUE_PATH,
+        {
+          method: 'GET',
+          description: 'Compact JSON snapshot of the currently open tickets.',
+          contentType: 'application/json'
+        },
         async () => ({
           mimeType: 'application/json',
           text: JSON.stringify(
@@ -819,12 +842,7 @@
             null,
             2
           )
-        }),
-        {
-          name: 'Open Queue Snapshot',
-          description: 'Compact JSON snapshot of the currently open tickets.',
-          mimeType: 'application/json'
-        }
+        })
       )
 
       renderCapabilities()
@@ -889,20 +907,22 @@
         const descriptor = client.describe()
         const sections = [
           {
-            label: 'Tools',
-            items: descriptor.tools.map((tool) => `${tool.name}${tool.description ? `: ${tool.description}` : ''}`)
+            label: 'Endpoints',
+            items: descriptor.paths
+              .filter((path) => path.type === 'endpoint')
+              .map((path) => `${path.method} ${path.path}`)
           },
           {
             label: 'Prompts',
-            items: descriptor.prompts.map((prompt) => prompt.name)
+            items: descriptor.paths
+              .filter((path) => path.type === 'prompt')
+              .map((path) => path.path)
           },
           {
             label: 'Skills',
-            items: descriptor.skills.map((skill) => skill.name)
-          },
-          {
-            label: 'Resources',
-            items: descriptor.resources.map((resource) => resource.uri)
+            items: descriptor.paths
+              .filter((path) => path.type === 'skill')
+              .map((path) => path.path)
           }
         ]
 
@@ -957,7 +977,7 @@
         } else {
           nodes.draftNote.innerHTML = `
             <strong>No saved draft yet</strong>
-            <p>When the Pi agent calls <code>saveDraft</code>, the draft will appear here.</p>
+            <p>When the Pi agent writes back through ${escapeHtml(SAVE_DRAFT_PATH)}, the draft will appear here.</p>
           `
         }
       }
@@ -1038,6 +1058,17 @@
         return ticket
       }
 
+      function readRequestObject(request) {
+        return {
+          ...(request?.params ?? {}),
+          ...(request?.queries ?? {}),
+          ...(isPlainObject(request?.body) ? request.body : {})
+        }
+      }
+
+      function isPlainObject(value) {
+        return typeof value === 'object' && value !== null && !Array.isArray(value)
+      }
       function formatDate(value) {
         return new Date(value).toLocaleString('en-US', {
           dateStyle: 'medium',

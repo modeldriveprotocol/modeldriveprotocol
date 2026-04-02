@@ -24,11 +24,7 @@ describe('chrome extension invocation telemetry', () => {
         clientId: 'route-client-alpha',
         type: 'endpoint',
         method: 'POST',
-        path: '/compat/tools/search-dom/6f3e8f10',
-        legacy: {
-          kind: 'tool',
-          name: 'searchDom'
-        },
+        path: '/page/search-dom',
         params: {},
         queries: {},
         body: {
@@ -50,11 +46,7 @@ describe('chrome extension invocation telemetry', () => {
           clientId: 'route-client-alpha',
           type: 'endpoint',
           method: 'GET',
-          path: '/compat/resources/webpage/selection/29c3c4cf',
-          legacy: {
-            kind: 'resource',
-            uri: 'webpage://selection'
-          },
+          path: '/page/selection',
           params: {},
           queries: {},
           headers: {}
@@ -74,21 +66,18 @@ describe('chrome extension invocation telemetry', () => {
     expect(stats.averageDurationMs).toBe(180)
     expect(stats.maxDurationMs).toBe(240)
     expect(stats.lastStatus).toBe('error')
-    expect(stats.lastTarget).toBe('webpage://selection')
+    expect(stats.lastTarget).toBe('/page/selection')
     expect(stats.recentInvocations[0]).toMatchObject({
       requestId: 'req-error',
-      kind: 'resource',
-      target: 'webpage://selection',
+      kind: 'endpoint',
+      target: '/page/selection',
       status: 'error',
       durationMs: 240,
       errorMessage: 'selector unavailable'
     })
-    expect(stats.byKind.find((item) => item.kind === 'tool')).toMatchObject({
-      totalCount: 1,
-      successCount: 1
-    })
-    expect(stats.byKind.find((item) => item.kind === 'resource')).toMatchObject({
-      totalCount: 1,
+    expect(stats.byKind.find((item) => item.kind === 'endpoint')).toMatchObject({
+      totalCount: 2,
+      successCount: 1,
       errorCount: 1
     })
   })
@@ -98,8 +87,8 @@ describe('chrome extension invocation telemetry', () => {
 
     recordInvocationTelemetry(telemetry, 'route:alpha', {
       requestId: 'req-1',
-      kind: 'tool',
-      target: 'searchDom',
+      kind: 'endpoint',
+      target: '/page/search-dom',
       status: 'success',
       startedAt: '2026-03-25T10:00:00.000Z',
       finishedAtMs: Date.parse('2026-03-25T10:00:00.080Z')
@@ -115,8 +104,8 @@ describe('chrome extension invocation telemetry', () => {
     })
     recordInvocationTelemetry(telemetry, 'background', {
       requestId: 'req-3',
-      kind: 'resource',
-      target: 'chrome-extension://tabs',
+      kind: 'endpoint',
+      target: '/extension/resources/tabs',
       status: 'success',
       startedAt: '2026-03-25T10:00:03.000Z',
       finishedAtMs: Date.parse('2026-03-25T10:00:03.030Z')

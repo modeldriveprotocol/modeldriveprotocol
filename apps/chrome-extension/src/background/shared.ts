@@ -6,12 +6,15 @@ import type {
 } from '#~/shared/config.js'
 import type { MarketSourcePendingUpdate } from '#~/shared/storage.js'
 import { asRecord, createStableId, readNumber, readString } from '#~/shared/utils.js'
-import type { InjectedToolDescriptor, MainWorldBridgeState } from '#~/page/messages.js'
+import type {
+  InjectedPathDescriptor,
+  MainWorldBridgeState
+} from '#~/page/messages.js'
 import { toProtocolJsonSchema } from './json-schema.js'
 import { z } from 'zod'
 
 export type ConnectionState = 'disabled' | 'idle' | 'connecting' | 'connected' | 'error'
-export type InvocationCapabilityKind = 'tool' | 'prompt' | 'skill' | 'resource'
+export type InvocationCapabilityKind = 'endpoint' | 'prompt' | 'skill'
 export type InvocationResultStatus = 'success' | 'error'
 
 export interface InvocationRecord {
@@ -140,7 +143,7 @@ export interface PopupState {
   activeOriginPattern?: string
   activeTabHasPermission?: boolean
   bridgeState?: MainWorldBridgeState
-  injectedTools: InjectedToolDescriptor[]
+  injectedPaths: InjectedPathDescriptor[]
 }
 
 export interface BrowserTabSummary {
@@ -190,6 +193,33 @@ export function requireNumberArg(args: unknown, key: string): number {
   }
 
   return value
+}
+
+export function readRequestRecord(request: {
+  params?: Record<string, unknown>
+  queries?: Record<string, unknown>
+  body?: unknown
+}): Record<string, unknown> {
+  return {
+    ...(request.params ?? {}),
+    ...(request.queries ?? {}),
+    ...asRecord(request.body)
+  }
+}
+
+export function toCanonicalPath(path: string): string {
+  const normalized = path
+    .split('/')
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .join('/')
+
+  return `/${normalized}`
+}
+
+export function toCanonicalSkillPath(path: string): string {
+  const canonical = toCanonicalPath(path)
+  return canonical.endsWith('/skill.md') ? canonical : `${canonical}/skill.md`
 }
 
 export function serializeTab(

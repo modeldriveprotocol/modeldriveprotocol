@@ -56,7 +56,7 @@ The current path model supports:
 
 Skills can be exposed as hierarchical Markdown documents such as `/workspace/review/skill.md` and `/workspace/review/files/skill.md`, letting hosts reveal more context by reading deeper skill paths only when needed.
 
-The path model is the primary API. For migration, the JavaScript client still exposes legacy `exposeTool` / `exposePrompt` / `exposeSkill` / `exposeResource` wrappers, and the MCP bridge still serves the older `listTools` / `callTools` / `getPrompt` / `readResource` style tool names as compatibility aliases.
+The path model is the API. Clients register descriptors with `expose()` and hosts discover or invoke them through `listClients`, `listPaths`, `callPath`, and `callPaths`.
 
 Current transport support includes:
 

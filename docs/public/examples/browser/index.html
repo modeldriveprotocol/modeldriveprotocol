@@ -54,11 +54,15 @@
 
     window.addEventListener('mdp:simple-browser-client:ready', (event) => {
       const client = event.detail?.client
+      const pathList = Array.isArray(client?.paths)
+        ? client.paths
+          .map((entry) => entry.type === 'endpoint' ? `${entry.method} ${entry.path}` : entry.path)
+          .join(', ')
+        : 'GET /browser/page-basics, POST /browser/click-element, POST /browser/alert-message'
 
       status.textContent =
         `Connected and registered as ${client?.name ?? 'Browser Simple Client'}. ` +
-        'Available tools: browser.getPageBasics, browser.clickElement, browser.alertMessage. ' +
-        'Available skills: browser-simple/overview, browser-simple/tools, browser-simple/examples.'
+        `Available paths: ${pathList}.`
     })
 
     window.addEventListener('mdp:simple-browser-client:error', (event) => {

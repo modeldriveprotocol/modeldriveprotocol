@@ -1,5 +1,5 @@
 import type {
-  InjectedToolDescriptor,
+  InjectedPathDescriptor,
   MainWorldBridgeState,
   PageCommand,
   PageRecordingResult,
@@ -29,14 +29,14 @@ export async function runPageCommandForRouteClient<TResult>(
   return runtime.sendPageCommand<TResult>(tab.id, routeClient, command)
 }
 
-export async function injectToolScriptForRouteClient(
+export async function injectPathScriptForRouteClient(
   runtime: ChromeExtensionRuntime,
   routeClientId: string,
   input: { tabId?: number; source: string; scriptArgs?: unknown; scriptId?: string; force?: boolean }
-): Promise<InjectedToolDescriptor[]> {
+): Promise<InjectedPathDescriptor[]> {
   const routeClient = await runtime.getRouteClient(routeClientId)
   const tab = await runtime.resolveAllowedPageTabForRouteClient(routeClient, input)
-  const scriptId = input.scriptId ?? createManagedScriptId(`page-tool-${routeClient.id}`, input.source)
+  const scriptId = input.scriptId ?? createManagedScriptId(`page-path-${routeClient.id}`, input.source)
 
   await runtime.ensureScriptsInjected(tab.id, routeClient, true)
   await runtime.dispatchPageCommand(tab.id, {
@@ -50,7 +50,7 @@ export async function injectToolScriptForRouteClient(
     }
   })
 
-  return runtime.listInjectedTools(tab.id, routeClient)
+  return runtime.listInjectedPaths(tab.id, routeClient)
 }
 
 export async function getInjectedStateForRouteClient(
@@ -63,27 +63,27 @@ export async function getInjectedStateForRouteClient(
   return runtime.getMainWorldState(tab.id, routeClient)
 }
 
-export async function listInjectedToolsForRouteClient(
+export async function listInjectedPathsForRouteClient(
   runtime: ChromeExtensionRuntime,
   routeClientId: string,
   args: unknown
 ) {
   const routeClient = await runtime.getRouteClient(routeClientId)
   const tab = await runtime.resolveAllowedPageTabForRouteClient(routeClient, args)
-  return runtime.listInjectedTools(tab.id, routeClient)
+  return runtime.listInjectedPaths(tab.id, routeClient)
 }
 
-export async function callInjectedToolForRouteClient(
+export async function callInjectedPathForRouteClient(
   runtime: ChromeExtensionRuntime,
   routeClientId: string,
-  input: { tabId?: number; name: string; toolArgs?: unknown }
+  input: { tabId?: number; path: string; pathArgs?: unknown }
 ) {
   const routeClient = await runtime.getRouteClient(routeClientId)
   const tab = await runtime.resolveAllowedPageTabForRouteClient(routeClient, input)
   return runtime.sendPageCommand(tab.id, routeClient, {
     type: 'runMainWorld',
-    action: 'invokeTool',
-    args: { name: input.name, ...(input.toolArgs !== undefined ? { toolArgs: input.toolArgs } : {}) }
+    action: 'callPath',
+    args: { path: input.path, ...(input.pathArgs !== undefined ? { pathArgs: input.pathArgs } : {}) }
   })
 }
 

@@ -72,11 +72,9 @@ Prompt descriptors use:
 - optional `inputSchema`
 - optional `outputSchema`
 
-## Legacy wrappers
+## Path-first registration
 
-The SDK still exposes `exposeTool()`, `exposePrompt()`, and `exposeResource()` as migration helpers. Those wrappers register compat paths and attach `legacy` aliases so the MCP bridge can continue serving `listTools`, `callTools`, `getPrompt`, and `readResource` for older hosts.
-
-For new code, prefer `expose()` and path-native descriptors.
+Register endpoint, prompt, and skill descriptors directly with `expose()`. The SDK does not require any tool-style wrapper APIs.
 
 ## How MCP sees these definitions
 
@@ -86,8 +84,6 @@ The canonical bridge tools are:
 - `listPaths`
 - `callPath`
 - `callPaths`
-
-Compatibility aliases such as `listTools`, `callTools`, `listPrompts`, `getPrompt`, `listResources`, and `readResource` still exist while runtimes migrate.
 
 If your runtime adds or removes descriptors after `register()`, update the local registry with `expose()` / `unexpose()`, then call `syncCatalog()` so the server refreshes its indexed path catalog.
 

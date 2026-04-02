@@ -15,12 +15,12 @@ status: MVP
 
 浏览器页面在本地维护一个小型 support inbox，并通过 MDP 暴露这些能力：
 
-- tools：`listTickets`、`getTicket`、`saveDraft`
-- prompt：`replyTicket`
-- skill：`support/reply-workflow`
-- resources：`inbox://support/playbook`、`inbox://support/open-queue`
+- endpoints：`POST /inbox/list-tickets`、`POST /inbox/get-ticket`、`POST /inbox/save-draft`
+- prompt：`/inbox/reply-ticket/prompt.md`
+- skill：`/inbox/support/reply-workflow/skill.md`
+- 返回 resource-style payload 的 GET endpoint：`/inbox/support/playbook`、`/inbox/support/open-queue`
 
-Pi agent runner 会启动本地 MDP server，等待浏览器 runtime 完成注册，再通过 MCP bridge tools 去调用这些浏览器侧能力。
+Pi agent runner 会启动本地 MDP server，等待浏览器 runtime 完成注册，再通过 `listClients` 和 `callPath` 去调用这些浏览器侧能力。
 
 ```mermaid
 flowchart LR

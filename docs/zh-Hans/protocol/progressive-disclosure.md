@@ -67,8 +67,6 @@ server 端保持刻意简单：
 - 原样把 `callPath` 转发给目标 client
 - 不需要理解 skill 层级，层级含义完全由路径表达
 
-旧的 `listSkills` 和 `callSkills` alias 仍然可以保留在这层 path model 之上，用来做兼容。
-
 这样渐进式披露就变成一种命名与编写约定，而不是协议状态机。
 
 ## 设计约束

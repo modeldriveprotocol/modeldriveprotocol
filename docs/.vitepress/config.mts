@@ -59,7 +59,7 @@ interface LocaleCopy {
     skillRouteDirect: string
     skillRouteNested: string
     registerClient: string
-    updateClientCapabilities: string
+    updateClientCatalog: string
     unregisterClient: string
     callClient: string
     callClientResult: string
@@ -185,7 +185,7 @@ const enUS: LocaleCopy = {
     skillRouteDirect: 'GET /skills/:clientId/*skillPath',
     skillRouteNested: 'GET /:clientId/skills/*skillPath',
     registerClient: 'registerClient',
-    updateClientCapabilities: 'updateClientCapabilities',
+    updateClientCatalog: 'updateClientCatalog',
     unregisterClient: 'unregisterClient',
     callClient: 'callClient',
     callClientResult: 'callClientResult',
@@ -308,7 +308,7 @@ const zhHans: LocaleCopy = {
     skillRouteDirect: 'GET /skills/:clientId/*skillPath',
     skillRouteNested: 'GET /:clientId/skills/*skillPath',
     registerClient: 'registerClient',
-    updateClientCapabilities: 'updateClientCapabilities',
+    updateClientCatalog: 'updateClientCatalog',
     unregisterClient: 'unregisterClient',
     callClient: 'callClient',
     callClientResult: 'callClientResult',
@@ -724,8 +724,8 @@ function createDocsSidebar(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
                   link: localePath(prefix, '/server/api/register-client')
                 },
                 {
-                  text: copy.pages.updateClientCapabilities,
-                  link: localePath(prefix, '/server/api/update-client-capabilities')
+                  text: copy.pages.updateClientCatalog,
+                  link: localePath(prefix, '/server/api/update-client-catalog')
                 },
                 {
                   text: copy.pages.unregisterClient,

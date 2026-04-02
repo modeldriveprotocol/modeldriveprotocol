@@ -11,6 +11,8 @@ import { startRuntimeClient, waitForRuntimeClient } from '../mdp/runtime-client.
 import { normalizeArgv, renderHelpText } from './args.mjs'
 import { compactLogs, extractFinalText } from '../shared/output.mjs'
 
+const READ_PACKAGE_MANIFEST_PATH = '/workspace/package-manifest'
+
 export async function main() {
   const argv = normalizeArgv(process.argv.slice(2))
 
@@ -50,10 +52,11 @@ export async function main() {
     const result = await generateText({
       model: createMockModel({
         userInput,
-        runtimeClientId: defaults.runtimeClientId
+        runtimeClientId: defaults.runtimeClientId,
+        packageManifestPath: READ_PACKAGE_MANIFEST_PATH
       }),
       tools: {
-        callTools: bridgeTools.callTools
+        callPath: bridgeTools.callPath
       },
       stopWhen: stepCountIs(5),
       prompt: userInput

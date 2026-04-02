@@ -15,7 +15,7 @@ The server exposes transport-facing APIs for MDP clients. This section is split 
 | Use request-response transport instead of sockets | [HTTP Loop](/server/api/http-loop-connection)                                                                                                  |
 | Bootstrap browser auth before opening a websocket | [Auth Bootstrap](/server/api/auth-bootstrap)                                                                                                   |
 | Probe whether a port is serving MDP               | [GET /mdp/meta](/server/api/meta)                                                                                                              |
-| Update a connected client's path catalog          | [updateClientCatalog](/server/api/update-client-capabilities)                                                                                  |
+| Update a connected client's path catalog          | [updateClientCatalog](/server/api/update-client-catalog)                                                                                       |
 | Look up websocket message event types             | [registerClient](/server/api/register-client), [callClient](/server/api/call-client), [ping](/server/api/ping)                               |
 | Check exact HTTP request and response contracts   | [POST /mdp/http-loop/connect](/server/api/http-loop-connect), [POST /mdp/auth](/server/api/auth-issue), [GET /mdp/meta](/server/api/meta) |
 
@@ -33,7 +33,7 @@ The server exposes transport-facing APIs for MDP clients. This section is split 
 | Event                                              | Direction        | Purpose                                   |
 | -------------------------------------------------- | ---------------- | ----------------------------------------- |
 | [registerClient](/server/api/register-client)      | Client -> Server | Register one client descriptor and paths  |
-| [updateClientCatalog](/server/api/update-client-capabilities) | Client -> Server | Replace one registered path catalog       |
+| [updateClientCatalog](/server/api/update-client-catalog) | Client -> Server | Replace one registered path catalog       |
 | [unregisterClient](/server/api/unregister-client)  | Client -> Server | Remove one registered client session      |
 | [callClient](/server/api/call-client)              | Server -> Client | Invoke one method+path target on a client |
 | [callClientResult](/server/api/call-client-result) | Client -> Server | Return a routed invocation result         |

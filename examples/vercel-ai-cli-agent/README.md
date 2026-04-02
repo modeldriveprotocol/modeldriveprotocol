@@ -51,5 +51,6 @@ mdp-test get-package-version
 - 不依赖真实 LLM 接口，内部使用 `ai/test` 的 `MockLanguageModelV3`
 - MDP client 复用了仓库里的 `nodejs-simple-mdp-client`
 - 通过 `mcpClient.tools()` 直接自动发现 MDP MCP tools，没有在示例里额外定义本地 tool schema
-- 最终调用的是 MDP bridge 的 `callTools`，目标 client tool 是 `workspace.readPackageManifest`
+- agent 会直接调用 runtime 的 canonical endpoint `/workspace/package-manifest`
+- 整个链路只经过 bridge 的 `callPath`
 - 示例默认读取的是 `packages/server/package.json` 的版本号，所以可以稳定得到 `1.0.0` 这类结果

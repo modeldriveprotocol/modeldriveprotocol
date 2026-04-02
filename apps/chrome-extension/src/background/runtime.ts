@@ -1,6 +1,6 @@
 import type { MdpClient } from '@modeldriveprotocol/client'
 import type {
-  InjectedToolDescriptor,
+  InjectedPathDescriptor,
   MainWorldBridgeState,
   PageCommand
 } from '#~/page/messages.js'
@@ -45,7 +45,7 @@ import {
   dispatchPageCommand,
   ensureScriptsInjected,
   getMainWorldState,
-  listInjectedTools,
+  listInjectedPaths,
   safeGetMainWorldState,
   sendPageCommand
 } from './runtime/page-commands.js'
@@ -58,12 +58,12 @@ import {
   syncContentScriptRegistration
 } from './runtime/permissions.js'
 import {
-  callInjectedToolForRouteClient,
+  callInjectedPathForRouteClient,
   createRouteClientFromActiveTab,
   getInjectedStateForRouteClient,
   handleSelectorCapturedMessage,
-  injectToolScriptForRouteClient,
-  listInjectedToolsForRouteClient,
+  injectPathScriptForRouteClient,
+  listInjectedPathsForRouteClient,
   listRouteRecordings,
   listRouteSelectorResources,
   persistGrantedActiveTabOrigin,
@@ -113,10 +113,10 @@ export class ChromeExtensionRuntime implements ChromeExtensionRuntimeApi {
   async showNotification(options: { title?: string; message: string }) { return showNotification(this, options) }
   async openOptionsPage() { return openOptionsPage() }
   async runPageCommandForRouteClient<TResult>(routeClientId: string, args: unknown, command: PageCommand): Promise<TResult> { return runPageCommandForRouteClient(this, routeClientId, args, command) }
-  async injectToolScriptForRouteClient(routeClientId: string, input: { tabId?: number; source: string; scriptArgs?: unknown; scriptId?: string; force?: boolean }): Promise<InjectedToolDescriptor[]> { return injectToolScriptForRouteClient(this, routeClientId, input) }
+  async injectPathScriptForRouteClient(routeClientId: string, input: { tabId?: number; source: string; scriptArgs?: unknown; scriptId?: string; force?: boolean }): Promise<InjectedPathDescriptor[]> { return injectPathScriptForRouteClient(this, routeClientId, input) }
   async getInjectedStateForRouteClient(routeClientId: string, args: unknown): Promise<MainWorldBridgeState> { return getInjectedStateForRouteClient(this, routeClientId, args) }
-  async listInjectedToolsForRouteClient(routeClientId: string, args: unknown): Promise<InjectedToolDescriptor[]> { return listInjectedToolsForRouteClient(this, routeClientId, args) }
-  async callInjectedToolForRouteClient(routeClientId: string, input: { tabId?: number; name: string; toolArgs?: unknown }): Promise<unknown> { return callInjectedToolForRouteClient(this, routeClientId, input) }
+  async listInjectedPathsForRouteClient(routeClientId: string, args: unknown): Promise<InjectedPathDescriptor[]> { return listInjectedPathsForRouteClient(this, routeClientId, args) }
+  async callInjectedPathForRouteClient(routeClientId: string, input: { tabId?: number; path: string; pathArgs?: unknown }): Promise<unknown> { return callInjectedPathForRouteClient(this, routeClientId, input) }
   async getRouteClient(routeClientId: string): Promise<RouteClientConfig> { return getRouteClient(this, routeClientId) }
   async runRouteRecording(routeClientId: string, recordingId: string, args: unknown): Promise<unknown> { return runRouteRecording(this, routeClientId, recordingId, args) }
   async listRouteRecordings(routeClientId: string): Promise<RouteClientRecording[]> { return listRouteRecordings(this, routeClientId) }
@@ -140,7 +140,7 @@ export class ChromeExtensionRuntime implements ChromeExtensionRuntimeApi {
   async ensureScriptsInjected(tabId: number, routeClient: RouteClientConfig, injectBridge: boolean) { return ensureScriptsInjected(this, tabId, routeClient, injectBridge) }
   async dispatchPageCommand<TResult>(tabId: number, command: PageCommand): Promise<TResult> { return dispatchPageCommand(tabId, command) }
   async sendPageCommand<TResult>(tabId: number, routeClient: RouteClientConfig, command: PageCommand): Promise<TResult> { return sendPageCommand(this, tabId, routeClient, command) }
-  async listInjectedTools(tabId: number, routeClient: RouteClientConfig): Promise<InjectedToolDescriptor[]> { return listInjectedTools(this, tabId, routeClient) }
+  async listInjectedPaths(tabId: number, routeClient: RouteClientConfig): Promise<InjectedPathDescriptor[]> { return listInjectedPaths(this, tabId, routeClient) }
   async getMainWorldState(tabId: number, routeClient: RouteClientConfig): Promise<MainWorldBridgeState> { return getMainWorldState(this, tabId, routeClient) }
   async safeGetMainWorldState(tabId: number) { return safeGetMainWorldState(this, tabId) }
   async persistGrantedActiveTabOrigin(routeClientId: string, pattern: string) { return persistGrantedActiveTabOrigin(this, routeClientId, pattern) }

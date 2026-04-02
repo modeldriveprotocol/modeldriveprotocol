@@ -302,44 +302,27 @@ describe('CapabilityIndex', () => {
     ])
   })
 
-  it('measures compat-wrapper depth from logical legacy paths instead of internal hash segments', () => {
+  it('measures canonical path depth from visible path segments', () => {
     const index = new CapabilityIndex(() => [
       createSnapshot('client-01', 'Browser Client', {
         paths: [
           {
             type: 'endpoint',
-            path: '/compat/tools/search-dom/83787a5f',
-            method: 'POST',
-            legacy: {
-              kind: 'tool',
-              name: 'searchDom'
-            }
+            path: '/page/search-dom',
+            method: 'POST'
           },
           {
             type: 'prompt',
-            path: '/compat/prompts/summarize-selection/02da729c/prompt.md',
-            legacy: {
-              kind: 'prompt',
-              name: 'summarizeSelection'
-            }
+            path: '/workspace/summaries/prompt.md'
           },
           {
             type: 'skill',
-            path: '/compat/skills/page/review/files/21ce2e13/skill.md',
-            legacy: {
-              kind: 'skill',
-              name: 'page/review/files'
-            }
+            path: '/workspace/review/files/skill.md'
           },
           {
             type: 'endpoint',
-            path: '/compat/resources/webpage/active-tab/selection/abf7096f',
-            method: 'GET',
-            legacy: {
-              kind: 'resource',
-              uri: 'webpage://active-tab/selection',
-              name: 'Active Selection'
-            }
+            path: '/workspace/review/files/download',
+            method: 'GET'
           }
         ]
       })
@@ -350,22 +333,14 @@ describe('CapabilityIndex', () => {
         clientId: 'client-01',
         clientName: 'Browser Client',
         type: 'endpoint',
-        path: '/compat/tools/search-dom/83787a5f',
-        method: 'POST',
-        legacy: {
-          kind: 'tool',
-          name: 'searchDom'
-        }
+        path: '/page/search-dom',
+        method: 'POST'
       },
       {
         clientId: 'client-01',
         clientName: 'Browser Client',
         type: 'prompt',
-        path: '/compat/prompts/summarize-selection/02da729c/prompt.md',
-        legacy: {
-          kind: 'prompt',
-          name: 'summarizeSelection'
-        }
+        path: '/workspace/summaries/prompt.md'
       }
     ])
     expect(index.listPaths({ depth: 2 })).toEqual([
@@ -373,44 +348,27 @@ describe('CapabilityIndex', () => {
         clientId: 'client-01',
         clientName: 'Browser Client',
         type: 'endpoint',
-        path: '/compat/tools/search-dom/83787a5f',
-        method: 'POST',
-        legacy: {
-          kind: 'tool',
-          name: 'searchDom'
-        }
+        path: '/page/search-dom',
+        method: 'POST'
       },
       {
         clientId: 'client-01',
         clientName: 'Browser Client',
         type: 'prompt',
-        path: '/compat/prompts/summarize-selection/02da729c/prompt.md',
-        legacy: {
-          kind: 'prompt',
-          name: 'summarizeSelection'
-        }
+        path: '/workspace/summaries/prompt.md'
       },
       {
         clientId: 'client-01',
         clientName: 'Browser Client',
         type: 'skill',
-        path: '/compat/skills/page/review/files/21ce2e13/skill.md',
-        legacy: {
-          kind: 'skill',
-          name: 'page/review/files'
-        }
+        path: '/workspace/review/files/skill.md'
       },
       {
         clientId: 'client-01',
         clientName: 'Browser Client',
         type: 'endpoint',
-        path: '/compat/resources/webpage/active-tab/selection/abf7096f',
-        method: 'GET',
-        legacy: {
-          kind: 'resource',
-          uri: 'webpage://active-tab/selection',
-          name: 'Active Selection'
-        }
+        path: '/workspace/review/files/download',
+        method: 'GET'
       }
     ])
   })

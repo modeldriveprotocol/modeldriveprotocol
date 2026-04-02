@@ -43,7 +43,7 @@ Response:
 
 1. `POST /connect`
 2. send [registerClient](/server/api/register-client) through `/send`
-3. optionally send [updateClientCatalog](/server/api/update-client-capabilities) through `/send` when the local path catalog changes
+3. optionally send [updateClientCatalog](/server/api/update-client-catalog) through `/send` when the local path catalog changes
 4. `GET /poll` until the server returns [callClient](/server/api/call-client) or `204`
 5. send [callClientResult](/server/api/call-client-result) through `/send`
 6. `POST /disconnect`

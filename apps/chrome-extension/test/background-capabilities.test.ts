@@ -23,18 +23,13 @@ function createRuntimeStub() {
 }
 
 function createClientStub() {
-  const tools: string[] = []
-  const resources: string[] = []
+  const paths: string[] = []
 
   return {
-    tools,
-    resources,
+    paths,
     client: {
-      exposeTool(name: string) {
-        tools.push(name)
-      },
-      exposeResource(uri: string) {
-        resources.push(uri)
+      expose(path: string) {
+        paths.push(path)
       }
     }
   }
@@ -55,15 +50,13 @@ describe('chrome extension background capabilities', () => {
       }
     )
 
-    expect(stub.tools).toEqual(
-      BACKGROUND_TOOL_DEFINITIONS
-        .map((definition) => definition.id)
-        .filter((id) => id !== 'extension.listTabs' && id !== 'extension.showNotification')
+    expect(stub.paths).toHaveLength(
+      BACKGROUND_TOOL_DEFINITIONS.length +
+        BACKGROUND_RESOURCE_DEFINITIONS.length -
+        3
     )
-    expect(stub.resources).toEqual(
-      BACKGROUND_RESOURCE_DEFINITIONS
-        .map((definition) => definition.id)
-        .filter((id) => id !== 'chrome-extension://tabs')
-    )
+    expect(stub.paths).not.toContain('/extension/tabs')
+    expect(stub.paths).not.toContain('/extension/show-notification')
+    expect(stub.paths).not.toContain('/extension/resources/tabs')
   })
 })

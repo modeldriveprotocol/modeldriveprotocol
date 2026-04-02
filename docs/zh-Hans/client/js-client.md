@@ -39,9 +39,9 @@ const client = createMdpClient({
   }
 })
 
-client.exposeTool('searchDom', async ({ query }) => ({
-  query,
-  matches: 3
+client.expose('/page/inspect', { method: 'GET' }, async () => ({
+  title: document.title,
+  url: window.location.href
 }))
 
 await client.connect()

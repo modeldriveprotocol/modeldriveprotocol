@@ -5,8 +5,6 @@ status: Draft
 
 # `updateClientCatalog`
 
-This page keeps the historical URL, but the canonical event name is `updateClientCatalog`.
-
 `updateClientCatalog` is the client-to-server lifecycle event used to replace the already-registered path catalog for one connected client without changing the client identity.
 
 | Event Type            | Flow Direction   |

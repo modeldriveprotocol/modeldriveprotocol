@@ -16,10 +16,11 @@ Bridge tools:
 
 The bridge surface keeps the host integration stable while still allowing the registered path catalogs to change at runtime.
 
-The path-oriented bridge is the canonical surface. The current server also keeps the legacy bridge names available as compatibility aliases:
+The path-oriented bridge is the surface:
 
-- `listTools`, `listPrompts`, `listSkills`, `listResources`
-- `callTools`, `getPrompt`, `callSkills`, `readResource`
-- `callClients`
+- `listClients`
+- `listPaths`
+- `callPath`
+- `callPaths`
 
-Invocation-oriented bridge tools such as `callPath` and `callPaths` also accept an optional `auth` object. That payload is forwarded to the target client as `callClient.auth`.
+Invocation-oriented bridge tools such as `callPath` and `callPaths` accept an optional `auth` object. That payload is forwarded to the target client as `callClient.auth`.

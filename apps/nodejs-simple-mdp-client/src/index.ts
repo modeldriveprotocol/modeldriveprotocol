@@ -13,32 +13,17 @@ import {
 
 type JsonRecord = Record<string, unknown>
 type RpcArguments = Record<string, unknown> | undefined
+type CapabilityRequest = {
+  params: Record<string, unknown>
+  queries: Record<string, unknown>
+  headers: Record<string, string>
+  body?: unknown
+}
 type DependencySectionName =
   | 'dependencies'
   | 'devDependencies'
   | 'peerDependencies'
   | 'optionalDependencies'
-
-interface SimpleClient {
-  exposeTool(
-    name: string,
-    handler: (args: RpcArguments) => unknown | Promise<unknown>,
-    options?: {
-      description?: string
-      inputSchema?: Record<string, unknown>
-    }
-  ): SimpleClient
-  exposeSkill(
-    name: string,
-    definition: string | (() => Promise<string>),
-    options?: {
-      description?: string
-      contentType?: string
-    }
-  ): SimpleClient
-  connect(): Promise<void>
-  register(): void
-}
 
 interface PackageManifest extends JsonRecord {
   name?: string
@@ -129,6 +114,10 @@ export interface UpdatePackageManifestResult extends ReadPackageManifestResult {
   }
 }
 
+type CapabilityClient = {
+  expose: (...args: any[]) => unknown
+}
+
 const DEFAULT_SERVER_URL = 'ws://127.0.0.1:47372'
 const DEFAULT_SKILLS_DIR = fileURLToPath(new URL('../skills', import.meta.url))
 const WORKSPACE_CONFIG_FILE = 'pnpm-workspace.yaml'
@@ -199,71 +188,77 @@ export async function bootNodejsSimpleMdpClient(
   return client
 }
 
-export function registerNodejsSimpleCapabilities(
-  client: SimpleClient,
+export function registerNodejsSimpleCapabilities<T extends CapabilityClient>(
+  client: T,
   options: RegisterNodejsSimpleCapabilitiesOptions = {}
-): SimpleClient {
-  client.exposeTool(
-    'nodejs.getRuntimeInfo',
-    async () => getNodejsRuntimeInfo(options.workspaceRoot),
+): T {
+  client.expose(
+    '/nodejs/runtime-info',
     {
+      method: 'GET',
       description: 'Read the current Node.js runtime, workspace root, and root package dependency summary.'
-    }
+    },
+    async () => getNodejsRuntimeInfo(options.workspaceRoot),
   )
 
-  client.exposeTool(
-    'workspace.listSubpackages',
-    async () => listWorkspaceSubpackages(options.workspaceRoot),
+  client.expose(
+    '/workspace/subpackages',
     {
+      method: 'GET',
       description: 'List subpackages discovered in the current workspace.'
-    }
+    },
+    async () => listWorkspaceSubpackages(options.workspaceRoot),
   )
 
-  client.exposeTool(
-    'workspace.readPackageManifest',
-    async (args) => readWorkspacePackageManifest(options.workspaceRoot, args),
+  client.expose(
+    '/workspace/package-manifest',
     {
+      method: 'POST',
       description: 'Read one package.json from the current workspace.',
       inputSchema: PACKAGE_MANIFEST_TOOL_SCHEMA
-    }
+    },
+    async (request: CapabilityRequest) =>
+      readWorkspacePackageManifest(options.workspaceRoot, readRequestArgs(request))
   )
 
-  client.exposeTool(
-    'workspace.updatePackageManifest',
-    async (args) => updateWorkspacePackageManifest(options.workspaceRoot, args),
+  client.expose(
+    '/workspace/update-package-manifest',
     {
+      method: 'POST',
       description: 'Update package.json metadata and dependency sections for one workspace package.',
       inputSchema: PACKAGE_MANIFEST_UPDATE_SCHEMA
-    }
+    },
+    async (request: CapabilityRequest) =>
+      updateWorkspacePackageManifest(options.workspaceRoot, readRequestArgs(request))
   )
 
   const skillsDir = options.skillsDir ?? DEFAULT_SKILLS_DIR
 
-  client.exposeSkill(
-    'nodejs-simple/overview',
-    createFileBackedSkillResolver(skillsDir, 'overview.md'),
+  client.expose(
+    '/nodejs-simple/overview/skill.md',
     {
       description: 'Overview of the Node.js simple MDP client.',
       contentType: 'text/markdown'
-    }
+    },
+    createFileBackedSkillResolver(skillsDir, 'overview.md')
   )
 
-  client.exposeSkill(
-    'nodejs-simple/tools',
-    createFileBackedSkillResolver(skillsDir, 'tools.md'),
+  client.expose(
+    '/nodejs-simple/tools/skill.md',
     {
       description: 'Tool-by-tool usage details for the Node.js simple MDP client.',
       contentType: 'text/markdown'
-    }
+    },
+    createFileBackedSkillResolver(skillsDir, 'tools.md')
   )
 
-  client.exposeSkill(
-    'nodejs-simple/package-json',
-    createFileBackedSkillResolver(skillsDir, 'package-json.md'),
+  client.expose(
+    '/nodejs-simple/package-json/skill.md',
     {
       description: 'Package.json editing workflow guidance for the Node.js simple MDP client.',
       contentType: 'text/markdown'
-    }
+    },
+    createFileBackedSkillResolver(skillsDir, 'package-json.md')
   )
 
   return client
@@ -697,6 +692,20 @@ function dependencyArraySchema(description: string) {
       type: 'string'
     }
   }
+}
+
+function readRequestArgs(request: CapabilityRequest): RpcArguments {
+  const args = {
+    ...request.params,
+    ...request.queries,
+    ...(isJsonRecord(request.body) ? request.body : {})
+  }
+
+  return Object.keys(args).length > 0 ? args : undefined
+}
+
+function isJsonRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function readPackageManifestUpdate(args: RpcArguments) {
