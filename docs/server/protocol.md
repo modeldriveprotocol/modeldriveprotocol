@@ -12,8 +12,8 @@ From the server's point of view, MDP is a small set of lifecycle and routing mes
 The main sequence is:
 
 1. a client connects over `ws` / `wss` or `http` / `https` loop mode
-2. the client sends `registerClient` with capability metadata
-3. the server indexes that metadata in memory
+2. the client sends `registerClient` with path catalog metadata
+3. the server indexes that catalog in memory
 4. an MCP host calls a bridge tool
 5. the server routes the request as `callClient`
 6. the client returns `callClientResult`
@@ -25,7 +25,7 @@ In an optional layered deployment, one edge server may mirror its locally connec
 The server runtime only needs a few protocol concepts:
 
 - client descriptors
-- capability descriptors for tools, prompts, skills, and resources
+- path descriptors for endpoints, prompts, and skills
 - invocation envelopes with optional `auth`
 - heartbeat messages for connection liveness
 

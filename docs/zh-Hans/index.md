@@ -50,8 +50,8 @@ features:
         <span>套稳定 bridge 供 host 接入</span>
       </div>
       <div class="mdp-home-metric">
-        <strong>4</strong>
-        <span>类能力：tools / prompts / skills / resources</span>
+        <strong>3</strong>
+        <span>类路径：endpoints / prompts / skills</span>
       </div>
       <div class="mdp-home-metric">
         <strong>2</strong>
@@ -98,7 +98,7 @@ features:
     <a class="mdp-home-card" href="/zh-Hans/playground/">
       <span class="mdp-home-card-kicker">直接试试看</span>
       <h3>Playground</h3>
-      <p>直接试连接，观察 capability 行为。</p>
+      <p>直接试连接，观察 path 行为。</p>
     </a>
   </div>
 </section>
@@ -124,8 +124,8 @@ features:
     </div>
     <div class="mdp-home-step">
       <span class="mdp-home-step-index">03</span>
-      <h3>注册能力</h3>
-      <p>注册 tools、prompts、skills、resources。</p>
+      <h3>注册路径目录</h3>
+      <p>注册 endpoints、prompts、skills。</p>
     </div>
     <div class="mdp-home-step">
       <span class="mdp-home-step-index">04</span>

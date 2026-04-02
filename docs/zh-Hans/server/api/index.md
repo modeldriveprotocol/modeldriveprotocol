@@ -9,36 +9,36 @@ status: Draft
 
 ## 按任务阅读
 
-| 目标                                  | 入口                                                                                                                                   |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| 建立一个双向会话                      | [WebSocket 建立链接](/zh-Hans/server/api/websocket-connection)                                                                         |
-| 用请求响应方式代替 socket             | [HTTP Loop 建立链接](/zh-Hans/server/api/http-loop-connection)                                                                         |
-| 浏览器在开 websocket 前先完成鉴权引导 | [鉴权引导](/zh-Hans/server/api/auth-bootstrap)                                                                                         |
-| 判断某个端口是不是 MDP 服务           | [GET /mdp/meta](/zh-Hans/server/api/meta)                                                                                              |
-| 更新一个已连接 client 的 capability 目录 | [updateClientCapabilities](/zh-Hans/server/api/update-client-capabilities)                                                             |
-| 查看 websocket 有哪些消息事件         | [registerClient](/zh-Hans/server/api/register-client)、[callClient](/zh-Hans/server/api/call-client)、[ping](/zh-Hans/server/api/ping) |
-| 查看精确的 HTTP 接口契约              | [POST /mdp/http-loop/connect](/zh-Hans/server/api/http-loop-connect)、[POST /mdp/auth](/zh-Hans/server/api/auth-issue)、[GET /mdp/meta](/zh-Hans/server/api/meta) |
+| 目标                         | 入口                                                                                                                                                                |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 建立一个双向会话             | [WebSocket 建立链接](/zh-Hans/server/api/websocket-connection)                                                                                                      |
+| 用请求响应方式代替 socket    | [HTTP Loop 建立链接](/zh-Hans/server/api/http-loop-connection)                                                                                                      |
+| 浏览器在开 websocket 前先鉴权 | [鉴权引导](/zh-Hans/server/api/auth-bootstrap)                                                                                                                      |
+| 判断某个端口是不是 MDP 服务  | [GET /mdp/meta](/zh-Hans/server/api/meta)                                                                                                                           |
+| 更新一个已连接 client 的路径目录 | [updateClientCatalog](/zh-Hans/server/api/update-client-capabilities)                                                                                               |
+| 查看 websocket 有哪些消息事件 | [registerClient](/zh-Hans/server/api/register-client)、[callClient](/zh-Hans/server/api/call-client)、[ping](/zh-Hans/server/api/ping)                          |
+| 查看精确的 HTTP 接口契约     | [POST /mdp/http-loop/connect](/zh-Hans/server/api/http-loop-connect)、[POST /mdp/auth](/zh-Hans/server/api/auth-issue)、[GET /mdp/meta](/zh-Hans/server/api/meta) |
 
 ## 建立链接
 
 | 方式                                                           | 入口                     | 说明                                         |
 | -------------------------------------------------------------- | ------------------------ | -------------------------------------------- |
-| [WebSocket 建立链接](/zh-Hans/server/api/websocket-connection) | `ws://127.0.0.1:47372`    | 双向 JSON MDP 消息                           |
+| [WebSocket 建立链接](/zh-Hans/server/api/websocket-connection) | `ws://127.0.0.1:47372`   | 双向 JSON MDP 消息                           |
 | [HTTP Loop 建立链接](/zh-Hans/server/api/http-loop-connection) | `/mdp/http-loop/connect` | 基于 session 的 long-poll transport          |
 | [鉴权引导](/zh-Hans/server/api/auth-bootstrap)                 | `/mdp/auth`              | 主要给浏览器 websocket client 做 cookie 引导 |
 | [元数据探针](/zh-Hans/server/api/meta)                         | `/mdp/meta`              | 识别一个 MDP server 并读取发现提示           |
 
 ## 消息事件
 
-| 事件                                                       | 方向             | 作用                       |
-| ---------------------------------------------------------- | ---------------- | -------------------------- |
-| [registerClient](/zh-Hans/server/api/register-client)      | Client -> Server | 注册 capability 元数据     |
-| [updateClientCapabilities](/zh-Hans/server/api/update-client-capabilities) | Client -> Server | 替换一个或多个 capability 目录 |
-| [unregisterClient](/zh-Hans/server/api/unregister-client)  | Client -> Server | 删除一个已注册 client 会话 |
-| [callClient](/zh-Hans/server/api/call-client)              | Server -> Client | 路由一个 capability 调用   |
-| [callClientResult](/zh-Hans/server/api/call-client-result) | Client -> Server | 回传调用结果               |
-| [ping](/zh-Hans/server/api/ping)                           | 双向             | 心跳保活                   |
-| [pong](/zh-Hans/server/api/pong)                           | 双向             | 心跳确认                   |
+| 事件                                                       | 方向             | 作用                         |
+| ---------------------------------------------------------- | ---------------- | ---------------------------- |
+| [registerClient](/zh-Hans/server/api/register-client)      | Client -> Server | 注册一个 client descriptor 与路径 |
+| [updateClientCatalog](/zh-Hans/server/api/update-client-capabilities) | Client -> Server | 替换一个已注册的路径目录     |
+| [unregisterClient](/zh-Hans/server/api/unregister-client)  | Client -> Server | 删除一个已注册 client 会话   |
+| [callClient](/zh-Hans/server/api/call-client)              | Server -> Client | 调用一个 `method + path` 目标 |
+| [callClientResult](/zh-Hans/server/api/call-client-result) | Client -> Server | 回传调用结果                 |
+| [ping](/zh-Hans/server/api/ping)                           | 双向             | 心跳保活                     |
+| [pong](/zh-Hans/server/api/pong)                           | 双向             | 心跳确认                     |
 
 ## 外部接口
 
@@ -83,7 +83,11 @@ status: Draft
 }
 ```
 
-`kind` 只会是 `tool`、`prompt`、`skill`、`resource` 之一。
+MDP 的 client 目录是 path-based。`client.paths` 里的 descriptor 只会是下面三种之一：
+
+- 带显式 `method` 和 `path` 的 `endpoint`
+- 位于 `*.prompt.md` 路径、通过 `GET` 调用的 `prompt`
+- 位于 `*.skill.md` 路径、通过 `GET` 调用的 `skill`
 
 ## 与 bridge 工具的关系
 

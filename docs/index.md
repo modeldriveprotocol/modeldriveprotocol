@@ -50,8 +50,8 @@ features:
         <span>stable bridge for every host</span>
       </div>
       <div class="mdp-home-metric">
-        <strong>4</strong>
-        <span>capability types: tools / prompts / skills / resources</span>
+        <strong>3</strong>
+        <span>path types: endpoints / prompts / skills</span>
       </div>
       <div class="mdp-home-metric">
         <strong>2</strong>
@@ -93,7 +93,7 @@ features:
     <a class="mdp-home-card" href="/playground/">
       <span class="mdp-home-card-kicker">Try It Live</span>
       <h3>Playground</h3>
-      <p>Try connections and inspect capability behavior.</p>
+      <p>Try connections and inspect path behavior.</p>
     </a>
   </div>
 </section>
@@ -119,8 +119,8 @@ features:
     </div>
     <div class="mdp-home-step">
       <span class="mdp-home-step-index">03</span>
-      <h3>Register capabilities</h3>
-      <p>Register tools, prompts, skills, and resources.</p>
+      <h3>Register path catalogs</h3>
+      <p>Register endpoints, prompts, and skills.</p>
     </div>
     <div class="mdp-home-step">
       <span class="mdp-home-step-index">04</span>

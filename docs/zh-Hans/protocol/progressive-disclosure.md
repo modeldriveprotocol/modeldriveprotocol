@@ -5,7 +5,7 @@ status: Draft
 
 # 渐进式披露
 
-MDP 中的渐进式披露，应该建模成一棵 skill 文档树，而不是一个带状态的 skill 会话。
+MDP 中的渐进式披露，应该建模成一棵 skill path 树，而不是一个带状态的 skill 会话。
 
 设计目标很直接：
 
@@ -18,39 +18,42 @@ MDP 中的渐进式披露，应该建模成一棵 skill 文档树，而不是一
 推荐的 JS SDK 写法是：
 
 ```ts
-client.exposeSkill(
-  'workspace/review',
-  () =>
-    '# Workspace Review\n' +
+client.expose(
+  '/workspace/review/skill.md',
+  '# Workspace Review\n' +
     '\n' +
     'Review the workspace root.\n' +
     '\n' +
-    'You can read `workspace/review/files` for file-level guidance.'
+    'You can read `/workspace/review/files/skill.md` for file-level guidance.'
 )
 
-client.exposeSkill(
-  'workspace/review/files',
-  (query, headers) =>
+client.expose(
+  '/workspace/review/files/skill.md',
+  {
+    description: 'File-level review guidance'
+  },
+  ({ queries, headers }) =>
     '# Workspace Review Files\n' +
     '\n' +
-    `Topic: ${query.topic ?? 'general'}\n` +
+    `Topic: ${queries.topic ?? 'general'}\n` +
     '\n' +
     `Header: ${headers['x-review-scope'] ?? 'none'}`
 )
 ```
 
-渐进式披露的单位，就是 skill 名称本身：
+渐进式披露的单位，就是 skill path 本身：
 
-- `workspace/review` 是摘要节点
-- `workspace/review/files` 是更深一层
-- `workspace/review/files/typescript` 还可以继续下钻
+- `/workspace/review/skill.md` 是摘要节点
+- `/workspace/review/files/skill.md` 是更深一层
+- `/workspace/review/files/typescript/skill.md` 还可以继续下钻
 
 ## 发现与读取
 
 server 仍然只需要现有 bridge surface：
 
-- `listSkills` 用来发现 skill 名称
-- `callSkills` 用来读取某个精确 skill 节点
+- `listPaths` 用来发现 skill path
+- `callPath` 用来读取某个精确 skill 节点
+- `callPaths` 用来把一次 skill 读取 fan-out 到多个 client
 - `GET /skills/:clientId/*skillPath` 用来经由 HTTP 读取某个精确 skill 节点
 - `GET /:clientId/skills/*skillPath` 是另一种等价的 HTTP 形态
 
@@ -60,9 +63,11 @@ HTTP 路由会把 URL query 参数和请求头传给 skill resolver。
 
 server 端保持刻意简单：
 
-- 索引 skill 名称和描述
-- 原样把 `callSkills` 转发给目标 client
-- 不需要理解 skill 层级，层级含义完全由名字表达
+- 索引 skill path 和描述
+- 原样把 `callPath` 转发给目标 client
+- 不需要理解 skill 层级，层级含义完全由路径表达
+
+旧的 `listSkills` 和 `callSkills` alias 仍然可以保留在这层 path model 之上，用来做兼容。
 
 这样渐进式披露就变成一种命名与编写约定，而不是协议状态机。
 

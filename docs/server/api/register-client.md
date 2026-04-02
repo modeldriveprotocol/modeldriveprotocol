@@ -5,9 +5,9 @@ status: Draft
 
 # `registerClient`
 
-`registerClient` is the client-to-server lifecycle event used to publish one client identity plus its current capability catalog.
+`registerClient` is the client-to-server lifecycle event used to publish one client identity plus its current path catalog.
 
-If the same connected client needs to change only its tools, prompts, skills, or resources later, use [updateClientCapabilities](/server/api/update-client-capabilities) instead of sending a whole new identity document.
+If the same connected client needs to change only its registered paths later, use [updateClientCatalog](/server/api/update-client-capabilities) instead of sending a whole new identity document.
 
 | Event Type       | Flow Direction   |
 | ---------------- | ---------------- |
@@ -16,6 +16,8 @@ If the same connected client needs to change only its tools, prompts, skills, or
 ## Data Definition
 
 ```ts
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
 interface AuthContext {
   scheme?: string
   token?: string
@@ -23,37 +25,35 @@ interface AuthContext {
   metadata?: Record<string, unknown>
 }
 
-interface ToolDescriptor {
-  name: string
+interface EndpointPathDescriptor {
+  type: 'endpoint'
+  path: string
+  method: HttpMethod
   description?: string
   inputSchema?: Record<string, unknown>
+  outputSchema?: Record<string, unknown>
+  contentType?: string
 }
 
-interface PromptArgumentDescriptor {
-  name: string
+interface PromptPathDescriptor {
+  type: 'prompt'
+  path: string
   description?: string
-  required?: boolean
+  inputSchema?: Record<string, unknown>
+  outputSchema?: Record<string, unknown>
 }
 
-interface PromptDescriptor {
-  name: string
-  description?: string
-  arguments?: PromptArgumentDescriptor[]
-}
-
-interface SkillDescriptor {
-  name: string
+interface SkillPathDescriptor {
+  type: 'skill'
+  path: string
   description?: string
   contentType?: string
-  inputSchema?: Record<string, unknown>
 }
 
-interface ResourceDescriptor {
-  uri: string
-  name: string
-  description?: string
-  mimeType?: string
-}
+type PathDescriptor =
+  | EndpointPathDescriptor
+  | PromptPathDescriptor
+  | SkillPathDescriptor
 
 interface ClientDescriptor {
   id: string
@@ -62,10 +62,7 @@ interface ClientDescriptor {
   version?: string
   platform?: string
   metadata?: Record<string, unknown>
-  tools: ToolDescriptor[]
-  prompts: PromptDescriptor[]
-  skills: SkillDescriptor[]
-  resources: ResourceDescriptor[]
+  paths: PathDescriptor[]
 }
 
 interface RegisterClientMessage {
@@ -85,10 +82,13 @@ interface RegisterClientMessage {
   "client": {
     "id": "browser-01",
     "name": "Browser Client",
-    "tools": [{ "name": "searchDom" }],
-    "prompts": [],
-    "skills": [],
-    "resources": []
+    "paths": [
+      {
+        "type": "endpoint",
+        "method": "GET",
+        "path": "/search"
+      }
+    ]
   }
 }
 ```
@@ -106,10 +106,22 @@ interface RegisterClientMessage {
     "metadata": {
       "workspaceCount": 2
     },
-    "tools": [{ "name": "openFile" }],
-    "prompts": [{ "name": "summarizeSelection" }],
-    "skills": [{ "name": "workspace/review", "contentType": "text/markdown" }],
-    "resources": [{ "uri": "workspace://root/info", "name": "Workspace Info" }]
+    "paths": [
+      {
+        "type": "endpoint",
+        "method": "GET",
+        "path": "/files/:path"
+      },
+      {
+        "type": "prompt",
+        "path": "/workspace/summarize/prompt.md"
+      },
+      {
+        "type": "skill",
+        "path": "/workspace/review/skill.md",
+        "contentType": "text/markdown"
+      }
+    ]
   },
   "auth": {
     "scheme": "Bearer",

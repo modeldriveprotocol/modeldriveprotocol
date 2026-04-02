@@ -9,33 +9,33 @@ The server exposes transport-facing APIs for MDP clients. This section is split 
 
 ## Read by task
 
-| Goal                                              | Start here                                                                                                     |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Open a bidirectional session                      | [WebSocket](/server/api/websocket-connection)                                                                  |
-| Use request-response transport instead of sockets | [HTTP Loop](/server/api/http-loop-connection)                                                                  |
-| Bootstrap browser auth before opening a websocket | [Auth Bootstrap](/server/api/auth-bootstrap)                                                                   |
-| Probe whether a port is serving MDP              | [GET /mdp/meta](/server/api/meta)                                                                              |
-| Update a connected client's capability catalog    | [updateClientCapabilities](/server/api/update-client-capabilities)                                             |
-| Look up websocket message event types             | [registerClient](/server/api/register-client), [callClient](/server/api/call-client), [ping](/server/api/ping) |
+| Goal                                              | Start here                                                                                                                                     |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Open a bidirectional session                      | [WebSocket](/server/api/websocket-connection)                                                                                                  |
+| Use request-response transport instead of sockets | [HTTP Loop](/server/api/http-loop-connection)                                                                                                  |
+| Bootstrap browser auth before opening a websocket | [Auth Bootstrap](/server/api/auth-bootstrap)                                                                                                   |
+| Probe whether a port is serving MDP               | [GET /mdp/meta](/server/api/meta)                                                                                                              |
+| Update a connected client's path catalog          | [updateClientCatalog](/server/api/update-client-capabilities)                                                                                  |
+| Look up websocket message event types             | [registerClient](/server/api/register-client), [callClient](/server/api/call-client), [ping](/server/api/ping)                               |
 | Check exact HTTP request and response contracts   | [POST /mdp/http-loop/connect](/server/api/http-loop-connect), [POST /mdp/auth](/server/api/auth-issue), [GET /mdp/meta](/server/api/meta) |
 
 ## Connection Setup
 
-| Surface                                       | Entry point              | Notes                                                 |
-| --------------------------------------------- | ------------------------ | ----------------------------------------------------- |
+| Surface                                       | Entry point               | Notes                                                 |
+| --------------------------------------------- | ------------------------- | ----------------------------------------------------- |
 | [WebSocket](/server/api/websocket-connection) | `ws://127.0.0.1:47372`    | Bidirectional JSON MDP messages                       |
-| [HTTP Loop](/server/api/http-loop-connection) | `/mdp/http-loop/connect` | Session-based long-poll transport                     |
-| [Auth Bootstrap](/server/api/auth-bootstrap)  | `/mdp/auth`              | Cookie bootstrap mainly for browser websocket clients |
-| [Metadata Probe](/server/api/meta)            | `/mdp/meta`              | Identify an MDP server and read discovery hints       |
+| [HTTP Loop](/server/api/http-loop-connection) | `/mdp/http-loop/connect`  | Session-based long-poll transport                     |
+| [Auth Bootstrap](/server/api/auth-bootstrap)  | `/mdp/auth`               | Cookie bootstrap mainly for browser websocket clients |
+| [Metadata Probe](/server/api/meta)            | `/mdp/meta`               | Identify an MDP server and read discovery hints       |
 
 ## Message Events
 
 | Event                                              | Direction        | Purpose                                   |
 | -------------------------------------------------- | ---------------- | ----------------------------------------- |
-| [registerClient](/server/api/register-client)      | Client -> Server | Register capability metadata              |
-| [updateClientCapabilities](/server/api/update-client-capabilities) | Client -> Server | Replace one or more capability catalogs   |
+| [registerClient](/server/api/register-client)      | Client -> Server | Register one client descriptor and paths  |
+| [updateClientCatalog](/server/api/update-client-capabilities) | Client -> Server | Replace one registered path catalog       |
 | [unregisterClient](/server/api/unregister-client)  | Client -> Server | Remove one registered client session      |
-| [callClient](/server/api/call-client)              | Server -> Client | Invoke a capability on a connected client |
+| [callClient](/server/api/call-client)              | Server -> Client | Invoke one method+path target on a client |
 | [callClientResult](/server/api/call-client-result) | Client -> Server | Return a routed invocation result         |
 | [ping](/server/api/ping)                           | Both directions  | Heartbeat keepalive                       |
 | [pong](/server/api/pong)                           | Both directions  | Heartbeat acknowledgement                 |
@@ -83,7 +83,11 @@ The server exposes transport-facing APIs for MDP clients. This section is split 
 }
 ```
 
-Capability `kind` is one of `tool`, `prompt`, `skill`, or `resource`.
+MDP client catalogs are path-based. Each descriptor in `client.paths` is one of:
+
+- an `endpoint` with an HTTP-like `method` plus `path`
+- a `prompt` served at a `*.prompt.md` path and invoked with `GET`
+- a `skill` served at a `*.skill.md` path and invoked with `GET`
 
 ## Relationship to bridge tools
 

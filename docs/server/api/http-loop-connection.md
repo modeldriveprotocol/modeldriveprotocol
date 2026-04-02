@@ -43,7 +43,7 @@ Response:
 
 1. `POST /connect`
 2. send [registerClient](/server/api/register-client) through `/send`
-3. optionally send [updateClientCapabilities](/server/api/update-client-capabilities) through `/send` when the local catalog changes
+3. optionally send [updateClientCatalog](/server/api/update-client-capabilities) through `/send` when the local path catalog changes
 4. `GET /poll` until the server returns [callClient](/server/api/call-client) or `204`
 5. send [callClientResult](/server/api/call-client-result) through `/send`
 6. `POST /disconnect`
@@ -62,8 +62,8 @@ sequenceDiagram
   Server-->>Client: 200 { sessionId }
   Client->>Server: POST /mdp/http-loop/send registerClient
 
-  opt Capability catalog changes later
-    Client->>Server: POST /mdp/http-loop/send updateClientCapabilities
+  opt Path catalog changes later
+    Client->>Server: POST /mdp/http-loop/send updateClientCatalog
     Server-->>Client: 202 { ok: true }
   end
 

@@ -52,12 +52,12 @@ Turn the current message model from a working MVP contract into a versioned prot
 - finalize field-level semantics for `registerClient`, `callClient`, `callClientResult`, `ping`, `pong`
 - define clear lifecycle rules for reconnect, replacement, unregister, and timeout
 - document error taxonomy and expected retry behavior
-- decide the stable shape of `args`, `data`, and typed error payloads
+- decide the stable shape of `method`, `path`, `params`, `query`, `body`, `data`, and typed error payloads
 - define client identity rules:
   - whether `client.id` is caller-supplied only
   - whether the server may assign or namespace identities
-- define capability metadata minimums vs optional fields
-- standardize Markdown skill documents and hierarchical naming for progressive disclosure
+- define path descriptor minimums vs optional fields
+- standardize reserved leaf names such as `/skill.md` and `/prompt.md` for progressive disclosure
 
 ### Why this comes first
 
@@ -124,11 +124,11 @@ Reduce friction for embedding MDP into real runtimes, especially browser-hosted 
 
 ### Important Follow-up
 
-This is also the phase where the project should decide whether client capability mutation is:
+This is also the phase where the project should decide whether client catalog mutation is:
 
 - re-register the full descriptor
-- incremental patch/update messages
-- explicit add/remove capability messages
+- replace the full `paths` array with `updateClientCatalog`
+- explicit add/remove path messages
 
 ### Acceptance Bar
 

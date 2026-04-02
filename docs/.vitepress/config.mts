@@ -43,15 +43,9 @@ interface LocaleCopy {
     serverCli: string
     toolsOverview: string
     listClients: string
-    listTools: string
-    listPrompts: string
-    listSkills: string
-    listResources: string
-    callTools: string
-    getPrompt: string
-    callSkills: string
-    readResource: string
-    callClients: string
+    listPaths: string
+    callPath: string
+    callPaths: string
     apisOverview: string
     websocketConnection: string
     httpLoopConnection: string
@@ -175,15 +169,9 @@ const enUS: LocaleCopy = {
     serverCli: 'CLI Reference',
     toolsOverview: 'Overview',
     listClients: 'listClients',
-    listTools: 'listTools',
-    listPrompts: 'listPrompts',
-    listSkills: 'listSkills',
-    listResources: 'listResources',
-    callTools: 'callTools',
-    getPrompt: 'getPrompt',
-    callSkills: 'callSkills',
-    readResource: 'readResource',
-    callClients: 'callClients',
+    listPaths: 'listPaths',
+    callPath: 'callPath',
+    callPaths: 'callPaths',
     apisOverview: 'Overview',
     websocketConnection: 'WebSocket',
     httpLoopConnection: 'HTTP Loop',
@@ -304,15 +292,9 @@ const zhHans: LocaleCopy = {
     serverCli: 'CLI 参数',
     toolsOverview: '总览',
     listClients: 'listClients',
-    listTools: 'listTools',
-    listPrompts: 'listPrompts',
-    listSkills: 'listSkills',
-    listResources: 'listResources',
-    callTools: 'callTools',
-    getPrompt: 'getPrompt',
-    callSkills: 'callSkills',
-    readResource: 'readResource',
-    callClients: 'callClients',
+    listPaths: 'listPaths',
+    callPath: 'callPath',
+    callPaths: 'callPaths',
     apisOverview: '总览',
     websocketConnection: 'WebSocket 建立链接',
     httpLoopConnection: 'HTTP Loop 建立链接',
@@ -705,15 +687,9 @@ function createDocsSidebar(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
           items: [
             { text: copy.pages.toolsOverview, link: localePath(prefix, '/server/tools/') },
             { text: copy.pages.listClients, link: localePath(prefix, '/server/tools/list-clients') },
-            { text: copy.pages.listTools, link: localePath(prefix, '/server/tools/list-tools') },
-            { text: copy.pages.listPrompts, link: localePath(prefix, '/server/tools/list-prompts') },
-            { text: copy.pages.listSkills, link: localePath(prefix, '/server/tools/list-skills') },
-            { text: copy.pages.listResources, link: localePath(prefix, '/server/tools/list-resources') },
-            { text: copy.pages.callTools, link: localePath(prefix, '/server/tools/call-tools') },
-            { text: copy.pages.getPrompt, link: localePath(prefix, '/server/tools/get-prompt') },
-            { text: copy.pages.callSkills, link: localePath(prefix, '/server/tools/call-skills') },
-            { text: copy.pages.readResource, link: localePath(prefix, '/server/tools/read-resource') },
-            { text: copy.pages.callClients, link: localePath(prefix, '/server/tools/call-clients') }
+            { text: copy.pages.listPaths, link: localePath(prefix, '/server/tools/list-paths') },
+            { text: copy.pages.callPath, link: localePath(prefix, '/server/tools/call-path') },
+            { text: copy.pages.callPaths, link: localePath(prefix, '/server/tools/call-paths') }
           ]
         },
         {

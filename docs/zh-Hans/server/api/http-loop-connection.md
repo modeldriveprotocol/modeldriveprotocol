@@ -43,7 +43,7 @@ HTTP loop 是 websocket 之外的 request-response 传输方式。
 
 1. `POST /connect`
 2. 通过 `/send` 发送 [registerClient](/zh-Hans/server/api/register-client)
-3. 当本地目录变化时，可选通过 `/send` 发送 [updateClientCapabilities](/zh-Hans/server/api/update-client-capabilities)
+3. 当本地路径目录变化时，可选通过 `/send` 发送 [updateClientCatalog](/zh-Hans/server/api/update-client-capabilities)
 4. 持续 `GET /poll`，直到拿到 [callClient](/zh-Hans/server/api/call-client) 或 `204`
 5. 通过 `/send` 回传 [callClientResult](/zh-Hans/server/api/call-client-result)
 6. `POST /disconnect`
@@ -62,8 +62,8 @@ sequenceDiagram
   Server-->>Client: 200 { sessionId }
   Client->>Server: POST /mdp/http-loop/send registerClient
 
-  opt 后续 capability 目录发生变化
-    Client->>Server: POST /mdp/http-loop/send updateClientCapabilities
+  opt 后续路径目录发生变化
+    Client->>Server: POST /mdp/http-loop/send updateClientCatalog
     Server-->>Client: 202 { ok: true }
   end
 
@@ -72,7 +72,7 @@ sequenceDiagram
     alt 当前没有待下发消息
       Server-->>Client: 204 No Content
     else 有新的路由调用
-      Host->>Server: 发起路由到该 client 的 tool 或 skill 调用
+      Host->>Server: 发起路由到该 client 的路径调用
       Server-->>Client: 200 callClient
       Client->>Server: POST /mdp/http-loop/send callClientResult
       Server-->>Host: 返回调用结果

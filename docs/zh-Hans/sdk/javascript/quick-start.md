@@ -21,13 +21,26 @@ const client = createMdpClient({
 })
 ```
 
-## 2. 暴露一个 tool
+## 2. 暴露一个 path
 
 ```ts
-client.exposeTool('searchDom', async ({ query }) => ({
-  query,
-  matches: document.body.innerText.includes(String(query ?? '')) ? 1 : 0
-}))
+client.expose(
+  '/page/search',
+  {
+    method: 'POST',
+    description: 'Search the visible page text'
+  },
+  async ({ body }) => {
+    const query = typeof body === 'object' && body !== null && !Array.isArray(body)
+      ? String((body as { query?: unknown }).query ?? '')
+      : ''
+
+    return {
+      query,
+      matches: document.body.innerText.includes(query) ? 1 : 0
+    }
+  }
+)
 ```
 
 ## 3. 建连并注册
@@ -42,16 +55,19 @@ client.register()
 client 注册完成后，MCP host 就可以通过这些 bridge tools 访问它：
 
 - `listClients`
-- `listTools`
-- `callTools`
+- `listPaths`
+- `callPath`
+- `callPaths`
 
-如果运行时后续变更了能力目录，先改本地 registry，再把新的 descriptor 推给 server：
+`listTools`、`callTools` 这类 legacy alias 仍然保留用于迁移，但当前 canonical bridge surface 已经切到 path model。
+
+如果运行时后续变更了能力目录，先改本地 registry，再把当前 path catalog 推给 server：
 
 ```ts
-client.exposeTool('inspectSelection', async () => ({
+client.expose('/page/inspect', { method: 'GET' }, async () => ({
   text: window.getSelection()?.toString() ?? ''
 }))
-client.syncTools()
+client.syncCatalog()
 ```
 
 如果你需要看 transport、认证引导或浏览器全局 bundle，用下一页 [如何使用](/zh-Hans/sdk/javascript/usage)。

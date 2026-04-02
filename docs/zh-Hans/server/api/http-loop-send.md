@@ -23,10 +23,13 @@ session 标识：
     "client": {
       "id": "browser-01",
       "name": "Browser Client",
-      "tools": [],
-      "prompts": [],
-      "skills": [],
-      "resources": []
+      "paths": [
+        {
+          "type": "endpoint",
+          "method": "GET",
+          "path": "/search"
+        }
+      ]
     }
   }
 }
@@ -37,7 +40,7 @@ session 标识：
 常见消息包括：
 
 - `registerClient`
-- `updateClientCapabilities`
+- `updateClientCatalog`
 - `unregisterClient`
 - `callClientResult`
 

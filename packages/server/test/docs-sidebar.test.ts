@@ -26,6 +26,26 @@ describe('docs sidebar', () => {
 
     expect(flattenLinks(sidebar)).toContain('/zh-Hans/apps/browser-simple-mdp-client')
   })
+
+  it('includes canonical tools pages in the english server sidebar', () => {
+    const sidebar = readServerSidebar('root')
+
+    expect(flattenLinks(sidebar)).toContain('/server/tools/list-paths')
+    expect(flattenLinks(sidebar)).toContain('/server/tools/call-path')
+    expect(flattenLinks(sidebar)).toContain('/server/tools/call-paths')
+    expect(flattenLinks(sidebar)).not.toContain('/server/tools/list-tools')
+    expect(flattenLinks(sidebar)).not.toContain('/server/tools/call-tools')
+  })
+
+  it('includes canonical tools pages in the chinese server sidebar', () => {
+    const sidebar = readServerSidebar('zh-Hans')
+
+    expect(flattenLinks(sidebar)).toContain('/zh-Hans/server/tools/list-paths')
+    expect(flattenLinks(sidebar)).toContain('/zh-Hans/server/tools/call-path')
+    expect(flattenLinks(sidebar)).toContain('/zh-Hans/server/tools/call-paths')
+    expect(flattenLinks(sidebar)).not.toContain('/zh-Hans/server/tools/list-tools')
+    expect(flattenLinks(sidebar)).not.toContain('/zh-Hans/server/tools/call-tools')
+  })
 })
 
 function readGuideSidebar(locale: 'root' | 'zh-Hans') {
@@ -42,6 +62,14 @@ function readAppsSidebar(locale: 'root' | 'zh-Hans') {
   }
   const appsPrefix = locale === 'root' ? '/apps/' : '/zh-Hans/apps/'
   return themeConfig.sidebar[appsPrefix] ?? []
+}
+
+function readServerSidebar(locale: 'root' | 'zh-Hans') {
+  const themeConfig = config.locales?.[locale]?.themeConfig as {
+    sidebar: Record<string, Array<{ link?: string, items?: unknown[] }>>
+  }
+  const serverPrefix = locale === 'root' ? '/server/' : '/zh-Hans/server/'
+  return themeConfig.sidebar[serverPrefix] ?? []
 }
 
 function flattenLinks(

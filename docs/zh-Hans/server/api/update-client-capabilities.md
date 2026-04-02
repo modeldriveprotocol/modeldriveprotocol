@@ -1,101 +1,79 @@
 ---
-title: updateClientCapabilities
+title: updateClientCatalog
 status: Draft
 ---
 
-# `updateClientCapabilities`
+# `updateClientCatalog`
 
-`updateClientCapabilities` 是一个从 client 发往 server 的生命周期事件，用来在不改变 client 身份的前提下，替换一个或多个已经注册过的 capability 目录。
+这个页面保留了历史 URL，但当前 canonical 事件名是 `updateClientCatalog`。
 
-| 事件类型                   | 事件流向         |
-| -------------------------- | ---------------- |
-| `updateClientCapabilities` | Client -> Server |
+`updateClientCatalog` 是一个从 client 发往 server 的生命周期事件，用来在不改变 client 身份的前提下，替换一个已注册的路径目录。
+
+| 事件类型               | 事件流向         |
+| ---------------------- | ---------------- |
+| `updateClientCatalog`  | Client -> Server |
 
 ## 数据定义
 
 ```ts
-interface ToolDescriptor {
-  name: string
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+interface PathDescriptor {
+  type: 'endpoint' | 'prompt' | 'skill'
+  path: string
+  method?: HttpMethod
   description?: string
   inputSchema?: Record<string, unknown>
-}
-
-interface PromptArgumentDescriptor {
-  name: string
-  description?: string
-  required?: boolean
-}
-
-interface PromptDescriptor {
-  name: string
-  description?: string
-  arguments?: PromptArgumentDescriptor[]
-}
-
-interface SkillDescriptor {
-  name: string
-  description?: string
+  outputSchema?: Record<string, unknown>
   contentType?: string
-  inputSchema?: Record<string, unknown>
 }
 
-interface ResourceDescriptor {
-  uri: string
-  name: string
-  description?: string
-  mimeType?: string
-}
-
-interface ClientCapabilityUpdate {
-  tools?: ToolDescriptor[]
-  prompts?: PromptDescriptor[]
-  skills?: SkillDescriptor[]
-  resources?: ResourceDescriptor[]
-}
-
-interface UpdateClientCapabilitiesMessage {
-  type: 'updateClientCapabilities'
+interface UpdateClientCatalogMessage {
+  type: 'updateClientCatalog'
   clientId: string
-  capabilities: ClientCapabilityUpdate
+  paths: PathDescriptor[]
 }
 ```
 
 ## 语义
 
 - `clientId` 必须和当前 session 上已经注册的逻辑 client 一致。
-- `capabilities` 至少要带一个 capability 分组。
-- 出现的 capability 分组会整体替换该类别之前的数组。
-- 没出现的 capability 分组保持不变。
+- `paths` 会整体替换这个 client 在当前 session 上的上一版目录。
+- 如果 client 仍然在线但暂时不暴露任何路径，可以传空数组。
+- `endpoint` descriptor 带显式 HTTP 风格 `method`；`prompt` 和 `skill` 都通过 `GET` 调用。
 
 ## 示例
 
-- 只替换 tools
+- 用一个 endpoint 和一个 skill 整体替换目录
 
 ```json
 {
-  "type": "updateClientCapabilities",
+  "type": "updateClientCatalog",
   "clientId": "browser-01",
-  "capabilities": {
-    "tools": [
-      { "name": "searchDom" },
-      { "name": "inspectSelection" }
-    ]
-  }
+  "paths": [
+    {
+      "type": "endpoint",
+      "method": "GET",
+      "path": "/search"
+    },
+    {
+      "type": "skill",
+      "path": "/workspace/review/skill.md"
+    }
+  ]
 }
 ```
 
-- 清空 resources，其它目录不变
+- 保持连接但清空目录
 
 ```json
 {
-  "type": "updateClientCapabilities",
+  "type": "updateClientCatalog",
   "clientId": "browser-01",
-  "capabilities": {
-    "resources": []
-  }
+  "paths": []
 }
 ```
 
 ## 什么时候用
 
-当同一个已连接运行时在首次注册之后新增、删除或替换 tools、prompts、skills、resources 时，使用这个事件。
+当同一个已连接运行时在首次注册之后新增、删除或替换路径 descriptor 时，使用这个事件。

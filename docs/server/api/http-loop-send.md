@@ -23,10 +23,13 @@ Body:
     "client": {
       "id": "browser-01",
       "name": "Browser Client",
-      "tools": [],
-      "prompts": [],
-      "skills": [],
-      "resources": []
+      "paths": [
+        {
+          "type": "endpoint",
+          "method": "GET",
+          "path": "/search"
+        }
+      ]
     }
   }
 }
@@ -37,7 +40,7 @@ Body:
 Typical messages sent here are:
 
 - `registerClient`
-- `updateClientCapabilities`
+- `updateClientCatalog`
 - `unregisterClient`
 - `callClientResult`
 

@@ -21,13 +21,26 @@ const client = createMdpClient({
 })
 ```
 
-## 2. Expose one tool
+## 2. Expose one path
 
 ```ts
-client.exposeTool('searchDom', async ({ query }) => ({
-  query,
-  matches: document.body.innerText.includes(String(query ?? '')) ? 1 : 0
-}))
+client.expose(
+  '/page/search',
+  {
+    method: 'POST',
+    description: 'Search the visible page text'
+  },
+  async ({ body }) => {
+    const query = typeof body === 'object' && body !== null && !Array.isArray(body)
+      ? String((body as { query?: unknown }).query ?? '')
+      : ''
+
+    return {
+      query,
+      matches: document.body.innerText.includes(query) ? 1 : 0
+    }
+  }
+)
 ```
 
 ## 3. Connect and register
@@ -42,16 +55,19 @@ client.register()
 Once the client is registered, an MCP host can use bridge tools such as:
 
 - `listClients`
-- `listTools`
-- `callTools`
+- `listPaths`
+- `callPath`
+- `callPaths`
 
-If the runtime changes its catalog later, update the local registry and push the new descriptors:
+Legacy aliases such as `listTools` and `callTools` still exist for migration, but the canonical bridge surface is path-based.
+
+If the runtime changes its catalog later, update the local registry and push the current path catalog:
 
 ```ts
-client.exposeTool('inspectSelection', async () => ({
+client.expose('/page/inspect', { method: 'GET' }, async () => ({
   text: window.getSelection()?.toString() ?? ''
 }))
-client.syncTools()
+client.syncCatalog()
 ```
 
 If you want transport choices, auth bootstrap, or browser-global usage, continue with [Usage](/sdk/javascript/usage).

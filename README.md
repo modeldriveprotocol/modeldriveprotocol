@@ -9,7 +9,7 @@
 
 > The ultimate solution for connecting models with everything.
 
-MDP turns runtime-local capabilities into MCP-reachable capabilities.
+MDP turns runtime-local path catalogs into MCP-reachable capabilities.
 
 If your useful logic lives inside a browser tab, mobile app, desktop process, embedded runtime, or local agent, MDP gives it one bridge server to register with and one stable way for AI hosts to call it.
 
@@ -23,7 +23,7 @@ Instead of standing up a separate MCP server for every runtime, MDP keeps respon
 
 MCP is a strong host-side protocol, but many real capabilities live somewhere else: inside apps, devices, browser sessions, and local processes.
 
-MDP is the layer between those runtimes and MCP. It lets arbitrary runtimes register capabilities and route invocations through one server without generating a brand-new MCP tool surface for every connected client.
+MDP is the layer between those runtimes and MCP. It lets arbitrary runtimes register path descriptors and route invocations through one server without generating a brand-new MCP tool surface for every connected client.
 
 A typical setup looks like this:
 
@@ -44,12 +44,19 @@ That runtime can be:
 
 The core model is:
 
-- clients provide capabilities
+- clients provide path catalogs
 - the MDP server maintains registration and routing
 - the MDP server exposes bridge tools to MCP hosts
 
-Capabilities can be exposed as `tools`, `prompts`, `skills`, and `resources`.
-Skills can also be exposed as hierarchical Markdown documents such as `workspace/review` and `workspace/review/files`, letting hosts reveal more context by reading deeper skill paths only when needed.
+The current path model supports:
+
+- endpoint paths such as `GET /search`
+- prompt paths that end with `/prompt.md`
+- skill paths that end with `/skill.md`
+
+Skills can be exposed as hierarchical Markdown documents such as `/workspace/review/skill.md` and `/workspace/review/files/skill.md`, letting hosts reveal more context by reading deeper skill paths only when needed.
+
+The path model is the primary API. For migration, the JavaScript client still exposes legacy `exposeTool` / `exposePrompt` / `exposeSkill` / `exposeResource` wrappers, and the MCP bridge still serves the older `listTools` / `callTools` / `getPrompt` / `readResource` style tool names as compatibility aliases.
 
 Current transport support includes:
 
@@ -88,10 +95,9 @@ flowchart LR
   end
 
   clients["MDP Clients"]
-  tools["Tools"]
+  endpoints["Endpoints"]
   skills["Skills"]
   prompts["Prompts"]
-  resources["Resources"]
 
   user --> claude
   user --> codex
@@ -106,10 +112,9 @@ flowchart LR
   secondaryB <-->|"federation"| secondaryC
 
   primary <-->|"client sessions"| clients
-  clients --> tools
+  clients --> endpoints
   clients --> skills
   clients --> prompts
-  clients --> resources
 ```
 
 One invocation can go directly to the primary server, or pass through a secondary server when one is present:

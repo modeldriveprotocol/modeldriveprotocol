@@ -5,92 +5,90 @@ status: Draft
 
 # MCP Definitions
 
-In the JavaScript SDK, you do not define MCP tools directly. You define MDP capability metadata, and the server exposes that metadata through a fixed MCP bridge surface.
+In the JavaScript SDK, you do not define MCP tools directly. You define MDP paths, and the server exposes those paths through a fixed MCP bridge surface.
 
-## Tool definitions
+## Endpoint definitions
 
-Use `exposeTool(name, handler, options?)` to publish a callable tool.
+Use `expose(path, descriptor, handler)` for regular callable endpoints.
 
 ```ts
-client.exposeTool('searchDom', async ({ query }, context) => ({
-  query,
-  matches: 3,
-  authToken: context.auth?.token
-}), {
-  description: 'Search the current page',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      query: { type: 'string' }
-    },
-    required: ['query']
+client.expose(
+  '/page/search',
+  {
+    method: 'POST',
+    description: 'Search the current page',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string' }
+      },
+      required: ['query']
+    }
+  },
+  async ({ body }, context) => {
+    const query = typeof body === 'object' && body !== null && !Array.isArray(body)
+      ? String((body as { query?: unknown }).query ?? '')
+      : ''
+
+    return {
+      query,
+      matches: 3,
+      authToken: context.auth?.token
+    }
   }
-})
+)
 ```
 
-Tool metadata maps to the protocol descriptor shape:
+Endpoint descriptors use:
 
-- `name`
+- `path`
+- `method`
 - optional `description`
 - optional `inputSchema`
+- optional `outputSchema`
+- optional `contentType`
 
 ## Prompt definitions
 
-Use `exposePrompt(name, handler, options?)` when the runtime provides prompt templates or prompt builders.
+Use a reserved `.../prompt.md` path for prompt documents or prompt builders.
 
 ```ts
-client.exposePrompt('summarizeSelection', async () => ({
-  messages: [{ role: 'user', content: 'Summarize the active selection.' }]
-}), {
-  description: 'Build a summarization prompt',
-  arguments: [
+client.expose('/selection/summarize/prompt.md', {
+  description: 'Build a summarization prompt'
+}, async ({ queries }) => ({
+  messages: [
     {
-      name: 'tone',
-      description: 'Desired summary tone',
-      required: false
+      role: 'user',
+      content: `Summarize the active selection in a ${queries.tone ?? 'neutral'} tone.`
     }
   ]
-})
+}))
 ```
 
-Prompt metadata uses:
+Prompt descriptors use:
 
-- `name`
+- `path`
 - optional `description`
-- optional `arguments`
+- optional `inputSchema`
+- optional `outputSchema`
 
-## Resource definitions
+## Legacy wrappers
 
-Use `exposeResource(uri, handler, options)` for readable runtime state.
+The SDK still exposes `exposeTool()`, `exposePrompt()`, and `exposeResource()` as migration helpers. Those wrappers register compat paths and attach `legacy` aliases so the MCP bridge can continue serving `listTools`, `callTools`, `getPrompt`, and `readResource` for older hosts.
 
-```ts
-client.exposeResource('webpage://active-tab/page-info', async () => ({
-  mimeType: 'application/json',
-  text: JSON.stringify(
-    {
-      title: document.title,
-      url: window.location.href
-    },
-    null,
-    2
-  )
-}), {
-  name: 'Current Page Info',
-  mimeType: 'application/json'
-})
-```
-
-Resource metadata uses:
-
-- `uri`
-- `name`
-- optional `description`
-- optional `mimeType`
+For new code, prefer `expose()` and path-native descriptors.
 
 ## How MCP sees these definitions
 
-The server keeps the MCP integration stable by exposing bridge tools such as `listTools`, `callTools`, `listPrompts`, `getPrompt`, `listResources`, and `readResource`.
+The canonical bridge tools are:
 
-If your runtime adds or removes descriptors after `register()`, update the local registry with `expose*` / `remove*`, then call `syncTools()`, `syncPrompts()`, `syncSkills()`, `syncResources()`, or `syncCapabilities()` so the server refreshes its indexed catalog.
+- `listClients`
+- `listPaths`
+- `callPath`
+- `callPaths`
+
+Compatibility aliases such as `listTools`, `callTools`, `listPrompts`, `getPrompt`, `listResources`, and `readResource` still exist while runtimes migrate.
+
+If your runtime adds or removes descriptors after `register()`, update the local registry with `expose()` / `unexpose()`, then call `syncCatalog()` so the server refreshes its indexed path catalog.
 
 For the wire model behind those definitions, see [Capability Model](/protocol/capability-model) and [MCP Bridge](/protocol/mcp-bridge).

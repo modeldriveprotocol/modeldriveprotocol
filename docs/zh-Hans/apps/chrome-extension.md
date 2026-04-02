@@ -21,8 +21,10 @@ status: Draft
 最简单的做法是：
 
 1. 在扩展页面、service worker 或受控浏览器上下文里运行 MDP client
-2. 用 JavaScript SDK 暴露 tools、prompts、skills、resources
+2. 用 JavaScript SDK 暴露 endpoint、prompt、skill 路径
 3. 通过 `ws` / `wss` 或 HTTP loop 连到 MDP server
+
+SDK 仍然保留 `exposeTool` / `exposePrompt` / `exposeSkill` / `exposeResource` 这些迁移包装层，但 canonical 模型已经是 path-based。
 
 如果浏览器 websocket 需要认证，SDK 可以在 `connect()` 时自动引导 `/mdp/auth`。
 
@@ -41,9 +43,9 @@ status: Draft
 
 当前这个 Chrome 插件 app 可以暴露这几类能力：
 
-- 标签页管理、通知、配置状态等 Chrome 侧 tools
-- 通过 content script 提供的页面 DOM 工具
-- 通过 `window.__MDP_EXTENSION_BRIDGE__` 注册的 injected tools
+- 标签页管理、通知、配置状态等 Chrome 侧 endpoint path
+- 通过 content script 提供的页面 DOM endpoint path
+- 通过 `window.__MDP_EXTENSION_BRIDGE__` 注册的 injected endpoint path
 - `page.listInjectedTools`、`page.callInjectedTool`、`page.getSnapshot` 这类桥接工具
 
 ## 构建与加载

@@ -1,101 +1,79 @@
 ---
-title: updateClientCapabilities
+title: updateClientCatalog
 status: Draft
 ---
 
-# `updateClientCapabilities`
+# `updateClientCatalog`
 
-`updateClientCapabilities` is the client-to-server lifecycle event used to replace one or more already-registered capability catalogs without changing the client identity.
+This page keeps the historical URL, but the canonical event name is `updateClientCatalog`.
 
-| Event Type                 | Flow Direction   |
-| -------------------------- | ---------------- |
-| `updateClientCapabilities` | Client -> Server |
+`updateClientCatalog` is the client-to-server lifecycle event used to replace the already-registered path catalog for one connected client without changing the client identity.
+
+| Event Type            | Flow Direction   |
+| --------------------- | ---------------- |
+| `updateClientCatalog` | Client -> Server |
 
 ## Data Definition
 
 ```ts
-interface ToolDescriptor {
-  name: string
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+interface PathDescriptor {
+  type: 'endpoint' | 'prompt' | 'skill'
+  path: string
+  method?: HttpMethod
   description?: string
   inputSchema?: Record<string, unknown>
-}
-
-interface PromptArgumentDescriptor {
-  name: string
-  description?: string
-  required?: boolean
-}
-
-interface PromptDescriptor {
-  name: string
-  description?: string
-  arguments?: PromptArgumentDescriptor[]
-}
-
-interface SkillDescriptor {
-  name: string
-  description?: string
+  outputSchema?: Record<string, unknown>
   contentType?: string
-  inputSchema?: Record<string, unknown>
 }
 
-interface ResourceDescriptor {
-  uri: string
-  name: string
-  description?: string
-  mimeType?: string
-}
-
-interface ClientCapabilityUpdate {
-  tools?: ToolDescriptor[]
-  prompts?: PromptDescriptor[]
-  skills?: SkillDescriptor[]
-  resources?: ResourceDescriptor[]
-}
-
-interface UpdateClientCapabilitiesMessage {
-  type: 'updateClientCapabilities'
+interface UpdateClientCatalogMessage {
+  type: 'updateClientCatalog'
   clientId: string
-  capabilities: ClientCapabilityUpdate
+  paths: PathDescriptor[]
 }
 ```
 
 ## Semantics
 
 - `clientId` must match the logical client already registered on the current session.
-- `capabilities` must include at least one capability group.
-- Included capability groups replace the previous array for that category.
-- Omitted capability groups stay unchanged.
+- `paths` replaces the previous catalog for that client on the same session.
+- Use an empty array when the client remains connected but should temporarily expose no paths.
+- Endpoint descriptors carry an explicit HTTP-like `method`; prompt and skill descriptors are invoked with `GET`.
 
 ## Examples
 
-- Replace only tools
+- Replace the whole catalog with one endpoint and one skill
 
 ```json
 {
-  "type": "updateClientCapabilities",
+  "type": "updateClientCatalog",
   "clientId": "browser-01",
-  "capabilities": {
-    "tools": [
-      { "name": "searchDom" },
-      { "name": "inspectSelection" }
-    ]
-  }
+  "paths": [
+    {
+      "type": "endpoint",
+      "method": "GET",
+      "path": "/search"
+    },
+    {
+      "type": "skill",
+      "path": "/workspace/review/skill.md"
+    }
+  ]
 }
 ```
 
-- Clear resources while keeping everything else as-is
+- Clear the catalog without disconnecting
 
 ```json
 {
-  "type": "updateClientCapabilities",
+  "type": "updateClientCatalog",
   "clientId": "browser-01",
-  "capabilities": {
-    "resources": []
-  }
+  "paths": []
 }
 ```
 
 ## When to use it
 
-Use this event when the same connected runtime adds, removes, or replaces tools, prompts, skills, or resources after its initial registration.
+Use this event when the same connected runtime adds, removes, or replaces path descriptors after its initial registration.

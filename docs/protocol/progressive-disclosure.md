@@ -5,7 +5,7 @@ status: Draft
 
 # Progressive Disclosure
 
-Progressive disclosure in MDP should be modeled as a hierarchy of skill documents instead of a stateful skill session.
+Progressive disclosure in MDP should be modeled as a hierarchy of skill paths instead of a stateful skill session.
 
 The design goal is simple:
 
@@ -18,39 +18,42 @@ The design goal is simple:
 The recommended JS SDK shape is:
 
 ```ts
-client.exposeSkill(
-  'workspace/review',
-  () =>
-    '# Workspace Review\n' +
+client.expose(
+  '/workspace/review/skill.md',
+  '# Workspace Review\n' +
     '\n' +
     'Review the workspace root.\n' +
     '\n' +
-    'You can read `workspace/review/files` for file-level guidance.'
+    'You can read `/workspace/review/files/skill.md` for file-level guidance.'
 )
 
-client.exposeSkill(
-  'workspace/review/files',
-  (query, headers) =>
+client.expose(
+  '/workspace/review/files/skill.md',
+  {
+    description: 'File-level review guidance'
+  },
+  ({ queries, headers }) =>
     '# Workspace Review Files\n' +
     '\n' +
-    `Topic: ${query.topic ?? 'general'}\n` +
+    `Topic: ${queries.topic ?? 'general'}\n` +
     '\n' +
     `Header: ${headers['x-review-scope'] ?? 'none'}`
 )
 ```
 
-The progressive-disclosure unit is the skill name itself:
+The progressive-disclosure unit is the skill path itself:
 
-- `workspace/review` is the summary node
-- `workspace/review/files` is a deeper node
-- `workspace/review/files/typescript` can go even deeper if needed
+- `/workspace/review/skill.md` is the summary node
+- `/workspace/review/files/skill.md` is a deeper node
+- `/workspace/review/files/typescript/skill.md` can go even deeper if needed
 
 ## Discovery and reading
 
 The server still only needs the existing bridge surface:
 
-- `listSkills` to discover available skill names
-- `callSkills` to read one exact skill node
+- `listPaths` to discover available skill paths
+- `callPath` to read one exact skill node
+- `callPaths` to fan one skill read out to multiple clients
 - `GET /skills/:clientId/*skillPath` to read one exact skill node over HTTP
 - `GET /:clientId/skills/*skillPath` as an alternate HTTP shape
 
@@ -60,9 +63,11 @@ The HTTP routes pass URL query parameters and request headers to the skill resol
 
 The server stays intentionally simple:
 
-- it indexes skill names and descriptions
-- it forwards `callSkills` to the target client unchanged
-- it does not need to understand skill hierarchy beyond the name string
+- it indexes skill paths and descriptions
+- it forwards `callPath` to the target client unchanged
+- it does not need to understand skill hierarchy beyond the path string
+
+Legacy `listSkills` and `callSkills` aliases can still sit on top of that path model for compatibility.
 
 This keeps progressive disclosure as a naming and authoring convention instead of a protocol state machine.
 

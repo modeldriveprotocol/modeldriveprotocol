@@ -12,7 +12,7 @@ status: Draft
 主流程如下：
 
 1. client 通过 `ws` / `wss` 或 `http` / `https` loop 建连
-2. client 发送 `registerClient` 并带上 capability 元数据
+2. client 发送 `registerClient` 并带上路径目录元数据
 3. server 把这些元数据索引到内存 registry
 4. MCP host 调用某个 bridge tool
 5. server 将请求路由成 `callClient`
@@ -25,7 +25,7 @@ status: Draft
 从运行时实现上，server 主要只关心这些协议元素：
 
 - client descriptor
-- tools、prompts、skills、resources 的 descriptor
+- `client.paths` 里的 endpoint、prompt、skill descriptor
 - 可选带 `auth` 的调用 envelope
 - 用于保活的 heartbeat 消息
 

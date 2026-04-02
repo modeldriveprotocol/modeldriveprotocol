@@ -5,30 +5,32 @@ status: Draft
 
 # Skills Definitions
 
-Skills are named skill documents.
-In the recommended MDP model they are authored as Markdown and organized with hierarchical names so a host can read a shallow skill first and deeper skills only when needed.
+Skills are hierarchical skill documents.
+In the recommended MDP model they are authored as Markdown and organized as reserved `.../skill.md` paths so a host can read a shallow skill first and deeper skills only when needed.
 
 ## Define a skill
 
-Use `exposeSkill(name, resolver, options?)`:
+Use `expose()` with a `.../skill.md` path:
 
 ```ts
-client.exposeSkill(
-  'workspace/review',
-  () =>
-    '# Workspace Review\n' +
+client.expose(
+  '/workspace/review/skill.md',
+  '# Workspace Review\n' +
     '\n' +
     'Review the workspace root.\n' +
     '\n' +
-    'You can read `workspace/review/files` for file-level guidance.'
+    'You can read `/workspace/review/files/skill.md` for file-level guidance.'
 )
 
-client.exposeSkill(
-  'workspace/review/files',
-  (query, headers) =>
+client.expose(
+  '/workspace/review/files/skill.md',
+  {
+    description: 'File-level review guidance'
+  },
+  ({ queries, headers }) =>
     '# Workspace Review Files\n' +
     '\n' +
-    `Topic: ${query.topic ?? 'general'}\n` +
+    `Topic: ${queries.topic ?? 'general'}\n` +
     '\n' +
     `Header: ${headers['x-review-scope'] ?? 'none'}`
 )
@@ -36,47 +38,42 @@ client.exposeSkill(
 
 The current skill descriptor matches the protocol model:
 
-- `name`
+- `path`
 - optional `description`
 - optional `contentType`
-- optional `inputSchema`
 
 Recommended resolver contract:
 
 - `contentType` defaults to `text/markdown`
-- `query` contains URL query parameters
+- `queries` contains URL query parameters
 - `headers` contains HTTP request headers when the skill is read through the server HTTP route
 - the return value is the Markdown body itself
 
 Skill path format is intentionally strict:
 
-- slash-separated segments such as `workspace/review/files`
+- slash-separated segments such as `/workspace/review/files/skill.md`
 - lowercase `a-z`
 - digits `0-9`
 - `-` and `_`
-- no empty segments, leading slash, trailing slash, `.`, `..`, spaces, `?`, or `#`
+- no empty segments, trailing slash, `.`, `..`, spaces, `?`, or `#`
+- the last segment must be `skill.md`
 
-The SDK also allows `exposeSkill(name, markdown, options?)` as sugar for static skills.
+The SDK still allows `exposeSkill(name, markdownOrHandler, options?)` as compatibility sugar. It maps the legacy name to a canonical compat path and keeps the legacy alias for bridge hosts that still expect skill names.
 
 ## Recommended progressive-disclosure pattern
 
-Use hierarchy in the skill name itself:
+Use hierarchy in the skill path itself:
 
-- `workspace/review`
-- `workspace/review/files`
-- `workspace/review/files/typescript`
+- `/workspace/review/skill.md`
+- `/workspace/review/files/skill.md`
+- `/workspace/review/files/typescript/skill.md`
 
 Recommended authoring rules:
 
 - make the root skill useful on its own
-- point to deeper skill names in plain Markdown
+- point to deeper skill paths in plain Markdown
 - keep child skills narrower and more specific than the parent
 - use resources for large raw payloads, not for the readable guidance itself
-
-## Legacy handler form
-
-The SDK still accepts the older `exposeSkill(name, handler, options?)` form for backward compatibility.
-Prefer the resolver form for new skill documents.
 
 ## When to use a skill
 
@@ -92,12 +89,15 @@ Prefer a tool when the capability is a direct function call.
 
 The server indexes skill metadata and exposes it through:
 
-- `listSkills`
-- `callSkills`
+- `listPaths`
+- `callPath`
+- `callPaths`
 - `GET /skills/:clientId/*skillPath`
 - `GET /:clientId/skills/*skillPath`
 
-The underlying client invocation still routes through `callClient` with `kind: "skill"`.
+Legacy `listSkills` and `callSkills` aliases still exist for older hosts.
+
+The underlying client invocation still routes through `callClient` as a `GET` against the canonical skill path.
 For document-style skills, the HTTP routes return Markdown directly.
 
 For the broader capability model, see [Capability Model](/protocol/capability-model).

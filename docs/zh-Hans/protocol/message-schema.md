@@ -8,7 +8,7 @@ status: MVP
 MDP transport 当前需要支持一组很小的消息集合：
 
 - `registerClient`
-- `updateClientCapabilities`
+- `updateClientCatalog`
 - `unregisterClient`
 - `callClient`
 - `callClientResult`
@@ -19,20 +19,22 @@ MDP transport 当前需要支持一组很小的消息集合：
 
 - `requestId`
 - `clientId`
-- `kind`
-- `name` 或 `uri`
-- `args`
+- `method`
+- `path`
+- 可选的 `params`
+- 可选的 `query`
+- 可选的 `body`
+- 可选的 `headers`
 - 可选的 `auth`
 
-`registerClient` 用来上报一份完整的 client descriptor。完成注册后，同一条会话还可以发送 `updateClientCapabilities`，原地替换一个或多个 capability 分组。
+`registerClient` 用来上报一份完整的 client descriptor。完成注册后，同一条会话还可以发送 `updateClientCatalog`，原地替换已注册的路径目录。
 
-`updateClientCapabilities` 应包含：
+`updateClientCatalog` 应包含：
 
 - `clientId`
-- `capabilities`
-- 至少一个 capability 分组：`tools`、`prompts`、`skills`、`resources`
+- `paths`
 
-没有出现的 capability 分组保持不变；出现的分组会整体替换该类别之前的数组。
+`paths` 会整体替换之前注册的目录。
 
 如果 client 需要把消息级凭据附着在注册请求上，`registerClient` 也可以携带可选的 `auth` envelope。
 
@@ -51,10 +53,10 @@ server 发现同样不走消息体。参考 transport server 会暴露 `GET /mdp
   "type": "callClient",
   "requestId": "req-123",
   "clientId": "browser-01",
-  "kind": "tool",
-  "name": "searchDom",
-  "args": {
-    "query": "MCP"
+  "method": "GET",
+  "path": "/search",
+  "query": {
+    "q": "MCP"
   },
   "auth": {
     "token": "host-session-token",
@@ -67,19 +69,19 @@ server 发现同样不走消息体。参考 transport server 会暴露 `GET /mdp
 
 ```json
 {
-  "type": "updateClientCapabilities",
+  "type": "updateClientCatalog",
   "clientId": "browser-01",
-  "capabilities": {
-    "tools": [
-      {
-        "name": "searchDom"
-      },
-      {
-        "name": "inspectSelection"
-      }
-    ],
-    "resources": []
-  }
+  "paths": [
+    {
+      "type": "endpoint",
+      "path": "/search",
+      "method": "GET"
+    },
+    {
+      "type": "skill",
+      "path": "/workspace/review/skill.md"
+    }
+  ]
 }
 ```
 

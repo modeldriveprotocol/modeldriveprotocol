@@ -8,7 +8,7 @@ status: MVP
 The MDP transport should support a small message set:
 
 - `registerClient`
-- `updateClientCapabilities`
+- `updateClientCatalog`
 - `unregisterClient`
 - `callClient`
 - `callClientResult`
@@ -19,20 +19,22 @@ The MDP transport should support a small message set:
 
 - `requestId`
 - `clientId`
-- `kind`
-- `name` or `uri`
-- `args`
+- `method`
+- `path`
+- optional `params`
+- optional `query`
+- optional `body`
+- optional `headers`
 - optional `auth`
 
-`registerClient` publishes one full client descriptor. After registration, the same session may send `updateClientCapabilities` to replace one or more capability groups in place.
+`registerClient` publishes one full client descriptor. After registration, the same session may send `updateClientCatalog` to replace the registered path catalog in place.
 
-`updateClientCapabilities` should include:
+`updateClientCatalog` should include:
 
 - `clientId`
-- `capabilities`
-- one or more of `tools`, `prompts`, `skills`, `resources`
+- `paths`
 
-Omitted capability groups remain unchanged. Included groups replace the previous array for that category.
+`paths` replaces the previous registered catalog for that client on the same session.
 
 `registerClient` may also include an optional `auth` envelope when the client wants to attach message-level credentials to its registration.
 
@@ -51,10 +53,10 @@ The result should include:
   "type": "callClient",
   "requestId": "req-123",
   "clientId": "browser-01",
-  "kind": "tool",
-  "name": "searchDom",
-  "args": {
-    "query": "MCP"
+  "method": "GET",
+  "path": "/search",
+  "query": {
+    "q": "MCP"
   },
   "auth": {
     "token": "host-session-token",
@@ -67,19 +69,20 @@ The result should include:
 
 ```json
 {
-  "type": "updateClientCapabilities",
+  "type": "updateClientCatalog",
   "clientId": "browser-01",
-  "capabilities": {
-    "tools": [
-      {
-        "name": "searchDom"
-      },
-      {
-        "name": "inspectSelection"
-      }
-    ],
-    "resources": []
-  }
+  "paths": [
+    {
+      "type": "endpoint",
+      "path": "/search",
+      "method": "GET"
+    },
+    {
+      "type": "skill",
+      "path": "/workspace/review/skill.md",
+      "contentType": "text/markdown"
+    }
+  ]
 }
 ```
 

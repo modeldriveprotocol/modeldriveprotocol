@@ -21,8 +21,10 @@ Typical examples include:
 The simplest setup is:
 
 1. run the MDP client inside an extension page, service worker, or controlled browser context
-2. expose tools, prompts, skills, or resources with the JavaScript SDK
+2. expose endpoint, prompt, or skill paths with the JavaScript SDK
 3. connect to the MDP server over `ws` / `wss` or HTTP loop
+
+The SDK still keeps `exposeTool` / `exposePrompt` / `exposeSkill` / `exposeResource` as migration wrappers, but the canonical model is path-based.
 
 If websocket auth is required in the browser, the SDK can bootstrap `/mdp/auth` automatically during `connect()`.
 
@@ -41,9 +43,9 @@ The app is built as an MDP client:
 
 The current extension app can expose capabilities such as:
 
-- Chrome-side tools for tab management, notifications, and config status
-- DOM-oriented page tools through the content script
-- injected main-world tools through `window.__MDP_EXTENSION_BRIDGE__`
+- Chrome-side endpoint paths for tab management, notifications, and config status
+- DOM-oriented endpoint paths through the content script
+- injected main-world endpoint paths through `window.__MDP_EXTENSION_BRIDGE__`
 - bridge tools such as `page.listInjectedTools`, `page.callInjectedTool`, and `page.getSnapshot`
 
 ## Build and load

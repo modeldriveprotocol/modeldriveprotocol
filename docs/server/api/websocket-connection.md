@@ -23,7 +23,7 @@ The websocket transport uses the `type` field as the event discriminator.
 | Event type         | Direction        | Category   | Purpose                                         |
 | ------------------ | ---------------- | ---------- | ----------------------------------------------- |
 | `registerClient`   | Client -> Server | Lifecycle  | Register one client and its capability metadata |
-| `updateClientCapabilities` | Client -> Server | Lifecycle  | Replace one or more capability catalogs         |
+| `updateClientCatalog` | Client -> Server | Lifecycle  | Replace one registered path catalog             |
 | `unregisterClient` | Client -> Server | Lifecycle  | Remove one registered client                    |
 | `callClient`       | Server -> Client | Invocation | Deliver routed capability work to the client    |
 | `callClientResult` | Client -> Server | Invocation | Return the result of a routed invocation        |
@@ -35,7 +35,7 @@ The websocket transport uses the `type` field as the event discriminator.
 Client-to-server events:
 
 - [registerClient](/server/api/register-client)
-- [updateClientCapabilities](/server/api/update-client-capabilities)
+- [updateClientCatalog](/server/api/update-client-capabilities)
 - [unregisterClient](/server/api/unregister-client)
 - [callClientResult](/server/api/call-client-result)
 - [ping](/server/api/ping)
@@ -53,7 +53,7 @@ The normal websocket sequence is:
 
 1. open the websocket
 2. send `registerClient`
-3. optionally send `updateClientCapabilities` whenever the local capability catalog changes
+3. optionally send `updateClientCatalog` whenever the local path catalog changes
 4. receive `callClient` when the server routes work
 5. send `callClientResult`
 6. exchange `ping` and `pong` while the session stays alive
@@ -71,12 +71,12 @@ sequenceDiagram
   Client->>Server: registerClient
   Server-->>Client: Registration stays active on this socket
 
-  opt Capability catalog changes later
-    Client->>Server: updateClientCapabilities
-    Server-->>Client: Capability index is refreshed in place
+  opt Path catalog changes later
+    Client->>Server: updateClientCatalog
+    Server-->>Client: Path index is refreshed in place
   end
 
-  Host->>Server: call tool or skill routed to this client
+  Host->>Server: call one routed path on this client
   Server->>Client: callClient
   Client->>Server: callClientResult
   Server-->>Host: Return invocation result
@@ -94,10 +94,10 @@ sequenceDiagram
 
 ## What each event is for
 
-- `registerClient`: announces client identity and the current tool, prompt, skill, and resource catalog.
-- `updateClientCapabilities`: replaces one or more already-registered capability arrays without changing the client identity.
+- `registerClient`: announces client identity and the current path catalog.
+- `updateClientCatalog`: replaces the already-registered path catalog without changing the client identity.
 - `unregisterClient`: removes one logical client registration without requiring the whole transport to disappear first.
-- `callClient`: carries one routed invocation with `requestId`, target client, capability kind, and invocation payload.
+- `callClient`: carries one routed invocation with `requestId`, target client, `method`, `path`, and optional params/query/body/headers/auth.
 - `callClientResult`: closes the routed invocation by returning either `data` or `error`.
 - `ping`: asks the other side to prove the connection is still alive.
 - `pong`: confirms a received `ping`.

@@ -61,47 +61,45 @@ client.register()
 
 最常用的方法包括：
 
+- `expose`
 - `exposeTool`
 - `exposePrompt`
 - `exposeSkill`
 - `exposeResource`
-- `removeTool`
-- `removePrompt`
-- `removeSkill`
-- `removeResource`
+- `unexpose`
 - `useInvocationMiddleware`
 - `removeInvocationMiddleware`
 - `setAuth`
 - `connect`
 - `register`
-- `syncTools`
-- `syncPrompts`
-- `syncSkills`
-- `syncResources`
-- `syncCapabilities`
+- `describe`
+- `syncCatalog`
 - `disconnect`
+
+`expose()` 和 `unexpose()` 是主路径上的 path-first API。
+`exposeTool()` / `exposePrompt()` / `exposeSkill()` / `exposeResource()` 仍然保留为 legacy 包装层，会自动注册 compat path 和 legacy alias。
 
 ## 更新 capability 目录
 
-`register()` 仍然负责首次全量注册。之后如果本地 registry 发生变化，只需要把变化过的 capability 分组重新同步给 server。
+`register()` 仍然负责首次全量注册。之后如果本地 registry 发生变化，调用 `syncCatalog()` 重新推送当前 path catalog 即可。
 
 ```ts
-client.exposeTool('inspectSelection', async () => ({
+client.expose('/page/inspect', { method: 'GET' }, async () => ({
   text: window.getSelection()?.toString() ?? ''
 }))
-client.syncTools()
+client.syncCatalog()
 
-client.removeResource('webpage://active-tab/page-info')
-client.syncResources()
+client.unexpose('/page/inspect', 'GET')
+client.syncCatalog()
 ```
 
 ## 调用中间件
 
-用 `useInvocationMiddleware` 可以在一个地方统一监听或包裹被路由到客户端的 `tool`、`prompt`、`skill`、`resource` 调用。
+用 `useInvocationMiddleware` 可以在一个地方统一监听或包裹被路由到客户端的 `method + path` 调用。
 
 ```ts
 client.useInvocationMiddleware(async (invocation, next) => {
-  console.log('before', invocation.kind, invocation.name ?? invocation.uri)
+  console.log('before', invocation.method, invocation.path, invocation.legacy?.kind)
 
   const result = await next()
 
@@ -110,6 +108,6 @@ client.useInvocationMiddleware(async (invocation, next) => {
 })
 ```
 
-中间件可以读取 `invocation.kind`、`invocation.name`、`invocation.uri`、`invocation.args` 和 `invocation.auth`。如果直接返回而不调用 `next()`，也可以实现短路处理。
+中间件可以读取 `invocation.type`、`invocation.method`、`invocation.path`、`invocation.params`、`invocation.queries`、`invocation.body`、`invocation.headers` 和 `invocation.auth`。对于 legacy 包装层暴露出来的条目，还会补充 `invocation.legacy`、`invocation.kind`、`invocation.name`、`invocation.uri`、`invocation.args` 这些兼容字段。如果直接返回而不调用 `next()`，也可以实现短路处理。
 
 如果你要看能力元数据如何定义，继续阅读 [MCP 定义](/zh-Hans/sdk/javascript/mcp-definitions) 和 [Skills 定义](/zh-Hans/sdk/javascript/skills-definitions)。

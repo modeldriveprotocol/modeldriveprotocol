@@ -57,51 +57,49 @@ The package also ships a browser global bundle:
 
 That bundle exposes `MDP` on `window`, so a plain page can register capabilities without a build step.
 
-## Capability methods
+## Client methods
 
 The main SDK methods are:
 
+- `expose`
 - `exposeTool`
 - `exposePrompt`
 - `exposeSkill`
 - `exposeResource`
-- `removeTool`
-- `removePrompt`
-- `removeSkill`
-- `removeResource`
+- `unexpose`
 - `useInvocationMiddleware`
 - `removeInvocationMiddleware`
 - `setAuth`
 - `connect`
 - `register`
-- `syncTools`
-- `syncPrompts`
-- `syncSkills`
-- `syncResources`
-- `syncCapabilities`
+- `describe`
+- `syncCatalog`
 - `disconnect`
+
+`expose()` and `unexpose()` are the primary path-based APIs.
+`exposeTool()` / `exposePrompt()` / `exposeSkill()` / `exposeResource()` remain as legacy wrappers that register compat paths plus legacy aliases.
 
 ## Updating capability catalogs
 
-`register()` still sends the initial full descriptor. After that, change the local registry and send only the capability groups that changed.
+`register()` still sends the initial full descriptor. After that, update the local registry and send the current path catalog with `syncCatalog()`.
 
 ```ts
-client.exposeTool('inspectSelection', async () => ({
+client.expose('/page/inspect', { method: 'GET' }, async () => ({
   text: window.getSelection()?.toString() ?? ''
 }))
-client.syncTools()
+client.syncCatalog()
 
-client.removeResource('webpage://active-tab/page-info')
-client.syncResources()
+client.unexpose('/page/inspect', 'GET')
+client.syncCatalog()
 ```
 
 ## Invocation middleware
 
-Use `useInvocationMiddleware` to observe or wrap routed `tool`, `prompt`, `skill`, and `resource` calls in one place.
+Use `useInvocationMiddleware` to observe or wrap routed method+path calls in one place.
 
 ```ts
 client.useInvocationMiddleware(async (invocation, next) => {
-  console.log('before', invocation.kind, invocation.name ?? invocation.uri)
+  console.log('before', invocation.method, invocation.path, invocation.legacy?.kind)
 
   const result = await next()
 
@@ -110,6 +108,6 @@ client.useInvocationMiddleware(async (invocation, next) => {
 })
 ```
 
-Middleware can inspect `invocation.kind`, `invocation.name`, `invocation.uri`, `invocation.args`, and `invocation.auth`. It can also short-circuit by returning without calling `next()`.
+Middleware can inspect `invocation.type`, `invocation.method`, `invocation.path`, `invocation.params`, `invocation.queries`, `invocation.body`, `invocation.headers`, and `invocation.auth`. For legacy-wrapped entries it also exposes compatibility fields such as `invocation.legacy`, `invocation.kind`, `invocation.name`, `invocation.uri`, and `invocation.args`. Middleware can short-circuit by returning without calling `next()`.
 
 For capability metadata details, continue with [MCP Definitions](/sdk/javascript/mcp-definitions) and [Skills Definitions](/sdk/javascript/skills-definitions).
