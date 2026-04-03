@@ -24,8 +24,6 @@ status: Draft
 2. 用 JavaScript SDK 暴露 endpoint、prompt、skill 路径
 3. 通过 `ws` / `wss` 或 HTTP loop 连到 MDP server
 
-SDK 仍然保留 `exposeTool` / `exposePrompt` / `exposeSkill` / `exposeResource` 这些迁移包装层，但 canonical 模型已经是 path-based。
-
 如果浏览器 websocket 需要认证，SDK 可以在 `connect()` 时自动引导 `/mdp/auth`。
 
 ## 当前仓库状态
@@ -72,7 +70,7 @@ pnpm --filter @modeldriveprotocol/chrome-extension dev
 
 - MDP server URL
 - 目标页面匹配规则
-- 可选的默认 main-world bridge 脚本
+- 可选的默认 path main-world bridge 脚本
 
 - [JavaScript / 简易上手](/zh-Hans/sdk/javascript/quick-start)
 - [JavaScript / 如何使用](/zh-Hans/sdk/javascript/usage)

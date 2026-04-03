@@ -24,8 +24,6 @@ The simplest setup is:
 2. expose endpoint, prompt, or skill paths with the JavaScript SDK
 3. connect to the MDP server over `ws` / `wss` or HTTP loop
 
-The SDK still keeps `exposeTool` / `exposePrompt` / `exposeSkill` / `exposeResource` as migration wrappers, but the canonical model is path-based.
-
 If websocket auth is required in the browser, the SDK can bootstrap `/mdp/auth` automatically during `connect()`.
 
 ## Current repo status
@@ -72,7 +70,7 @@ Use the extension options page to set:
 
 - the MDP server URL
 - target match patterns
-- the optional default bridge script for main-world registration
+- the optional default path bridge script for main-world registration
 
 - [JavaScript Quick Start](/sdk/javascript/quick-start)
 - [Usage](/sdk/javascript/usage)
