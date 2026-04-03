@@ -47,13 +47,13 @@ export async function ensureScriptsInjected(
     state.mainWorldReady = true
   }
 
-  if (routeClient.toolScriptSource.trim()) {
-    const managedScriptId = createManagedScriptId(`route-path-script-${routeClient.id}`, routeClient.toolScriptSource)
+  if (routeClient.pathScriptSource.trim()) {
+    const managedScriptId = createManagedScriptId(`route-path-script-${routeClient.id}`, routeClient.pathScriptSource)
     if (!state.appliedManagedScriptIds.includes(managedScriptId)) {
       await dispatchPageCommand(tabId, {
         type: 'runMainWorld',
         action: 'runScript',
-        args: { source: routeClient.toolScriptSource, scriptId: managedScriptId }
+        args: { source: routeClient.pathScriptSource, scriptId: managedScriptId }
       })
       state.appliedManagedScriptIds.push(managedScriptId)
     }

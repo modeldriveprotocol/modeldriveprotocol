@@ -93,7 +93,7 @@ function migrateLegacyConfig(value: unknown): unknown {
   }
 
   const matchPatterns = readStringArray(record, 'matchPatterns') ?? []
-  const toolScriptSource = readString(record, 'toolScriptSource')?.trim() ?? ''
+  const pathScriptSource = readPathScriptSource(record)
   const legacyAutoConnect = readBoolean(record, 'autoConnect') ?? true
   const legacyAutoInjectBridge = readBoolean(record, 'autoInjectBridge') ?? true
   const legacyClientId =
@@ -108,7 +108,7 @@ function migrateLegacyConfig(value: unknown): unknown {
   )
 
   const routeClients =
-    matchPatterns.length > 0 || toolScriptSource.length > 0
+    matchPatterns.length > 0 || pathScriptSource.length > 0
       ? [
           createRouteClientConfig({
             id: `${legacyClientId}-route`,
@@ -119,7 +119,7 @@ function migrateLegacyConfig(value: unknown): unknown {
             icon: 'route',
             matchPatterns,
             autoInjectBridge: legacyAutoInjectBridge,
-            toolScriptSource
+            pathScriptSource
           })
         ]
       : []
@@ -323,13 +323,21 @@ function normalizeRouteClient(value: unknown): RouteClientConfig {
     ),
     routeRules: normalizeRouteRules(record.routeRules),
     autoInjectBridge: readBoolean(record, 'autoInjectBridge') ?? true,
-    toolScriptSource: readString(record, 'toolScriptSource')?.trim() ?? '',
+    pathScriptSource: readPathScriptSource(record),
     recordings: normalizeRecordings(record.recordings),
     selectorResources: normalizeSelectorResources(record.selectorResources),
     skillFolders: normalizeSkillFolders(record.skillFolders, skillEntries),
     skillEntries,
     ...(installSource ? { installSource } : {})
   }
+}
+
+function readPathScriptSource(record: Record<string, unknown>): string {
+  return (
+    readString(record, 'pathScriptSource')?.trim() ??
+    readString(record, 'toolScriptSource')?.trim() ??
+    ''
+  )
 }
 
 function normalizeMarketInstallSource(

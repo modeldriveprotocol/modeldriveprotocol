@@ -162,9 +162,14 @@ async function callRegisteredPath(
     throw new Error(`Unknown injected path "${identifier}"`)
   }
 
-  const pathArgs = Object.prototype.hasOwnProperty.call(args, 'pathArgs')
-    ? args.pathArgs
-    : args.toolArgs
+  if (
+    !Object.prototype.hasOwnProperty.call(args, 'pathArgs') &&
+    Object.prototype.hasOwnProperty.call(args, 'toolArgs')
+  ) {
+    throw new Error('Injected path invocations must use "pathArgs"')
+  }
+
+  const pathArgs = args.pathArgs
 
   return registeredPath.handler(pathArgs)
 }
@@ -238,11 +243,7 @@ function resolveRegisteredPath(
     return undefined
   }
 
-  const canonicalPath = normalizeInjectedPath(
-    normalizedIdentifier.startsWith('/')
-      ? normalizedIdentifier
-      : normalizedIdentifier.replaceAll('.', '/')
-  )
+  const canonicalPath = normalizeInjectedPath(normalizedIdentifier)
 
   if (canonicalPath) {
     const directMatch = registeredPaths.get(canonicalPath)
