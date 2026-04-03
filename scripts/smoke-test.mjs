@@ -113,25 +113,25 @@ try {
   mdpClient.register()
   await delay(150)
 
-  const listedTools = await mcpClient.listTools()
+  const listedMcpTools = await mcpClient.listTools()
   assert.ok(
-    listedTools.tools.some((tool) => tool.name === 'listClients'),
+    listedMcpTools.tools.some((tool) => tool.name === 'listClients'),
     'MCP bridge should expose listClients'
   )
   assert.ok(
-    listedTools.tools.some((tool) => tool.name === 'listPaths'),
+    listedMcpTools.tools.some((tool) => tool.name === 'listPaths'),
     'MCP bridge should expose listPaths'
   )
   assert.ok(
-    listedTools.tools.some((tool) => tool.name === 'callPath'),
+    listedMcpTools.tools.some((tool) => tool.name === 'callPath'),
     'MCP bridge should expose callPath'
   )
   assert.ok(
-    listedTools.tools.some((tool) => tool.name === 'callPaths'),
+    listedMcpTools.tools.some((tool) => tool.name === 'callPaths'),
     'MCP bridge should expose callPaths'
   )
   assert.deepEqual(
-    listedTools.tools.map((tool) => tool.name).sort(),
+    listedMcpTools.tools.map((tool) => tool.name).sort(),
     ['callPath', 'callPaths', 'listClients', 'listPaths']
   )
 
