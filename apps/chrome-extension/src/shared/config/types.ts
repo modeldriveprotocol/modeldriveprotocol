@@ -149,7 +149,7 @@ export interface RouteClientConfig {
   matchPatterns: string[]
   routeRules: RoutePathRule[]
   autoInjectBridge: boolean
-  toolScriptSource: string
+  pathScriptSource: string
   recordings: RouteClientRecording[]
   selectorResources: RouteSelectorResource[]
   skillFolders: RouteSkillFolder[]

@@ -34,6 +34,7 @@ describe('chrome extension config helpers', () => {
     expect(migrated.routeClients).toHaveLength(1)
     expect(migrated.routeClients[0]?.clientId).toBe('legacy-client-page')
     expect(migrated.routeClients[0]?.autoInjectBridge).toBe(false)
+    expect(migrated.routeClients[0]?.pathScriptSource).toBe('window.test = true;')
   })
 
   it('normalizes script-based flows alongside recorded flows', () => {

@@ -130,7 +130,7 @@ export function ClientEditor({
       {tab === 'runtime' ? (
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1.25 }}>
           <FormControlLabel control={<Switch checked={client.autoInjectBridge} onChange={(_, checked) => updateClient({ ...client, autoInjectBridge: checked })} />} label={t('options.clients.autoInjectBridge')} />
-          <TextField size="small" label={t('options.clients.defaultToolScript')} multiline minRows={9} value={client.toolScriptSource} onChange={(event) => updateClient({ ...client, toolScriptSource: event.target.value })} />
+          <TextField size="small" label={t('options.clients.defaultPathScript')} multiline minRows={9} value={client.pathScriptSource} onChange={(event) => updateClient({ ...client, pathScriptSource: event.target.value })} />
         </Box>
       ) : null}
 

@@ -43,7 +43,7 @@ export function createRouteClientConfig(
     matchPatterns: normalizePatterns(overrides.matchPatterns ?? []),
     routeRules: overrides.routeRules ?? [],
     autoInjectBridge: overrides.autoInjectBridge ?? true,
-    toolScriptSource: overrides.toolScriptSource?.trim() ?? '',
+    pathScriptSource: overrides.pathScriptSource?.trim() ?? '',
     recordings: overrides.recordings ?? [],
     selectorResources: overrides.selectorResources ?? [],
     skillFolders: overrides.skillFolders ?? [],
