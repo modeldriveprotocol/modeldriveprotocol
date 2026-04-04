@@ -1,6 +1,7 @@
 import {
   asRecord,
   createRequestId,
+  readBoolean,
   readString,
   readStringArray
 } from '../utils.js'
@@ -46,6 +47,7 @@ export function normalizeRecordings(value: unknown): RouteClientRecording[] {
     return {
       id: normalizeId(readString(record, 'id')) ?? createRequestId('recording'),
       kind: 'flow',
+      enabled: readBoolean(record, 'enabled') ?? true,
       path: normalizeUniqueAssetPath(
         readString(record, 'path'),
         name,
@@ -158,6 +160,7 @@ export function normalizeSelectorResources(
           normalizeId(readString(record, 'id')) ??
           createRequestId('selector-resource'),
         kind: 'resource',
+        enabled: readBoolean(record, 'enabled') ?? true,
         path: normalizeUniqueAssetPath(
           readString(record, 'path'),
           name,
@@ -234,6 +237,7 @@ export function normalizeSkillEntries(value: unknown): RouteSkillEntry[] {
       return {
         id: normalizeId(readString(record, 'id')) ?? createRequestId('skill'),
         kind: 'skill',
+        enabled: readBoolean(record, 'enabled') ?? true,
         path,
         metadata: {
           title: normalizeString(

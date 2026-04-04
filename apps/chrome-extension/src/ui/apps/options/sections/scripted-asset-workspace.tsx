@@ -115,9 +115,7 @@ export function ScriptedAssetWorkspace({
         <Box sx={{ height: '100%', minHeight: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Box
             sx={{
-              pl: 0,
-              pr: 1,
-              py: 0.75,
+              py: 0.5,
               borderBottom: '1px solid',
               borderColor: 'divider'
             }}
@@ -164,8 +162,6 @@ export function ScriptedAssetWorkspace({
 
           <Box
             sx={{
-              py: 0.5,
-              pr: 1,
               flex: 1,
               minHeight: 0,
               overflowY: 'auto',
@@ -211,7 +207,6 @@ export function ScriptedAssetWorkspace({
         sx={{
           minWidth: 0,
           minHeight: 0,
-          pl: 1.5,
           display: 'flex',
           flexDirection: 'column'
         }}

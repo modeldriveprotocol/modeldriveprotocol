@@ -1,5 +1,3 @@
-import { FormControlLabel, Switch } from '@mui/material'
-
 import { getBackgroundExposeDefinition, type BackgroundExposeAsset } from '#~/shared/config.js'
 import { useI18n } from '../../../../i18n/provider.js'
 import { ScriptedAssetEditorPanel } from '../scripted-asset-shared.js'
@@ -19,22 +17,6 @@ export function BackgroundExposeDetailPanel({
 
   return (
     <ScriptedAssetEditorPanel
-      controls={
-        <FormControlLabel
-          control={
-            <Switch
-              checked={asset.enabled}
-              onChange={(_, checked) =>
-                onUpdate(asset.id, (current) => ({
-                  ...current,
-                  enabled: checked
-                }))
-              }
-            />
-          }
-          label={t('common.enabled')}
-        />
-      }
       descriptionLabel={t('common.description')}
       descriptionValue={asset.description}
       editorLabel={

@@ -20,6 +20,7 @@ describe('chrome extension route recordings', () => {
             {
               kind: 'flow',
               id: 'flow-script',
+              enabled: true,
               path: 'script-flow',
               name: 'Script Flow',
               description: 'Runs custom code',
@@ -109,6 +110,7 @@ describe('chrome extension route recordings', () => {
           {
             kind: 'flow',
             id: 'flow-delete',
+            enabled: true,
             path: 'orders/delete',
             name: 'Delete order',
             description: 'Delete an order from the page.',
@@ -125,6 +127,7 @@ describe('chrome extension route recordings', () => {
           {
             kind: 'resource',
             id: 'resource-patch',
+            enabled: true,
             path: 'orders/selection',
             name: 'Order selection',
             description: 'Patch selection state in the page.',

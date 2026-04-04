@@ -4,6 +4,7 @@ export type ClientTreeItem =
       kind: 'flow' | 'resource' | 'skill'
       path: string
       name: string
+      enabled: boolean
       searchText: string
       assetId: string
       method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'

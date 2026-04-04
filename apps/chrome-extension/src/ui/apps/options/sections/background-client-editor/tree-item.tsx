@@ -1,4 +1,3 @@
-import FolderOutlined from '@mui/icons-material/FolderOutlined'
 import { Typography } from '@mui/material'
 import { TreeItem } from '@mui/x-tree-view'
 import type { MouseEvent as ReactMouseEvent } from 'react'
@@ -9,12 +8,17 @@ import {
 } from '#~/shared/config.js'
 import {
   AssetTreeLeaf,
+  AssetTreeLabel,
   AssetTreeRenameField,
   dirname,
   renderHighlightedText,
   type AssetFileTreeNode
 } from '../asset-tree-shared.js'
-import { HttpMethodBadge } from '../scripted-asset-shared.js'
+import {
+  HttpMethodBadge,
+  ScriptedAssetEnabledButton,
+  type ScriptedAssetEnabledState
+} from '../scripted-asset-shared.js'
 import {
   handleBackgroundExpandableItemClick
 } from './tree-helpers.js'
@@ -30,12 +34,15 @@ export function BackgroundAssetTreeNodeItem({
   renameError,
   renameTarget,
   searchTerm,
+  assetEnabled = new Map(),
   setExpandedFolders,
   setSelectedItemId,
   onCancelRename,
   onCommitRename,
   onRenameChange,
-  onStartRename
+  onStartRename,
+  onToggleAssetEnabled,
+  onToggleFolderEnabled
 }: {
   node: AssetFileTreeNode
   onOpenContextMenu: (
@@ -51,21 +58,32 @@ export function BackgroundAssetTreeNodeItem({
   renameError: boolean
   renameTarget: BackgroundRenameTarget | undefined
   searchTerm?: string
+  assetEnabled?: Map<BackgroundExposeAsset['id'], boolean>
   setExpandedFolders: (updater: (paths: string[]) => string[]) => void
   setSelectedItemId: (itemId: string) => void
   onCancelRename: () => void
   onCommitRename: () => void
   onRenameChange: (value: string) => void
   onStartRename: (target: BackgroundRenameTarget, itemId: string) => void
+  onToggleAssetEnabled: (assetId: BackgroundExposeAsset['id']) => void
+  onToggleFolderEnabled: (folderPath: string) => void
 }) {
   if (node.kind === 'folder') {
     const itemId = `${prefix}-folder:${node.path}`
+    const enabledState = resolveFolderEnabledState(node, assetEnabled)
 
     return (
       <TreeItem
         itemId={itemId}
         label={
-          <AssetTreeLeaf
+          <AssetTreeLabel
+            action={
+              <ScriptedAssetEnabledButton
+                onClick={() => onToggleFolderEnabled(node.path)}
+                state={enabledState}
+              />
+            }
+            count={countLeafFiles(node)}
             onClick={(event) =>
               handleBackgroundExpandableItemClick(
                 event,
@@ -74,7 +92,6 @@ export function BackgroundAssetTreeNodeItem({
                 setExpandedFolders
               )
             }
-            icon={<FolderOutlined fontSize="small" />}
             label={
               renameTarget?.kind === 'folder' && renameTarget.path === node.path ? (
                 <AssetTreeRenameField
@@ -117,12 +134,15 @@ export function BackgroundAssetTreeNodeItem({
             renameError={renameError}
             renameTarget={renameTarget}
             searchTerm={searchTerm}
+            assetEnabled={assetEnabled}
             setExpandedFolders={setExpandedFolders}
             setSelectedItemId={setSelectedItemId}
             onCancelRename={onCancelRename}
             onCommitRename={onCommitRename}
             onRenameChange={onRenameChange}
             onStartRename={onStartRename}
+            onToggleAssetEnabled={onToggleAssetEnabled}
+            onToggleFolderEnabled={onToggleFolderEnabled}
           />
         ))}
       </TreeItem>
@@ -133,12 +153,19 @@ export function BackgroundAssetTreeNodeItem({
     node.assetId as BackgroundExposeAsset['id']
   )
   const itemId = `${prefix}:${node.assetId}`
+  const assetId = node.assetId as BackgroundExposeAsset['id']
 
   return (
     <TreeItem
       itemId={itemId}
       label={
         <AssetTreeLeaf
+          action={
+            <ScriptedAssetEnabledButton
+              onClick={() => onToggleAssetEnabled(assetId)}
+              state={assetEnabled.get(assetId) ? 'enabled' : 'disabled'}
+            />
+          }
           icon={<BackgroundMethodBadge definition={definition} />}
           label={
             renameTarget?.kind === 'asset' &&
@@ -179,6 +206,48 @@ export function BackgroundAssetTreeNodeItem({
         )
       }
     />
+  )
+}
+
+function countLeafFiles(node: AssetFileTreeNode): number {
+  if (node.kind === 'file') {
+    return 1
+  }
+
+  return node.children.reduce((total, child) => total + countLeafFiles(child), 0)
+}
+
+function resolveFolderEnabledState(
+  node: AssetFileTreeNode,
+  assetEnabled: Map<BackgroundExposeAsset['id'], boolean>
+): ScriptedAssetEnabledState {
+  const leafStates = collectLeafEnabledStates(node, assetEnabled)
+
+  if (leafStates.length === 0) {
+    return 'disabled'
+  }
+
+  if (leafStates.every(Boolean)) {
+    return 'enabled'
+  }
+
+  if (leafStates.every((state) => !state)) {
+    return 'disabled'
+  }
+
+  return 'mixed'
+}
+
+function collectLeafEnabledStates(
+  node: AssetFileTreeNode,
+  assetEnabled: Map<BackgroundExposeAsset['id'], boolean>
+): boolean[] {
+  if (node.kind === 'file') {
+    return [assetEnabled.get(node.assetId as BackgroundExposeAsset['id']) ?? true]
+  }
+
+  return node.children.flatMap((child) =>
+    collectLeafEnabledStates(child, assetEnabled)
   )
 }
 

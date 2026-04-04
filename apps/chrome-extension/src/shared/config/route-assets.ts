@@ -68,6 +68,7 @@ export function cloneRouteExposeAssets(
       case 'flow':
         return {
           ...asset,
+          enabled: asset.enabled,
           capturedFeatures: [...asset.capturedFeatures],
           steps: asset.steps.map((step) => ({
             ...step,
@@ -78,6 +79,7 @@ export function cloneRouteExposeAssets(
       case 'resource':
         return {
           ...asset,
+          enabled: asset.enabled,
           alternativeSelectors: [...asset.alternativeSelectors],
           classes: [...asset.classes],
           attributes: { ...asset.attributes }
@@ -85,6 +87,7 @@ export function cloneRouteExposeAssets(
       case 'skill':
         return {
           ...asset,
+          enabled: asset.enabled,
           metadata: {
             ...asset.metadata,
             queryParameters: asset.metadata.queryParameters.map((parameter) => ({
@@ -107,6 +110,7 @@ export function createRootRouteSkillEntry(): RouteSkillEntry {
   return {
     kind: 'skill',
     id: createRequestId('skill'),
+    enabled: true,
     path: ROOT_ROUTE_SKILL_PATH,
     metadata: createDefaultRootRouteSkillMetadata(),
     content: ''
@@ -140,6 +144,7 @@ export function ensureRootRouteSkillEntry(
       {
         ...entry,
         kind: 'skill' as const,
+        enabled: entry.enabled ?? true,
         path: ROOT_ROUTE_SKILL_PATH
       }
     ]

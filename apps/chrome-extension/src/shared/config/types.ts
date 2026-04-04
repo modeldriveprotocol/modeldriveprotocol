@@ -51,6 +51,7 @@ export interface RecordedFlowStep {
 export interface RouteClientRecording {
   kind: 'flow'
   id: string
+  enabled: boolean
   path: string
   name: string
   description: string
@@ -71,6 +72,7 @@ export interface SelectorResourceAttributeMap {
 export interface RouteSelectorResource {
   kind: 'resource'
   id: string
+  enabled: boolean
   path: string
   name: string
   description: string
@@ -105,6 +107,7 @@ export interface RouteSkillMetadata {
 export interface RouteSkillEntry {
   kind: 'skill'
   id: string
+  enabled: boolean
   path: string
   metadata: RouteSkillMetadata
   content: string

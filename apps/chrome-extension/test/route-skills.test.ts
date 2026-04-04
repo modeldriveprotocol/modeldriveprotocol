@@ -17,6 +17,7 @@ describe('route skill assets', () => {
       {
         kind: 'skill',
         id: 'skill-refund',
+        enabled: true,
         path: 'workspace/orders/refunds',
         metadata: {
           title: 'Refund guide',
@@ -59,6 +60,7 @@ describe('route skill assets', () => {
       buildRouteSkillInputSchema({
         kind: 'skill',
         id: 'skill-refund',
+        enabled: true,
         path: 'workspace/orders/refunds',
         metadata: {
           title: 'Refund guide',

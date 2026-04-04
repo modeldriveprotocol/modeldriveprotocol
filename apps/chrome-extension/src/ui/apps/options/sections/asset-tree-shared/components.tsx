@@ -35,6 +35,11 @@ export function AssetTreeLabel({
 }) {
   return (
     <Box
+      onMouseDown={(event) => {
+        if (event.button === 2) {
+          event.preventDefault()
+        }
+      }}
       onClick={onClick}
       sx={{
         display: 'flex',
@@ -78,6 +83,11 @@ export function AssetTreeLeaf({
 }) {
   return (
     <Box
+      onMouseDown={(event) => {
+        if (event.button === 2) {
+          event.preventDefault()
+        }
+      }}
       onClick={onClick}
       sx={{
         display: 'flex',

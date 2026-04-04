@@ -61,6 +61,7 @@ export function createRecordingFromCapture(
   return {
     kind: 'flow',
     id: createRequestId('recording'),
+    enabled: true,
     path: createUniqueAssetPath(
       recordings.map((recording) => recording.path),
       name,
@@ -107,6 +108,7 @@ export function createSelectorResource(
   return {
     kind: 'resource',
     id: createRequestId('selector-resource'),
+    enabled: true,
     path: createUniqueAssetPath(
       selectorResources.map((resource) => resource.path),
       name,

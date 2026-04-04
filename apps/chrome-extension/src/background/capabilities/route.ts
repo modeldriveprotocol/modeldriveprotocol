@@ -42,6 +42,10 @@ export function registerRouteClientCapabilities(
   registerPageWaitTools(client, runtime, routeClient)
 
   for (const recording of getRouteClientRecordings(routeClient)) {
+    if (!recording.enabled) {
+      continue
+    }
+
     const runnable =
       recording.mode === 'script'
         ? recording.scriptSource.trim().length > 0
@@ -83,6 +87,10 @@ export function registerRouteClientCapabilities(
   )
 
   for (const resource of getRouteClientSelectorResources(routeClient)) {
+    if (!resource.enabled) {
+      continue
+    }
+
     const method = resource.method ?? 'GET'
 
     client.expose(
@@ -115,6 +123,10 @@ export function registerRouteClientCapabilities(
   }
 
   for (const skill of getRouteClientSkillEntries(routeClient)) {
+    if (!skill.enabled) {
+      continue
+    }
+
     client.expose(
       toCanonicalSkillPath(skill.path),
       {

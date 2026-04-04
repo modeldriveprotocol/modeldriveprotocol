@@ -136,6 +136,7 @@ export function ClientFlowsPanel({
     const nextFlow: RouteClientRecording = {
       kind: 'flow',
       id: createLocalId('flow'),
+      enabled: true,
       path: createUniqueAssetPath(
         client.recordings.map((recording) => recording.path),
         '',

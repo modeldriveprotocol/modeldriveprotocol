@@ -16,7 +16,11 @@ import {
   renderHighlightedText,
   type AssetFileTreeNode
 } from '../asset-tree-shared.js'
-import { HttpMethodBadge } from '../scripted-asset-shared.js'
+import {
+  HttpMethodBadge,
+  ScriptedAssetEnabledButton,
+  type ScriptedAssetEnabledState
+} from '../scripted-asset-shared.js'
 import type {
   ClientTreeItem,
   DragState,
@@ -54,11 +58,18 @@ export function renderTreeNodes(
       string,
       'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | undefined
     >
+    assetEnabled: Map<string, boolean>
+    onToggleAssetEnabled: (assetId: string) => void
+    onToggleFolderEnabled: (folderPath: string) => void
   }
 ): ReactNode {
   return nodes.map((node) => {
     if (node.kind === 'folder') {
       const itemId = `route-asset-folder:${node.path}`
+      const enabledState = resolveFolderEnabledState(
+        node,
+        options.assetEnabled
+      )
 
       return (
         <TreeItem
@@ -98,6 +109,12 @@ export function renderTreeNodes(
               onDrop={(event) => handleDrop(event, () => options.onDropItem(node.path, itemId))}
             >
               <AssetTreeLabel
+                action={
+                  <ScriptedAssetEnabledButton
+                    onClick={() => options.onToggleFolderEnabled(node.path)}
+                    state={enabledState}
+                  />
+                }
                 count={countTreeFiles(node.children)}
                 dropActive={options.dropTargetItemId === itemId}
                 label={
@@ -129,6 +146,7 @@ export function renderTreeNodes(
     const isRootSkill =
       options.assetKinds.get(node.assetId) === 'skill' &&
       node.path === ROOT_ROUTE_SKILL_PATH
+    const enabledState = options.assetEnabled.get(node.assetId)
 
     return (
       <TreeItem
@@ -173,6 +191,14 @@ export function renderTreeNodes(
             }}
           >
             <AssetTreeLeaf
+              action={
+                enabledState !== undefined ? (
+                  <ScriptedAssetEnabledButton
+                    onClick={() => options.onToggleAssetEnabled(node.assetId)}
+                    state={enabledState ? 'enabled' : 'disabled'}
+                  />
+                ) : undefined
+              }
               icon={
                 <HttpMethodBadge
                   fallback={resolveAssetBadge(options.assetKinds.get(node.assetId) ?? 'skill')}
@@ -202,6 +228,40 @@ export function renderTreeNodes(
       />
     )
   })
+}
+
+function resolveFolderEnabledState(
+  node: AssetFileTreeNode,
+  assetEnabled: Map<string, boolean>
+): ScriptedAssetEnabledState {
+  const leafStates = collectLeafEnabledStates(node, assetEnabled)
+
+  if (leafStates.length === 0) {
+    return 'disabled'
+  }
+
+  if (leafStates.every(Boolean)) {
+    return 'enabled'
+  }
+
+  if (leafStates.every((state) => !state)) {
+    return 'disabled'
+  }
+
+  return 'mixed'
+}
+
+function collectLeafEnabledStates(
+  node: AssetFileTreeNode,
+  assetEnabled: Map<string, boolean>
+): boolean[] {
+  if (node.kind === 'file') {
+    return [assetEnabled.get(node.assetId) ?? true]
+  }
+
+  return node.children.flatMap((child) =>
+    collectLeafEnabledStates(child, assetEnabled)
+  )
 }
 
 export function countTreeFiles(nodes: AssetFileTreeNode[]): number {

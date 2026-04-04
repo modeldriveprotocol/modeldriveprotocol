@@ -99,6 +99,7 @@ export function ClientAssetsPanel({
         kind: 'skill' as const,
         path: asset.path,
         name: basename(asset.path),
+        enabled: asset.enabled,
         searchText: `${asset.metadata.title} ${asset.metadata.summary} ${asset.content}`,
         assetId: asset.id,
         method: undefined
@@ -108,6 +109,7 @@ export function ClientAssetsPanel({
         kind: 'flow' as const,
         path: asset.path,
         name: asset.name,
+        enabled: asset.enabled,
         searchText: `${asset.name} ${asset.description} ${asset.mode}`,
         assetId: asset.id,
         method: asset.method ?? 'POST'
@@ -117,6 +119,7 @@ export function ClientAssetsPanel({
         kind: 'resource' as const,
         path: asset.path,
         name: asset.name,
+        enabled: asset.enabled,
         searchText: `${asset.name} ${asset.description} ${asset.selector} ${asset.text ?? ''}`,
         assetId: asset.id,
         method: asset.method ?? 'GET'
@@ -135,6 +138,10 @@ export function ClientAssetsPanel({
   )
   const assetMethods = useMemo(
     () => new Map(fileItems.map((item) => [item.assetId, item.method])),
+    [fileItems]
+  )
+  const assetEnabled = useMemo(
+    () => new Map(fileItems.map((item) => [item.assetId, item.enabled])),
     [fileItems]
   )
   const routeTree = useMemo(
@@ -281,6 +288,7 @@ export function ClientAssetsPanel({
     const nextAsset: RouteClientRecording = {
       kind: 'flow',
       id: createLocalId('flow'),
+      enabled: true,
       path,
       name: 'Code',
       description: '',
@@ -306,6 +314,7 @@ export function ClientAssetsPanel({
     const nextAsset: RouteSkillEntry = {
       kind: 'skill',
       id: createLocalId('skill'),
+      enabled: true,
       path,
       metadata: {
         title: t('options.assets.skills.newTitle'),
@@ -474,6 +483,47 @@ export function ClientAssetsPanel({
         ? current.filter((path) => path !== folderPath)
         : [...current, folderPath]
     )
+  }
+
+  function updateAssetEnabled(assetIds: string[], enabled: boolean) {
+    if (assetIds.length === 0) {
+      return
+    }
+
+    const assetIdSet = new Set(assetIds)
+
+    commitExposes(
+      client.exposes.map((asset) =>
+        'enabled' in asset && assetIdSet.has(asset.id)
+          ? { ...asset, enabled }
+          : asset
+      )
+    )
+  }
+
+  function toggleAssetEnabled(assetId: string) {
+    const enabled = assetEnabled.get(assetId)
+
+    if (enabled === undefined) {
+      return
+    }
+
+    updateAssetEnabled([assetId], !enabled)
+  }
+
+  function toggleFolderAssetEnabled(folderPath: string) {
+    const assetIds = fileItems
+      .filter(
+        (asset) => asset.path === folderPath || asset.path.startsWith(`${folderPath}/`)
+      )
+      .map((asset) => asset.assetId)
+
+    if (assetIds.length === 0) {
+      return
+    }
+
+    const shouldEnable = assetIds.some((assetId) => !assetEnabled.get(assetId))
+    updateAssetEnabled(assetIds, shouldEnable)
   }
 
   function moveAssetToFolder(assetId: string, folderPath: string) {
@@ -669,6 +719,9 @@ export function ClientAssetsPanel({
                   width: '100%',
                   cursor: 'pointer'
                 },
+                '& .MuiTreeItem-content.Mui-focused:not(.Mui-selected)': {
+                  bgcolor: 'transparent'
+                },
                 '& .MuiTreeItem-label': {
                   flex: 1,
                   minWidth: 0
@@ -694,7 +747,10 @@ export function ClientAssetsPanel({
                 renameTarget,
                 searchTerm: searchQuery,
                 assetKinds,
-                assetMethods
+                assetMethods,
+                assetEnabled,
+                onToggleAssetEnabled: toggleAssetEnabled,
+                onToggleFolderEnabled: toggleFolderAssetEnabled
               })}
             </SimpleTreeView>
           )

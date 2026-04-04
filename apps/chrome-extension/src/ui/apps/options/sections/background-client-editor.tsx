@@ -153,6 +153,11 @@ export function BackgroundClientEditor({
   const enabledAssetCount = countEnabledBackgroundExposes(client)
   const totalAssetCount = client.exposes.length
   const isRequiredClient = isRequiredBackgroundClientId(client.id)
+  const assetEnabled = useMemo(
+    () =>
+      new Map(client.exposes.map((asset) => [asset.id, asset.enabled])),
+    [client.exposes]
+  )
   const exposesById = useMemo(
     () => new Map(client.exposes.map((asset) => [asset.id, asset])),
     [client.exposes]
@@ -323,20 +328,72 @@ export function BackgroundClientEditor({
       width: '100%',
       cursor: 'pointer'
     },
+    '& .MuiTreeItem-content.Mui-focused:not(.Mui-selected)': {
+      bgcolor: 'transparent'
+    },
     '& .MuiTreeItem-label': {
       flex: 1,
       minWidth: 0
-    },
-    '& .asset-tree-actions': {
-      opacity: 0,
-      pointerEvents: 'none',
-      transition: 'opacity 120ms ease'
-    },
-    '& .MuiTreeItem-content:hover .asset-tree-actions, & .MuiTreeItem-content.Mui-selected .asset-tree-actions':
-      {
-        opacity: 1,
-        pointerEvents: 'auto'
-      }
+    }
+  }
+
+  function updateBackgroundAssetEnabled(
+    assetIds: BackgroundExposeAsset['id'][],
+    enabled: boolean
+  ) {
+    if (assetIds.length === 0) {
+      return
+    }
+
+    const assetIdSet = new Set(assetIds)
+
+    const exposes = client.exposes.map((asset) =>
+      assetIdSet.has(asset.id)
+        ? {
+            ...asset,
+            enabled
+          }
+        : asset
+    )
+
+    updateClient({
+      ...client,
+      exposes,
+      disabledExposePaths: deriveDisabledBackgroundExposePaths(exposes)
+    })
+  }
+
+  function toggleBackgroundAssetEnabled(assetId: BackgroundExposeAsset['id']) {
+    const enabled = assetEnabled.get(assetId)
+
+    if (enabled === undefined) {
+      return
+    }
+
+    updateBackgroundAssetEnabled([assetId], !enabled)
+  }
+
+  function toggleBackgroundFolderEnabled(folderPath: string) {
+    const assetIds = client.exposes
+      .filter((asset) => {
+        const displayPath = getBackgroundDisplayPath(
+          asset.path,
+          sharedDisplayPrefix
+        )
+
+        return (
+          displayPath === folderPath ||
+          displayPath.startsWith(`${folderPath}/`)
+        )
+      })
+      .map((asset) => asset.id)
+
+    if (assetIds.length === 0) {
+      return
+    }
+
+    const shouldEnable = assetIds.some((assetId) => !assetEnabled.get(assetId))
+    updateBackgroundAssetEnabled(assetIds, shouldEnable)
   }
 
   function openContextMenu(
@@ -565,6 +622,7 @@ export function BackgroundClientEditor({
                     renameError={renameError}
                     renameTarget={renameTarget}
                     searchTerm={searchTerm}
+                    assetEnabled={assetEnabled}
                     setExpandedFolders={setExpandedFolders}
                     setSelectedItemId={setSelectedItemId}
                     onCancelRename={() => setRenameTarget(undefined)}
@@ -588,6 +646,8 @@ export function BackgroundClientEditor({
                       setRenameTarget(target)
                       setSelectedItemId(itemId)
                     }}
+                    onToggleAssetEnabled={toggleBackgroundAssetEnabled}
+                    onToggleFolderEnabled={toggleBackgroundFolderEnabled}
                   />
                 ))}
               </SimpleTreeView>

@@ -1,5 +1,6 @@
 import {
   Box,
+  ButtonBase,
   Divider,
   ListItemIcon,
   ListItemText,
@@ -161,21 +162,8 @@ export function ScriptedAssetEditorPanel({
   onEditorChange: (value: string) => void
 }) {
   return (
-    <Stack spacing={1.25} sx={{ minHeight: 0, flex: 1 }}>
+    <Stack spacing={0.75} sx={{ minHeight: 0, flex: 1 }}>
       {controls}
-      <TextField
-        label={descriptionLabel}
-        minRows={2}
-        multiline
-        onChange={(event) => onDescriptionChange(event.target.value)}
-        size="small"
-        value={descriptionValue}
-        sx={{
-          '& .MuiOutlinedInput-root': {
-            borderRadius: 1.5
-          }
-        }}
-      />
       <Box
         sx={{
           minHeight: 0,
@@ -183,17 +171,43 @@ export function ScriptedAssetEditorPanel({
           border: '1px solid',
           borderColor: 'divider',
           borderRadius: 1,
-          overflow: 'hidden'
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
         }}
       >
-        <MonacoCodeEditor
-          ariaLabel={editorLabel}
-          language={editorLanguage}
-          minHeight={editorMinHeight}
-          modelUri={editorModelUri}
-          onChange={(nextValue) => onEditorChange(nextValue ?? '')}
-          value={editorValue}
-        />
+        <Box sx={{ height: 112, minHeight: 112 }}>
+          <MonacoCodeEditor
+            ariaLabel={descriptionLabel}
+            height={112}
+            language="markdown"
+            minHeight={112}
+            modelUri={`${editorModelUri}.description.md`}
+            onChange={(nextValue) => onDescriptionChange(nextValue ?? '')}
+            options={{
+              folding: false,
+              glyphMargin: false,
+              lineDecorationsWidth: 0,
+              lineNumbers: 'off',
+              lineNumbersMinChars: 0,
+              overviewRulerBorder: false,
+              overviewRulerLanes: 0,
+              wordWrap: 'on'
+            }}
+            value={descriptionValue}
+          />
+        </Box>
+        <Divider />
+        <Box sx={{ minHeight: 0, flex: 1 }}>
+          <MonacoCodeEditor
+            ariaLabel={editorLabel}
+            language={editorLanguage}
+            minHeight={editorMinHeight}
+            modelUri={editorModelUri}
+            onChange={(nextValue) => onEditorChange(nextValue ?? '')}
+            value={editorValue}
+          />
+        </Box>
       </Box>
     </Stack>
   )
@@ -248,6 +262,61 @@ export function ScriptedAssetMethodField({
   )
 }
 
+export type ScriptedAssetEnabledState = 'enabled' | 'disabled' | 'mixed'
+
+export function ScriptedAssetEnabledButton({
+  disabled = false,
+  onClick,
+  state
+}: {
+  disabled?: boolean
+  onClick: () => void
+  state: ScriptedAssetEnabledState
+}) {
+  const theme = useTheme()
+  const tone = getEnabledButtonTone(theme, state)
+
+  return (
+    <ButtonBase
+      aria-label={
+        state === 'enabled'
+          ? 'Disable'
+          : state === 'disabled'
+            ? 'Enable'
+            : 'Enable all'
+      }
+      disabled={disabled}
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        onClick()
+      }}
+      sx={{
+        width: 18,
+        height: 18,
+        minWidth: 18,
+        borderRadius: '50%',
+        border: '2px solid',
+        borderColor: tone.ring,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        opacity: disabled ? 0.45 : 1
+      }}
+    >
+      <Box
+        sx={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          bgcolor: tone.dot
+        }}
+      />
+    </ButtonBase>
+  )
+}
+
 function getMethodBadgeTone(
   theme: Theme,
   method: string | undefined
@@ -282,6 +351,29 @@ function getMethodBadgeTone(
       return {
         accent: theme.palette.text.secondary,
         background: alpha(theme.palette.text.secondary, 0.12)
+      }
+  }
+}
+
+function getEnabledButtonTone(
+  theme: Theme,
+  state: ScriptedAssetEnabledState
+) {
+  switch (state) {
+    case 'enabled':
+      return {
+        ring: theme.palette.success.main,
+        dot: theme.palette.success.main
+      }
+    case 'mixed':
+      return {
+        ring: theme.palette.warning.main,
+        dot: alpha(theme.palette.warning.main, 0.92)
+      }
+    default:
+      return {
+        ring: theme.palette.error.main,
+        dot: 'transparent'
       }
   }
 }
