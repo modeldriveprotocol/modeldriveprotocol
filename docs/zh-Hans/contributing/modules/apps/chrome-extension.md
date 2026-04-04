@@ -89,6 +89,53 @@ ws://127.0.0.1:47372
 
 同时配置需要注入的目标 match patterns。
 
+## 真实端到端验证
+
+如果改动必须通过“真实浏览器 + 真实 MCP 调用方”来证明，不要只停在单测或 build 通过。
+
+推荐回路：
+
+```bash
+MDP_WXT_MANUAL=1 pnpm --filter @modeldriveprotocol/chrome-extension dev -- --port 3001
+node packages/server/dist/cli.js --port 47372
+```
+
+然后用带 DevTools Protocol 的真实 Chrome 会话挂到持久化 WXT profile。这个环境里稳定可用的命令是：
+
+```bash
+/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary \
+  --user-data-dir=/Users/bytedance/projects/mdp/apps/chrome-extension/.wxt/chrome-data \
+  --remote-debugging-port=9227 \
+  --enable-unsafe-extension-debugging \
+  --unsafely-disable-devtools-self-xss-warnings \
+  about:blank
+```
+
+在插件 options 页面里把 `MDP Server URL` 指到：
+
+```text
+ws://127.0.0.1:47372
+```
+
+场景驱动要走真实 MCP consumer，例如用 `@ai-sdk/mcp`、`StdioClientTransport`、`listClients` 和 `callPath` 的 Node 脚本，而不是直接改存储或调用内部 helper。
+
+重要运行时规则：
+
+- workspace 管理类写操作可能触发插件 runtime refresh
+- 在这个窗口里，`mdp-chrome-workspace` 会短暂从 `listClients` 里消失
+- 这种断开要按“可重试的重连窗口”处理，不要立刻判失败
+
+做视觉确认时，不要只看 DevTools target 或页面 title。
+先确认真实扩展页面的 DOM 文本不是空的，再截图。
+如果页面是空白，先检查页面 HTML 里引用的是哪个 `localhost:<port>`，再确保 WXT 正在同一个端口提供 dev 资源。
+
+跑完之后：
+
+- 删除临时创建的 route client、background client 和 route rule
+- 回读 `chrome.storage.local` 确认清理已经落盘
+- 停掉本地 server、WXT watcher 和临时浏览器进程
+- 截图只作为一次性证据，统一放在 `apps/chrome-extension/.artifacts/`
+
 ## 调试方式
 
 把 `chrome://extensions` 当作主调试入口：

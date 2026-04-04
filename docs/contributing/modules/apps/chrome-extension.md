@@ -91,6 +91,53 @@ ws://127.0.0.1:47372
 
 Also configure any target match patterns the extension should inject into.
 
+## Real End-To-End Verification
+
+When a change must be proven through a real browser plus a real MCP caller, use a host-native loop instead of relying on unit tests alone.
+
+Recommended sequence:
+
+```bash
+MDP_WXT_MANUAL=1 pnpm --filter @modeldriveprotocol/chrome-extension dev -- --port 3001
+node packages/server/dist/cli.js --port 47372
+```
+
+Then launch a real Chrome session against the persistent WXT profile with DevTools Protocol enabled, for example on this machine:
+
+```bash
+/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary \
+  --user-data-dir=/Users/bytedance/projects/mdp/apps/chrome-extension/.wxt/chrome-data \
+  --remote-debugging-port=9227 \
+  --enable-unsafe-extension-debugging \
+  --unsafely-disable-devtools-self-xss-warnings \
+  about:blank
+```
+
+Use the extension options page to point `MDP Server URL` at:
+
+```text
+ws://127.0.0.1:47372
+```
+
+Drive the scenario through a real MCP consumer such as a Node script using `@ai-sdk/mcp`, `StdioClientTransport`, `listClients`, and `callPath`.
+
+Important runtime rule:
+
+- mutating workspace-management calls can trigger an extension runtime refresh
+- during that window, `mdp-chrome-workspace` can briefly disappear from `listClients`
+- treat disconnects as retryable reconnect windows, not as final failures
+
+For visual proof, do not trust a DevTools target or page title by itself.
+Confirm that the real extension page has non-empty DOM text before taking a screenshot.
+If the page is blank, inspect its HTML and make sure WXT is serving the same `localhost:<port>` referenced by the injected script tags.
+
+After the run:
+
+- remove temporary route clients, background clients, and route rules
+- verify cleanup in `chrome.storage.local`
+- stop the local server, WXT watcher, and temporary browser process
+- keep screenshots only as disposable evidence under `apps/chrome-extension/.artifacts/`
+
 ## Debugging workflow
 
 Use `chrome://extensions` as the control center:
