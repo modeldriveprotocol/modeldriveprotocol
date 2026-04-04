@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  DEFAULT_BACKGROUND_CLIENT,
   DEFAULT_EXTENSION_CONFIG,
+  DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
   createRouteClientFromUrl,
   createRouteClientConfig,
   getOriginMatchPattern,
@@ -31,10 +33,26 @@ describe('chrome extension config helpers', () => {
     })
 
     expect(migrated.backgroundClients[0]?.clientId).toBe('legacy-client-background')
+    expect(migrated.backgroundClients[0]?.disabledTools).toContain(
+      'extension.listClients'
+    )
+    expect(migrated.backgroundClients[1]?.id).toBe(DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id)
     expect(migrated.routeClients).toHaveLength(1)
     expect(migrated.routeClients[0]?.clientId).toBe('legacy-client-page')
     expect(migrated.routeClients[0]?.autoInjectBridge).toBe(false)
     expect(migrated.routeClients[0]?.pathScriptSource).toBe('window.test = true;')
+  })
+
+  it('re-adds the required workspace management background client when missing', () => {
+    const normalized = normalizeConfig({
+      ...DEFAULT_EXTENSION_CONFIG,
+      backgroundClients: [DEFAULT_BACKGROUND_CLIENT]
+    })
+
+    expect(normalized.backgroundClients.map((client) => client.id)).toEqual([
+      DEFAULT_BACKGROUND_CLIENT.id,
+      DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id
+    ])
   })
 
   it('normalizes script-based flows alongside recorded flows', () => {

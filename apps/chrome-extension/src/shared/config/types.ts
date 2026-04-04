@@ -1,3 +1,10 @@
+import {
+  BACKGROUND_BROWSER_TOOL_IDS,
+  BACKGROUND_RESOURCE_IDS,
+  BACKGROUND_SKILL_IDS,
+  BACKGROUND_WORKSPACE_TOOL_IDS
+} from './background-assets.js'
+
 export type ClientIconKey =
   | 'chrome'
   | 'route'
@@ -196,16 +203,45 @@ export const DEFAULT_BACKGROUND_CLIENT: BackgroundClientConfig = {
   clientDescription:
     'Chrome extension runtime that exposes browser-level capabilities through Model Drive Protocol.',
   icon: 'chrome',
-  disabledTools: [],
+  disabledTools: [...BACKGROUND_WORKSPACE_TOOL_IDS],
   disabledResources: [],
+  disabledSkills: [...BACKGROUND_SKILL_IDS]
+}
+
+export const DEFAULT_WORKSPACE_MANAGEMENT_CLIENT: BackgroundClientConfig = {
+  kind: 'background',
+  id: 'background-client-workspace',
+  enabled: true,
+  favorite: false,
+  clientId: 'mdp-chrome-workspace',
+  clientName: 'MDP Chrome Workspace',
+  clientDescription:
+    'Chrome extension workspace manager that can create, update, and remove clients and persist route expose rules.',
+  icon: 'layers',
+  disabledTools: [...BACKGROUND_BROWSER_TOOL_IDS],
+  disabledResources: [...BACKGROUND_RESOURCE_IDS],
   disabledSkills: []
+}
+
+export const DEFAULT_BACKGROUND_CLIENTS: BackgroundClientConfig[] = [
+  DEFAULT_BACKGROUND_CLIENT,
+  DEFAULT_WORKSPACE_MANAGEMENT_CLIENT
+]
+
+export function isRequiredBackgroundClientId(id: string): boolean {
+  return id === DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id
 }
 
 export const DEFAULT_EXTENSION_CONFIG: ExtensionConfig = {
   version: SUPPORTED_WORKSPACE_BUNDLE_VERSION,
   serverUrl: 'ws://127.0.0.1:47372',
   notificationTitle: 'Model Drive Protocol for Chrome',
-  backgroundClients: [DEFAULT_BACKGROUND_CLIENT],
+  backgroundClients: DEFAULT_BACKGROUND_CLIENTS.map((client) => ({
+    ...client,
+    disabledTools: [...client.disabledTools],
+    disabledResources: [...client.disabledResources],
+    disabledSkills: [...client.disabledSkills]
+  })),
   routeClients: [],
   marketSources: [DEFAULT_OFFICIAL_MARKET_SOURCE],
   marketAutoCheckUpdates: true
