@@ -1,0 +1,86 @@
+name: Question
+description: Ask for clarification about behavior, usage, or repository decisions.
+title: "Question(<Area>): "
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use the title format `Question(<Area>): <summary>`.
+
+        Example:
+        `Question(Protocol): should path descriptors remain the stable API surface?`
+
+        After selecting the area below, replace `<Area>` in the title before submitting.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the repository is this question about?
+      options:
+        - Chrome Extension
+        - VSCode Extension
+        - Client SDK
+        - Server
+        - Protocol
+        - Docs
+        - Repo Tooling
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short one-line summary used after the title prefix.
+      placeholder: should path descriptors remain the stable API surface
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: Ask the concrete question you want answered.
+      placeholder: |
+        Question:
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why is this question coming up? Include the scenario or decision you are trying to make.
+      placeholder: |
+        Context:
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: checked
+    attributes:
+      label: What You Already Checked
+      description: List docs, code, tests, or issues you already reviewed.
+      placeholder: |
+        - README.md
+        - docs/protocol/overview.md
+        - packages/protocol/src/models.ts
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Related issues, PRs, docs, or code paths.
+      placeholder: |
+        - #123
+        - https://...
+        - packages/.../src/...
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission Checks
+      options:
+        - label: "I updated the issue title to follow `Question(<Area>): <summary>`."
+          required: true
+        - label: I searched the existing issues and did not find a duplicate.
+          required: true

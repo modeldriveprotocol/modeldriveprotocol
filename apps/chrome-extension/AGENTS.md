@@ -13,21 +13,21 @@ This app runs an MDP client inside a Chrome Manifest V3 extension and bridges br
 Open the smallest relevant guide for the current task:
 
 - new to this app, need the file reading order, module boundaries, WXT constraints, or change strategy:
-  read [agents/architecture.md](./agents/architecture.md)
+  read [.ai/rules/architecture.md](./.ai/rules/architecture.md)
 - about to run checks, package the extension, or decide which validation command proves what:
-  read [agents/validation.md](./agents/validation.md)
+  read [.ai/rules/validation.md](./.ai/rules/validation.md)
 - need proof in a real browser plus a real MCP/agent CLI flow, or want a reusable end-to-end loop for this app:
-  read [agents/real-e2e.md](./agents/real-e2e.md)
+  read [.ai/rules/real-e2e.md](./.ai/rules/real-e2e.md)
 - need to launch the extension locally on macOS, inspect extension ids, or debug local Chrome startup:
-  read [agents/local-debug.md](./agents/local-debug.md)
+  read [.ai/rules/local-debug.md](./.ai/rules/local-debug.md)
 - user asks to "look at the effect", "show the UI", "take screenshots", or otherwise verify visual output:
-  read [agents/visual-review.md](./agents/visual-review.md)
+  read [.ai/rules/visual-review.md](./.ai/rules/visual-review.md)
 - user asks to update `AGENTS.md`, add durable guidance, or decide where a lesson should live:
-  read [../../agents/progressive-disclosure.md](../../agents/progressive-disclosure.md)
+  read [../../.ai/rules/progressive-disclosure.md](../../.ai/rules/progressive-disclosure.md)
 - user asks to improve clarity, simplify usage, reduce cognitive load, or make popup/options easier to understand:
-  read [agents/ui-clarity.md](./agents/ui-clarity.md)
+  read [.ai/rules/ui-clarity.md](./.ai/rules/ui-clarity.md)
 - task is about splitting large source files, reorganizing directories, or deciding where extracted modules should live:
-  read [agents/source-layout.md](./agents/source-layout.md)
+  read [.ai/rules/source-layout.md](./.ai/rules/source-layout.md)
 - task is inside `src/ui/**`, or is about where UI files should live after the recent directory flattening:
   read [src/ui/AGENTS.md](./src/ui/AGENTS.md)
 - task spans multiple areas:
@@ -35,7 +35,7 @@ Open the smallest relevant guide for the current task:
 
 ## Routing Rules
 
-- prefer adding a focused file under `apps/chrome-extension/agents/` over expanding this file
+- prefer adding a focused file under `apps/chrome-extension/.ai/rules/` over expanding this file
 - add one short routing rule here when a new recurring scenario appears
 - preserve historical lessons by moving them into the smallest guide that fits the trigger
 - if a guide starts covering multiple unrelated triggers, split it

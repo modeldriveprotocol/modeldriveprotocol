@@ -8,8 +8,11 @@ This directory holds GitHub Actions automation for the repository:
 
 - CI and release workflows in `.github/workflows`
 - shared step-level automation in `.github/actions`
+- GitHub issue forms in `.github/ISSUE_TEMPLATE`
 
-Changes here affect repository verification, packaging, publishing, and docs deployment. Treat workflow edits as production automation changes, not documentation-only cleanup.
+Changes here affect repository verification, packaging, publishing, docs deployment, and GitHub issue intake. Treat workflow or issue-template edits as repository automation changes, not documentation-only cleanup.
+
+For GitHub issue creation rules or issue template conventions, start with [../.ai/rules/github-issues.md](../.ai/rules/github-issues.md).
 
 ## Read This Directory In This Order
 
@@ -40,6 +43,10 @@ Keep these boundaries intact:
   repeated environment setup only
 - `.github/actions/build-workspace-package-deps/action.yml`
   repeated shared package build steps only
+- `.github/ISSUE_TEMPLATE/*.yml`
+  issue intake structure, title guidance, and required submission fields
+- `.github/ISSUE_TEMPLATE/config.yml`
+  issue template selection behavior such as blank-issue availability
 
 Do not move app-specific release logic into shared actions just because the shell lines look similar.
 
@@ -66,11 +73,12 @@ When editing `.github`:
 
 ## Validation
 
-After changing workflow or action files:
+After changing workflow, action, or issue template files:
 
 ```bash
 ruby -e 'require "yaml"; YAML.load_file(ARGV[0])' .github/workflows/<file>.yml
 ruby -e 'require "yaml"; YAML.load_file(ARGV[0])' .github/actions/<action>/action.yml
+ruby -e 'require "yaml"; YAML.load_file(ARGV[0])' .github/ISSUE_TEMPLATE/<file>.yml
 ```
 
 For behavior validation, run the nearest local commands that the workflow represents, such as:

@@ -1,0 +1,87 @@
+name: Documentation
+description: Report missing, incorrect, or unclear documentation.
+title: "Docs(<Area>): "
+labels:
+  - documentation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use the title format `Docs(<Area>): <summary>`.
+
+        Example:
+        `Docs(Chrome Extension): explain local WXT manual debug workflow`
+
+        After selecting the area below, replace `<Area>` in the title before submitting.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the repository primarily owns this documentation?
+      options:
+        - Chrome Extension
+        - VSCode Extension
+        - Client SDK
+        - Server
+        - Protocol
+        - Docs
+        - Repo Tooling
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short one-line summary used after the title prefix.
+      placeholder: explain local WXT manual debug workflow
+    validations:
+      required: true
+  - type: textarea
+    id: gap
+    attributes:
+      label: Documentation Gap
+      description: What is missing, wrong, outdated, or hard to understand?
+      placeholder: |
+        Current docs problem:
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed Documentation Change
+      description: What should be added, clarified, corrected, or linked?
+      placeholder: |
+        Proposed doc change:
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: source_of_truth
+    attributes:
+      label: Source Of Truth
+      description: Link code, tests, existing docs, or behavior that should anchor the update.
+      placeholder: |
+        - docs/...
+        - packages/.../src/...
+        - tests that show intended behavior
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Related issues, PRs, screenshots, recordings, or links.
+      placeholder: |
+        - #123
+        - https://...
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission Checks
+      options:
+        - label: "I updated the issue title to follow `Docs(<Area>): <summary>`."
+          required: true
+        - label: I searched the existing issues and did not find a duplicate.
+          required: true

@@ -1,0 +1,105 @@
+name: Feature Request
+description: Propose a new capability or enhancement for the repository.
+title: "Feat(<Area>): "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use the title format `Feat(<Area>): <summary>`.
+
+        Example:
+        `Feat(Chrome Extension): support TypeScript route scripts in the asset editor and Monaco`
+
+        After selecting the area below, replace `<Area>` in the title before submitting.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the repository does this request primarily affect?
+      options:
+        - Chrome Extension
+        - VSCode Extension
+        - Client SDK
+        - Server
+        - Protocol
+        - Docs
+        - Repo Tooling
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short one-line summary used after the title prefix.
+      placeholder: support TypeScript route scripts in the asset editor and Monaco
+    validations:
+      required: true
+  - type: textarea
+    id: background
+    attributes:
+      label: Background
+      description: What is the current behavior, limitation, or gap?
+      placeholder: |
+        Current state:
+        - ...
+
+        Problem:
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Change
+      description: Describe the expected behavior or implementation direction.
+      placeholder: |
+        Proposed change:
+        - ...
+
+        Key considerations:
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: List the main modules, packages, or user surfaces involved.
+      placeholder: |
+        - apps/chrome-extension/src/ui/...
+        - apps/chrome-extension/src/background/...
+        - tests / docs / schemas ...
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Define the conditions that make this issue done.
+      placeholder: |
+        - ...
+        - ...
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Link related issues, PRs, docs, screenshots, or code pointers if relevant.
+      placeholder: |
+        - #123
+        - /absolute/or/repo/path
+        - https://...
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission Checks
+      options:
+        - label: "I updated the issue title to follow `Feat(<Area>): <summary>`."
+          required: true
+        - label: I searched the existing issues and did not find a duplicate.
+          required: true
