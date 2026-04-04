@@ -16,6 +16,8 @@ Open the smallest relevant guide for the current task:
   read [agents/architecture.md](./agents/architecture.md)
 - deciding which repo-level checks to run or what each validation command proves:
   read [agents/validation.md](./agents/validation.md)
+- task requires proof from a real hosted runtime, not just unit tests or repo smoke checks:
+  read [agents/validation.md](./agents/validation.md), then the relevant subproject validation and host-specific E2E guide
 - making cross-package changes, checking architectural assumptions, or avoiding common repo mistakes:
   read [agents/change-strategy.md](./agents/change-strategy.md)
 - task is inside a subproject that has its own `AGENTS.md`:

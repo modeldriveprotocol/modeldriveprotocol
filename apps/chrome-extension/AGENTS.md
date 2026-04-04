@@ -16,6 +16,8 @@ Open the smallest relevant guide for the current task:
   read [agents/architecture.md](./agents/architecture.md)
 - about to run checks, package the extension, or decide which validation command proves what:
   read [agents/validation.md](./agents/validation.md)
+- need proof in a real browser plus a real MCP/agent CLI flow, or want a reusable end-to-end loop for this app:
+  read [agents/real-e2e.md](./agents/real-e2e.md)
 - need to launch the extension locally on macOS, inspect extension ids, or debug local Chrome startup:
   read [agents/local-debug.md](./agents/local-debug.md)
 - user asks to "look at the effect", "show the UI", "take screenshots", or otherwise verify visual output:

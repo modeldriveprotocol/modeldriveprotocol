@@ -36,3 +36,19 @@ pnpm --filter @modeldriveprotocol/chrome-extension zip
 When repo-level docs or integration points are touched, also run the broader repo validation that fits the change.
 
 Remove generated `dist/**` artifacts from this app after validation if they are not part of the requested change.
+
+## Escalate To Real E2E
+
+The commands above are the default floor, not the ceiling.
+
+After they pass, use [real-e2e.md](./real-e2e.md) when:
+
+- the user asks for true end-to-end proof
+- the change touches background runtime lifecycle or server connectivity
+- the change touches persisted workspace config, route clients, or management paths
+- the change depends on content-script injection, main-world bridge behavior, or visible options/popup state
+
+For those tasks, keep both of these explicit in the final handoff:
+
+- what was proven in a real browser plus real caller flow
+- how temporary workspace data and `.artifacts/**` were cleaned up
