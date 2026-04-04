@@ -42,10 +42,10 @@ As of the current MVP:
 
 If you change any of those assumptions, update:
 
-- [README.md](../README.md)
-- [docs/protocol/overview.md](../docs/protocol/overview.md)
-- [docs/protocol/message-schema.md](../docs/protocol/message-schema.md)
-- [docs/reference/roadmap.md](../docs/reference/roadmap.md)
+- [README.md](../../README.md)
+- [docs/protocol/overview.md](../../docs/protocol/overview.md)
+- [docs/protocol/message-schema.md](../../docs/protocol/message-schema.md)
+- [docs/reference/roadmap.md](../../docs/reference/roadmap.md)
 
 ## Places Where Agents Commonly Waste Time
 

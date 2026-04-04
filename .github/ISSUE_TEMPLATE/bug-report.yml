@@ -1,0 +1,102 @@
+name: Bug Report
+description: Report a defect, regression, or incorrect behavior.
+title: "Fix(<Area>): "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use the title format `Fix(<Area>): <summary>`.
+
+        Example:
+        `Fix(Server): reject duplicate cluster member ids during discovery`
+
+        After selecting the area below, replace `<Area>` in the title before submitting.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the repository primarily owns this bug?
+      options:
+        - Chrome Extension
+        - VSCode Extension
+        - Client SDK
+        - Server
+        - Protocol
+        - Docs
+        - Repo Tooling
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short one-line summary used after the title prefix.
+      placeholder: reject duplicate cluster member ids during discovery
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed Behavior
+      description: What is happening now?
+      placeholder: |
+        Current behavior:
+        - ...
+
+        Evidence:
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen instead?
+      placeholder: |
+        Expected behavior:
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide the shortest reliable reproduction steps.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: List the main modules, packages, user surfaces, or environments affected.
+      placeholder: |
+        - packages/server/src/...
+        - apps/chrome-extension/...
+        - local dev / CI / hosted runtime ...
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Link related issues, PRs, failing logs, screenshots, or code paths.
+      placeholder: |
+        - #123
+        - https://...
+        - packages/server/src/...
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission Checks
+      options:
+        - label: "I updated the issue title to follow `Fix(<Area>): <summary>`."
+          required: true
+        - label: I searched the existing issues and did not find a duplicate.
+          required: true

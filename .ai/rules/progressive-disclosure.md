@@ -32,7 +32,7 @@ Use this structure:
 
 1. `AGENTS.md`
    purpose, boundaries, validation, and routing rules
-2. `<scope>/agents/<topic>.md`
+2. `<scope>/.ai/rules/<topic>.md`
    detailed guidance for one recurring scenario
 
 ## Anti-Patterns

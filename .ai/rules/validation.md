@@ -20,7 +20,7 @@ If you need to change behavior, edit `src/**` or scripts, then rebuild.
 
 Vitest is configured at the repo root in:
 
-- [vitest.config.ts](../vitest.config.ts)
+- [vitest.config.ts](../../vitest.config.ts)
 
 Package-level unit tests live in:
 
