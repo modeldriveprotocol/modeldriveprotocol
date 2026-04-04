@@ -3,6 +3,7 @@ import {
   createRouteClientConfig,
   createRouteRule,
   isRequiredBackgroundClientId,
+  DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
   type BackgroundClientConfig,
   type ExtensionConfig,
   type RouteClientConfig
@@ -172,6 +173,8 @@ export async function updateWorkspaceClient(
   }
 
   if (resolved.kind === 'background') {
+    assertRequiredBackgroundClientUpdate(resolved.client, input)
+
     const nextClient: BackgroundClientConfig = {
       ...resolved.client,
       ...(input.clientName?.trim() ? { clientName: input.clientName.trim() } : {}),
@@ -418,4 +421,71 @@ function scheduleWorkspaceRefresh(runtime: ChromeExtensionRuntime): void {
   globalThis.setTimeout(() => {
     void runtime.refresh()
   }, 0)
+}
+
+function assertRequiredBackgroundClientUpdate(
+  client: BackgroundClientConfig,
+  input: WorkspaceClientUpdateInput
+): void {
+  if (!isRequiredBackgroundClientId(client.id)) {
+    return
+  }
+
+  if (input.enabled !== undefined && input.enabled !== DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.enabled) {
+    throw new Error(
+      `Background client "${client.clientName}" must remain enabled`
+    )
+  }
+
+  if (
+    input.nextClientId !== undefined &&
+    input.nextClientId.trim() !== DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.clientId
+  ) {
+    throw new Error(
+      `Background client "${client.clientName}" uses a reserved clientId`
+    )
+  }
+
+  if (
+    input.disabledTools !== undefined &&
+    !sameStringArray(
+      input.disabledTools,
+      DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledTools
+    )
+  ) {
+    throw new Error(
+      `Background client "${client.clientName}" must keep its built-in tools enabled`
+    )
+  }
+
+  if (
+    input.disabledResources !== undefined &&
+    !sameStringArray(
+      input.disabledResources,
+      DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledResources
+    )
+  ) {
+    throw new Error(
+      `Background client "${client.clientName}" must keep its built-in resources disabled`
+    )
+  }
+
+  if (
+    input.disabledSkills !== undefined &&
+    !sameStringArray(
+      input.disabledSkills,
+      DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledSkills
+    )
+  ) {
+    throw new Error(
+      `Background client "${client.clientName}" must keep its built-in skills enabled`
+    )
+  }
+}
+
+function sameStringArray(left: string[], right: readonly string[]): boolean {
+  return (
+    left.length === right.length &&
+    left.every((value, index) => value === right[index])
+  )
 }

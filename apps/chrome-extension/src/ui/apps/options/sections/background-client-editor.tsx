@@ -7,6 +7,7 @@ import {
   BACKGROUND_TOOL_DEFINITIONS,
   countEnabledBackgroundCapabilities,
   isBackgroundCapabilityEnabled,
+  isRequiredBackgroundClientId,
   type BackgroundCapabilityDefinition,
   type BackgroundCapabilityKind,
   type BackgroundClientConfig,
@@ -77,6 +78,7 @@ export function BackgroundClientEditor({
   const enabledToolCount = countEnabledBackgroundCapabilities(client, 'tool')
   const enabledResourceCount = countEnabledBackgroundCapabilities(client, 'resource')
   const enabledSkillCount = countEnabledBackgroundCapabilities(client, 'skill')
+  const isRequiredClient = isRequiredBackgroundClientId(client.id)
 
   return (
     <Stack spacing={1.25}>
@@ -121,11 +123,11 @@ export function BackgroundClientEditor({
 
       {tab === 'basics' ? (
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1.25 }}>
-          <FormControlLabel control={<Switch checked={client.enabled} onChange={(_, checked) => updateClient({ ...client, enabled: checked })} />} label={t('common.enabled')} />
+          <FormControlLabel control={<Switch checked={client.enabled} disabled={isRequiredClient} onChange={(_, checked) => updateClient({ ...client, enabled: checked })} />} label={t('common.enabled')} />
           <TextField size="small" label={t('options.clients.type')} value={t('options.clients.type.background')} disabled />
           <IconPicker label={t('common.icon')} value={client.icon} onChange={(icon) => updateClient({ ...client, icon })} />
           <TextField size="small" label={t('common.clientName')} value={client.clientName} onChange={(event) => updateClient({ ...client, clientName: event.target.value })} />
-          <TextField size="small" label={t('common.clientId')} value={client.clientId} onChange={(event) => updateClient({ ...client, clientId: event.target.value })} />
+          <TextField size="small" label={t('common.clientId')} value={client.clientId} disabled={isRequiredClient} onChange={(event) => updateClient({ ...client, clientId: event.target.value })} />
           <TextField size="small" label={t('common.description')} value={client.clientDescription} onChange={(event) => updateClient({ ...client, clientDescription: event.target.value })} multiline minRows={3} sx={{ gridColumn: '1 / -1' }} />
         </Box>
       ) : (
@@ -140,7 +142,7 @@ export function BackgroundClientEditor({
                 })}
                 definitions={BACKGROUND_TOOL_DEFINITIONS}
                 kind="tool"
-                onToggle={setCapabilityEnabled}
+                onToggle={isRequiredClient ? () => undefined : setCapabilityEnabled}
                 title={t('options.clients.backgroundTools')}
                 statusLabel={t}
                 toggles={client}
@@ -152,7 +154,7 @@ export function BackgroundClientEditor({
                 })}
                 definitions={BACKGROUND_RESOURCE_DEFINITIONS}
                 kind="resource"
-                onToggle={setCapabilityEnabled}
+                onToggle={isRequiredClient ? () => undefined : setCapabilityEnabled}
                 title={t('options.clients.backgroundResources')}
                 statusLabel={t}
                 toggles={client}
@@ -165,7 +167,7 @@ export function BackgroundClientEditor({
                 definitions={BACKGROUND_SKILL_DEFINITIONS}
                 emptyLabel={t('options.clients.backgroundSkillsEmpty')}
                 kind="skill"
-                onToggle={setCapabilityEnabled}
+                onToggle={isRequiredClient ? () => undefined : setCapabilityEnabled}
                 title={t('options.clients.backgroundSkills')}
                 statusLabel={t}
                 toggles={client}
