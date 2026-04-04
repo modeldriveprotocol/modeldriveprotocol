@@ -20,6 +20,13 @@ Notes from the March 24, 2026 preview session:
 - Chrome logs also reported `content_verify_job` failures for `popup.html` and `options.html`.
 - Do not assume that a visible DevTools target means the extension page rendered correctly.
 
+Notes from the April 4, 2026 real-browser session:
+
+- In manual WXT mode, the live extension pages load dev assets from `http://localhost:<port>/...`.
+- A page can have the correct title and URL while still rendering an empty body when that Vite port is not serving the expected assets.
+- Before trusting a screenshot, inspect `document.body.innerText` or `document.documentElement.outerHTML` over CDP and make sure the live page is not just an empty shell.
+- Once the matching Vite port was serving, direct CDP screenshots of the real extension page worked and were more reliable than blind desktop crops.
+
 ## Stable Fallback
 
 For stable visual review, a local preview root worked better:
@@ -31,6 +38,15 @@ For stable visual review, a local preview root worked better:
 - capture screenshots with headless Chrome against the local HTTP URL
 
 Treat `.artifacts/**` as disposable local review helpers, not product code or durable fixtures.
+
+## Real-Page Checklist
+
+When the task requires proof in the real extension page instead of a fallback preview:
+
+- make sure WXT is serving the same `localhost:<port>` referenced by the page HTML
+- verify `document.body.innerText` contains the expected client or route labels before capture
+- prefer screenshots from the real extension page target over desktop region captures
+- keep the final image plus a short text summary of what was visually confirmed
 
 ## Review Checklist
 
