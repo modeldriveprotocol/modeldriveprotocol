@@ -2,14 +2,58 @@
   "version": "1.0.0",
   "serverUrl": "ws://127.0.0.1:47372",
   "notificationTitle": "Model Drive Protocol for Chrome",
-  "backgroundClient": {
-    "kind": "background",
-    "enabled": true,
-    "clientId": "mdp-chrome-background",
-    "clientName": "MDP Chrome Background",
-    "clientDescription": "Chrome extension runtime that exposes browser-level capabilities through Model Drive Protocol.",
-    "icon": "chrome"
-  },
+  "backgroundClients": [
+    {
+      "kind": "background",
+      "id": "background-client-default",
+      "enabled": true,
+      "favorite": false,
+      "clientId": "mdp-chrome-background",
+      "clientName": "MDP Chrome Background",
+      "clientDescription": "Chrome extension runtime that exposes browser-level capabilities through Model Drive Protocol.",
+      "icon": "chrome",
+      "disabledTools": [
+        "extension.listClients",
+        "extension.createClient",
+        "extension.updateClient",
+        "extension.deleteClient",
+        "extension.addClientExposeRule"
+      ],
+      "disabledResources": [],
+      "disabledSkills": [
+        "extension.manageClients",
+        "extension.manageClientExposeRules"
+      ]
+    },
+    {
+      "kind": "background",
+      "id": "background-client-workspace",
+      "enabled": true,
+      "favorite": false,
+      "clientId": "mdp-chrome-workspace",
+      "clientName": "MDP Chrome Workspace",
+      "clientDescription": "Chrome extension workspace manager that can create, update, and remove clients and persist route expose rules.",
+      "icon": "layers",
+      "disabledTools": [
+        "extension.getStatus",
+        "extension.getConfig",
+        "extension.listGrantedOrigins",
+        "extension.listTabs",
+        "extension.activateTab",
+        "extension.reloadTab",
+        "extension.createTab",
+        "extension.closeTab",
+        "extension.showNotification",
+        "extension.openOptionsPage"
+      ],
+      "disabledResources": [
+        "chrome-extension://status",
+        "chrome-extension://config",
+        "chrome-extension://tabs"
+      ],
+      "disabledSkills": []
+    }
+  ],
   "routeClients": [],
   "marketSources": [
     {

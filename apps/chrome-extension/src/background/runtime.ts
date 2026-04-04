@@ -12,7 +12,13 @@ import type {
 } from '#~/shared/config.js'
 import type { UnknownRecord } from '#~/shared/utils.js'
 import { loadConfig } from '#~/shared/storage.js'
-import type { ChromeExtensionRuntimeApi } from '#~/background/runtime-api.js'
+import type {
+  ChromeExtensionRuntimeApi,
+  WorkspaceClientCreateInput,
+  WorkspaceClientExposeRuleInput,
+  WorkspaceClientTargetInput,
+  WorkspaceClientUpdateInput
+} from '#~/background/runtime-api.js'
 import type {
   BrowserTabSummary,
   ManagedClientConnectionState,
@@ -76,6 +82,13 @@ import {
 import { getRuntimeStatus } from './runtime/status.js'
 import { handleTabRemoved, handleTabUpdated } from './runtime/tab-lifecycle.js'
 import { clearInvocationTelemetry } from './runtime/telemetry-storage.js'
+import {
+  addExposeRuleToClient,
+  createWorkspaceClient,
+  deleteWorkspaceClient,
+  listWorkspaceClients,
+  updateWorkspaceClient
+} from './runtime/workspace-clients.js'
 import type { ClientInvocationTelemetryState } from './runtime/telemetry.js'
 import type {
   ActiveRecordingSession,
@@ -104,6 +117,11 @@ export class ChromeExtensionRuntime implements ChromeExtensionRuntimeApi {
   async checkMarketSourceUpdatesOnStartup() { if (this.marketSyncCheckPromise) return this.marketSyncCheckPromise; this.marketSyncCheckPromise = checkMarketSourceUpdatesOnStartup(this).finally(() => { this.marketSyncCheckPromise = undefined }); return this.marketSyncCheckPromise }
   async getStatus(): Promise<PopupState> { return getRuntimeStatus(this) }
   async getConfig(): Promise<ExtensionConfig> { return this.currentConfig ?? (await loadConfig()) }
+  async listWorkspaceClients() { return listWorkspaceClients(this) }
+  async createWorkspaceClient(input: WorkspaceClientCreateInput) { return createWorkspaceClient(this, input) }
+  async updateWorkspaceClient(input: WorkspaceClientUpdateInput) { return updateWorkspaceClient(this, input) }
+  async deleteWorkspaceClient(input: WorkspaceClientTargetInput) { return deleteWorkspaceClient(this, input) }
+  async addExposeRuleToClient(input: WorkspaceClientExposeRuleInput) { return addExposeRuleToClient(this, input) }
   async listGrantedOrigins() { return listGrantedOrigins() }
   async listTabs(options: { windowId?: number; activeOnly?: boolean }): Promise<BrowserTabSummary[]> { return listTabs(this, options) }
   async activateTab(tabId: number): Promise<BrowserTabSummary> { return activateTab(tabId) }

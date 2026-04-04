@@ -28,6 +28,7 @@ import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 
 import {
   canCreateRouteClientFromUrl,
+  isRequiredBackgroundClientId,
   matchesRouteClient,
   type BackgroundClientConfig,
   type ExtensionConfig,
@@ -188,6 +189,13 @@ export function ClientsListPanel({
     )
     if (backgroundClients.length === 0 && routeClients.length === 0) return
     if (
+      backgroundClients.some((client: BackgroundClientConfig) =>
+        isRequiredBackgroundClientId(client.id)
+      )
+    ) {
+      return
+    }
+    if (
       backgroundClients.length > 0 &&
       draft.backgroundClients.filter(
         (client: BackgroundClientConfig) => !clientIds.includes(client.id)
@@ -286,8 +294,12 @@ export function ClientsListPanel({
   )
   const nextBackgroundCount =
     draft.backgroundClients.length - selectedBackgroundIds.length
+  const includesRequiredBackgroundClient = selectedBackgroundIds.some((id) =>
+    isRequiredBackgroundClientId(id)
+  )
   const canDeleteSelection =
     selectedIds.length > 0 &&
+    !includesRequiredBackgroundClient &&
     (selectedBackgroundIds.length === 0 || nextBackgroundCount > 0)
   const deleteConfirmationDescription =
     (deleteConfirmation?.names.length ?? 0) > 1
@@ -595,8 +607,9 @@ export function ClientsListPanel({
                             requestDeleteClients([item.id], event.currentTarget)
                           }
                           disabled={
-                            item.kind === 'background' &&
-                            draft.backgroundClients.length <= 1
+                            (item.kind === 'background' &&
+                              (draft.backgroundClients.length <= 1 ||
+                                isRequiredBackgroundClientId(item.id)))
                           }
                         >
                           <DeleteOutlineOutlined fontSize="small" />

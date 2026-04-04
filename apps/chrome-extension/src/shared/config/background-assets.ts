@@ -10,26 +10,48 @@ export interface BackgroundCapabilityToggleState {
   disabledSkills?: string[]
 }
 
+export const BACKGROUND_BROWSER_TOOL_IDS = [
+  'extension.getStatus',
+  'extension.getConfig',
+  'extension.listGrantedOrigins',
+  'extension.listTabs',
+  'extension.activateTab',
+  'extension.reloadTab',
+  'extension.createTab',
+  'extension.closeTab',
+  'extension.showNotification',
+  'extension.openOptionsPage'
+] as const
+
+export const BACKGROUND_WORKSPACE_TOOL_IDS = [
+  'extension.listClients',
+  'extension.createClient',
+  'extension.updateClient',
+  'extension.deleteClient',
+  'extension.addClientExposeRule'
+] as const
+
+export const BACKGROUND_RESOURCE_IDS = [
+  'chrome-extension://status',
+  'chrome-extension://config',
+  'chrome-extension://tabs'
+] as const
+
+export const BACKGROUND_SKILL_IDS = [
+  'extension.manageClients',
+  'extension.manageClientExposeRules'
+] as const
+
 export const BACKGROUND_TOOL_DEFINITIONS: BackgroundCapabilityDefinition[] = [
-  { id: 'extension.getStatus' },
-  { id: 'extension.getConfig' },
-  { id: 'extension.listGrantedOrigins' },
-  { id: 'extension.listTabs' },
-  { id: 'extension.activateTab' },
-  { id: 'extension.reloadTab' },
-  { id: 'extension.createTab' },
-  { id: 'extension.closeTab' },
-  { id: 'extension.showNotification' },
-  { id: 'extension.openOptionsPage' }
-]
+  ...BACKGROUND_BROWSER_TOOL_IDS,
+  ...BACKGROUND_WORKSPACE_TOOL_IDS
+].map((id) => ({ id }))
 
-export const BACKGROUND_RESOURCE_DEFINITIONS: BackgroundCapabilityDefinition[] = [
-  { id: 'chrome-extension://status' },
-  { id: 'chrome-extension://config' },
-  { id: 'chrome-extension://tabs' }
-]
+export const BACKGROUND_RESOURCE_DEFINITIONS: BackgroundCapabilityDefinition[] =
+  BACKGROUND_RESOURCE_IDS.map((id) => ({ id }))
 
-export const BACKGROUND_SKILL_DEFINITIONS: BackgroundCapabilityDefinition[] = []
+export const BACKGROUND_SKILL_DEFINITIONS: BackgroundCapabilityDefinition[] =
+  BACKGROUND_SKILL_IDS.map((id) => ({ id }))
 
 export function listBackgroundCapabilityIds(kind: BackgroundCapabilityKind): string[] {
   switch (kind) {

@@ -13,8 +13,10 @@ import {
 import { normalizeDisabledBackgroundCapabilities } from './background-assets.js'
 import {
   DEFAULT_BACKGROUND_CLIENT,
+  DEFAULT_BACKGROUND_CLIENTS,
   DEFAULT_EXTENSION_CONFIG,
   DEFAULT_OFFICIAL_MARKET_SOURCE,
+  DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
   type BackgroundClientConfig,
   type ExtensionConfig,
   type MarketClientInstallSource,
@@ -45,7 +47,7 @@ export function normalizeConfig(value: unknown): ExtensionConfig {
   if (value === undefined || value === null) {
     return {
       ...DEFAULT_EXTENSION_CONFIG,
-      backgroundClients: [normalizeBackgroundClient(undefined)],
+      backgroundClients: cloneDefaultBackgroundClients(),
       routeClients: []
     }
   }
@@ -143,9 +145,9 @@ function migrateLegacyConfig(value: unknown): unknown {
         clientName: `${legacyClientName} Background`,
         clientDescription: legacyClientDescription,
         icon: 'chrome',
-        disabledTools: [],
-        disabledResources: [],
-        disabledSkills: []
+        disabledTools: [...DEFAULT_BACKGROUND_CLIENT.disabledTools],
+        disabledResources: [...DEFAULT_BACKGROUND_CLIENT.disabledResources],
+        disabledSkills: [...DEFAULT_BACKGROUND_CLIENT.disabledSkills]
       })
     ],
     routeClients,
@@ -156,47 +158,44 @@ function migrateLegacyConfig(value: unknown): unknown {
 
 function normalizeBackgroundClient(value: unknown): BackgroundClientConfig {
   const record = asRecord(value)
+  const fallback = resolveBackgroundClientFallback(record)
 
   return {
     kind: 'background',
-    id: normalizeId(readString(record, 'id')) ?? DEFAULT_BACKGROUND_CLIENT.id,
-    enabled:
-      readBoolean(record, 'enabled') ?? DEFAULT_BACKGROUND_CLIENT.enabled,
-    favorite:
-      readBoolean(record, 'favorite') ?? DEFAULT_BACKGROUND_CLIENT.favorite,
-    clientId:
-      normalizeId(readString(record, 'clientId')) ??
-      DEFAULT_BACKGROUND_CLIENT.clientId,
+    id: normalizeId(readString(record, 'id')) ?? fallback.id,
+    enabled: readBoolean(record, 'enabled') ?? fallback.enabled,
+    favorite: readBoolean(record, 'favorite') ?? fallback.favorite,
+    clientId: normalizeId(readString(record, 'clientId')) ?? fallback.clientId,
     clientName: normalizeString(
       readString(record, 'clientName'),
-      DEFAULT_BACKGROUND_CLIENT.clientName
+      fallback.clientName
     ),
     clientDescription: normalizeString(
       readString(record, 'clientDescription'),
-      DEFAULT_BACKGROUND_CLIENT.clientDescription
+      fallback.clientDescription
     ),
-    icon: normalizeIcon(
-      readString(record, 'icon'),
-      DEFAULT_BACKGROUND_CLIENT.icon
-    ),
-    disabledTools: normalizeDisabledBackgroundCapabilities(
-      'tool',
-      record.disabledTools
-    ),
-    disabledResources: normalizeDisabledBackgroundCapabilities(
-      'resource',
-      record.disabledResources
-    ),
-    disabledSkills: normalizeDisabledBackgroundCapabilities(
-      'skill',
-      record.disabledSkills
-    )
+    icon: normalizeIcon(readString(record, 'icon'), fallback.icon),
+    disabledTools:
+      'disabledTools' in record
+        ? normalizeDisabledBackgroundCapabilities('tool', record.disabledTools)
+        : [...fallback.disabledTools],
+    disabledResources:
+      'disabledResources' in record
+        ? normalizeDisabledBackgroundCapabilities(
+            'resource',
+            record.disabledResources
+          )
+        : [...fallback.disabledResources],
+    disabledSkills:
+      'disabledSkills' in record
+        ? normalizeDisabledBackgroundCapabilities('skill', record.disabledSkills)
+        : [...fallback.disabledSkills]
   }
 }
 
 function normalizeBackgroundClients(value: unknown): BackgroundClientConfig[] {
   if (!Array.isArray(value)) {
-    return [normalizeBackgroundClient(undefined)]
+    return cloneDefaultBackgroundClients()
   }
 
   const normalized = value
@@ -205,6 +204,45 @@ function normalizeBackgroundClients(value: unknown): BackgroundClientConfig[] {
       (client, index, array) =>
         array.findIndex((candidate) => candidate.id === client.id) === index
     )
+
+  return ensureRequiredBackgroundClients(normalized)
+}
+
+function resolveBackgroundClientFallback(
+  record: Record<string, unknown>
+): BackgroundClientConfig {
+  const normalizedId = normalizeId(readString(record, 'id'))
+  const normalizedClientId = normalizeId(readString(record, 'clientId'))
+
+  return normalizedId === DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id ||
+    normalizedClientId === DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.clientId
+    ? DEFAULT_WORKSPACE_MANAGEMENT_CLIENT
+    : DEFAULT_BACKGROUND_CLIENT
+}
+
+function cloneDefaultBackgroundClients(): BackgroundClientConfig[] {
+  return DEFAULT_BACKGROUND_CLIENTS.map((client) => ({
+    ...client,
+    disabledTools: [...client.disabledTools],
+    disabledResources: [...client.disabledResources],
+    disabledSkills: [...client.disabledSkills]
+  }))
+}
+
+function ensureRequiredBackgroundClients(
+  clients: BackgroundClientConfig[]
+): BackgroundClientConfig[] {
+  const normalized = [...clients]
+  const existingIds = new Set(normalized.map((client) => client.id))
+
+  if (!existingIds.has(DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id)) {
+    normalized.push({
+      ...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
+      disabledTools: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledTools],
+      disabledResources: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledResources],
+      disabledSkills: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledSkills]
+    })
+  }
 
   return normalized
 }
