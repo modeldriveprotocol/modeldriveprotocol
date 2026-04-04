@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import type { OptionsAssetsTab } from '../../platform/extension-api.js'
-import { buildOptionsHashPath, getOptionsRouteFromLocation, normalizeOptionsLocation } from './routing.js'
+import { buildOptionsHashPath, buildOptionsSearch, getOptionsRouteFromLocation, normalizeOptionsLocation } from './routing.js'
 import type { ClientDetailTab, EditableClientId, Section } from './types.js'
 
 export function useOptionsRouting() {
@@ -13,6 +13,7 @@ export function useOptionsRouting() {
   const [clientDetailOpen, setClientDetailOpen] = useState(initialRoute.clientDetailOpen)
   const [selectedMarketEntryKey, setSelectedMarketEntryKey] = useState<string | undefined>(initialRoute.marketEntryKey)
   const [marketDetailOpen, setMarketDetailOpen] = useState(initialRoute.marketDetailOpen)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(initialRoute.sidebarCollapsed)
 
   useEffect(() => {
     const normalizedRoute = normalizeOptionsLocation()
@@ -21,6 +22,7 @@ export function useOptionsRouting() {
     setDetailTabHint(normalizedRoute.detailTab)
     setClientDetailOpen(normalizedRoute.clientDetailOpen)
     setMarketDetailOpen(normalizedRoute.marketDetailOpen)
+    setSidebarCollapsed(normalizedRoute.sidebarCollapsed)
     if (normalizedRoute.clientId) {
       setSelectedClientId(normalizedRoute.clientId)
     }
@@ -28,21 +30,26 @@ export function useOptionsRouting() {
       setSelectedMarketEntryKey(normalizedRoute.marketEntryKey)
     }
 
-    const onHashChange = () => {
+    const onLocationChange = () => {
       const nextRoute = getOptionsRouteFromLocation()
       setSection(nextRoute.section)
       setAssetTabHint(nextRoute.assetTab)
       setDetailTabHint(nextRoute.detailTab)
       setClientDetailOpen(nextRoute.clientDetailOpen)
       setMarketDetailOpen(nextRoute.marketDetailOpen)
+      setSidebarCollapsed(nextRoute.sidebarCollapsed)
       if (nextRoute.clientId) {
         setSelectedClientId(nextRoute.clientId)
       }
       setSelectedMarketEntryKey(nextRoute.marketEntryKey)
     }
 
-    window.addEventListener('hashchange', onHashChange)
-    return () => window.removeEventListener('hashchange', onHashChange)
+    window.addEventListener('hashchange', onLocationChange)
+    window.addEventListener('popstate', onLocationChange)
+    return () => {
+      window.removeEventListener('hashchange', onLocationChange)
+      window.removeEventListener('popstate', onLocationChange)
+    }
   }, [])
 
   function setSectionAndHash(
@@ -58,7 +65,7 @@ export function useOptionsRouting() {
   ) {
     const url = new URL(window.location.href)
     const normalizedSection = next === 'assets' ? 'clients' : next
-    url.search = ''
+    url.search = buildOptionsSearch(sidebarCollapsed)
     url.hash = buildOptionsHashPath(next, {
       clientId: options?.clientId,
       assetTab: options?.assetTab,
@@ -79,6 +86,13 @@ export function useOptionsRouting() {
     }
   }
 
+  function setSidebarCollapsedAndQuery(next: boolean) {
+    const url = new URL(window.location.href)
+    url.search = buildOptionsSearch(next)
+    window.history.replaceState(null, '', url)
+    setSidebarCollapsed(next)
+  }
+
   return {
     section,
     assetTabHint,
@@ -88,6 +102,8 @@ export function useOptionsRouting() {
     clientDetailOpen,
     selectedMarketEntryKey,
     marketDetailOpen,
-    setSectionAndHash
+    sidebarCollapsed,
+    setSectionAndHash,
+    setSidebarCollapsedAndQuery
   }
 }

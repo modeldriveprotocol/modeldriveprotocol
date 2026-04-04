@@ -44,6 +44,7 @@ export type OptionsRouteState = {
   marketDetailOpen: boolean
   marketEntryKey?: string
   section: Section
+  sidebarCollapsed: boolean
 }
 
 export const ICON_OPTIONS: ClientIconKey[] = [

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { buildOptionsHashPath, getOptionsRouteFromLocation } from '../src/ui/apps/options/routing.js'
+import { buildOptionsHashPath, buildOptionsSearch, getOptionsRouteFromLocation, normalizeOptionsLocation } from '../src/ui/apps/options/routing.js'
 
 describe('options routing', () => {
   afterEach(() => {
@@ -38,16 +38,46 @@ describe('options routing', () => {
       clientDetailOpen: true
     })
   })
+
+  it('parses collapsed sidebar state from query params', () => {
+    stubWindow('#/workspace', '?sidebar=collapsed')
+
+    expect(getOptionsRouteFromLocation()).toMatchObject({
+      section: 'workspace',
+      sidebarCollapsed: true
+    })
+  })
+
+  it('normalizes legacy search params while preserving sidebar query state', () => {
+    const replaceState = vi.fn()
+    stubWindow('', '?sidebar=collapsed&clientId=route-client-1&assetTab=skills', replaceState)
+
+    expect(normalizeOptionsLocation()).toMatchObject({
+      section: 'clients',
+      clientId: 'route-client-1',
+      assetTab: 'skills',
+      detailTab: 'assets',
+      sidebarCollapsed: true
+    })
+    expect(buildOptionsSearch(true)).toBe('?sidebar=collapsed')
+    expect(replaceState).toHaveBeenCalledTimes(1)
+
+    const [, , nextUrl] = replaceState.mock.calls[0] as [unknown, unknown, URL]
+    expect(nextUrl.search).toBe('?sidebar=collapsed')
+    expect(nextUrl.hash).toBe('#/clients/route-client-1/assets/skills')
+  })
 })
 
-function stubWindow(hash: string, search = '') {
+function stubWindow(hash: string, search = '', replaceState = vi.fn()) {
+  const href = `https://example.test/options.html${search}${hash}`
   vi.stubGlobal('window', {
     location: {
+      href,
       hash,
       search
     },
     history: {
-      replaceState: vi.fn()
+      replaceState
     }
   })
 }

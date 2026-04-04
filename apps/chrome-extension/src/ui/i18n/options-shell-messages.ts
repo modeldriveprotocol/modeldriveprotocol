@@ -95,6 +95,10 @@ export const optionsShellMessages: Record<Locale, Record<string, string>> = {
     'options.appearance.auto': 'Follow system',
     'options.appearance.light': 'Light',
     'options.appearance.dark': 'Dark',
+    'options.sidebar.locale': 'Language',
+    'options.sidebar.appearance': 'Theme',
+    'options.sidebar.collapse': 'Collapse sidebar',
+    'options.sidebar.expand': 'Expand sidebar',
     'options.workspace.background.title': 'Background client',
     'options.workspace.background.description': 'Browser-level clients for tabs, windows, bookmarks, and extension actions.'
   },
@@ -192,6 +196,10 @@ export const optionsShellMessages: Record<Locale, Record<string, string>> = {
     'options.appearance.auto': '跟随系统',
     'options.appearance.light': '浅色',
     'options.appearance.dark': '深色',
+    'options.sidebar.locale': '语言',
+    'options.sidebar.appearance': '主题',
+    'options.sidebar.collapse': '折叠侧边栏',
+    'options.sidebar.expand': '展开侧边栏',
     'options.workspace.background.title': '后台级客户端',
     'options.workspace.background.description': '浏览器级客户端，用来承载标签页、窗口、书签和扩展动作等能力。'
   }

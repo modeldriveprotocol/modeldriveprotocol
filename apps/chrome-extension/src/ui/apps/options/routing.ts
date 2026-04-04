@@ -2,12 +2,30 @@ import type { OptionsAssetsTab } from '../../platform/extension-api.js'
 import type { ClientDetailTab, EditableClientId, OptionsRouteState, Section } from './types.js'
 import { SECTION_IDS } from './types.js'
 
+const SIDEBAR_QUERY_KEY = 'sidebar'
+const SIDEBAR_COLLAPSED_VALUE = 'collapsed'
+
 export function isOptionsAssetsTab(value: string | null | undefined): value is OptionsAssetsTab {
   return value === 'flows' || value === 'resources' || value === 'skills'
 }
 
 function isClientDetailTab(value: string | null | undefined): value is Exclude<ClientDetailTab, 'assets'> {
   return value === 'basics' || value === 'matching' || value === 'runtime' || value === 'activity'
+}
+
+export function isSidebarCollapsedFromSearch(search: string): boolean {
+  const searchParams = new URLSearchParams(search)
+  return searchParams.get(SIDEBAR_QUERY_KEY) === SIDEBAR_COLLAPSED_VALUE
+}
+
+export function buildOptionsSearch(sidebarCollapsed: boolean): string {
+  if (!sidebarCollapsed) {
+    return ''
+  }
+
+  const searchParams = new URLSearchParams()
+  searchParams.set(SIDEBAR_QUERY_KEY, SIDEBAR_COLLAPSED_VALUE)
+  return `?${searchParams.toString()}`
 }
 
 export function buildOptionsHashPath(
@@ -44,6 +62,7 @@ export function getOptionsRouteFromLocation(): OptionsRouteState {
   const searchParams = new URLSearchParams(window.location.search)
   const searchClientId = searchParams.get('clientId') ?? undefined
   const searchAssetTab = searchParams.get('assetTab')
+  const sidebarCollapsed = isSidebarCollapsedFromSearch(window.location.search)
   const rawHash = window.location.hash.replace(/^#/, '')
   const hashPath = rawHash.startsWith('/') ? rawHash : `/${rawHash}`
   const segments = hashPath
@@ -103,7 +122,8 @@ export function getOptionsRouteFromLocation(): OptionsRouteState {
     detailTab,
     marketEntryKey,
     clientDetailOpen: Boolean(clientId || assetTab || detailTab),
-    marketDetailOpen: Boolean(section === 'market' && marketEntryKey)
+    marketDetailOpen: Boolean(section === 'market' && marketEntryKey),
+    sidebarCollapsed
   }
 }
 
@@ -114,11 +134,12 @@ export function normalizeOptionsLocation(): OptionsRouteState {
     assetTab: route.assetTab,
     detailTab: route.detailTab
   })
-  const hasLegacySearch = new URLSearchParams(window.location.search).size > 0
+  const nextSearch = buildOptionsSearch(route.sidebarCollapsed)
+  const hasLegacySearch = window.location.search !== nextSearch
 
   if (window.location.hash !== nextHash || hasLegacySearch) {
     const url = new URL(window.location.href)
-    url.search = ''
+    url.search = nextSearch
     url.hash = nextHash
     window.history.replaceState(null, '', url)
   }
