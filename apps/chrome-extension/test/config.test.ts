@@ -55,6 +55,32 @@ describe('chrome extension config helpers', () => {
     ])
   })
 
+  it('stabilizes the required workspace management client identity and protected capabilities', () => {
+    const normalized = normalizeConfig({
+      ...DEFAULT_EXTENSION_CONFIG,
+      backgroundClients: [
+        DEFAULT_BACKGROUND_CLIENT,
+        {
+          ...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
+          enabled: false,
+          clientId: 'custom-workspace-client',
+          disabledTools: [],
+          disabledResources: [],
+          disabledSkills: ['extension.manageClients']
+        }
+      ]
+    })
+
+    expect(normalized.backgroundClients[1]).toMatchObject({
+      id: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id,
+      enabled: true,
+      clientId: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.clientId,
+      disabledTools: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledTools,
+      disabledResources: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledResources,
+      disabledSkills: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledSkills
+    })
+  })
+
   it('normalizes script-based flows alongside recorded flows', () => {
     const normalized = normalizeConfig({
       ...DEFAULT_EXTENSION_CONFIG,

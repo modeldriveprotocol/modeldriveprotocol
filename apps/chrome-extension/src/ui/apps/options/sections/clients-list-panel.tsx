@@ -258,7 +258,8 @@ export function ClientsListPanel({
       ...draft,
       backgroundClients: draft.backgroundClients.map(
         (client: BackgroundClientConfig) =>
-          selectedSet.has(client.id)
+          selectedSet.has(client.id) &&
+          !(isRequiredBackgroundClientId(client.id) && (action === 'enable' || action === 'disable'))
             ? {
                 ...client,
                 ...(action === 'enable' ? { enabled: true } : {}),
@@ -592,6 +593,10 @@ export function ClientsListPanel({
                       <Switch
                         size="small"
                         checked={item.client.enabled}
+                        disabled={
+                          item.kind === 'background' &&
+                          isRequiredBackgroundClientId(item.id)
+                        }
                         onChange={(_event, checked) =>
                           updateDraftClient(item.id, (client) => ({
                             ...client,

@@ -160,7 +160,7 @@ function normalizeBackgroundClient(value: unknown): BackgroundClientConfig {
   const record = asRecord(value)
   const fallback = resolveBackgroundClientFallback(record)
 
-  return {
+  const normalized: BackgroundClientConfig = {
     kind: 'background',
     id: normalizeId(readString(record, 'id')) ?? fallback.id,
     enabled: readBoolean(record, 'enabled') ?? fallback.enabled,
@@ -191,6 +191,8 @@ function normalizeBackgroundClient(value: unknown): BackgroundClientConfig {
         ? normalizeDisabledBackgroundCapabilities('skill', record.disabledSkills)
         : [...fallback.disabledSkills]
   }
+
+  return stabilizeRequiredBackgroundClient(normalized)
 }
 
 function normalizeBackgroundClients(value: unknown): BackgroundClientConfig[] {
@@ -245,6 +247,27 @@ function ensureRequiredBackgroundClients(
   }
 
   return normalized
+}
+
+function stabilizeRequiredBackgroundClient(
+  client: BackgroundClientConfig
+): BackgroundClientConfig {
+  if (
+    client.id !== DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id &&
+    client.clientId !== DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.clientId
+  ) {
+    return client
+  }
+
+  return {
+    ...client,
+    id: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id,
+    enabled: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.enabled,
+    clientId: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.clientId,
+    disabledTools: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledTools],
+    disabledResources: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledResources],
+    disabledSkills: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledSkills]
+  }
 }
 
 function normalizeRouteClients(value: unknown): RouteClientConfig[] {

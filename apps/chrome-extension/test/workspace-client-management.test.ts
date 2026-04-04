@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  DEFAULT_BACKGROUND_CLIENT,
   DEFAULT_EXTENSION_CONFIG,
   DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
   createRouteClientConfig,
@@ -64,22 +65,42 @@ describe('workspace client management runtime helpers', () => {
 
     const result = await updateWorkspaceClient(runtime, {
       kind: 'background',
-      id: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id,
-      clientName: 'Workspace Control',
+      id: DEFAULT_BACKGROUND_CLIENT.id,
+      clientName: 'Browser Control',
       enabled: false,
-      disabledSkills: ['extension.manageClientExposeRules']
+      disabledTools: ['extension.listTabs']
     })
 
     expect(result.client).toMatchObject({
-      id: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id,
-      clientName: 'Workspace Control',
+      id: DEFAULT_BACKGROUND_CLIENT.id,
+      clientName: 'Browser Control',
       enabled: false,
-      disabledSkills: ['extension.manageClientExposeRules']
+      disabledTools: ['extension.listTabs']
     })
 
     await vi.runAllTimersAsync()
 
     expect(runtime.refresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects protected updates for the required workspace management client', async () => {
+    const runtime = createRuntime()
+
+    await expect(
+      updateWorkspaceClient(runtime, {
+        kind: 'background',
+        id: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id,
+        nextClientId: 'mdp-workspace-custom'
+      })
+    ).rejects.toThrow('reserved clientId')
+
+    await expect(
+      updateWorkspaceClient(runtime, {
+        kind: 'background',
+        id: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id,
+        enabled: false
+      })
+    ).rejects.toThrow('must remain enabled')
   })
 
   it('creates, updates, and deletes a background client by clientId', async () => {
