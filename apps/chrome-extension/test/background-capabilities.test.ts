@@ -31,12 +31,17 @@ function createRuntimeStub() {
 
 function createClientStub() {
   const paths: string[] = []
+  const descriptors = new Map<string, Record<string, unknown>>()
 
   return {
     paths,
+    descriptors,
     client: {
-      expose(path: string) {
+      expose(path: string, descriptor?: Record<string, unknown>) {
         paths.push(path)
+        if (descriptor) {
+          descriptors.set(path, descriptor)
+        }
       }
     }
   }
@@ -127,5 +132,28 @@ describe('chrome extension background capabilities', () => {
 
     expect(stub.paths).toContain('/browser/status')
     expect(stub.paths).not.toContain('/extension/status')
+  })
+
+  it('uses REST-style methods for mutating built-in background endpoints', () => {
+    expect(
+      BACKGROUND_BROWSER_EXPOSE_DEFINITIONS.find(
+        (definition) => definition.id === 'extension.activate-tab'
+      )?.method
+    ).toBe('PATCH')
+    expect(
+      BACKGROUND_BROWSER_EXPOSE_DEFINITIONS.find(
+        (definition) => definition.id === 'extension.close-tab'
+      )?.method
+    ).toBe('DELETE')
+    expect(
+      BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS.find(
+        (definition) => definition.id === 'extension.clients.update'
+      )?.method
+    ).toBe('PATCH')
+    expect(
+      BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS.find(
+        (definition) => definition.id === 'extension.clients.delete'
+      )?.method
+    ).toBe('DELETE')
   })
 })

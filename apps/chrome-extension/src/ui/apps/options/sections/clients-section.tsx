@@ -11,13 +11,16 @@ export function ClientsSection(props: {
   clientDetailOpen: boolean
   canCreateFromPage: boolean
   draft: ExtensionConfig
+  initialAssetPath: string | undefined
   initialAssetTab: any
   initialDetailTab: any
   routeSearch: string
   selectedClientId: any
   runtimeState: PopupState | undefined
+  onAssetPathChange: (path: string | undefined, tab: any) => void
   onClearInvocationHistory: () => void
   onCloseDetail: () => void
+  onDetailTabChange: (tab: any) => void
   onOpenDetail: (clientId: any, detailTab?: any) => void
   onRouteSearchChange: (value: string) => void
   onSelectClient: (clientId: any) => void
@@ -26,7 +29,27 @@ export function ClientsSection(props: {
   onCreateClientFromPage: () => void
 }) {
   const { t } = useI18n()
-  const { clientDetailOpen, canCreateFromPage, draft, initialAssetTab, initialDetailTab, routeSearch, selectedClientId, runtimeState, onClearInvocationHistory, onCloseDetail, onOpenDetail, onRouteSearchChange, onSelectClient, onChange, onCreateClient, onCreateClientFromPage } = props
+  const {
+    clientDetailOpen,
+    canCreateFromPage,
+    draft,
+    initialAssetPath,
+    initialAssetTab,
+    initialDetailTab,
+    routeSearch,
+    selectedClientId,
+    runtimeState,
+    onAssetPathChange,
+    onClearInvocationHistory,
+    onCloseDetail,
+    onDetailTabChange,
+    onOpenDetail,
+    onRouteSearchChange,
+    onSelectClient,
+    onChange,
+    onCreateClient,
+    onCreateClientFromPage
+  } = props
   const currentPageUrl = runtimeState?.activeTab?.url
   const clientItems = [
     ...draft.backgroundClients.map((client) => ({
@@ -75,9 +98,33 @@ export function ClientsSection(props: {
   return (
     selectedClientItem ? (
       selectedClientItem.kind === 'background' ? (
-        <BackgroundClientEditor client={selectedClientItem.client} draft={draft} initialTab={initialDetailTab} invocationStats={backgroundRuntimeState?.invocationStats} runtimeState={backgroundRuntimeState?.connectionState} onClearHistory={onClearInvocationHistory} onChange={onChange} />
+        <BackgroundClientEditor
+          client={selectedClientItem.client}
+          draft={draft}
+          initialAssetPath={initialAssetPath}
+          initialTab={initialDetailTab}
+          invocationStats={backgroundRuntimeState?.invocationStats}
+          runtimeState={backgroundRuntimeState?.connectionState}
+          onAssetPathChange={onAssetPathChange}
+          onClearHistory={onClearInvocationHistory}
+          onTabChange={onDetailTabChange}
+          onChange={onChange}
+        />
       ) : (
-        <ClientEditor client={selectedClientItem.client} currentPageUrl={currentPageUrl} draft={draft} initialAssetTab={initialAssetTab} initialTab={initialDetailTab} invocationStats={routeRuntimeState?.invocationStats} matchingTabCount={routeRuntimeState?.matchingTabCount} onClearHistory={onClearInvocationHistory} onChange={onChange} />
+        <ClientEditor
+          client={selectedClientItem.client}
+          currentPageUrl={currentPageUrl}
+          draft={draft}
+          initialAssetPath={initialAssetPath}
+          initialAssetTab={initialAssetTab}
+          initialTab={initialDetailTab}
+          invocationStats={routeRuntimeState?.invocationStats}
+          matchingTabCount={routeRuntimeState?.matchingTabCount}
+          onAssetPathChange={onAssetPathChange}
+          onClearHistory={onClearInvocationHistory}
+          onTabChange={onDetailTabChange}
+          onChange={onChange}
+        />
       )
     ) : (
       <Typography variant="body2" color="text.secondary">{t('options.clients.empty')}</Typography>

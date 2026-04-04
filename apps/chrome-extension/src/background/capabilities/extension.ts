@@ -44,7 +44,7 @@ export function registerExtensionCapabilities(
     config,
     'extension.activate-tab',
     {
-      method: 'POST',
+      method: 'PATCH',
       inputSchema: {
         type: 'object',
         required: ['tabId'],
@@ -87,7 +87,7 @@ export function registerExtensionCapabilities(
     config,
     'extension.close-tab',
     {
-      method: 'POST',
+      method: 'DELETE',
       inputSchema: tabTargetSchema()
     }
   )

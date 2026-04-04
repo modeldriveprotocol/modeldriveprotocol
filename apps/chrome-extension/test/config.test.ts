@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_BACKGROUND_CLIENT,
   DEFAULT_EXTENSION_CONFIG,
+  ROOT_ROUTE_SKILL_PATH,
   DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
   createRouteClientFromUrl,
   createRouteClientConfig,
@@ -283,6 +284,55 @@ describe('chrome extension config helpers', () => {
     expect(client.matchPatterns).toEqual(['https://app.example.com/*'])
     expect(client.routeRules[0]?.value).toBe('/billing/invoices')
     expect(client.clientName).toContain('app.example.com')
+  })
+
+  it('creates route clients with a protected root skill entry by default', () => {
+    const client = createRouteClientConfig({
+      id: 'route-with-root-skill',
+      clientId: 'route-with-root-skill',
+      matchPatterns: ['https://app.example.com/*']
+    })
+
+    expect(client.skillEntries).toHaveLength(1)
+    expect(client.skillEntries[0]).toMatchObject({
+      path: ROOT_ROUTE_SKILL_PATH,
+      content: ''
+    })
+  })
+
+  it('re-adds a missing root skill entry when normalizing imported route clients', () => {
+    const normalized = normalizeConfig({
+      ...DEFAULT_EXTENSION_CONFIG,
+      routeClients: [
+        {
+          ...createRouteClientConfig({
+            id: 'route-imported',
+            clientId: 'route-imported',
+            matchPatterns: ['https://app.example.com/*'],
+            skillEntries: []
+          }),
+          skillEntries: [
+            {
+              id: 'nested-skill',
+              path: 'orders/refund-policy',
+              metadata: {
+                title: 'Refund policy',
+                summary: '',
+                queryParameters: [],
+                headerParameters: []
+              },
+              content: '# Refund Policy'
+            }
+          ]
+        }
+      ]
+    })
+
+    expect(normalized.routeClients[0]?.skillEntries.map((skill) => skill.path)).toEqual([
+      ROOT_ROUTE_SKILL_PATH,
+      'orders/refund-policy/SKILL.md'
+    ])
+    expect(normalized.routeClients[0]?.skillEntries[0]?.content).toBe('')
   })
 
   it('collects enabled route match patterns across the workspace', () => {

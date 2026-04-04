@@ -49,10 +49,12 @@ export interface RecordedFlowStep {
 }
 
 export interface RouteClientRecording {
+  kind: 'flow'
   id: string
   path: string
   name: string
   description: string
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   mode: 'recording' | 'script'
   createdAt: string
   updatedAt: string
@@ -67,10 +69,12 @@ export interface SelectorResourceAttributeMap {
 }
 
 export interface RouteSelectorResource {
+  kind: 'resource'
   id: string
   path: string
   name: string
   description: string
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   createdAt: string
   url?: string
   selector: string
@@ -79,6 +83,7 @@ export interface RouteSelectorResource {
   classes: string[]
   text?: string
   attributes: SelectorResourceAttributeMap
+  scriptSource?: string
 }
 
 export type RouteSkillParameterType = 'string' | 'number' | 'boolean'
@@ -98,6 +103,7 @@ export interface RouteSkillMetadata {
 }
 
 export interface RouteSkillEntry {
+  kind: 'skill'
   id: string
   path: string
   metadata: RouteSkillMetadata
@@ -105,9 +111,16 @@ export interface RouteSkillEntry {
 }
 
 export interface RouteSkillFolder {
+  kind: 'folder'
   id: string
   path: string
 }
+
+export type RouteExposeAsset =
+  | RouteClientRecording
+  | RouteSelectorResource
+  | RouteSkillEntry
+  | RouteSkillFolder
 
 export interface MarketSourceConfig {
   id: string
@@ -159,6 +172,7 @@ export interface RouteClientConfig {
   routeRules: RoutePathRule[]
   autoInjectBridge: boolean
   pathScriptSource: string
+  exposes: RouteExposeAsset[]
   recordings: RouteClientRecording[]
   selectorResources: RouteSelectorResource[]
   skillFolders: RouteSkillFolder[]

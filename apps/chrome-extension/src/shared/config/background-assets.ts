@@ -37,7 +37,7 @@ export interface BackgroundExposeDefinition {
   description: string
   sourceKind: BackgroundExposeSourceKind
   defaultSource: string
-  method?: 'GET' | 'POST'
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   contentType?: string
   legacyId?: string
 }
@@ -114,7 +114,7 @@ export const BACKGROUND_BROWSER_EXPOSE_DEFINITIONS: BackgroundExposeDefinition[]
       path: '/extension/activate-tab',
       kind: 'endpoint',
       group: 'browser',
-      method: 'POST',
+      method: 'PATCH',
       description: 'Activate a browser tab by id.',
       sourceKind: 'javascript',
       defaultSource: `return await api.activateTab(helpers.requireNumberArg(args, 'tabId'));`,
@@ -153,7 +153,7 @@ return await api.createTab({
       path: '/extension/close-tab',
       kind: 'endpoint',
       group: 'browser',
-      method: 'POST',
+      method: 'DELETE',
       description: 'Close a browser tab. Defaults to the current active tab.',
       sourceKind: 'javascript',
       defaultSource: `return await api.closeTab(args);`,
@@ -263,7 +263,7 @@ export const BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS: BackgroundExposeDefinition
       path: '/extension/clients/update',
       kind: 'endpoint',
       group: 'workspace',
-      method: 'POST',
+      method: 'PATCH',
       description:
         'Update a stored background or route client by internal id or clientId.',
       sourceKind: 'javascript',
@@ -275,7 +275,7 @@ export const BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS: BackgroundExposeDefinition
       path: '/extension/clients/delete',
       kind: 'endpoint',
       group: 'workspace',
-      method: 'POST',
+      method: 'DELETE',
       description:
         'Delete a stored background or route client by internal id or clientId.',
       sourceKind: 'javascript',
@@ -373,10 +373,10 @@ This folder contains the built-in workspace management capabilities for stored C
 ## What lives here
 
 - \`/extension/clients\`: list stored background and route clients
-- \`/extension/clients/create\`: create a new stored client
-- \`/extension/clients/update\`: update a stored client
-- \`/extension/clients/delete\`: delete a stored client
-- \`/extension/clients/add-expose-rule\`: persist a new route expose rule
+- \`POST /extension/clients/create\`: create a new stored client
+- \`PATCH /extension/clients/update\`: update a stored client
+- \`DELETE /extension/clients/delete\`: delete a stored client
+- \`POST /extension/clients/add-expose-rule\`: persist a new route expose rule
 
 ## How to work in this folder
 

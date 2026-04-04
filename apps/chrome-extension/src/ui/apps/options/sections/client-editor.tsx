@@ -3,7 +3,14 @@ import DeleteOutlineOutlined from '@mui/icons-material/DeleteOutlineOutlined'
 import { Box, Divider, FormControlLabel, MenuItem, Stack, Switch, Tab, Tabs, TextField, Typography } from '@mui/material'
 import { useEffect, useState } from 'react'
 
-import { canCreateRouteClientFromUrl, matchesRouteClient, stringifyMatchPatterns, type ExtensionConfig, type RouteClientConfig } from '#~/shared/config.js'
+import {
+  canCreateRouteClientFromUrl,
+  matchesRouteClient,
+  stringifyMatchPatterns,
+  summarizeRouteAssetKinds,
+  type ExtensionConfig,
+  type RouteClientConfig
+} from '#~/shared/config.js'
 import type { ClientInvocationStats } from '#~/background/shared.js'
 import type { OptionsAssetsTab } from '../../../platform/extension-api.js'
 import { useI18n } from '../../../i18n/provider.js'
@@ -17,21 +24,30 @@ export function ClientEditor({
   client,
   currentPageUrl,
   draft,
+  initialAssetPath,
   initialAssetTab,
   initialTab,
   invocationStats,
   matchingTabCount,
   onClearHistory,
+  onAssetPathChange,
+  onTabChange,
   onChange
 }: {
   client: RouteClientConfig
   currentPageUrl: string | undefined
   draft: ExtensionConfig
+  initialAssetPath: string | undefined
   initialAssetTab: OptionsAssetsTab | undefined
   initialTab: ClientDetailTab | undefined
   invocationStats: ClientInvocationStats | undefined
   matchingTabCount: number | undefined
   onClearHistory: () => void
+  onAssetPathChange: (
+    path: string | undefined,
+    tab: ClientDetailTab
+  ) => void
+  onTabChange: (tab: ClientDetailTab) => void
   onChange: (config: ExtensionConfig) => void
 }) {
   const { t } = useI18n()
@@ -45,10 +61,15 @@ export function ClientEditor({
       ? t('options.clients.openTabs', { count: matchingTabCount ?? 0 })
       : currentPageLabel
   const stretchBody = tab === 'assets'
+  const assetSummary = summarizeRouteAssetKinds(client)
 
   useEffect(() => {
     setTab(initialTab ?? 'basics')
   }, [client.id, initialTab])
+
+  useEffect(() => {
+    onTabChange(tab)
+  }, [onTabChange, tab])
 
   function updateClient(next: RouteClientConfig) {
     onChange({
@@ -73,12 +94,17 @@ export function ClientEditor({
           {runtimeLabel ? <Typography variant="caption" color="text.secondary" noWrap>{runtimeLabel}</Typography> : null}
         </Stack>
         <Typography variant="caption" color="text.secondary">
-          {[t('options.clients.flows', { count: client.recordings.length }), t('options.clients.resources', { count: client.selectorResources.length }), t('options.clients.skills', { count: client.skillEntries.length })].join(' · ')}
+          {[t('options.clients.flows', { count: assetSummary.recordingCount }), t('options.clients.resources', { count: assetSummary.selectorResourceCount }), t('options.clients.skills', { count: assetSummary.skillCount })].join(' · ')}
         </Typography>
       </Stack>
 
       <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Tabs value={tab} onChange={(_event, next) => setTab(next)} variant="scrollable" scrollButtons={false}>
+        <Tabs
+          value={tab}
+          onChange={(_event, next) => setTab(next)}
+          variant="scrollable"
+          scrollButtons={false}
+        >
           <Tab value="basics" label={t('options.clients.tab.basics')} />
           <Tab value="matching" label={t('options.clients.tab.matching')} />
           <Tab value="runtime" label={t('options.clients.tab.runtime')} />
@@ -139,7 +165,9 @@ export function ClientEditor({
           <ClientAssetsPanel
             client={client}
             draft={draft}
+            initialPath={initialAssetPath}
             initialTab={initialAssetTab}
+            onSelectedPathChange={(path) => onAssetPathChange(path, tab)}
             onChange={onChange}
           />
         </Box>

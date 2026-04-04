@@ -48,6 +48,10 @@ import {
   normalizeSelectorResources,
   normalizeSkillEntries
 } from './normalize-assets.js'
+import {
+  ensureRootRouteSkillAsset,
+  syncRouteClientAssetViews
+} from './route-assets.js'
 
 export function normalizeConfig(value: unknown): ExtensionConfig {
   if (value === undefined || value === null) {
@@ -374,9 +378,35 @@ function normalizeRouteClient(value: unknown): RouteClientConfig {
     normalizeId(readString(record, 'clientId')) ??
     buildClientId(clientName, routeId)
   const installSource = normalizeMarketInstallSource(record.installSource)
-  const skillEntries = normalizeSkillEntries(record.skillEntries)
+  const legacySkillEntries = normalizeSkillEntries(record.skillEntries)
+  const legacySkillFolders = normalizeSkillFolders(
+    record.skillFolders,
+    legacySkillEntries
+  )
+  const hasLegacyRouteAssets =
+    'recordings' in record ||
+    'selectorResources' in record ||
+    'skillEntries' in record ||
+    'skillFolders' in record
+  const exposes = ensureRootRouteSkillAsset(
+    hasLegacyRouteAssets
+      ? [
+          ...legacySkillEntries,
+          ...legacySkillFolders,
+          ...normalizeRecordings(record.recordings),
+          ...normalizeSelectorResources(record.selectorResources)
+        ]
+      : 'exposes' in record && Array.isArray(record.exposes)
+        ? normalizeRouteExposes(record.exposes)
+        : [
+            ...legacySkillEntries,
+            ...legacySkillFolders,
+            ...normalizeRecordings(record.recordings),
+            ...normalizeSelectorResources(record.selectorResources)
+          ]
+  )
 
-  return {
+  return syncRouteClientAssetViews({
     kind: 'route',
     id: routeId,
     enabled: readBoolean(record, 'enabled') ?? true,
@@ -394,12 +424,36 @@ function normalizeRouteClient(value: unknown): RouteClientConfig {
     routeRules: normalizeRouteRules(record.routeRules),
     autoInjectBridge: readBoolean(record, 'autoInjectBridge') ?? true,
     pathScriptSource: readPathScriptSource(record),
-    recordings: normalizeRecordings(record.recordings),
-    selectorResources: normalizeSelectorResources(record.selectorResources),
-    skillFolders: normalizeSkillFolders(record.skillFolders, skillEntries),
-    skillEntries,
+    exposes,
     ...(installSource ? { installSource } : {})
+  })
+}
+
+function normalizeRouteExposes(value: unknown) {
+  if (!Array.isArray(value)) {
+    return []
   }
+
+  const recordings = normalizeRecordings(
+    value.filter((item) => asRecord(item).kind === 'flow')
+  )
+  const selectorResources = normalizeSelectorResources(
+    value.filter((item) => asRecord(item).kind === 'resource')
+  )
+  const skillEntries = normalizeSkillEntries(
+    value.filter((item) => asRecord(item).kind === 'skill')
+  )
+  const skillFolders = normalizeSkillFolders(
+    value.filter((item) => asRecord(item).kind === 'folder'),
+    skillEntries
+  )
+
+  return [
+    ...skillEntries,
+    ...skillFolders,
+    ...recordings,
+    ...selectorResources
+  ]
 }
 
 function readPathScriptSource(record: Record<string, unknown>): string {

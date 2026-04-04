@@ -170,9 +170,17 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
     }
   }
 
-  async function refreshRuntimeState(options?: { notify?: boolean; suppressError?: boolean }) {
+  async function refreshRuntimeState(options?: {
+    notify?: boolean
+    showSpinner?: boolean
+    suppressError?: boolean
+  }) {
+    const showSpinner = options?.showSpinner ?? Boolean(options?.notify)
+
     try {
-      setRuntimeRefreshing(true)
+      if (showSpinner) {
+        setRuntimeRefreshing(true)
+      }
       const nextRuntime = await getRuntimeStatus()
       setRuntimeState(nextRuntime)
       setRuntimeStateUpdatedAt(new Date().toISOString())
@@ -188,7 +196,9 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
         throw nextError
       }
     } finally {
-      setRuntimeRefreshing(false)
+      if (showSpinner) {
+        setRuntimeRefreshing(false)
+      }
     }
   }
 

@@ -5,6 +5,7 @@ import {
   renderRouteSkillContent
 } from '../src/background/capabilities/route/skills.js'
 import {
+  ROOT_ROUTE_SKILL_PATH,
   DEFAULT_EXTENSION_CONFIG,
   createRouteClientConfig,
   normalizeConfig
@@ -14,6 +15,7 @@ describe('route skill assets', () => {
   it('renders markdown variables from query and headers', () => {
     const content = renderRouteSkillContent(
       {
+        kind: 'skill',
         id: 'skill-refund',
         path: 'workspace/orders/refunds',
         metadata: {
@@ -55,6 +57,7 @@ describe('route skill assets', () => {
   it('describes configured query and header variables in the skill schema', () => {
     expect(
       buildRouteSkillInputSchema({
+        kind: 'skill',
         id: 'skill-refund',
         path: 'workspace/orders/refunds',
         metadata: {
@@ -169,7 +172,9 @@ describe('route skill assets', () => {
       ]
     })
 
-    const skill = normalized.routeClients[0]?.skillEntries[0]
+    const skill = normalized.routeClients[0]?.skillEntries.find(
+      (entry) => entry.id === 'skill-refund'
+    )
 
     expect(skill?.metadata.queryParameters).toEqual([
       {
@@ -239,10 +244,11 @@ describe('route skill assets', () => {
       ]
     })
 
-    expect(normalized.routeClients[0]?.skillEntries).toHaveLength(1)
-    expect(normalized.routeClients[0]?.skillEntries[0]?.path).toBe(
-      'workspace/orders-returns'
-    )
+    expect(normalized.routeClients[0]?.skillEntries).toHaveLength(2)
+    expect(normalized.routeClients[0]?.skillEntries.map((skill) => skill.path)).toEqual([
+      ROOT_ROUTE_SKILL_PATH,
+      'workspace/orders-returns/SKILL.md'
+    ])
   })
 
   it('preserves explicit empty folders across normalization', () => {
@@ -268,6 +274,7 @@ describe('route skill assets', () => {
 
     expect(normalized.routeClients[0]?.skillFolders).toEqual([
       {
+        kind: 'folder',
         id: 'folder-guides',
         path: 'workspace/guides'
       }

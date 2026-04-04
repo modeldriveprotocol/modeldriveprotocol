@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import { createClientKey } from '#~/background/shared.js'
 import {
+  cloneRouteExposeAssets,
   createBackgroundClientConfig,
   createRouteClientConfig,
   type BackgroundClientConfig,
@@ -290,14 +291,29 @@ export function OptionsMainPanel({
             clientDetailOpen={controller.clientDetailOpen}
             canCreateFromPage={Boolean(controller.runtimeState?.activeTab?.url)}
             draft={draft}
+            initialAssetPath={controller.assetPathHint}
             initialAssetTab={controller.assetTabHint}
             initialDetailTab={
               controller.detailTabHint ??
-              (controller.assetTabHint ? 'assets' : undefined)
+              (controller.assetTabHint || controller.assetPathHint
+                ? 'assets'
+                : undefined)
             }
             routeSearch={controller.routeSearch}
             selectedClientId={controller.selectedClientId}
             runtimeState={controller.runtimeState}
+            onAssetPathChange={(assetPath, detailTab) => {
+              if (!selectedClientItem) {
+                return
+              }
+
+              controller.setSectionAndHash('clients', {
+                clientId: selectedClientItem.id,
+                clientDetailOpen: true,
+                detailTab,
+                assetPath
+              })
+            }}
             onClearInvocationHistory={() => {
               if (!selectedClientItem) {
                 return
@@ -314,6 +330,18 @@ export function OptionsMainPanel({
                 clientDetailOpen: false
               })
             }
+            onDetailTabChange={(detailTab) => {
+              if (!selectedClientItem) {
+                return
+              }
+
+              controller.setSectionAndHash('clients', {
+                clientId: selectedClientItem.id,
+                clientDetailOpen: true,
+                detailTab,
+                assetPath: controller.assetPathHint
+              })
+            }}
             onOpenDetail={(clientId: any, detailTab?: any) => {
               controller.setSelectedClientId(clientId)
               controller.setSectionAndHash('clients', {
@@ -550,34 +578,7 @@ function forkEditableClient(
     clientName: nextName,
     favorite: false,
     routeRules: item.client.routeRules.map((rule) => ({ ...rule })),
-    recordings: item.client.recordings.map((recording) => ({
-      ...recording,
-      capturedFeatures: [...recording.capturedFeatures],
-      steps: recording.steps.map((step) => ({
-        ...step,
-        alternativeSelectors: [...step.alternativeSelectors],
-        classes: [...step.classes]
-      }))
-    })),
-    selectorResources: item.client.selectorResources.map((resource) => ({
-      ...resource,
-      alternativeSelectors: [...resource.alternativeSelectors],
-      classes: [...resource.classes],
-      attributes: { ...resource.attributes }
-    })),
-    skillFolders: item.client.skillFolders.map((folder) => ({ ...folder })),
-    skillEntries: item.client.skillEntries.map((skill) => ({
-      ...skill,
-      metadata: {
-        ...skill.metadata,
-        queryParameters: skill.metadata.queryParameters.map((parameter) => ({
-          ...parameter
-        })),
-        headerParameters: skill.metadata.headerParameters.map((parameter) => ({
-          ...parameter
-        }))
-      }
-    }))
+    exposes: cloneRouteExposeAssets(item.client.exposes)
   })
 }
 

@@ -8,6 +8,7 @@ export function useOptionsRouting() {
   const initialRoute = getOptionsRouteFromLocation()
   const [section, setSection] = useState<Section>(initialRoute.section)
   const [assetTabHint, setAssetTabHint] = useState<OptionsAssetsTab | undefined>(initialRoute.assetTab)
+  const [assetPathHint, setAssetPathHint] = useState<string | undefined>(initialRoute.assetPath)
   const [detailTabHint, setDetailTabHint] = useState<ClientDetailTab | undefined>(initialRoute.detailTab)
   const [selectedClientId, setSelectedClientId] = useState<EditableClientId | undefined>(initialRoute.clientId)
   const [clientDetailOpen, setClientDetailOpen] = useState(initialRoute.clientDetailOpen)
@@ -19,6 +20,7 @@ export function useOptionsRouting() {
     const normalizedRoute = normalizeOptionsLocation()
     setSection(normalizedRoute.section)
     setAssetTabHint(normalizedRoute.assetTab)
+    setAssetPathHint(normalizedRoute.assetPath)
     setDetailTabHint(normalizedRoute.detailTab)
     setClientDetailOpen(normalizedRoute.clientDetailOpen)
     setMarketDetailOpen(normalizedRoute.marketDetailOpen)
@@ -34,6 +36,7 @@ export function useOptionsRouting() {
       const nextRoute = getOptionsRouteFromLocation()
       setSection(nextRoute.section)
       setAssetTabHint(nextRoute.assetTab)
+      setAssetPathHint(nextRoute.assetPath)
       setDetailTabHint(nextRoute.detailTab)
       setClientDetailOpen(nextRoute.clientDetailOpen)
       setMarketDetailOpen(nextRoute.marketDetailOpen)
@@ -58,6 +61,7 @@ export function useOptionsRouting() {
       clientId?: EditableClientId
       assetTab?: OptionsAssetsTab
       detailTab?: ClientDetailTab
+      assetPath?: string
       clientDetailOpen?: boolean
       marketEntryKey?: string
       marketDetailOpen?: boolean
@@ -65,7 +69,9 @@ export function useOptionsRouting() {
   ) {
     const url = new URL(window.location.href)
     const normalizedSection = next === 'assets' ? 'clients' : next
-    url.search = buildOptionsSearch(sidebarCollapsed)
+    url.search = buildOptionsSearch(sidebarCollapsed, {
+      assetPath: options?.assetPath
+    })
     url.hash = buildOptionsHashPath(next, {
       clientId: options?.clientId,
       assetTab: options?.assetTab,
@@ -75,6 +81,7 @@ export function useOptionsRouting() {
     window.history.replaceState(null, '', url)
     setSection(normalizedSection)
     setAssetTabHint(options?.assetTab)
+    setAssetPathHint(options?.assetPath)
     setDetailTabHint(options?.detailTab)
     setClientDetailOpen(Boolean(options?.clientDetailOpen || options?.clientId || options?.assetTab || options?.detailTab))
     setMarketDetailOpen(Boolean(options?.marketDetailOpen || options?.marketEntryKey))
@@ -88,7 +95,9 @@ export function useOptionsRouting() {
 
   function setSidebarCollapsedAndQuery(next: boolean) {
     const url = new URL(window.location.href)
-    url.search = buildOptionsSearch(next)
+    url.search = buildOptionsSearch(next, {
+      assetPath: assetPathHint
+    })
     window.history.replaceState(null, '', url)
     setSidebarCollapsed(next)
   }
@@ -96,6 +105,7 @@ export function useOptionsRouting() {
   return {
     section,
     assetTabHint,
+    assetPathHint,
     detailTabHint,
     selectedClientId,
     setSelectedClientId,

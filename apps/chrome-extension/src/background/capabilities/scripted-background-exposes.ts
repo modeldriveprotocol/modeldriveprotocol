@@ -21,7 +21,7 @@ import {
 } from '#~/background/shared.js'
 
 type ScriptedBackgroundExposeOptions = {
-  method?: 'GET' | 'POST'
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   contentType?: string
   inputSchema?: Record<string, unknown>
 }

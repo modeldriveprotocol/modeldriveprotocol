@@ -8,6 +8,8 @@ import type {
 import {
   type RouteClientConfig,
   createRouteClientFromUrl,
+  getRouteClientRecordings,
+  getRouteClientSelectorResources,
   getOriginMatchPattern,
   summarizeRouteRules
 } from '#~/shared/config.js'
@@ -94,7 +96,9 @@ export async function runRouteRecording(
   args: unknown
 ) {
   const routeClient = await runtime.getRouteClient(routeClientId)
-  const recording = routeClient.recordings.find((item) => item.id === recordingId)
+  const recording = getRouteClientRecordings(routeClient).find(
+    (item) => item.id === recordingId
+  )
   if (!recording) {
     throw new Error(`Unknown recording "${recordingId}" for route client "${routeClientId}"`)
   }
@@ -154,11 +158,13 @@ export async function runRouteRecording(
 }
 
 export async function listRouteRecordings(runtime: ChromeExtensionRuntime, routeClientId: string) {
-  return (await runtime.getRouteClient(routeClientId)).recordings
+  return getRouteClientRecordings(await runtime.getRouteClient(routeClientId))
 }
 
 export async function listRouteSelectorResources(runtime: ChromeExtensionRuntime, routeClientId: string) {
-  return (await runtime.getRouteClient(routeClientId)).selectorResources
+  return getRouteClientSelectorResources(
+    await runtime.getRouteClient(routeClientId)
+  )
 }
 
 export async function startRecording(runtime: ChromeExtensionRuntime, routeClientId: string) {
@@ -191,7 +197,10 @@ export async function stopRecording(
   const recording = createRecordingFromCapture(routeClient, result, options)
   runtime.activeRecording = undefined
 
-  await runtime.updateRouteClient(routeClient.id, (client) => ({ ...client, recordings: [recording, ...client.recordings] }))
+  await runtime.updateRouteClient(routeClient.id, (client) => ({
+    ...client,
+    exposes: [recording, ...client.exposes]
+  }))
   await runtime.refresh()
 
   return { saved: true as const, routeClientId: routeClient.id, recordingId: recording.id, stepCount: recording.steps.length }
@@ -230,7 +239,7 @@ export async function handleSelectorCapturedMessage(
 
   await runtime.updateRouteClient(routeClient.id, (client) => ({
     ...client,
-    selectorResources: [resource, ...client.selectorResources]
+    exposes: [resource, ...client.exposes]
   }))
 
   runtime.pendingSelectorCapture = {

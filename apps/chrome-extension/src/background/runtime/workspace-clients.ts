@@ -3,6 +3,7 @@ import {
   createBackgroundClientConfig,
   createRouteClientConfig,
   createRouteRule,
+  cloneRouteExposeAssets,
   deriveDisabledBackgroundExposePaths,
   isRequiredBackgroundClientId,
   normalizeDisabledBackgroundExposePaths,
@@ -54,34 +55,7 @@ export async function listWorkspaceClients(
       ...client,
       matchPatterns: [...client.matchPatterns],
       routeRules: client.routeRules.map((rule) => ({ ...rule })),
-      recordings: client.recordings.map((recording) => ({
-        ...recording,
-        capturedFeatures: [...recording.capturedFeatures],
-        steps: recording.steps.map((step) => ({
-          ...step,
-          alternativeSelectors: [...step.alternativeSelectors],
-          classes: [...step.classes]
-        }))
-      })),
-      selectorResources: client.selectorResources.map((resource) => ({
-        ...resource,
-        alternativeSelectors: [...resource.alternativeSelectors],
-        classes: [...resource.classes],
-        attributes: { ...resource.attributes }
-      })),
-      skillFolders: client.skillFolders.map((folder) => ({ ...folder })),
-      skillEntries: client.skillEntries.map((skill) => ({
-        ...skill,
-        metadata: {
-          ...skill.metadata,
-          queryParameters: skill.metadata.queryParameters.map((parameter) => ({
-            ...parameter
-          })),
-          headerParameters: skill.metadata.headerParameters.map((parameter) => ({
-            ...parameter
-          }))
-        }
-      })),
+      exposes: cloneRouteExposeAssets(client.exposes),
       ...(client.installSource ? { installSource: { ...client.installSource } } : {})
     }))
   }

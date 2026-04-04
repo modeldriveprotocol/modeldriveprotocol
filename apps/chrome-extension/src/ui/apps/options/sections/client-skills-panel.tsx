@@ -32,6 +32,7 @@ import type {
   RouteSkillMetadata,
   RouteSkillParameter
 } from '#~/shared/config.js'
+import { getRouteSkillAssetLabel } from '#~/shared/config.js'
 import {
   MonacoCodeEditor,
   type MonacoCodeEditorHandle
@@ -348,6 +349,7 @@ export function ClientSkillsPanel({
       'new-skill'
     )
     const nextSkill: RouteSkillEntry = {
+      kind: 'skill',
       id: createLocalId('skill'),
       path: nextPath,
       metadata: createDefaultSkillMetadata(t('options.assets.skills.newTitle')),
@@ -380,6 +382,7 @@ export function ClientSkillsPanel({
     updateFolders((folders) => [
       ...folders,
       {
+        kind: 'folder',
         id: createLocalId('skill-folder'),
         path: nextFolderPath
       }
@@ -1031,7 +1034,7 @@ export function ClientSkillsPanel({
                         sx={{ fontWeight: 600 }}
                         noWrap
                       >
-                        {basename(skill.path)}.md
+                        {getRouteSkillAssetLabel(skill.path)}
                       </Typography>
                       <Typography
                         variant="caption"
@@ -1174,7 +1177,7 @@ function SkillTreeNodeRow({
                 fontWeight: node.kind === 'folder' ? 600 : 400
               }}
             >
-              {node.kind === 'folder' ? node.label : `${node.label}.md`}
+              {node.label}
             </Typography>
           )}
           <Box
@@ -1748,7 +1751,7 @@ export function buildSkillTree(
       id: `skill:${skill.id}`,
       skillId: skill.id,
       path: skill.path,
-      label: segments.at(-1) ?? skill.metadata.title ?? 'skill',
+      label: getRouteSkillAssetLabel(skill.path),
       searchText: [
         skill.path,
         skill.metadata.title,
@@ -1859,8 +1862,27 @@ function sortSkillTreeNodes(nodes: SkillTreeNode[]): SkillTreeNode[] {
         return left.kind === 'folder' ? -1 : 1
       }
 
+      const priority = getSkillTreeLabelPriority(left.label) -
+        getSkillTreeLabelPriority(right.label)
+
+      if (priority !== 0) {
+        return priority
+      }
+
       return left.label.localeCompare(right.label)
     })
+}
+
+function getSkillTreeLabelPriority(label: string): number {
+  if (label === '.ai') {
+    return -2
+  }
+
+  if (label === 'SKILL.md') {
+    return -1
+  }
+
+  return 0
 }
 
 function createUniqueSkillPath(
@@ -1898,6 +1920,7 @@ function createUniqueFolderPath(
   const existingFolderPaths = new Set(
     listTreeFolders(
       existingPaths.map((path, index) => ({
+        kind: 'skill',
         id: String(index),
         path,
         metadata: createDefaultSkillMetadata(''),

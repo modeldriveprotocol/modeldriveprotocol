@@ -28,6 +28,8 @@ import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 
 import {
   canCreateRouteClientFromUrl,
+  getRouteClientSkillEntries,
+  getRouteClientSkillFolders,
   isRequiredBackgroundClientId,
   matchesRouteClient,
   type BackgroundClientConfig,
@@ -98,8 +100,9 @@ export function ClientsListPanel({
           client.clientName,
           client.clientId,
           client.matchPatterns.join(' '),
-          client.skillFolders.map((folder) => folder.path).join(' '),
-          client.skillEntries.map((skill) => skill.path).join(' ')
+          client.exposes.map((asset) => asset.path).join(' '),
+          getRouteClientSkillFolders(client).map((folder) => folder.path).join(' '),
+          getRouteClientSkillEntries(client).map((skill) => skill.path).join(' ')
         ]
           .join(' ')
           .toLowerCase()

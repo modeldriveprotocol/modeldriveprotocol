@@ -71,7 +71,7 @@ export function registerWorkspaceCapabilities(
     config,
     'extension.clients.update',
     {
-      method: 'POST',
+      method: 'PATCH',
       inputSchema: backgroundClientMutationSchema
     }
   )
@@ -81,7 +81,7 @@ export function registerWorkspaceCapabilities(
     config,
     'extension.clients.delete',
     {
-      method: 'POST',
+      method: 'DELETE',
       inputSchema: {
         type: 'object',
         properties: {

@@ -52,7 +52,7 @@ export function AssetTreeLabel({
   action?: ReactNode
   count: number
   dropActive?: boolean
-  label: string
+  label: ReactNode
   onClick?: (event: ReactMouseEvent<HTMLDivElement>) => void
   searchTerm?: string
 }) {
@@ -69,9 +69,13 @@ export function AssetTreeLabel({
       }}
     >
       <FolderOutlined fontSize="small" />
-      <Typography variant="body2" noWrap sx={{ flex: 1, fontWeight: 600 }}>
-        {renderHighlightedText(label, searchTerm)}
-      </Typography>
+      {typeof label === 'string' ? (
+        <Typography variant="body2" noWrap sx={{ flex: 1, fontWeight: 600 }}>
+          {renderHighlightedText(label, searchTerm)}
+        </Typography>
+      ) : (
+        <Box sx={{ flex: 1, minWidth: 0 }}>{label}</Box>
+      )}
       <Typography variant="caption" color="text.secondary">
         {count}
       </Typography>
@@ -609,7 +613,8 @@ export function buildAssetFileTree<
   }
 >(
   items: TItem[],
-  searchText: (item: TItem) => string
+  searchText: (item: TItem) => string,
+  extraFolderPaths: string[] = []
 ): AssetFileTreeNode[] {
   const root: AssetFileTreeNode[] = []
   const folderNodes = new Map<
@@ -617,7 +622,7 @@ export function buildAssetFileTree<
     Extract<AssetFileTreeNode, { kind: 'folder' }>
   >()
 
-  for (const folderPath of listAssetFolders(items)) {
+  for (const folderPath of listAssetFolders(items, extraFolderPaths)) {
     const segments = splitAssetPath(folderPath)
 
     if (segments.length === 0) {
@@ -781,9 +786,15 @@ function AssetScopeParentEntry({
   )
 }
 
-function listAssetFolders<TItem extends { path: string }>(items: TItem[]): string[] {
+function listAssetFolders<TItem extends { path: string }>(
+  items: TItem[],
+  extraFolderPaths: string[] = []
+): string[] {
   return [
-    ...new Set(items.flatMap((item) => listAncestorFolders(item.path)))
+    ...new Set([
+      ...items.flatMap((item) => listAncestorFolders(item.path)),
+      ...extraFolderPaths.flatMap((path) => [path, ...listAncestorFolders(path)])
+    ])
   ].sort((left, right) => left.localeCompare(right))
 }
 

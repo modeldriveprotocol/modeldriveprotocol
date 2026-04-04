@@ -39,12 +39,45 @@ describe('options routing', () => {
     })
   })
 
+  it('builds and parses asset routes without legacy asset tab segments', () => {
+    expect(
+      buildOptionsHashPath('clients', {
+        clientId: 'route-client-1',
+        detailTab: 'assets'
+      })
+    ).toBe('#/clients/route-client-1/assets')
+
+    stubWindow('#/clients/route-client-1/assets')
+
+    expect(getOptionsRouteFromLocation()).toMatchObject({
+      section: 'clients',
+      clientId: 'route-client-1',
+      detailTab: 'assets',
+      clientDetailOpen: true
+    })
+  })
+
   it('parses collapsed sidebar state from query params', () => {
     stubWindow('#/workspace', '?sidebar=collapsed')
 
     expect(getOptionsRouteFromLocation()).toMatchObject({
       section: 'workspace',
       sidebarCollapsed: true
+    })
+  })
+
+  it('parses selected asset paths from query params', () => {
+    stubWindow(
+      '#/clients/route-client-1/assets',
+      '?assetPath=clients%2FSKILL.md'
+    )
+
+    expect(getOptionsRouteFromLocation()).toMatchObject({
+      section: 'clients',
+      clientId: 'route-client-1',
+      detailTab: 'assets',
+      assetPath: 'clients/SKILL.md',
+      clientDetailOpen: true
     })
   })
 
@@ -65,6 +98,14 @@ describe('options routing', () => {
     const [, , nextUrl] = replaceState.mock.calls[0] as [unknown, unknown, URL]
     expect(nextUrl.search).toBe('?sidebar=collapsed')
     expect(nextUrl.hash).toBe('#/clients/route-client-1/assets/skills')
+  })
+
+  it('builds search params with sidebar state and asset path', () => {
+    expect(
+      buildOptionsSearch(true, { assetPath: '/extension/clients/SKILL.md' })
+    ).toBe(
+      '?sidebar=collapsed&assetPath=%2Fextension%2Fclients%2FSKILL.md'
+    )
   })
 })
 

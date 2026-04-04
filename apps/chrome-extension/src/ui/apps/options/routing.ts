@@ -4,6 +4,7 @@ import { SECTION_IDS } from './types.js'
 
 const SIDEBAR_QUERY_KEY = 'sidebar'
 const SIDEBAR_COLLAPSED_VALUE = 'collapsed'
+const ASSET_PATH_QUERY_KEY = 'assetPath'
 
 export function isOptionsAssetsTab(value: string | null | undefined): value is OptionsAssetsTab {
   return value === 'flows' || value === 'resources' || value === 'skills'
@@ -18,14 +19,24 @@ export function isSidebarCollapsedFromSearch(search: string): boolean {
   return searchParams.get(SIDEBAR_QUERY_KEY) === SIDEBAR_COLLAPSED_VALUE
 }
 
-export function buildOptionsSearch(sidebarCollapsed: boolean): string {
-  if (!sidebarCollapsed) {
-    return ''
+export function buildOptionsSearch(
+  sidebarCollapsed: boolean,
+  options?: {
+    assetPath?: string
+  }
+): string {
+  const searchParams = new URLSearchParams()
+
+  if (sidebarCollapsed) {
+    searchParams.set(SIDEBAR_QUERY_KEY, SIDEBAR_COLLAPSED_VALUE)
   }
 
-  const searchParams = new URLSearchParams()
-  searchParams.set(SIDEBAR_QUERY_KEY, SIDEBAR_COLLAPSED_VALUE)
-  return `?${searchParams.toString()}`
+  if (options?.assetPath) {
+    searchParams.set(ASSET_PATH_QUERY_KEY, options.assetPath)
+  }
+
+  const nextSearch = searchParams.toString()
+  return nextSearch ? `?${nextSearch}` : ''
 }
 
 export function buildOptionsHashPath(
@@ -42,9 +53,12 @@ export function buildOptionsHashPath(
   if (normalizedSection === 'clients' && options?.clientId) {
     const segments = ['clients', encodeURIComponent(options.clientId)]
 
-    if (options.detailTab === 'assets' && options.assetTab) {
-      segments.push('assets', options.assetTab)
-    } else if (options.detailTab && options.detailTab !== 'assets') {
+    if (options.detailTab === 'assets') {
+      segments.push('assets')
+      if (options.assetTab) {
+        segments.push(options.assetTab)
+      }
+    } else if (options.detailTab) {
       segments.push(options.detailTab)
     }
 
@@ -62,6 +76,7 @@ export function getOptionsRouteFromLocation(): OptionsRouteState {
   const searchParams = new URLSearchParams(window.location.search)
   const searchClientId = searchParams.get('clientId') ?? undefined
   const searchAssetTab = searchParams.get('assetTab')
+  const assetPath = searchParams.get(ASSET_PATH_QUERY_KEY) ?? undefined
   const sidebarCollapsed = isSidebarCollapsedFromSearch(window.location.search)
   const rawHash = window.location.hash.replace(/^#/, '')
   const hashPath = rawHash.startsWith('/') ? rawHash : `/${rawHash}`
@@ -91,9 +106,11 @@ export function getOptionsRouteFromLocation(): OptionsRouteState {
     section = segments[0] as Section
     if (section === 'clients') {
       clientId = segments[1] as EditableClientId | undefined
-      if (segments[2] === 'assets' && isOptionsAssetsTab(segments[3])) {
-        assetTab = segments[3]
+      if (segments[2] === 'assets') {
         detailTab = 'assets'
+        if (isOptionsAssetsTab(segments[3])) {
+          assetTab = segments[3]
+        }
       } else if (isClientDetailTab(segments[2])) {
         detailTab = segments[2]
       }
@@ -119,6 +136,7 @@ export function getOptionsRouteFromLocation(): OptionsRouteState {
     section,
     clientId,
     assetTab,
+    assetPath,
     detailTab,
     marketEntryKey,
     clientDetailOpen: Boolean(clientId || assetTab || detailTab),
@@ -134,7 +152,9 @@ export function normalizeOptionsLocation(): OptionsRouteState {
     assetTab: route.assetTab,
     detailTab: route.detailTab
   })
-  const nextSearch = buildOptionsSearch(route.sidebarCollapsed)
+  const nextSearch = buildOptionsSearch(route.sidebarCollapsed, {
+    assetPath: route.assetPath
+  })
   const hasLegacySearch = window.location.search !== nextSearch
 
   if (window.location.hash !== nextHash || hasLegacySearch) {

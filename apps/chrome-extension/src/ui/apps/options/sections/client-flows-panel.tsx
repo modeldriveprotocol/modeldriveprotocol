@@ -134,6 +134,7 @@ export function ClientFlowsPanel({
   function addCodeFlow() {
     const now = new Date().toISOString()
     const nextFlow: RouteClientRecording = {
+      kind: 'flow',
       id: createLocalId('flow'),
       path: createUniqueAssetPath(
         client.recordings.map((recording) => recording.path),

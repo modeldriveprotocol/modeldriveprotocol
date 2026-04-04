@@ -38,6 +38,7 @@ export type ImportSourceDraftInput =
 
 export type OptionsRouteState = {
   assetTab?: OptionsAssetsTab
+  assetPath?: string
   clientDetailOpen: boolean
   clientId?: EditableClientId
   detailTab?: ClientDetailTab

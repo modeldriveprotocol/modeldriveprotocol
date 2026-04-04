@@ -1,7 +1,10 @@
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
+import ContentCopyOutlined from '@mui/icons-material/ContentCopyOutlined'
 import EditOutlined from '@mui/icons-material/EditOutlined'
 import FolderOutlined from '@mui/icons-material/FolderOutlined'
 import SearchOutlined from '@mui/icons-material/SearchOutlined'
+import UnfoldLessOutlined from '@mui/icons-material/UnfoldLessOutlined'
+import UnfoldMoreOutlined from '@mui/icons-material/UnfoldMoreOutlined'
 import {
   Box,
   FormControlLabel,
@@ -14,7 +17,6 @@ import {
   TextField,
   Typography
 } from '@mui/material'
-import { alpha, useTheme } from '@mui/material/styles'
 import { SimpleTreeView, TreeItem } from '@mui/x-tree-view'
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 
@@ -28,33 +30,33 @@ import {
   type ExtensionConfig
 } from '#~/shared/config.js'
 import type { PopupState } from '#~/background/shared.js'
-import { MonacoCodeEditor } from '../../../foundation/monaco-editor.js'
 import { useI18n } from '../../../i18n/provider.js'
 import { IconPicker } from '../icon-picker.js'
 import type { ClientDetailTab } from '../types.js'
 import {
   AssetEmptyState,
-  AssetScopePanel,
   AssetTreeAction,
   AssetTreeLabel,
   AssetTreeLeaf,
   AssetTreeRenameField,
   basename,
-  buildAssetBreadcrumbs,
+  dirname,
   buildAssetFileTree,
   collectAssetFolderPaths,
   collectAssetItemIds,
-  countAssetFiles,
   filterAssetFileTree,
   findFirstAssetTreeItemId,
-  getAssetFolderChildren,
-  getParentScopeItemId,
   listAncestorFolders,
   renderHighlightedText,
-  type AssetFileTreeNode,
-  type AssetScopeEntry
+  type AssetFileTreeNode
 } from './asset-tree-shared.js'
 import { ClientInvocationPanel } from './invocation-insights.js'
+import {
+  HttpMethodBadge,
+  ScriptedAssetContextMenu,
+  ScriptedAssetEditorPanel,
+  type ScriptedAssetContextMenuSection
+} from './scripted-asset-shared.js'
 
 type BackgroundTreePrefix = 'asset'
 type BackgroundRenameTarget =
@@ -70,23 +72,40 @@ type BackgroundRenameTarget =
       value: string
     }
 
+type BackgroundContextMenuState = {
+  kind: 'asset' | 'folder' | 'root'
+  assetId?: BackgroundExposeAsset['id']
+  folderPath?: string
+  mouseX: number
+  mouseY: number
+}
+
 const BACKGROUND_ASSET_TREE_WIDTH_STORAGE_KEY =
   'mdp-options-background-asset-tree-width'
 
 export function BackgroundClientEditor({
   client,
   draft,
+  initialAssetPath,
   initialTab,
   invocationStats,
   onClearHistory,
+  onAssetPathChange,
+  onTabChange,
   runtimeState,
   onChange
 }: {
   client: BackgroundClientConfig
   draft: ExtensionConfig
+  initialAssetPath: string | undefined
   initialTab: ClientDetailTab | undefined
   invocationStats: PopupState['clients'][number]['invocationStats'] | undefined
   onClearHistory: () => void
+  onAssetPathChange: (
+    path: string | undefined,
+    tab: 'basics' | 'assets' | 'activity'
+  ) => void
+  onTabChange: (tab: 'basics' | 'assets' | 'activity') => void
   runtimeState: PopupState['clients'][number]['connectionState'] | undefined
   onChange: (config: ExtensionConfig) => void
 }) {
@@ -99,9 +118,15 @@ export function BackgroundClientEditor({
         : 'basics'
   )
   const [selectedItemId, setSelectedItemId] = useState<string>('root')
+  const [displayedAssetId, setDisplayedAssetId] = useState<
+    BackgroundExposeAsset['id'] | undefined
+  >()
   const [expandedFolders, setExpandedFolders] = useState<string[]>([])
   const [renameTarget, setRenameTarget] = useState<BackgroundRenameTarget>()
   const [searchQuery, setSearchQuery] = useState('')
+  const [contextMenu, setContextMenu] = useState<
+    BackgroundContextMenuState | undefined
+  >()
   const [treeWidth, setTreeWidth] = useState(272)
   const [isResizingTree, setIsResizingTree] = useState(false)
   const layoutRef = useRef<HTMLDivElement | null>(null)
@@ -116,6 +141,10 @@ export function BackgroundClientEditor({
           : 'basics'
     )
   }, [client.id, initialTab])
+
+  useEffect(() => {
+    onTabChange(tab)
+  }, [onTabChange, tab])
 
   useEffect(() => {
     const savedWidth = Number(
@@ -194,7 +223,8 @@ export function BackgroundClientEditor({
     () => (searchTerm ? findFirstAssetTreeItemId('asset', filteredBackgroundTree) : undefined),
     [filteredBackgroundTree, searchTerm]
   )
-  const selectedAssetId = getSelectedBackgroundAssetId(selectedItemId)
+  const selectedAssetId =
+    displayedAssetId ?? getPreferredBackgroundAssetId(allExposes)
   const selectedAsset = selectedAssetId
     ? exposesById.get(selectedAssetId)
     : undefined
@@ -203,6 +233,37 @@ export function BackgroundClientEditor({
     () => getBackgroundRenameError(renameTarget, client, sharedDisplayPrefix),
     [client, renameTarget, sharedDisplayPrefix]
   )
+  const contextAsset = contextMenu?.assetId
+    ? exposesById.get(contextMenu.assetId)
+    : undefined
+  const contextMenuSections: ScriptedAssetContextMenuSection[] = contextMenu
+    ? buildBackgroundContextMenuSections({
+        contextAsset,
+      contextMenu,
+        expandedFolders,
+        sharedDisplayPrefix,
+        t,
+        copyPath: (path) => {
+          void navigator.clipboard.writeText(path)
+        },
+        collapseAllFolders: () => setExpandedFolders([]),
+        expandAllFolders: () =>
+          setExpandedFolders(collectAssetFolderPaths(backgroundTree)),
+        startRename: (target, itemId) => {
+          setRenameTarget(target)
+          setSelectedItemId(itemId)
+          if (target.kind === 'asset') {
+            setDisplayedAssetId(target.assetId)
+          }
+        },
+        toggleFolder: (folderPath) =>
+          setExpandedFolders((current) =>
+            current.includes(folderPath)
+              ? current.filter((path) => path !== folderPath)
+              : [...current, folderPath]
+          )
+      })
+    : []
 
   useEffect(() => {
     if (!selectedAsset) {
@@ -228,16 +289,35 @@ export function BackgroundClientEditor({
   }, [selectedFolderPath])
 
   useEffect(() => {
-    if (!selectedAssetId || exposesById.has(selectedAssetId)) {
+    const preferredAssetId = resolveInitialBackgroundAssetId(
+      allExposes,
+      initialAssetPath
+    )
+
+    if (!preferredAssetId) {
+      setDisplayedAssetId(undefined)
+      setSelectedItemId('root')
       return
     }
 
-    setSelectedItemId(
-      allExposes[0]
-        ? `asset:${allExposes[0].id}`
-        : 'root'
-    )
-  }, [allExposes, exposesById, selectedAssetId])
+    const currentAssetPath = displayedAssetId
+      ? exposesById.get(displayedAssetId)?.path
+      : undefined
+
+    if (
+      displayedAssetId === preferredAssetId &&
+      (!initialAssetPath || currentAssetPath === initialAssetPath)
+    ) {
+      return
+    }
+
+    setDisplayedAssetId(preferredAssetId)
+    setSelectedItemId(`asset:${preferredAssetId}`)
+  }, [allExposes, displayedAssetId, exposesById, initialAssetPath])
+
+  useEffect(() => {
+    onAssetPathChange(selectedAsset?.path, tab)
+  }, [onAssetPathChange, selectedAsset?.path, tab])
 
   useEffect(() => {
     if (visibleItemIds.has(selectedItemId)) {
@@ -311,37 +391,6 @@ export function BackgroundClientEditor({
     (path) => `asset-folder:${path}`
   )
 
-  const selectedScopeNodes = getAssetFolderChildren(
-    filteredBackgroundTree,
-    selectedFolderPath
-  )
-  const selectedScopeEntries = useMemo(
-    () =>
-      buildBackgroundScopeEntries(
-        'asset',
-        selectedScopeNodes,
-        exposesById,
-        t
-      ),
-    [exposesById, selectedScopeNodes, t]
-  )
-  const selectedScopeTitle = selectedFolderPath
-    ? basename(selectedFolderPath)
-    : t('options.clients.tab.assets')
-  const selectedScopeParentItemId = getParentScopeItemId({
-    folderItemPrefix: 'asset-folder',
-    path: selectedFolderPath,
-    rootItemId: 'root'
-  })
-  const selectedScopeBreadcrumbs = buildAssetBreadcrumbs({
-    folderItemPrefix: 'asset-folder',
-    path: selectedFolderPath,
-    rootItemId: 'root',
-    rootLabel: t('options.clients.tab.assets')
-  })
-  const selectedScopeEmptyLabel = searchTerm
-    ? t('options.assets.searchEmpty')
-    : t('options.clients.backgroundAssetsDescription')
   const assetTreeSx = {
     px: 0.5,
     '& .MuiTreeItem-content': {
@@ -365,6 +414,34 @@ export function BackgroundClientEditor({
         opacity: 1,
         pointerEvents: 'auto'
       }
+  }
+
+  function openContextMenu(
+    event: ReactMouseEvent,
+    target: {
+      kind: 'asset' | 'folder' | 'root'
+      assetId?: BackgroundExposeAsset['id']
+      folderPath?: string
+      itemId?: string
+    }
+  ) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (target.itemId) {
+      setSelectedItemId(target.itemId)
+    }
+    if (target.assetId) {
+      setDisplayedAssetId(target.assetId)
+    }
+
+    setContextMenu({
+      kind: target.kind,
+      assetId: target.assetId,
+      folderPath: target.folderPath,
+      mouseX: event.clientX + 2,
+      mouseY: event.clientY - 6
+    })
   }
 
   return (
@@ -568,6 +645,12 @@ export function BackgroundClientEditor({
                     overflowY: 'auto',
                     overflowX: 'hidden'
                   }}
+                  onContextMenu={(event) =>
+                    openContextMenu(event, {
+                      kind: 'root',
+                      itemId: 'root'
+                    })
+                  }
                 >
                   {searchQuery.trim() && !hasSearchResults ? (
                     <AssetEmptyState
@@ -598,9 +681,16 @@ export function BackgroundClientEditor({
                           setExpandedFolders
                         )
                       }}
-                      onSelectedItemsChange={(_event, itemId) =>
-                        setSelectedItemId((itemId as string | null) ?? 'root')
-                      }
+                      onSelectedItemsChange={(_event, itemId) => {
+                        const nextItemId = (itemId as string | null) ?? 'root'
+                        setSelectedItemId(nextItemId)
+                        const nextAssetId =
+                          getSelectedBackgroundAssetId(nextItemId)
+
+                        if (nextAssetId) {
+                          setDisplayedAssetId(nextAssetId)
+                        }
+                      }}
                       selectedItems={selectedTreeItemId}
                       sx={assetTreeSx}
                     >
@@ -608,6 +698,7 @@ export function BackgroundClientEditor({
                         <BackgroundAssetTreeNodeItem
                           key={node.id}
                           node={node}
+                          onOpenContextMenu={openContextMenu}
                           prefix="asset"
                           renameError={renameError}
                           renameTarget={renameTarget}
@@ -684,24 +775,26 @@ export function BackgroundClientEditor({
                   onUpdate={updateExpose}
                 />
               ) : (
-                <AssetScopePanel
-                  breadcrumbs={selectedScopeBreadcrumbs}
-                  emptyLabel={selectedScopeEmptyLabel}
-                  entries={selectedScopeEntries}
-                  hideContextHeader
-                  hideParentEntry
-                  onOpenItem={setSelectedItemId}
-                  openParentLabel={t('options.assets.openParentFolder')}
-                  parentItemId={selectedScopeParentItemId}
-                  path={selectedFolderPath}
-                  searchTerm={searchTerm}
-                  title={selectedScopeTitle}
+                <AssetEmptyState
+                  label={t('options.assets.searchEmpty')}
+                  minHeight={220}
                 />
               )}
             </Box>
           </Box>
         </Stack>
       ) : null}
+
+      <ScriptedAssetContextMenu
+        anchorPosition={
+          contextMenu
+            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+            : undefined
+        }
+        onClose={() => setContextMenu(undefined)}
+        open={Boolean(contextMenu)}
+        sections={contextMenuSections}
+      />
 
       {tab === 'activity' ? (
         <ClientInvocationPanel
@@ -728,78 +821,54 @@ function BackgroundExposeDetailPanel({
   const definition = getBackgroundExposeDefinition(asset.id)
 
   return (
-    <Stack spacing={1.25} sx={{ minHeight: 0, flex: 1 }}>
-      <FormControlLabel
-        control={
-          <Switch
-            checked={asset.enabled}
-            onChange={(_, checked) =>
-              onUpdate(asset.id, (current) => ({
-                ...current,
-                enabled: checked
-              }))
-            }
-          />
-        }
-        label={t('common.enabled')}
-      />
-
-      <TextField
-        size="small"
-        label={t('common.description')}
-        value={asset.description}
-        onChange={(event) =>
-          onUpdate(asset.id, (current) => ({
-            ...current,
-            description: event.target.value
-          }))
-        }
-        multiline
-        minRows={2}
-      />
-
-      <Typography variant="caption" color="text.secondary">
-        {definition?.sourceKind === 'markdown'
-          ? t('options.assets.skills.markdown')
-          : t('options.clients.defaultPathScript')}
-      </Typography>
-
-      <Box
-        sx={{
-          minHeight: 0,
-          flex: 1,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 1,
-          overflow: 'hidden'
-        }}
-      >
-        <MonacoCodeEditor
-          ariaLabel={
-            definition?.sourceKind === 'markdown'
-              ? t('options.assets.skills.markdown')
-              : t('options.clients.defaultPathScript')
+    <ScriptedAssetEditorPanel
+      controls={
+        <FormControlLabel
+          control={
+            <Switch
+              checked={asset.enabled}
+              onChange={(_, checked) =>
+                onUpdate(asset.id, (current) => ({
+                  ...current,
+                  enabled: checked
+                }))
+              }
+            />
           }
-          language={
-            definition?.sourceKind === 'markdown' ? 'markdown' : 'javascript'
-          }
-          minHeight={360}
-          modelUri={`inmemory://background-exposes/${asset.id}.${definition?.sourceKind === 'markdown' ? 'md' : 'js'}`}
-          onChange={(nextValue) =>
-            onUpdate(asset.id, (current) => ({
-              ...current,
-              source: nextValue
-            }))
-          }
-          value={asset.source}
+          label={t('common.enabled')}
         />
-      </Box>
-    </Stack>
+      }
+      descriptionLabel={t('common.description')}
+      descriptionValue={asset.description}
+      editorLabel={
+        definition?.sourceKind === 'markdown'
+          ? t('options.assets.skills.markdown')
+          : t('options.clients.defaultPathScript')
+      }
+      editorLanguage={
+        definition?.sourceKind === 'markdown' ? 'markdown' : 'javascript'
+      }
+      editorModelUri={`inmemory://background-exposes/${asset.id}.${definition?.sourceKind === 'markdown' ? 'md' : 'js'}`}
+      editorValue={asset.source}
+      onDescriptionChange={(description) =>
+        onUpdate(asset.id, (current) => ({
+          ...current,
+          description
+        }))
+      }
+      onEditorChange={(source) =>
+        onUpdate(asset.id, (current) => ({
+          ...current,
+          source
+        }))
+      }
+    />
   )
 }
 
 function BackgroundAssetTreeNodeItem({
   node,
+  onOpenContextMenu,
   prefix,
   renameError,
   renameTarget,
@@ -812,6 +881,15 @@ function BackgroundAssetTreeNodeItem({
   onStartRename
 }: {
   node: AssetFileTreeNode
+  onOpenContextMenu: (
+    event: ReactMouseEvent,
+    target: {
+      kind: 'asset' | 'folder' | 'root'
+      assetId?: BackgroundExposeAsset['id']
+      folderPath?: string
+      itemId?: string
+    }
+  ) => void
   prefix: BackgroundTreePrefix
   renameError: boolean
   renameTarget: BackgroundRenameTarget | undefined
@@ -833,6 +911,14 @@ function BackgroundAssetTreeNodeItem({
         itemId={itemId}
         label={
           <AssetTreeLeaf
+            onClick={(event) =>
+              handleBackgroundExpandableItemClick(
+                event,
+                itemId,
+                setSelectedItemId,
+                setExpandedFolders
+              )
+            }
             action={
                 <AssetTreeAction
                   label={t('options.assets.renameItem')}
@@ -851,14 +937,6 @@ function BackgroundAssetTreeNodeItem({
               </AssetTreeAction>
             }
             icon={<FolderOutlined fontSize="small" />}
-            onClick={(event) =>
-              handleBackgroundExpandableItemClick(
-                event,
-                itemId,
-                setSelectedItemId,
-                setExpandedFolders
-              )
-            }
             label={
               renameTarget?.kind === 'folder' && renameTarget.path === node.path ? (
                 <AssetTreeRenameField
@@ -876,11 +954,29 @@ function BackgroundAssetTreeNodeItem({
             }
           />
         }
+        onContextMenu={(event) =>
+          onOpenContextMenu(event, {
+            kind: 'folder',
+            folderPath: node.path,
+            itemId
+          })
+        }
+        onDoubleClick={() =>
+          onStartRename(
+            {
+              kind: 'folder',
+              path: node.path,
+              value: node.label
+            },
+            itemId
+          )
+        }
       >
         {node.children.map((child) => (
           <BackgroundAssetTreeNodeItem
             key={child.id}
             node={child}
+            onOpenContextMenu={onOpenContextMenu}
             prefix={prefix}
             renameError={renameError}
             renameTarget={renameTarget}
@@ -942,7 +1038,27 @@ function BackgroundAssetTreeNodeItem({
               </Typography>
             )
           }
+          onClick={() => setSelectedItemId(itemId)}
         />
+      }
+      onContextMenu={(event) =>
+        onOpenContextMenu(event, {
+          kind: 'asset',
+          assetId: node.assetId as BackgroundExposeAsset['id'],
+          folderPath: dirname(node.path),
+          itemId
+        })
+      }
+      onDoubleClick={() =>
+        onStartRename(
+          {
+            kind: 'asset',
+            assetId: node.assetId as BackgroundExposeAsset['id'],
+            path: node.path,
+            value: node.label
+          },
+          itemId
+        )
       }
     />
   )
@@ -955,67 +1071,7 @@ function BackgroundMethodBadge({
     | ReturnType<typeof getBackgroundExposeDefinition>
     | undefined
 }) {
-  const label = definition?.method?.slice(0, 1).toUpperCase() ?? 'M'
-  const { accent, background } = useBackgroundMethodBadgeTone(definition?.method)
-
-  return (
-    <Box
-      sx={{
-        width: 18,
-        height: 18,
-        borderRadius: 0.75,
-        border: '1px solid',
-        borderColor: alpha(accent, 0.4),
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 10,
-        fontWeight: 700,
-        color: accent,
-        bgcolor: background,
-        flexShrink: 0
-      }}
-    >
-      {label}
-    </Box>
-  )
-}
-
-function useBackgroundMethodBadgeTone(method: string | undefined) {
-  const theme = useTheme()
-
-  switch (method) {
-    case 'GET':
-      return {
-        accent: theme.palette.success.main,
-        background: alpha(theme.palette.success.main, 0.14)
-      }
-    case 'POST':
-      return {
-        accent: theme.palette.warning.dark,
-        background: alpha(theme.palette.warning.main, 0.18)
-      }
-    case 'PUT':
-      return {
-        accent: theme.palette.info.main,
-        background: alpha(theme.palette.info.main, 0.16)
-      }
-    case 'PATCH':
-      return {
-        accent: theme.palette.primary.main,
-        background: alpha(theme.palette.primary.main, 0.14)
-      }
-    case 'DELETE':
-      return {
-        accent: theme.palette.error.main,
-        background: alpha(theme.palette.error.main, 0.14)
-      }
-    default:
-      return {
-        accent: theme.palette.text.secondary,
-        background: alpha(theme.palette.text.secondary, 0.12)
-      }
-  }
+  return <HttpMethodBadge method={definition?.method} />
 }
 
 function buildBackgroundTree(
@@ -1043,33 +1099,161 @@ function buildBackgroundTree(
   )
 }
 
-function buildBackgroundScopeEntries(
-  prefix: BackgroundTreePrefix,
-  nodes: AssetFileTreeNode[],
-  assetsById: Map<BackgroundExposeAsset['id'], BackgroundExposeAsset>,
-  t: (key: string, values?: Record<string, string | number>) => string
-): AssetScopeEntry[] {
-  return nodes.map((node) => {
-    if (node.kind === 'folder') {
-      return {
-        itemId: `${prefix}-folder:${node.path}`,
-        kind: 'folder',
-        title: node.label,
-        subtitle: t('options.assets.scopeChildren', {
-          count: countAssetFiles(node.children)
-        })
+function getPreferredBackgroundAssetId(
+  exposes: BackgroundExposeAsset[]
+): BackgroundExposeAsset['id'] | undefined {
+  return (
+    exposes.find((asset) => asset.path.endsWith('/SKILL.md'))?.id ??
+    exposes.find((asset) => asset.path.endsWith('SKILL.md'))?.id ??
+    exposes[0]?.id
+  )
+}
+
+function resolveInitialBackgroundAssetId(
+  exposes: BackgroundExposeAsset[],
+  initialAssetPath: string | undefined
+): BackgroundExposeAsset['id'] | undefined {
+  if (initialAssetPath) {
+    const matchedAsset = exposes.find((asset) => asset.path === initialAssetPath)
+
+    if (matchedAsset) {
+      return matchedAsset.id
+    }
+  }
+
+  return getPreferredBackgroundAssetId(exposes)
+}
+
+function buildBackgroundContextMenuSections(options: {
+  contextAsset: BackgroundExposeAsset | undefined
+  contextMenu: BackgroundContextMenuState
+  expandedFolders: string[]
+  sharedDisplayPrefix: string | undefined
+  t: (key: string) => string
+  copyPath: (path: string) => void
+  collapseAllFolders: () => void
+  expandAllFolders: () => void
+  startRename: (
+    target: BackgroundRenameTarget,
+    itemId: string
+  ) => void
+  toggleFolder: (folderPath: string) => void
+}): ScriptedAssetContextMenuSection[] {
+  const { contextAsset, contextMenu, expandedFolders, sharedDisplayPrefix, t } = options
+
+  if (contextMenu.kind === 'root') {
+    return [
+      {
+        key: 'tree',
+        title: t('options.assets.menu.section.tree'),
+        items: [
+          {
+            key: 'expand-all',
+            label: t('options.assets.menu.expandAll'),
+            icon: <UnfoldMoreOutlined fontSize="small" />,
+            onSelect: options.expandAllFolders
+          },
+          {
+            key: 'collapse-all',
+            label: t('options.assets.menu.collapseAll'),
+            icon: <UnfoldLessOutlined fontSize="small" />,
+            onSelect: options.collapseAllFolders
+          }
+        ]
       }
-    }
+    ]
+  }
 
-    const asset = assetsById.get(node.assetId as BackgroundExposeAsset['id'])
+  if (contextMenu.kind === 'folder' && contextMenu.folderPath) {
+    const isExpanded = expandedFolders.includes(contextMenu.folderPath)
+    return [
+      {
+        key: 'folder',
+        title: t('options.assets.menu.section.folder'),
+        items: [
+          {
+            key: isExpanded ? 'collapse' : 'expand',
+            label: isExpanded
+              ? t('options.assets.menu.collapseFolder')
+              : t('options.assets.menu.expandFolder'),
+            icon: isExpanded ? (
+              <UnfoldLessOutlined fontSize="small" />
+            ) : (
+              <UnfoldMoreOutlined fontSize="small" />
+            ),
+            onSelect: () => options.toggleFolder(contextMenu.folderPath!)
+          },
+          {
+            key: 'rename',
+            label: t('options.assets.renameItem'),
+            icon: <EditOutlined fontSize="small" />,
+            onSelect: () =>
+              options.startRename(
+                {
+                  kind: 'folder',
+                  path: contextMenu.folderPath!,
+                  value: basename(contextMenu.folderPath!)
+                },
+                `asset-folder:${contextMenu.folderPath}`
+              )
+          },
+          {
+            key: 'copy-path',
+            label: t('options.assets.menu.copyPath'),
+            icon: <ContentCopyOutlined fontSize="small" />,
+            onSelect: () => options.copyPath(contextMenu.folderPath!)
+          }
+        ]
+      }
+    ]
+  }
 
-    return {
-      itemId: `${prefix}:${node.assetId}`,
-      kind: 'file',
-      title: node.label,
-      subtitle: [asset?.path, asset?.description].filter(Boolean).join(' · ')
+  return [
+    {
+      key: 'file',
+      title: t('options.assets.menu.section.file'),
+      items: [
+        {
+          key: 'rename',
+          label: t('options.assets.renameItem'),
+          icon: <EditOutlined fontSize="small" />,
+          disabled: !contextAsset,
+          onSelect: () =>
+            contextAsset
+              ? options.startRename(
+                  {
+                    kind: 'asset',
+                    assetId: contextAsset.id,
+                    path: getBackgroundDisplayPath(
+                      contextAsset.path,
+                      sharedDisplayPrefix
+                    ),
+                    value: basename(
+                      getBackgroundDisplayPath(
+                        contextAsset.path,
+                        sharedDisplayPrefix
+                      )
+                    )
+                  },
+                  `asset:${contextAsset.id}`
+                )
+              : undefined
+        },
+        {
+          key: 'copy-path',
+          label: t('options.assets.menu.copyPath'),
+          icon: <ContentCopyOutlined fontSize="small" />,
+          disabled: !contextAsset,
+          onSelect: () =>
+            contextAsset
+              ? options.copyPath(
+                  getBackgroundDisplayPath(contextAsset.path, sharedDisplayPrefix)
+                )
+              : undefined
+        }
+      ]
     }
-  })
+  ]
 }
 
 function handleBackgroundExpandedItemsChange(

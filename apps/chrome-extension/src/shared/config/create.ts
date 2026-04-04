@@ -26,6 +26,11 @@ import {
   normalizeRepositoryIdentifier
 } from './internal.js'
 import { getOriginMatchPattern, suggestPathnameRule } from './matching.js'
+import {
+  cloneRouteExposeAssets,
+  ensureRootRouteSkillAsset,
+  syncRouteClientAssetViews
+} from './route-assets.js'
 
 export function createRouteClientConfig(
   overrides: Partial<RouteClientConfig> = {}
@@ -35,7 +40,18 @@ export function createRouteClientConfig(
   const clientId =
     normalizeId(overrides.clientId) ?? buildClientId(sourceName, routeId)
 
-  return {
+  const exposes = ensureRootRouteSkillAsset(
+    overrides.exposes
+      ? cloneRouteExposeAssets(overrides.exposes)
+      : [
+          ...(overrides.skillEntries ?? []),
+          ...(overrides.skillFolders ?? []),
+          ...(overrides.recordings ?? []),
+          ...(overrides.selectorResources ?? [])
+        ]
+  )
+
+  return syncRouteClientAssetViews({
     kind: 'route',
     id: routeId,
     enabled: overrides.enabled ?? true,
@@ -50,14 +66,11 @@ export function createRouteClientConfig(
     routeRules: overrides.routeRules ?? [],
     autoInjectBridge: overrides.autoInjectBridge ?? true,
     pathScriptSource: overrides.pathScriptSource?.trim() ?? '',
-    recordings: overrides.recordings ?? [],
-    selectorResources: overrides.selectorResources ?? [],
-    skillFolders: overrides.skillFolders ?? [],
-    skillEntries: overrides.skillEntries ?? [],
+    exposes,
     ...(overrides.installSource
       ? { installSource: overrides.installSource }
       : {})
-  }
+  })
 }
 
 export function createBackgroundClientConfig(
