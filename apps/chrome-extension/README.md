@@ -114,6 +114,25 @@ Open the extension options page and configure a workspace:
 
 Saving the options page requests host permissions for every configured route-client pattern.
 
+## Real End-To-End Validation
+
+When you need proof against a real browser and a real MCP caller, prefer this loop:
+
+```bash
+MDP_WXT_MANUAL=1 pnpm --filter @modeldriveprotocol/chrome-extension dev -- --port 3001
+node packages/server/dist/cli.js --port 47372
+```
+
+Then launch your own Chrome against the persistent WXT profile with DevTools Protocol enabled and point the options page at `ws://127.0.0.1:47372`.
+
+Drive the scenario through a real MCP consumer such as a small Node script using `@ai-sdk/mcp`, `listClients`, and `callPath`.
+For workspace-management writes, expect a brief disconnect while the extension runtime refreshes and retry once `mdp-chrome-workspace` shows up in `listClients` again.
+
+For screenshots, do not trust the page title alone.
+If the extension page body is empty, inspect the HTML and make sure WXT is serving the same `localhost:<port>` referenced by the injected script tags before capturing.
+
+Remove temporary clients, route rules, and `.artifacts/**` evidence after the run unless the task explicitly asks to keep them.
+
 The popup now acts as a quick control surface:
 
 - pick the active route client for the current page
