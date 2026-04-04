@@ -27,7 +27,7 @@ Open the smallest relevant guide for the current task:
 - user asks to improve clarity, simplify usage, reduce cognitive load, or make popup/options easier to understand:
   read [.ai/rules/ui-clarity.md](./.ai/rules/ui-clarity.md)
 - task is about splitting large source files, reorganizing directories, or deciding where extracted modules should live:
-  read [.ai/rules/source-layout.md](./.ai/rules/source-layout.md)
+  read [../../.ai/rules/architecture/module-organization.md](../../.ai/rules/architecture/module-organization.md), then [.ai/rules/source-layout.md](./.ai/rules/source-layout.md)
 - task is inside `src/ui/**`, or is about where UI files should live after the recent directory flattening:
   read [src/ui/AGENTS.md](./src/ui/AGENTS.md)
 - task spans multiple areas:

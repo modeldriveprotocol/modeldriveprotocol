@@ -170,10 +170,12 @@ export function ScriptedAssetEditorPanel({
         onChange={(event) => onDescriptionChange(event.target.value)}
         size="small"
         value={descriptionValue}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 1.5
+          }
+        }}
       />
-      <Typography variant="caption" color="text.secondary">
-        {editorLabel}
-      </Typography>
       <Box
         sx={{
           minHeight: 0,
@@ -213,7 +215,23 @@ export function ScriptedAssetMethodField({
       select
       size="small"
       label={label}
-      sx={sx}
+      sx={{
+        ...sx,
+        '& .MuiInputLabel-root': {
+          fontSize: 13
+        },
+        '& .MuiOutlinedInput-root': {
+          minHeight: 34,
+          borderRadius: 1.25
+        },
+        '& .MuiSelect-select': {
+          fontSize: 13,
+          py: 0.75
+        },
+        '& .MuiSvgIcon-root': {
+          fontSize: 18
+        }
+      }}
       value={method}
       onChange={(event) =>
         onChange(
@@ -221,11 +239,11 @@ export function ScriptedAssetMethodField({
         )
       }
     >
-      <MenuItem value="GET">GET</MenuItem>
-      <MenuItem value="POST">POST</MenuItem>
-      <MenuItem value="PUT">PUT</MenuItem>
-      <MenuItem value="PATCH">PATCH</MenuItem>
-      <MenuItem value="DELETE">DELETE</MenuItem>
+      <MenuItem sx={{ fontSize: 13, minHeight: 34 }} value="GET">GET</MenuItem>
+      <MenuItem sx={{ fontSize: 13, minHeight: 34 }} value="POST">POST</MenuItem>
+      <MenuItem sx={{ fontSize: 13, minHeight: 34 }} value="PUT">PUT</MenuItem>
+      <MenuItem sx={{ fontSize: 13, minHeight: 34 }} value="PATCH">PATCH</MenuItem>
+      <MenuItem sx={{ fontSize: 13, minHeight: 34 }} value="DELETE">DELETE</MenuItem>
     </TextField>
   )
 }
