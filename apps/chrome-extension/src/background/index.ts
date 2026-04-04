@@ -1,6 +1,10 @@
 import { type UnknownRecord, asRecord, serializeError } from '#~/shared/utils.js'
 import { ChromeExtensionRuntime } from '#~/background/runtime.js'
 import { STORAGE_KEY } from '#~/shared/config.js'
+import {
+  clearBackgroundStartupDiagnostics,
+  saveBackgroundStartupDiagnostics
+} from '#~/shared/storage.js'
 
 let backgroundStarted = false
 
@@ -12,6 +16,28 @@ export function startBackground(): void {
   backgroundStarted = true
 
   const runtime = new ChromeExtensionRuntime()
+  const reportStartupError = async (stage: string, error: unknown) => {
+    await saveBackgroundStartupDiagnostics({
+      stage,
+      updatedAt: new Date().toISOString(),
+      ...serializeError(error)
+    })
+  }
+  const initializeRuntime = async (stage: string) => {
+    try {
+      await runtime.initialize()
+      await clearBackgroundStartupDiagnostics()
+    } catch (error) {
+      await reportStartupError(stage, error)
+    }
+  }
+
+  globalThis.addEventListener('error', (event) => {
+    void reportStartupError('global:error', event.error ?? event.message)
+  })
+  globalThis.addEventListener('unhandledrejection', (event) => {
+    void reportStartupError('global:unhandledrejection', event.reason)
+  })
 
   if (chrome.sidePanel?.setPanelBehavior) {
     void chrome.sidePanel.setPanelBehavior({
@@ -25,7 +51,7 @@ export function startBackground(): void {
         openPanelOnActionClick: true
       })
     }
-    void runtime.initialize()
+    void initializeRuntime('runtime:onInstalled')
   })
 
   chrome.runtime.onStartup.addListener(() => {
@@ -34,7 +60,7 @@ export function startBackground(): void {
         openPanelOnActionClick: true
       })
     }
-    void runtime.initialize()
+    void initializeRuntime('runtime:onStartup')
   })
 
   chrome.storage.onChanged.addListener((changes: unknown, areaName: string) => {
@@ -93,5 +119,5 @@ export function startBackground(): void {
     }
   )
 
-  void runtime.initialize()
+  void initializeRuntime('background:start')
 }

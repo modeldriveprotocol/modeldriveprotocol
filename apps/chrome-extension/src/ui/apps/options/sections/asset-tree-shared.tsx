@@ -46,21 +46,25 @@ export function AssetTreeLabel({
   count,
   dropActive = false,
   label,
+  onClick,
   searchTerm
 }: {
   action?: ReactNode
   count: number
   dropActive?: boolean
   label: string
+  onClick?: (event: ReactMouseEvent<HTMLDivElement>) => void
   searchTerm?: string
 }) {
   return (
     <Box
+      onClick={onClick}
       sx={{
         display: 'flex',
         alignItems: 'center',
         gap: 0.75,
         minWidth: 0,
+        width: '100%',
         bgcolor: dropActive ? 'action.hover' : undefined
       }}
     >
@@ -81,21 +85,25 @@ export function AssetTreeLeaf({
   dragging = false,
   dropActive = false,
   icon,
-  label
+  label,
+  onClick
 }: {
   action?: ReactNode
   dragging?: boolean
   dropActive?: boolean
   icon: ReactNode
   label: ReactNode
+  onClick?: (event: ReactMouseEvent<HTMLDivElement>) => void
 }) {
   return (
     <Box
+      onClick={onClick}
       sx={{
         display: 'flex',
         alignItems: 'center',
         gap: 0.75,
         minWidth: 0,
+        width: '100%',
         opacity: dragging ? 0.45 : 1,
         bgcolor: dropActive ? 'action.hover' : undefined
       }}
@@ -297,6 +305,8 @@ export function AssetScopePanel({
   breadcrumbs,
   emptyLabel,
   entries,
+  hideContextHeader = false,
+  hideParentEntry = false,
   onOpenItem,
   openParentLabel,
   parentItemId,
@@ -307,6 +317,8 @@ export function AssetScopePanel({
   breadcrumbs?: AssetBreadcrumb[]
   emptyLabel: string
   entries: AssetScopeEntry[]
+  hideContextHeader?: boolean
+  hideParentEntry?: boolean
   onOpenItem: (itemId: string) => void
   openParentLabel: string
   parentItemId?: string
@@ -317,13 +329,15 @@ export function AssetScopePanel({
   if (entries.length === 0) {
     return (
       <Stack spacing={1.25} sx={{ minWidth: 0 }}>
-        <AssetContextHeader
-          breadcrumbs={breadcrumbs}
-          onOpenItem={onOpenItem}
-          path={path}
-          title={title}
-        />
-        {parentItemId ? (
+        {!hideContextHeader ? (
+          <AssetContextHeader
+            breadcrumbs={breadcrumbs}
+            onOpenItem={onOpenItem}
+            path={path}
+            title={title}
+          />
+        ) : null}
+        {!hideParentEntry && parentItemId ? (
           <AssetScopeParentEntry
             itemId={parentItemId}
             label={openParentLabel}
@@ -337,14 +351,16 @@ export function AssetScopePanel({
 
   return (
     <Stack spacing={1.25} sx={{ minWidth: 0 }}>
-      <AssetContextHeader
-        breadcrumbs={breadcrumbs}
-        onOpenItem={onOpenItem}
-        path={path}
-        title={title}
-      />
+      {!hideContextHeader ? (
+        <AssetContextHeader
+          breadcrumbs={breadcrumbs}
+          onOpenItem={onOpenItem}
+          path={path}
+          title={title}
+        />
+      ) : null}
       <Stack spacing={0}>
-        {parentItemId ? (
+        {!hideParentEntry && parentItemId ? (
           <AssetScopeParentEntry
             itemId={parentItemId}
             label={openParentLabel}
@@ -782,6 +798,13 @@ function sortAssetFileTree(nodes: AssetFileTreeNode[]): AssetFileTreeNode[] {
         : node
     )
     .sort((left, right) => {
+      const leftPriority = getAssetTreeLabelPriority(left.label)
+      const rightPriority = getAssetTreeLabelPriority(right.label)
+
+      if (leftPriority !== rightPriority) {
+        return leftPriority - rightPriority
+      }
+
       if (left.kind !== right.kind) {
         return left.kind === 'folder' ? -1 : 1
       }
@@ -790,16 +813,27 @@ function sortAssetFileTree(nodes: AssetFileTreeNode[]): AssetFileTreeNode[] {
     })
 }
 
+function getAssetTreeLabelPriority(label: string): number {
+  if (label === '.ai') {
+    return 0
+  }
+
+  if (label === 'SKILL.md' || label === 'skill.md') {
+    return 1
+  }
+
+  return 2
+}
+
 function splitAssetPath(path: string): string[] {
   return path
     .split('/')
     .map((segment) =>
       segment
         .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9._-]+/g, '-')
+        .replace(/[^A-Za-z0-9._-]+/g, '-')
         .replace(/-+/g, '-')
-        .replace(/^[-_.]+|[-_.]+$/g, '')
+        .replace(/^[-_]+|[-_]+$/g, '')
     )
     .filter(Boolean)
 }

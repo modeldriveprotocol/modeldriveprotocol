@@ -70,6 +70,49 @@ describe('ProcedureRegistry', () => {
     ])
   })
 
+  it('accepts uppercase SKILL.md leaf names', () => {
+    const registry = new ProcedureRegistry()
+
+    registry.expose('/goods/SKILL.md', '# Goods\n\nRead `/goods` for the current goods list.')
+
+    expect(
+      registry.describe({
+        id: 'client-01',
+        name: 'Browser Client'
+      }).paths
+    ).toEqual([
+      {
+        type: 'skill',
+        path: '/goods/SKILL.md',
+        description: 'Read `/goods` for the current goods list.',
+        contentType: 'text/markdown'
+      }
+    ])
+  })
+
+  it('accepts .ai metadata directories for skill paths', () => {
+    const registry = new ProcedureRegistry()
+
+    registry.expose(
+      '/goods/.ai/skills/review/SKILL.md',
+      '# Review Skill\n\nUse this when the task is specifically about review.'
+    )
+
+    expect(
+      registry.describe({
+        id: 'client-01',
+        name: 'Browser Client'
+      }).paths
+    ).toEqual([
+      {
+        type: 'skill',
+        path: '/goods/.ai/skills/review/SKILL.md',
+        description: 'Use this when the task is specifically about review.',
+        contentType: 'text/markdown'
+      }
+    ])
+  })
+
   it('routes endpoint requests with params, queries, headers, and auth', async () => {
     const registry = new ProcedureRegistry()
     const handler = vi.fn(async ({ params, queries, headers }, context) => ({

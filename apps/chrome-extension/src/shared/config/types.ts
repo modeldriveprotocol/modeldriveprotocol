@@ -1,6 +1,8 @@
 import {
   BACKGROUND_BROWSER_EXPOSE_PATHS,
+  BACKGROUND_BROWSER_SKILL_EXPOSE_PATHS,
   BACKGROUND_SKILL_EXPOSE_PATHS,
+  BACKGROUND_WORKSPACE_SKILL_EXPOSE_PATHS,
   BACKGROUND_WORKSPACE_EXPOSE_PATHS,
   createBackgroundExposeAssets,
   type BackgroundExposeAsset
@@ -205,11 +207,15 @@ export const DEFAULT_BACKGROUND_CLIENT: BackgroundClientConfig = {
   icon: 'chrome',
   exposes: createBackgroundExposeAssets([
     ...BACKGROUND_WORKSPACE_EXPOSE_PATHS,
-    ...BACKGROUND_SKILL_EXPOSE_PATHS
+    ...BACKGROUND_SKILL_EXPOSE_PATHS.filter(
+      (path) => !BACKGROUND_BROWSER_SKILL_EXPOSE_PATHS.includes(path)
+    )
   ]),
   disabledExposePaths: [
     ...BACKGROUND_WORKSPACE_EXPOSE_PATHS,
-    ...BACKGROUND_SKILL_EXPOSE_PATHS
+    ...BACKGROUND_SKILL_EXPOSE_PATHS.filter(
+      (path) => !BACKGROUND_BROWSER_SKILL_EXPOSE_PATHS.includes(path)
+    )
   ]
 }
 
@@ -223,8 +229,18 @@ export const DEFAULT_WORKSPACE_MANAGEMENT_CLIENT: BackgroundClientConfig = {
   clientDescription:
     'Chrome extension workspace manager that can create, update, and remove clients and persist route expose rules.',
   icon: 'layers',
-  exposes: createBackgroundExposeAssets([...BACKGROUND_BROWSER_EXPOSE_PATHS]),
-  disabledExposePaths: [...BACKGROUND_BROWSER_EXPOSE_PATHS]
+  exposes: createBackgroundExposeAssets([
+    ...BACKGROUND_BROWSER_EXPOSE_PATHS,
+    ...BACKGROUND_SKILL_EXPOSE_PATHS.filter(
+      (path) => !BACKGROUND_WORKSPACE_SKILL_EXPOSE_PATHS.includes(path)
+    )
+  ]),
+  disabledExposePaths: [
+    ...BACKGROUND_BROWSER_EXPOSE_PATHS,
+    ...BACKGROUND_SKILL_EXPOSE_PATHS.filter(
+      (path) => !BACKGROUND_WORKSPACE_SKILL_EXPOSE_PATHS.includes(path)
+    )
+  ]
 }
 
 export const DEFAULT_BACKGROUND_CLIENTS: BackgroundClientConfig[] = [

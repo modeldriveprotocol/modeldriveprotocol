@@ -190,6 +190,57 @@ describe('chrome extension config helpers', () => {
     )
   })
 
+  it('migrates legacy background skill paths to the directory-local SKILL.md layout', () => {
+    const normalized = normalizeConfig({
+      ...DEFAULT_EXTENSION_CONFIG,
+      backgroundClients: [
+        {
+          ...DEFAULT_BACKGROUND_CLIENT,
+          disabledExposePaths: [
+            '/extension/skills/manage-clients/skill.md'
+          ],
+          exposes: DEFAULT_BACKGROUND_CLIENT.exposes.map((asset) =>
+            asset.id === 'extension.skills.manage-clients'
+              ? {
+                  ...asset,
+                  path: '/extension/skills/manage-clients/skill.md',
+                  enabled: false
+                }
+              : asset.id === 'extension.skills.manage-client-expose-rules'
+                ? {
+                    ...asset,
+                    path: '/extension/skills/manage-client-expose-rules/skill.md'
+                  }
+                : { ...asset }
+          )
+        },
+        DEFAULT_WORKSPACE_MANAGEMENT_CLIENT
+      ]
+    })
+
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-clients'
+      )
+    ).toMatchObject({
+      path: '/extension/clients/SKILL.md',
+      enabled: false
+    })
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-client-expose-rules'
+      )
+    ).toMatchObject({
+      path: '/extension/clients/.ai/skills/manage-client-expose-rules/SKILL.md'
+    })
+    expect(normalized.backgroundClients[0]?.disabledExposePaths).toContain(
+      '/extension/clients/SKILL.md'
+    )
+    expect(normalized.backgroundClients[0]?.disabledExposePaths).toContain(
+      '/extension/clients/.ai/skills/manage-client-expose-rules/SKILL.md'
+    )
+  })
+
   it('deduplicates and trims match patterns', () => {
     expect(
       parseMatchPatterns(' https://app.example.com/* \nhttps://app.example.com/*\n')

@@ -16,7 +16,7 @@ Prove the full hosted path:
 
 Use WXT's normal `dev` runner and give it a gitignored `apps/chrome-extension/web-ext.config.ts` that:
 
-- points `binaries.chrome` at `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`
+- points `binaries.chrome` at `/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary`
 - uses `apps/chrome-extension/.artifacts/chrome-profile` as `chromiumProfile`
 - adds `--remote-debugging-port=9227`
 
@@ -34,6 +34,9 @@ node packages/server/dist/cli.js --port 47372
 
 Do not prefer `dev:manual` plus a hand-built `--load-extension` Chrome launch here unless you are already blocked on the normal WXT runner.
 That path looked viable earlier, but in the verified session it often opened Chrome without reliably surfacing the unpacked extension as a debuggable target.
+
+Before starting on a new machine, first confirm a dedicated Chrome debug channel exists.
+If the machine only has the regular stable Chrome app, install Canary first; otherwise the WXT-driven debug session can conflict with the user's normal Chrome windows and vanish mid-run.
 
 ## Real Caller Rule
 

@@ -1,6 +1,7 @@
 import { type ExtensionConfig, STORAGE_KEY, normalizeConfig } from './config.js'
 
 export const MARKET_SYNC_STATE_KEY = 'marketSourceSyncState'
+export const BACKGROUND_STARTUP_DIAGNOSTICS_KEY = 'backgroundStartupDiagnostics'
 
 export interface MarketSourceSnapshot {
   sourceId: string
@@ -24,6 +25,14 @@ export interface MarketSourceSyncState {
   lastCheckedAt?: string
   snapshots: MarketSourceSnapshot[]
   pendingUpdates: MarketSourcePendingUpdate[]
+}
+
+export interface BackgroundStartupDiagnostics {
+  stage: string
+  message: string
+  stack?: string
+  cause?: string
+  updatedAt: string
 }
 
 export async function loadConfig(): Promise<ExtensionConfig> {
@@ -136,4 +145,47 @@ export async function saveMarketSourceSyncState(state: MarketSourceSyncState): P
   })
 
   return state
+}
+
+export async function loadBackgroundStartupDiagnostics(): Promise<BackgroundStartupDiagnostics | undefined> {
+  const stored = (await chrome.storage.local.get(
+    BACKGROUND_STARTUP_DIAGNOSTICS_KEY
+  )) as Record<string, unknown>
+  const value = stored[BACKGROUND_STARTUP_DIAGNOSTICS_KEY]
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined
+  }
+
+  const record = value as Record<string, unknown>
+  const stage = typeof record.stage === 'string' ? record.stage : undefined
+  const message = typeof record.message === 'string' ? record.message : undefined
+  const updatedAt =
+    typeof record.updatedAt === 'string' ? record.updatedAt : undefined
+
+  if (!stage || !message || !updatedAt) {
+    return undefined
+  }
+
+  return {
+    stage,
+    message,
+    updatedAt,
+    ...(typeof record.stack === 'string' ? { stack: record.stack } : {}),
+    ...(typeof record.cause === 'string' ? { cause: record.cause } : {})
+  }
+}
+
+export async function saveBackgroundStartupDiagnostics(
+  diagnostics: BackgroundStartupDiagnostics
+): Promise<BackgroundStartupDiagnostics> {
+  await chrome.storage.local.set({
+    [BACKGROUND_STARTUP_DIAGNOSTICS_KEY]: diagnostics
+  })
+
+  return diagnostics
+}
+
+export async function clearBackgroundStartupDiagnostics(): Promise<void> {
+  await chrome.storage.local.remove(BACKGROUND_STARTUP_DIAGNOSTICS_KEY)
 }

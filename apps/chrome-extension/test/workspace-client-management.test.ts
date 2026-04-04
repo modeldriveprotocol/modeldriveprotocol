@@ -118,7 +118,7 @@ describe('workspace client management runtime helpers', () => {
       disabledExposePaths: [
         '/extension/status',
         '/extension/resources/status',
-        '/extension/skills/manage-clients/skill.md'
+        '/extension/clients/SKILL.md'
       ]
     })
 
@@ -129,7 +129,7 @@ describe('workspace client management runtime helpers', () => {
       disabledExposePaths: [
         '/extension/status',
         '/extension/resources/status',
-        '/extension/skills/manage-clients/skill.md'
+        '/extension/clients/SKILL.md'
       ]
     })
 

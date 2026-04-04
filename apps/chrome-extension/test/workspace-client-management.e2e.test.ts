@@ -84,7 +84,7 @@ describe('workspace management background client end-to-end flow', () => {
     )
 
     const skill = await harness.invoke(
-      '/extension/skills/manage-clients/skill.md'
+      '/extension/clients/SKILL.md'
     )
     expect(skill).toContain('/extension/clients/create')
     expect(skill).toContain('/extension/clients/delete')
@@ -241,7 +241,7 @@ describe('workspace management background client end-to-end flow', () => {
         disabledExposePaths: [
           '/extension/status',
           '/extension/resources/status',
-          '/extension/skills/manage-clients/skill.md'
+          '/extension/clients/SKILL.md'
         ]
       }
     })) as {
@@ -259,7 +259,7 @@ describe('workspace management background client end-to-end flow', () => {
       disabledExposePaths: [
         '/extension/status',
         '/extension/resources/status',
-        '/extension/skills/manage-clients/skill.md'
+        '/extension/clients/SKILL.md'
       ]
     })
 

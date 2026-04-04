@@ -11,6 +11,24 @@ export function registerBackgroundSkills(
     client,
     null,
     config,
+    'extension.skills.root',
+    {
+      contentType: 'text/markdown'
+    }
+  )
+  registerScriptedBackgroundExpose(
+    client,
+    null,
+    config,
+    'extension.skills.resources',
+    {
+      contentType: 'text/markdown'
+    }
+  )
+  registerScriptedBackgroundExpose(
+    client,
+    null,
+    config,
     'extension.skills.manage-clients',
     {
       contentType: 'text/markdown'

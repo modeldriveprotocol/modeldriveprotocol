@@ -17,9 +17,16 @@ interface RuntimeMessageResponse {
   }
 }
 
+type SendRuntimeMessageOptions = {
+  timeoutMs?: number
+  timeoutMessage?: string
+}
+
 export type OptionsSection = 'workspace' | 'settings' | 'clients' | 'assets' | 'market'
 export type OptionsAssetsTab = 'flows' | 'resources' | 'skills'
 export type OptionsClientDetailTab = 'basics' | 'matching' | 'runtime' | 'assets' | 'activity'
+
+const RUNTIME_STATUS_TIMEOUT_MS = 3000
 
 function buildOptionsHashPath(
   section: OptionsSection,
@@ -48,8 +55,42 @@ function buildOptionsHashPath(
   return `#/${targetSection}`
 }
 
-export async function sendRuntimeMessage<T>(message: Record<string, unknown>): Promise<T> {
-  const response = (await chrome.runtime.sendMessage(message)) as RuntimeMessageResponse
+function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  timeoutMessage: string
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timeoutId = globalThis.setTimeout(() => {
+      reject(new Error(timeoutMessage))
+    }, timeoutMs)
+
+    promise.then(
+      (value) => {
+        globalThis.clearTimeout(timeoutId)
+        resolve(value)
+      },
+      (error) => {
+        globalThis.clearTimeout(timeoutId)
+        reject(error)
+      }
+    )
+  })
+}
+
+export async function sendRuntimeMessage<T>(
+  message: Record<string, unknown>,
+  options?: SendRuntimeMessageOptions
+): Promise<T> {
+  const responsePromise = chrome.runtime.sendMessage(message) as Promise<RuntimeMessageResponse>
+  const response = (await (options?.timeoutMs
+    ? withTimeout(
+        responsePromise,
+        options.timeoutMs,
+        options.timeoutMessage ??
+          `Runtime message timed out after ${options.timeoutMs}ms.`
+      )
+    : responsePromise)) as RuntimeMessageResponse
 
   if (!response.ok) {
     throw new Error(response.error?.message ?? 'Runtime message failed')
@@ -109,6 +150,9 @@ export async function getPopupState(): Promise<PopupState> {
 export async function getRuntimeStatus(): Promise<PopupState> {
   return sendRuntimeMessage<PopupState>({
     type: 'runtime:getStatus'
+  }, {
+    timeoutMs: RUNTIME_STATUS_TIMEOUT_MS,
+    timeoutMessage: `Background runtime did not respond to runtime:getStatus within ${RUNTIME_STATUS_TIMEOUT_MS}ms.`
   })
 }
 

@@ -1,5 +1,5 @@
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined'
+import EditOutlined from '@mui/icons-material/EditOutlined'
 import FolderOutlined from '@mui/icons-material/FolderOutlined'
 import SearchOutlined from '@mui/icons-material/SearchOutlined'
 import {
@@ -14,18 +14,17 @@ import {
   TextField,
   Typography
 } from '@mui/material'
+import { alpha, useTheme } from '@mui/material/styles'
 import { SimpleTreeView, TreeItem } from '@mui/x-tree-view'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 
 import {
   countEnabledBackgroundExposes,
   deriveDisabledBackgroundExposePaths,
   getBackgroundExposeDefinition,
   isRequiredBackgroundClientId,
-  listConfiguredBackgroundExposes,
   type BackgroundClientConfig,
   type BackgroundExposeAsset,
-  type BackgroundExposeGroup,
   type ExtensionConfig
 } from '#~/shared/config.js'
 import type { PopupState } from '#~/background/shared.js'
@@ -36,8 +35,10 @@ import type { ClientDetailTab } from '../types.js'
 import {
   AssetEmptyState,
   AssetScopePanel,
+  AssetTreeAction,
   AssetTreeLabel,
   AssetTreeLeaf,
+  AssetTreeRenameField,
   basename,
   buildAssetBreadcrumbs,
   buildAssetFileTree,
@@ -55,8 +56,19 @@ import {
 } from './asset-tree-shared.js'
 import { ClientInvocationPanel } from './invocation-insights.js'
 
-type BackgroundAssetRoot = 'browser' | 'workspace' | 'skills'
-type BackgroundTreePrefix = 'browser' | 'workspace' | 'skill'
+type BackgroundTreePrefix = 'asset'
+type BackgroundRenameTarget =
+  | {
+      kind: 'asset'
+      assetId: BackgroundExposeAsset['id']
+      path: string
+      value: string
+    }
+  | {
+      kind: 'folder'
+      path: string
+      value: string
+    }
 
 const BACKGROUND_ASSET_TREE_WIDTH_STORAGE_KEY =
   'mdp-options-background-asset-tree-width'
@@ -86,14 +98,9 @@ export function BackgroundClientEditor({
         ? 'assets'
         : 'basics'
   )
-  const [selectedItemId, setSelectedItemId] = useState<string>('root:browser')
-  const [expandedBrowserFolders, setExpandedBrowserFolders] = useState<string[]>(
-    []
-  )
-  const [expandedWorkspaceFolders, setExpandedWorkspaceFolders] = useState<
-    string[]
-  >([])
-  const [expandedSkillFolders, setExpandedSkillFolders] = useState<string[]>([])
+  const [selectedItemId, setSelectedItemId] = useState<string>('root')
+  const [expandedFolders, setExpandedFolders] = useState<string[]>([])
+  const [renameTarget, setRenameTarget] = useState<BackgroundRenameTarget>()
   const [searchQuery, setSearchQuery] = useState('')
   const [treeWidth, setTreeWidth] = useState(272)
   const [isResizingTree, setIsResizingTree] = useState(false)
@@ -144,172 +151,93 @@ export function BackgroundClientEditor({
     })
   }
 
-  const browserExposes = listConfiguredBackgroundExposes(client, {
-    group: 'browser'
-  })
-  const workspaceExposes = listConfiguredBackgroundExposes(client, {
-    group: 'workspace'
-  })
-  const skillExposes = listConfiguredBackgroundExposes(client, {
-    group: 'skill'
-  })
-  const enabledExposeCount = countEnabledBackgroundExposes(client, {
-    kind: 'endpoint'
-  })
-  const enabledSkillCount = countEnabledBackgroundExposes(client, {
-    kind: 'skill'
-  })
-  const totalExposeCount = browserExposes.length + workspaceExposes.length
+  const allExposes = client.exposes
+  const enabledAssetCount = countEnabledBackgroundExposes(client)
+  const totalAssetCount = client.exposes.length
   const isRequiredClient = isRequiredBackgroundClientId(client.id)
   const exposesById = useMemo(
     () => new Map(client.exposes.map((asset) => [asset.id, asset])),
     [client.exposes]
   )
-  const browserTree = useMemo(
-    () => buildBackgroundTree(browserExposes),
-    [browserExposes]
+  const sharedDisplayPrefix = useMemo(
+    () => getSharedBackgroundDisplayPrefix(allExposes),
+    [allExposes]
   )
-  const workspaceTree = useMemo(
-    () => buildBackgroundTree(workspaceExposes),
-    [workspaceExposes]
+  const backgroundTree = useMemo(
+    () => buildBackgroundTree(allExposes, sharedDisplayPrefix),
+    [allExposes, sharedDisplayPrefix]
   )
-  const skillTree = useMemo(() => buildBackgroundTree(skillExposes), [skillExposes])
-  const filteredBrowserTree = useMemo(
-    () => filterAssetFileTree(browserTree, searchQuery),
-    [browserTree, searchQuery]
+  const filteredBackgroundTree = useMemo(
+    () => filterAssetFileTree(backgroundTree, searchQuery),
+    [backgroundTree, searchQuery]
   )
-  const filteredWorkspaceTree = useMemo(
-    () => filterAssetFileTree(workspaceTree, searchQuery),
-    [workspaceTree, searchQuery]
-  )
-  const filteredSkillTree = useMemo(
-    () => filterAssetFileTree(skillTree, searchQuery),
-    [searchQuery, skillTree]
-  )
-  const forcedExpandedBrowserFolders = useMemo(
-    () => (searchQuery.trim() ? collectAssetFolderPaths(filteredBrowserTree) : []),
-    [filteredBrowserTree, searchQuery]
-  )
-  const forcedExpandedWorkspaceFolders = useMemo(
+  const forcedExpandedFolders = useMemo(
     () =>
-      searchQuery.trim() ? collectAssetFolderPaths(filteredWorkspaceTree) : [],
-    [filteredWorkspaceTree, searchQuery]
-  )
-  const forcedExpandedSkillFolders = useMemo(
-    () => (searchQuery.trim() ? collectAssetFolderPaths(filteredSkillTree) : []),
-    [filteredSkillTree, searchQuery]
+      searchQuery.trim() ? collectAssetFolderPaths(filteredBackgroundTree) : [],
+    [filteredBackgroundTree, searchQuery]
   )
   const visibleItemIds = useMemo(
     () =>
       new Set([
-        'root:browser',
-        'root:workspace',
-        'root:skills',
-        ...collectAssetItemIds('browser', filteredBrowserTree),
-        ...collectAssetItemIds('workspace', filteredWorkspaceTree),
-        ...collectAssetItemIds('skill', filteredSkillTree)
+        'root',
+        ...collectAssetItemIds('asset', filteredBackgroundTree)
       ]),
-    [filteredBrowserTree, filteredSkillTree, filteredWorkspaceTree]
+    [filteredBackgroundTree]
   )
-  const hasSearchResults = visibleItemIds.size > 3
+  const hasSearchResults = visibleItemIds.size > 1
   const searchTerm = searchQuery.trim()
-  const selectedRoot = getSelectedBackgroundRoot(selectedItemId)
-  const selectedTreeItemId = visibleItemIds.has(selectedItemId)
+  const selectedTreeItemId =
+    selectedItemId !== 'root' && visibleItemIds.has(selectedItemId)
     ? selectedItemId
     : undefined
   const firstSearchResultItemId = useMemo(
-    () =>
-      searchTerm
-        ? getFirstBackgroundSearchResultItemId(
-            selectedRoot,
-            filteredBrowserTree,
-            filteredWorkspaceTree,
-            filteredSkillTree
-          )
-        : undefined,
-    [
-      filteredBrowserTree,
-      filteredSkillTree,
-      filteredWorkspaceTree,
-      searchTerm,
-      selectedRoot
-    ]
+    () => (searchTerm ? findFirstAssetTreeItemId('asset', filteredBackgroundTree) : undefined),
+    [filteredBackgroundTree, searchTerm]
   )
   const selectedAssetId = getSelectedBackgroundAssetId(selectedItemId)
   const selectedAsset = selectedAssetId
     ? exposesById.get(selectedAssetId)
     : undefined
   const selectedFolderPath = getSelectedBackgroundFolderPath(selectedItemId)
+  const renameError = useMemo(
+    () => getBackgroundRenameError(renameTarget, client, sharedDisplayPrefix),
+    [client, renameTarget, sharedDisplayPrefix]
+  )
 
   useEffect(() => {
-    if (selectedRoot === 'browser' && selectedAsset) {
-      setExpandedBrowserFolders((current) => [
-        ...new Set([...current, ...listAncestorFolders(selectedAsset.path)])
-      ])
+    if (!selectedAsset) {
+      return
     }
 
-    if (selectedRoot === 'workspace' && selectedAsset) {
-      setExpandedWorkspaceFolders((current) => [
-        ...new Set([...current, ...listAncestorFolders(selectedAsset.path)])
-      ])
-    }
-
-    if (selectedRoot === 'skills' && selectedAsset) {
-      setExpandedSkillFolders((current) => [
-        ...new Set([...current, ...listAncestorFolders(selectedAsset.path)])
-      ])
-    }
-  }, [selectedAsset, selectedRoot])
+    const displayPath = getBackgroundDisplayPath(
+      selectedAsset.path,
+      sharedDisplayPrefix
+    )
+    setExpandedFolders((current) => [
+      ...new Set([...current, ...listAncestorFolders(displayPath)])
+    ])
+  }, [selectedAsset, sharedDisplayPrefix])
 
   useEffect(() => {
     if (!selectedFolderPath) {
       return
     }
 
-    const nextPaths = [
-      ...new Set([...listAncestorFolders(selectedFolderPath), selectedFolderPath])
-    ]
-
-    if (selectedRoot === 'browser') {
-      setExpandedBrowserFolders((current) => [...new Set([...current, ...nextPaths])])
-      return
-    }
-
-    if (selectedRoot === 'workspace') {
-      setExpandedWorkspaceFolders((current) => [
-        ...new Set([...current, ...nextPaths])
-      ])
-      return
-    }
-
-    setExpandedSkillFolders((current) => [...new Set([...current, ...nextPaths])])
-  }, [selectedFolderPath, selectedRoot])
+    const nextPaths = [...new Set(listAncestorFolders(selectedFolderPath))]
+    setExpandedFolders((current) => [...new Set([...current, ...nextPaths])])
+  }, [selectedFolderPath])
 
   useEffect(() => {
-    if (selectedAssetId && exposesById.has(selectedAssetId)) {
+    if (!selectedAssetId || exposesById.has(selectedAssetId)) {
       return
     }
 
-    const nextAsset =
-      selectedRoot === 'workspace'
-        ? workspaceExposes[0]
-        : selectedRoot === 'skills'
-          ? skillExposes[0]
-          : browserExposes[0]
-
     setSelectedItemId(
-      nextAsset
-        ? `${getTreePrefixForRoot(selectedRoot)}:${nextAsset.id}`
-        : `root:${selectedRoot}`
+      allExposes[0]
+        ? `asset:${allExposes[0].id}`
+        : 'root'
     )
-  }, [
-    browserExposes,
-    exposesById,
-    selectedAssetId,
-    selectedRoot,
-    skillExposes,
-    workspaceExposes
-  ])
+  }, [allExposes, exposesById, selectedAssetId])
 
   useEffect(() => {
     if (visibleItemIds.has(selectedItemId)) {
@@ -325,12 +253,11 @@ export function BackgroundClientEditor({
       return
     }
 
-    setSelectedItemId(`root:${selectedRoot}`)
+    setSelectedItemId('root')
   }, [
     firstSearchResultItemId,
     searchTerm,
     selectedItemId,
-    selectedRoot,
     visibleItemIds
   ])
 
@@ -380,61 +307,65 @@ export function BackgroundClientEditor({
     )
   }, [treeWidth])
 
-  const expandedItems = [
-    'root:browser',
-    'root:workspace',
-    'root:skills',
-    ...[
-      ...new Set([...expandedBrowserFolders, ...forcedExpandedBrowserFolders])
-    ].map((path) => `browser-folder:${path}`),
-    ...[
-      ...new Set([
-        ...expandedWorkspaceFolders,
-        ...forcedExpandedWorkspaceFolders
-      ])
-    ].map((path) => `workspace-folder:${path}`),
-    ...[...new Set([...expandedSkillFolders, ...forcedExpandedSkillFolders])].map(
-      (path) => `skill-folder:${path}`
-    )
-  ]
+  const expandedItems = [...new Set([...expandedFolders, ...forcedExpandedFolders])].map(
+    (path) => `asset-folder:${path}`
+  )
 
-  const selectedScopeNodes =
-    selectedRoot === 'workspace'
-      ? getAssetFolderChildren(filteredWorkspaceTree, selectedFolderPath)
-      : selectedRoot === 'skills'
-        ? getAssetFolderChildren(filteredSkillTree, selectedFolderPath)
-        : getAssetFolderChildren(filteredBrowserTree, selectedFolderPath)
+  const selectedScopeNodes = getAssetFolderChildren(
+    filteredBackgroundTree,
+    selectedFolderPath
+  )
   const selectedScopeEntries = useMemo(
     () =>
       buildBackgroundScopeEntries(
-        selectedRoot === 'workspace'
-          ? 'workspace'
-          : selectedRoot === 'skills'
-            ? 'skill'
-            : 'browser',
+        'asset',
         selectedScopeNodes,
         exposesById,
         t
       ),
-    [exposesById, selectedRoot, selectedScopeNodes, t]
+    [exposesById, selectedScopeNodes, t]
   )
   const selectedScopeTitle = selectedFolderPath
     ? basename(selectedFolderPath)
-    : getBackgroundRootTitle(t, selectedRoot)
+    : t('options.clients.tab.assets')
   const selectedScopeParentItemId = getParentScopeItemId({
-    folderItemPrefix: `${getTreePrefixForRoot(selectedRoot)}-folder`,
+    folderItemPrefix: 'asset-folder',
     path: selectedFolderPath,
-    rootItemId: `root:${selectedRoot}`
+    rootItemId: 'root'
   })
   const selectedScopeBreadcrumbs = buildAssetBreadcrumbs({
-    folderItemPrefix: `${getTreePrefixForRoot(selectedRoot)}-folder`,
+    folderItemPrefix: 'asset-folder',
     path: selectedFolderPath,
-    rootItemId: `root:${selectedRoot}`,
-    rootLabel: getBackgroundRootTitle(t, selectedRoot)
+    rootItemId: 'root',
+    rootLabel: t('options.clients.tab.assets')
   })
   const selectedScopeEmptyLabel = searchTerm
     ? t('options.assets.searchEmpty')
-    : getBackgroundRootDescription(t, selectedRoot)
+    : t('options.clients.backgroundAssetsDescription')
+  const assetTreeSx = {
+    px: 0.5,
+    '& .MuiTreeItem-content': {
+      minHeight: 32,
+      pr: 0.5,
+      borderRadius: 1,
+      width: '100%',
+      cursor: 'pointer'
+    },
+    '& .MuiTreeItem-label': {
+      flex: 1,
+      minWidth: 0
+    },
+    '& .asset-tree-actions': {
+      opacity: 0,
+      pointerEvents: 'none',
+      transition: 'opacity 120ms ease'
+    },
+    '& .MuiTreeItem-content:hover .asset-tree-actions, & .MuiTreeItem-content.Mui-selected .asset-tree-actions':
+      {
+        opacity: 1,
+        pointerEvents: 'auto'
+      }
+  }
 
   return (
     <Stack spacing={1.25} sx={tab === 'assets' ? { flex: 1, minHeight: 0 } : undefined}>
@@ -465,16 +396,10 @@ export function BackgroundClientEditor({
           </Typography>
         </Stack>
         <Typography variant="caption" color="text.secondary">
-          {[
-            t('options.clients.backgroundExposesCount', {
-              enabled: enabledExposeCount,
-              total: totalExposeCount
-            }),
-            t('options.clients.backgroundSkillsCount', {
-              enabled: enabledSkillCount,
-              total: skillExposes.length
-            })
-          ].join(' · ')}
+          {t('options.clients.backgroundAssetsEnabledCount', {
+            enabled: enabledAssetCount,
+            total: totalAssetCount
+          })}
         </Typography>
       </Stack>
 
@@ -570,8 +495,8 @@ export function BackgroundClientEditor({
               alignItems: 'stretch'
             }}
           >
-            <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
-              <Stack spacing={0} sx={{ height: '100%' }}>
+            <Box sx={{ minWidth: 0, minHeight: 0, overflow: 'hidden', display: 'flex' }}>
+              <Stack spacing={0} sx={{ height: '100%', minHeight: 0, flex: 1 }}>
                 <Box
                   sx={{
                     pl: 0,
@@ -634,7 +559,16 @@ export function BackgroundClientEditor({
                   />
                 </Box>
 
-                <Box sx={{ py: 0.5, pr: 1 }}>
+                <Box
+                  sx={{
+                    py: 0.5,
+                    pr: 1,
+                    flex: 1,
+                    minHeight: 0,
+                    overflowY: 'auto',
+                    overflowX: 'hidden'
+                  }}
+                >
                   {searchQuery.trim() && !hasSearchResults ? (
                     <AssetEmptyState
                       label={t('options.assets.searchEmpty')}
@@ -644,91 +578,65 @@ export function BackgroundClientEditor({
                     <SimpleTreeView
                       expandedItems={expandedItems}
                       expansionTrigger="iconContainer"
-                      onExpandedItemsChange={(_event, itemIds) =>
-                        handleBackgroundExpandedItemsChange(
-                          itemIds as string[],
-                          setExpandedBrowserFolders,
-                          setExpandedWorkspaceFolders,
-                          setExpandedSkillFolders
+                      onExpandedItemsChange={(_event, itemIds) => {
+                        const nextItemIds = itemIds as string[]
+                        const collapsedSelectionTarget = getCollapsedBackgroundSelectionTarget(
+                          expandedItems,
+                          nextItemIds,
+                          selectedItemId,
+                          selectedAsset?.path,
+                          selectedFolderPath,
+                          sharedDisplayPrefix
                         )
-                      }
+
+                        if (collapsedSelectionTarget) {
+                          setSelectedItemId(collapsedSelectionTarget)
+                        }
+
+                        handleBackgroundExpandedItemsChange(
+                          nextItemIds,
+                          setExpandedFolders
+                        )
+                      }}
                       onSelectedItemsChange={(_event, itemId) =>
-                        setSelectedItemId((itemId as string | null) ?? 'root:browser')
+                        setSelectedItemId((itemId as string | null) ?? 'root')
                       }
                       selectedItems={selectedTreeItemId}
-                      sx={{
-                        px: 0.5,
-                        '& .MuiTreeItem-content': {
-                          minHeight: 32,
-                          pr: 0.5,
-                          borderRadius: 1
-                        },
-                        '& .MuiTreeItem-label': {
-                          flex: 1,
-                          minWidth: 0
-                        }
-                      }}
+                      sx={assetTreeSx}
                     >
-                      <TreeItem
-                        itemId="root:browser"
-                        label={
-                          <AssetTreeLabel
-                            count={countAssetFiles(filteredBrowserTree)}
-                            label={t('options.clients.backgroundBrowserExposes')}
-                            searchTerm={searchTerm}
-                          />
-                        }
-                      >
-                        {filteredBrowserTree.map((node) => (
-                          <BackgroundAssetTreeNodeItem
-                            key={node.id}
-                            node={node}
-                            prefix="browser"
-                            searchTerm={searchTerm}
-                            onSelectItem={setSelectedItemId}
-                          />
-                        ))}
-                      </TreeItem>
-                      <TreeItem
-                        itemId="root:workspace"
-                        label={
-                          <AssetTreeLabel
-                            count={countAssetFiles(filteredWorkspaceTree)}
-                            label={t('options.clients.backgroundWorkspaceExposes')}
-                            searchTerm={searchTerm}
-                          />
-                        }
-                      >
-                        {filteredWorkspaceTree.map((node) => (
-                          <BackgroundAssetTreeNodeItem
-                            key={node.id}
-                            node={node}
-                            prefix="workspace"
-                            searchTerm={searchTerm}
-                            onSelectItem={setSelectedItemId}
-                          />
-                        ))}
-                      </TreeItem>
-                      <TreeItem
-                        itemId="root:skills"
-                        label={
-                          <AssetTreeLabel
-                            count={countAssetFiles(filteredSkillTree)}
-                            label={t('options.clients.backgroundSkills')}
-                            searchTerm={searchTerm}
-                          />
-                        }
-                      >
-                        {filteredSkillTree.map((node) => (
-                          <BackgroundAssetTreeNodeItem
-                            key={node.id}
-                            node={node}
-                            prefix="skill"
-                            searchTerm={searchTerm}
-                            onSelectItem={setSelectedItemId}
-                          />
-                        ))}
-                      </TreeItem>
+                      {filteredBackgroundTree.map((node) => (
+                        <BackgroundAssetTreeNodeItem
+                          key={node.id}
+                          node={node}
+                          prefix="asset"
+                          renameError={renameError}
+                          renameTarget={renameTarget}
+                          searchTerm={searchTerm}
+                          setExpandedFolders={setExpandedFolders}
+                          setSelectedItemId={setSelectedItemId}
+                          onCancelRename={() => setRenameTarget(undefined)}
+                          onCommitRename={() =>
+                              commitBackgroundRename(
+                                client,
+                                renameTarget,
+                                renameError,
+                                sharedDisplayPrefix,
+                                setRenameTarget,
+                                setSelectedItemId,
+                                updateClient
+                            )
+                          }
+                          onRenameChange={(value) =>
+                            setRenameTarget((current) =>
+                              current ? { ...current, value } : current
+                            )
+                          }
+                          onStartRename={(target, itemId) => {
+                            setRenameTarget(target)
+                            setSelectedItemId(itemId)
+                          }}
+                        />
+                      ))}
                     </SimpleTreeView>
                   )}
                 </Box>
@@ -780,6 +688,8 @@ export function BackgroundClientEditor({
                   breadcrumbs={selectedScopeBreadcrumbs}
                   emptyLabel={selectedScopeEmptyLabel}
                   entries={selectedScopeEntries}
+                  hideContextHeader
+                  hideParentEntry
                   onOpenItem={setSelectedItemId}
                   openParentLabel={t('options.assets.openParentFolder')}
                   parentItemId={selectedScopeParentItemId}
@@ -819,50 +729,20 @@ function BackgroundExposeDetailPanel({
 
   return (
     <Stack spacing={1.25} sx={{ minHeight: 0, flex: 1 }}>
-      <Stack spacing={0.25}>
-        <Typography variant="subtitle2" sx={{ fontFamily: 'monospace' }}>
-          {definition?.sourceKind === 'markdown'
-            ? asset.path
-            : `${definition?.method ?? 'GET'} ${asset.path}`}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {definition?.contentType ?? definition?.sourceKind ?? 'javascript'}
-        </Typography>
-      </Stack>
-
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
-          gap: 1
-        }}
-      >
-        <FormControlLabel
-          control={
-            <Switch
-              checked={asset.enabled}
-              onChange={(_, checked) =>
-                onUpdate(asset.id, (current) => ({
-                  ...current,
-                  enabled: checked
-                }))
-              }
-            />
-          }
-          label={t('common.enabled')}
-        />
-        <TextField
-          size="small"
-          label={t('common.path')}
-          value={asset.path}
-          onChange={(event) =>
-            onUpdate(asset.id, (current) => ({
-              ...current,
-              path: event.target.value
-            }))
-          }
-        />
-      </Box>
+      <FormControlLabel
+        control={
+          <Switch
+            checked={asset.enabled}
+            onChange={(_, checked) =>
+              onUpdate(asset.id, (current) => ({
+                ...current,
+                enabled: checked
+              }))
+            }
+          />
+        }
+        label={t('common.enabled')}
+      />
 
       <TextField
         size="small"
@@ -921,29 +801,80 @@ function BackgroundExposeDetailPanel({
 function BackgroundAssetTreeNodeItem({
   node,
   prefix,
+  renameError,
+  renameTarget,
   searchTerm,
-  onSelectItem
+  setExpandedFolders,
+  setSelectedItemId,
+  onCancelRename,
+  onCommitRename,
+  onRenameChange,
+  onStartRename
 }: {
   node: AssetFileTreeNode
   prefix: BackgroundTreePrefix
+  renameError: boolean
+  renameTarget: BackgroundRenameTarget | undefined
   searchTerm?: string
-  onSelectItem: (itemId: string) => void
+  setExpandedFolders: (updater: (paths: string[]) => string[]) => void
+  setSelectedItemId: (itemId: string) => void
+  onCancelRename: () => void
+  onCommitRename: () => void
+  onRenameChange: (value: string) => void
+  onStartRename: (target: BackgroundRenameTarget, itemId: string) => void
 }) {
+  const { t } = useI18n()
+
   if (node.kind === 'folder') {
+    const itemId = `${prefix}-folder:${node.path}`
+
     return (
       <TreeItem
-        itemId={`${prefix}-folder:${node.path}`}
+        itemId={itemId}
         label={
-          <Box onClick={() => onSelectItem(`${prefix}-folder:${node.path}`)}>
-            <AssetTreeLeaf
-              icon={<FolderOutlined fontSize="small" />}
-              label={
+          <AssetTreeLeaf
+            action={
+                <AssetTreeAction
+                  label={t('options.assets.renameItem')}
+                  onClick={() =>
+                    onStartRename(
+                      {
+                        kind: 'folder',
+                        path: node.path,
+                        value: node.label
+                      },
+                    itemId
+                  )
+                }
+              >
+                <EditOutlined fontSize="inherit" />
+              </AssetTreeAction>
+            }
+            icon={<FolderOutlined fontSize="small" />}
+            onClick={(event) =>
+              handleBackgroundExpandableItemClick(
+                event,
+                itemId,
+                setSelectedItemId,
+                setExpandedFolders
+              )
+            }
+            label={
+              renameTarget?.kind === 'folder' && renameTarget.path === node.path ? (
+                <AssetTreeRenameField
+                  error={renameError}
+                  onCancel={onCancelRename}
+                  onChange={onRenameChange}
+                  onCommit={onCommitRename}
+                  value={renameTarget.value}
+                />
+              ) : (
                 <Typography variant="body2" noWrap>
                   {renderHighlightedText(node.label, searchTerm)}
                 </Typography>
-              }
-            />
-          </Box>
+              )
+            }
+          />
         }
       >
         {node.children.map((child) => (
@@ -951,40 +882,151 @@ function BackgroundAssetTreeNodeItem({
             key={child.id}
             node={child}
             prefix={prefix}
+            renameError={renameError}
+            renameTarget={renameTarget}
             searchTerm={searchTerm}
-            onSelectItem={onSelectItem}
+            setExpandedFolders={setExpandedFolders}
+            setSelectedItemId={setSelectedItemId}
+            onCancelRename={onCancelRename}
+            onCommitRename={onCommitRename}
+            onRenameChange={onRenameChange}
+            onStartRename={onStartRename}
           />
         ))}
       </TreeItem>
     )
   }
 
+  const definition = getBackgroundExposeDefinition(
+    node.assetId as BackgroundExposeAsset['id']
+  )
+  const itemId = `${prefix}:${node.assetId}`
+
   return (
     <TreeItem
-      itemId={`${prefix}:${node.assetId}`}
+      itemId={itemId}
       label={
-        <Box onClick={() => onSelectItem(`${prefix}:${node.assetId}`)}>
-          <AssetTreeLeaf
-            icon={<DescriptionOutlined fontSize="small" />}
-            label={
+        <AssetTreeLeaf
+          action={
+            <AssetTreeAction
+              label={t('options.assets.renameItem')}
+              onClick={() =>
+                onStartRename(
+                  {
+                    kind: 'asset',
+                    assetId: node.assetId as BackgroundExposeAsset['id'],
+                    path: node.path,
+                    value: node.label
+                  },
+                  itemId
+                )
+              }
+            >
+              <EditOutlined fontSize="inherit" />
+            </AssetTreeAction>
+          }
+          icon={<BackgroundMethodBadge definition={definition} />}
+          label={
+            renameTarget?.kind === 'asset' &&
+            renameTarget.assetId === node.assetId ? (
+              <AssetTreeRenameField
+                error={renameError}
+                onCancel={onCancelRename}
+                onChange={onRenameChange}
+                onCommit={onCommitRename}
+                value={renameTarget.value}
+              />
+            ) : (
               <Typography variant="body2" noWrap>
                 {renderHighlightedText(node.label, searchTerm)}
               </Typography>
-            }
-          />
-        </Box>
+            )
+          }
+        />
       }
     />
   )
 }
 
+function BackgroundMethodBadge({
+  definition
+}: {
+  definition:
+    | ReturnType<typeof getBackgroundExposeDefinition>
+    | undefined
+}) {
+  const label = definition?.method?.slice(0, 1).toUpperCase() ?? 'M'
+  const { accent, background } = useBackgroundMethodBadgeTone(definition?.method)
+
+  return (
+    <Box
+      sx={{
+        width: 18,
+        height: 18,
+        borderRadius: 0.75,
+        border: '1px solid',
+        borderColor: alpha(accent, 0.4),
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 10,
+        fontWeight: 700,
+        color: accent,
+        bgcolor: background,
+        flexShrink: 0
+      }}
+    >
+      {label}
+    </Box>
+  )
+}
+
+function useBackgroundMethodBadgeTone(method: string | undefined) {
+  const theme = useTheme()
+
+  switch (method) {
+    case 'GET':
+      return {
+        accent: theme.palette.success.main,
+        background: alpha(theme.palette.success.main, 0.14)
+      }
+    case 'POST':
+      return {
+        accent: theme.palette.warning.dark,
+        background: alpha(theme.palette.warning.main, 0.18)
+      }
+    case 'PUT':
+      return {
+        accent: theme.palette.info.main,
+        background: alpha(theme.palette.info.main, 0.16)
+      }
+    case 'PATCH':
+      return {
+        accent: theme.palette.primary.main,
+        background: alpha(theme.palette.primary.main, 0.14)
+      }
+    case 'DELETE':
+      return {
+        accent: theme.palette.error.main,
+        background: alpha(theme.palette.error.main, 0.14)
+      }
+    default:
+      return {
+        accent: theme.palette.text.secondary,
+        background: alpha(theme.palette.text.secondary, 0.12)
+      }
+  }
+}
+
 function buildBackgroundTree(
-  exposes: BackgroundExposeAsset[]
+  exposes: BackgroundExposeAsset[],
+  sharedDisplayPrefix: string | undefined
 ): AssetFileTreeNode[] {
   return buildAssetFileTree(
     exposes.map((asset) => ({
       ...asset,
-      name: asset.path
+      path: getBackgroundDisplayPath(asset.path, sharedDisplayPrefix),
+      name: getBackgroundDisplayPath(asset.path, sharedDisplayPrefix)
     })),
     (asset) => {
       const definition = getBackgroundExposeDefinition(asset.id)
@@ -1032,136 +1074,346 @@ function buildBackgroundScopeEntries(
 
 function handleBackgroundExpandedItemsChange(
   itemIds: string[],
-  setExpandedBrowserFolders: (paths: string[]) => void,
-  setExpandedWorkspaceFolders: (paths: string[]) => void,
-  setExpandedSkillFolders: (paths: string[]) => void
+  setExpandedFolders: (paths: string[]) => void
 ) {
-  setExpandedBrowserFolders(
+  setExpandedFolders(
     itemIds
-      .filter((itemId) => itemId.startsWith('browser-folder:'))
-      .map((itemId) => itemId.slice('browser-folder:'.length))
-  )
-  setExpandedWorkspaceFolders(
-    itemIds
-      .filter((itemId) => itemId.startsWith('workspace-folder:'))
-      .map((itemId) => itemId.slice('workspace-folder:'.length))
-  )
-  setExpandedSkillFolders(
-    itemIds
-      .filter((itemId) => itemId.startsWith('skill-folder:'))
-      .map((itemId) => itemId.slice('skill-folder:'.length))
+      .filter((itemId) => itemId.startsWith('asset-folder:'))
+      .map((itemId) => itemId.slice('asset-folder:'.length))
   )
 }
 
-function getSelectedBackgroundRoot(itemId: string): BackgroundAssetRoot {
-  if (itemId.startsWith('root:')) {
-    return itemId.slice('root:'.length) as BackgroundAssetRoot
+function handleBackgroundExpandableItemClick(
+  event: ReactMouseEvent<HTMLDivElement>,
+  itemId: string,
+  setSelectedItemId: (itemId: string) => void,
+  setExpandedFolders: (updater: (paths: string[]) => string[]) => void
+) {
+  event.preventDefault()
+  event.stopPropagation()
+
+  setSelectedItemId(itemId)
+  toggleBackgroundExpandedItem(itemId, setExpandedFolders)
+}
+
+function toggleBackgroundExpandedItem(
+  itemId: string,
+  setExpandedFolders: (updater: (paths: string[]) => string[]) => void
+) {
+  if (itemId.startsWith('asset-folder:')) {
+    const path = itemId.slice('asset-folder:'.length)
+    setExpandedFolders((current) =>
+      current.includes(path)
+        ? current.filter((value) => value !== path)
+        : [...current, path]
+    )
+  }
+}
+
+function isExpandableBackgroundItem(itemId: string): boolean {
+  return itemId.startsWith('asset-folder:')
+}
+
+function getCollapsedBackgroundSelectionTarget(
+  previousItemIds: string[],
+  nextItemIds: string[],
+  selectedItemId: string,
+  selectedAssetPath: string | undefined,
+  selectedFolderPath: string | undefined,
+  sharedDisplayPrefix: string | undefined
+): string | undefined {
+  const collapsedItemIds = previousItemIds.filter(
+    (itemId) => isExpandableBackgroundItem(itemId) && !nextItemIds.includes(itemId)
+  )
+
+  return collapsedItemIds.find((itemId) =>
+    isBackgroundSelectionWithinItem(
+      itemId,
+      selectedItemId,
+      selectedAssetPath,
+      selectedFolderPath,
+      sharedDisplayPrefix
+    )
+  )
+}
+
+function isBackgroundSelectionWithinItem(
+  itemId: string,
+  selectedItemId: string,
+  selectedAssetPath: string | undefined,
+  selectedFolderPath: string | undefined,
+  sharedDisplayPrefix: string | undefined
+): boolean {
+  if (itemId === selectedItemId) {
+    return true
   }
 
-  if (
-    itemId.startsWith('workspace:') ||
-    itemId.startsWith('workspace-folder:')
-  ) {
-    return 'workspace'
+  const folderPath = getSelectedBackgroundFolderPath(itemId)
+
+  if (!folderPath) {
+    return false
   }
 
-  if (itemId.startsWith('skill:') || itemId.startsWith('skill-folder:')) {
-    return 'skills'
+  if (selectedFolderPath) {
+    return selectedFolderPath === folderPath || selectedFolderPath.startsWith(`${folderPath}/`)
   }
 
-  return 'browser'
+  if (!selectedAssetPath) {
+    return false
+  }
+
+  const normalizedAssetPath = stripLeadingSlash(
+    getBackgroundDisplayPath(selectedAssetPath, sharedDisplayPrefix)
+  )
+  return normalizedAssetPath.startsWith(`${folderPath}/`)
 }
 
 function getSelectedBackgroundAssetId(itemId: string) {
-  if (itemId.startsWith('browser:')) {
-    return itemId.slice('browser:'.length) as BackgroundExposeAsset['id']
-  }
-
-  if (itemId.startsWith('workspace:')) {
-    return itemId.slice('workspace:'.length) as BackgroundExposeAsset['id']
-  }
-
-  if (itemId.startsWith('skill:')) {
-    return itemId.slice('skill:'.length) as BackgroundExposeAsset['id']
+  if (itemId.startsWith('asset:')) {
+    return itemId.slice('asset:'.length) as BackgroundExposeAsset['id']
   }
 
   return undefined
 }
 
 function getSelectedBackgroundFolderPath(itemId: string) {
-  if (itemId.startsWith('browser-folder:')) {
-    return itemId.slice('browser-folder:'.length)
-  }
-
-  if (itemId.startsWith('workspace-folder:')) {
-    return itemId.slice('workspace-folder:'.length)
-  }
-
-  if (itemId.startsWith('skill-folder:')) {
-    return itemId.slice('skill-folder:'.length)
+  if (itemId.startsWith('asset-folder:')) {
+    return itemId.slice('asset-folder:'.length)
   }
 
   return undefined
 }
 
-function getTreePrefixForRoot(root: BackgroundAssetRoot): BackgroundTreePrefix {
-  return root === 'skills' ? 'skill' : root
-}
-
-function getFirstBackgroundSearchResultItemId(
-  selectedRoot: BackgroundAssetRoot,
-  browserTree: AssetFileTreeNode[],
-  workspaceTree: AssetFileTreeNode[],
-  skillTree: AssetFileTreeNode[]
+function commitBackgroundRename(
+  client: BackgroundClientConfig,
+  renameTarget: BackgroundRenameTarget | undefined,
+  renameError: boolean,
+  sharedDisplayPrefix: string | undefined,
+  setRenameTarget: (target: BackgroundRenameTarget | undefined) => void,
+  setSelectedItemId: (itemId: string) => void,
+  updateClient: (next: BackgroundClientConfig) => void
 ) {
-  const candidates =
-    selectedRoot === 'workspace'
-      ? [
-          findFirstAssetTreeItemId('workspace', workspaceTree),
-          findFirstAssetTreeItemId('browser', browserTree),
-          findFirstAssetTreeItemId('skill', skillTree)
-        ]
-      : selectedRoot === 'skills'
-        ? [
-            findFirstAssetTreeItemId('skill', skillTree),
-            findFirstAssetTreeItemId('browser', browserTree),
-            findFirstAssetTreeItemId('workspace', workspaceTree)
-          ]
-        : [
-            findFirstAssetTreeItemId('browser', browserTree),
-            findFirstAssetTreeItemId('workspace', workspaceTree),
-            findFirstAssetTreeItemId('skill', skillTree)
-          ]
+  if (!renameTarget || renameError) {
+    return
+  }
 
-  return candidates.find(Boolean)
+  if (renameTarget.kind === 'asset') {
+    const nextLeaf = normalizeBackgroundTreeLeaf(renameTarget.value)
+
+    if (!nextLeaf) {
+      return
+    }
+
+    const nextPath = replaceBackgroundPathLeaf(renameTarget.path, nextLeaf)
+    const exposes = client.exposes.map((asset) =>
+      asset.id === renameTarget.assetId
+        ? {
+            ...asset,
+            path: restoreBackgroundTreePath(nextPath, sharedDisplayPrefix)
+          }
+        : asset
+    )
+
+    updateClient({
+      ...client,
+      exposes,
+      disabledExposePaths: deriveDisabledBackgroundExposePaths(exposes)
+    })
+    setSelectedItemId(`asset:${renameTarget.assetId}`)
+    setRenameTarget(undefined)
+    return
+  }
+
+  const nextLeaf = normalizeBackgroundTreeLeaf(renameTarget.value)
+
+  if (!nextLeaf) {
+    return
+  }
+
+  const nextFolderPath = replaceTreeFolderLeaf(renameTarget.path, nextLeaf)
+  const exposes = client.exposes.map((asset) => {
+    const normalizedAssetPath = stripLeadingSlash(normalizeBackgroundPath(asset.path))
+
+    if (!normalizedAssetPath.startsWith(`${renameTarget.path}/`)) {
+      return asset
+    }
+
+    return {
+      ...asset,
+      path: `/${nextFolderPath}/${normalizedAssetPath.slice(renameTarget.path.length + 1)}`
+    }
+  })
+
+  updateClient({
+    ...client,
+    exposes,
+    disabledExposePaths: deriveDisabledBackgroundExposePaths(exposes)
+  })
+  setSelectedItemId(`asset-folder:${nextFolderPath}`)
+  setRenameTarget(undefined)
 }
 
-function getBackgroundRootTitle(
-  t: (key: string, values?: Record<string, string | number>) => string,
-  root: BackgroundExposeGroup | BackgroundAssetRoot
-): string {
-  if (root === 'workspace') {
-    return t('options.clients.backgroundWorkspaceExposes')
+function getBackgroundRenameError(
+  target: BackgroundRenameTarget | undefined,
+  client: BackgroundClientConfig,
+  sharedDisplayPrefix?: string
+): boolean {
+  if (!target) {
+    return false
   }
 
-  if (root === 'skill' || root === 'skills') {
-    return t('options.clients.backgroundSkills')
+  if (target.kind === 'asset') {
+    const nextLeaf = normalizeBackgroundTreeLeaf(target.value)
+
+    if (!nextLeaf) {
+      return true
+    }
+
+    return pathExistsInBackgroundExposes(
+      client.exposes,
+      restoreBackgroundTreePath(
+        replaceBackgroundPathLeaf(target.path, nextLeaf),
+        sharedDisplayPrefix
+      ),
+      target.assetId
+    )
   }
 
-  return t('options.clients.backgroundBrowserExposes')
+  const nextLeaf = normalizeBackgroundTreeLeaf(target.value)
+
+  if (!nextLeaf) {
+    return true
+  }
+
+  const nextFolderPath = replaceTreeFolderLeaf(target.path, nextLeaf)
+  const actualTargetFolderPath = stripLeadingSlash(
+    restoreBackgroundTreePath(target.path, sharedDisplayPrefix)
+  )
+  const actualNextFolderPath = stripLeadingSlash(
+    restoreBackgroundTreePath(nextFolderPath, sharedDisplayPrefix)
+  )
+  const affected = client.exposes.filter(
+    (asset) =>
+      stripLeadingSlash(normalizeBackgroundPath(asset.path)).startsWith(
+        `${actualTargetFolderPath}/`
+      )
+  )
+  const unaffected = client.exposes.filter((asset) => !affected.includes(asset))
+  const nextPaths = affected.map((asset) =>
+    `/${actualNextFolderPath}/${stripLeadingSlash(normalizeBackgroundPath(asset.path)).slice(actualTargetFolderPath.length + 1)}`
+  )
+  const existing = new Set(unaffected.map((asset) => normalizeBackgroundPath(asset.path)))
+
+  if (nextPaths.some((path) => existing.has(normalizeBackgroundPath(path)))) {
+    return true
+  }
+
+  return new Set(nextPaths.map((path) => normalizeBackgroundPath(path))).size !== nextPaths.length
 }
 
-function getBackgroundRootDescription(
-  t: (key: string, values?: Record<string, string | number>) => string,
-  root: BackgroundAssetRoot
+function pathExistsInBackgroundExposes(
+  exposes: BackgroundExposeAsset[],
+  nextPath: string,
+  currentId?: BackgroundExposeAsset['id']
+): boolean {
+  const normalized = normalizeBackgroundPath(nextPath)
+
+  return exposes.some(
+    (asset) =>
+      asset.id !== currentId &&
+      normalizeBackgroundPath(asset.path) === normalized
+  )
+}
+
+function replaceBackgroundPathLeaf(path: string, nextLeaf: string): string {
+  const segments = splitBackgroundPath(path)
+  const nextSegments = [...segments.slice(0, -1), nextLeaf]
+  return `/${nextSegments.join('/')}`
+}
+
+function getSharedBackgroundDisplayPrefix(
+  exposes: BackgroundExposeAsset[]
+): string | undefined {
+  const firstSegments = new Set(
+    exposes
+      .map((asset) => splitBackgroundPath(asset.path)[0])
+      .filter(Boolean)
+  )
+
+  if (firstSegments.size !== 1) {
+    return undefined
+  }
+
+  return firstSegments.values().next().value
+}
+
+function getBackgroundDisplayPath(
+  path: string,
+  sharedDisplayPrefix: string | undefined
 ): string {
-  if (root === 'workspace') {
-    return t('options.clients.backgroundWorkspaceDescription')
+  const normalized = normalizeBackgroundPath(path)
+
+  if (!sharedDisplayPrefix) {
+    return normalized
   }
 
-  if (root === 'skills') {
-    return t('options.clients.backgroundSkillsDescription')
+  const prefix = `/${sharedDisplayPrefix}`
+
+  if (normalized === prefix) {
+    return '/'
   }
 
-  return t('options.clients.backgroundBrowserDescription')
+  if (normalized.startsWith(`${prefix}/`)) {
+    return normalized.slice(prefix.length)
+  }
+
+  return normalized
+}
+
+function restoreBackgroundTreePath(
+  path: string,
+  sharedDisplayPrefix: string | undefined
+): string {
+  const normalized = normalizeBackgroundPath(path)
+
+  if (!sharedDisplayPrefix) {
+    return normalized
+  }
+
+  if (normalized === '/') {
+    return `/${sharedDisplayPrefix}`
+  }
+
+  return `/${sharedDisplayPrefix}${normalized}`
+}
+
+function replaceTreeFolderLeaf(path: string, nextLeaf: string): string {
+  const segments = splitBackgroundPath(path)
+  return [...segments.slice(0, -1), nextLeaf].join('/')
+}
+
+function normalizeBackgroundTreeLeaf(value: string): string {
+  return splitBackgroundPath(value).at(-1) ?? ''
+}
+
+function normalizeBackgroundPath(path: string): string {
+  const segments = splitBackgroundPath(path)
+  return segments.length > 0 ? `/${segments.join('/')}` : '/'
+}
+
+function stripLeadingSlash(path: string): string {
+  return path.replace(/^\/+/, '')
+}
+
+function splitBackgroundPath(path: string): string[] {
+  return path
+    .split('/')
+    .map((segment) =>
+      segment
+        .trim()
+        .replace(/[^A-Za-z0-9._-]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^[-_]+|[-_]+$/g, '')
+    )
+    .filter(Boolean)
 }

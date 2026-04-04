@@ -156,7 +156,11 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
       setLoading(true)
       const nextDraft = await loadWorkspaceConfig()
       setDraft(nextDraft)
-      await refreshRuntimeState()
+      try {
+        await refreshRuntimeState()
+      } catch {
+        notify(t('options.status.runtimeUnavailable'), 'error')
+      }
       setTransferDraft(serializeWorkspaceBundle(nextDraft))
       setLastSavedSnapshot(JSON.stringify(normalizeConfig(nextDraft)))
     } catch (nextError) {
