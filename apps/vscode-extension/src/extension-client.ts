@@ -1,4 +1,4 @@
-import { type MdpClient, createMdpClient } from '@modeldriveprotocol/client'
+import { type MdpClient, createMdpClient } from '@modeldriveprotocol/client/node'
 import * as vscode from 'vscode'
 
 import { registerCapabilities } from './capabilities.js'

@@ -1,6 +1,19 @@
 import { type ClientToServerMessage, type ServerToClientMessage, isMdpMessage } from '@modeldriveprotocol/protocol'
 
-import type { ClientTransport, FetchLike } from '../types.js'
+import type {
+  AbortControllerFactory,
+  AbortControllerLike,
+  ClientTransport,
+  FetchLike,
+  FetchRequestOptions,
+  FetchResponseLike,
+  TransportCredentialsMode
+} from '../types.js'
+import {
+  globalAbortControllerFactory,
+  globalFetch
+} from '../runtime/transport-defaults.js'
+import { resolveUrl } from '../runtime/url-utils.js'
 
 const DEFAULT_HTTP_LOOP_PATH = '/mdp/http-loop'
 const DEFAULT_POLL_WAIT_MS = 25_000
@@ -9,8 +22,9 @@ const SESSION_HEADER = 'x-mdp-session-id'
 export interface HttpLoopClientTransportOptions {
   endpointPath?: string
   headers?: Record<string, string>
-  credentials?: RequestCredentials
+  credentials?: TransportCredentialsMode
   fetch?: FetchLike
+  abortControllerFactory?: AbortControllerFactory
   pollWaitMs?: number
 }
 
@@ -22,7 +36,7 @@ export class HttpLoopClientTransport implements ClientTransport {
   private sending = false
   private flushPromise: Promise<void> | undefined
   private closed = false
-  private pollAbortController: AbortController | undefined
+  private pollAbortController: AbortControllerLike | undefined
 
   constructor(
     private readonly serverUrl: string,
@@ -157,14 +171,15 @@ export class HttpLoopClientTransport implements ClientTransport {
           return
         }
 
-        this.pollAbortController = new AbortController()
+        const pollAbortController = this.createAbortController()
+        this.pollAbortController = pollAbortController
 
         const response = await this.fetch(
           `${this.endpointUrl('/poll')}?sessionId=${encodeURIComponent(sessionId)}&waitMs=${waitMs}`,
           this.requestInit({
             method: 'GET',
             headers: this.requestHeaders(),
-            signal: this.pollAbortController.signal
+            signal: pollAbortController.signal
           })
         )
 
@@ -190,7 +205,7 @@ export class HttpLoopClientTransport implements ClientTransport {
 
         this.messageHandler?.(message)
       } catch (error) {
-        if (this.closed || isAbortError(error)) {
+        if (this.closed || this.pollAbortController?.signal.aborted) {
           return
         }
 
@@ -217,10 +232,10 @@ export class HttpLoopClientTransport implements ClientTransport {
 
   private endpointUrl(suffix: string): string {
     const path = this.options.endpointPath ?? DEFAULT_HTTP_LOOP_PATH
-    return new URL(`${path}${suffix}`, this.serverUrl).toString()
+    return resolveUrl(this.serverUrl, `${path}${suffix}`)
   }
 
-  private requestHeaders(extra: Record<string, string> = {}): HeadersInit {
+  private requestHeaders(extra: Record<string, string> = {}): Record<string, string> {
     return {
       'content-type': 'application/json',
       ...this.options.headers,
@@ -228,7 +243,7 @@ export class HttpLoopClientTransport implements ClientTransport {
     }
   }
 
-  private requestInit(init: RequestInit): RequestInit {
+  private requestInit(init: FetchRequestOptions): FetchRequestOptions {
     return {
       ...init,
       ...(this.options.credentials
@@ -237,14 +252,15 @@ export class HttpLoopClientTransport implements ClientTransport {
     }
   }
 
-  private fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const fetchImpl = this.options.fetch ?? globalThis.fetch
-
-    if (!fetchImpl) {
-      throw new Error('No fetch implementation is available in this runtime')
-    }
-
+  private fetch(input: string, init?: FetchRequestOptions): Promise<FetchResponseLike> {
+    const fetchImpl = this.options.fetch ?? globalFetch
     return fetchImpl(input, init)
+  }
+
+  private createAbortController(): AbortControllerLike {
+    const abortControllerFactory = this.options.abortControllerFactory
+      ?? globalAbortControllerFactory
+    return abortControllerFactory()
   }
 }
 
@@ -262,8 +278,4 @@ function asServerToClientMessage(value: unknown): ServerToClientMessage | undefi
   }
 
   return undefined
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === 'AbortError'
 }

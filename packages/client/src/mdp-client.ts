@@ -10,12 +10,14 @@ import {
 import { createDefaultTransport, resolveServerUrl } from './transport/client-connection.js'
 import { ProcedureRegistry } from './runtime/procedure-registry.js'
 import { MdpClientReconnectController } from './runtime/reconnect-controller.js'
+import { getUrlProtocol } from './runtime/url-utils.js'
 import { authenticateTransport } from './transport/transport-auth.js'
 import type {
   ClientDescriptorOverride,
   ClientInfo,
   ClientTransport,
   ClientTransportAuthOptions,
+  FetchLike,
   ExposePathOptions,
   MdpClientOptions,
   PathHandler,
@@ -31,6 +33,7 @@ export class MdpClient {
   private readonly registry = new ProcedureRegistry()
   private readonly transport: ClientTransport
   private readonly transportAuth: ClientTransportAuthOptions | undefined
+  private readonly defaultFetch: FetchLike | undefined
   private readonly reconnectController: MdpClientReconnectController
   private auth: AuthContext | undefined
   private connected = false
@@ -39,12 +42,16 @@ export class MdpClient {
 
   constructor(options: MdpClientOptions) {
     this.serverUrl = options.serverUrl
-    this.serverProtocol = new URL(options.serverUrl).protocol
+    this.serverProtocol = getUrlProtocol(options.serverUrl)
     this.usesDefaultTransport = options.transport === undefined
     this.clientInfo = options.client
     this.auth = options.auth
     this.transportAuth = options.transportAuth
-    this.transport = options.transport ?? createDefaultTransport(options.serverUrl)
+    this.defaultFetch = options.defaultTransport?.fetch?.fetch
+    this.transport = options.transport ?? createDefaultTransport(
+      options.serverUrl,
+      options.defaultTransport
+    )
     this.reconnectController = new MdpClientReconnectController({
       serverUrl: this.serverUrl,
       reconnect: options.reconnect,
@@ -110,7 +117,12 @@ export class MdpClient {
       serverProtocol: this.serverProtocol,
       usesDefaultTransport: this.usesDefaultTransport,
       transportAuth: this.transportAuth,
-      auth
+      auth,
+      ...(this.defaultFetch
+        ? {
+          defaultFetch: this.defaultFetch
+        }
+        : {})
     })
   }
 

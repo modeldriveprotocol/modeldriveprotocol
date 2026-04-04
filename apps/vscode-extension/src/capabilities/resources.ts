@@ -1,4 +1,4 @@
-import type { MdpClient } from '@modeldriveprotocol/client'
+import type { MdpClient } from '@modeldriveprotocol/client/node'
 
 import { getActiveEditorSnapshot, jsonResource, listWorkspaceFolders } from './shared.js'
 import type { CapabilityEnvironment } from './types.js'

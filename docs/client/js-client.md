@@ -11,6 +11,7 @@ This path is kept for compatibility with older links. The primary JavaScript int
 
 - [Quick Start](/sdk/javascript/quick-start)
 - [Usage](/sdk/javascript/usage)
+- [Advanced Usage](/sdk/javascript/advanced-usage)
 - [MCP Definitions](/sdk/javascript/mcp-definitions)
 - [Skills Definitions](/sdk/javascript/skills-definitions)
 - [Chrome Extension](/apps/chrome-extension)
@@ -29,7 +30,7 @@ The client exposes the same abstraction as other runtimes: register capability h
 ## Minimal example
 
 ```ts
-import { createMdpClient } from '@modeldriveprotocol/client'
+import { createMdpClient } from '@modeldriveprotocol/client/browser'
 
 const client = createMdpClient({
   serverUrl: 'ws://127.0.0.1:47372',

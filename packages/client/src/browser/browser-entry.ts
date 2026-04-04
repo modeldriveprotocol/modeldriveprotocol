@@ -1,7 +1,7 @@
 import type { BrowserScriptClientAttributes } from '../types.js'
 
-import { createMdpClient, resolveServerUrl } from '../mdp-client.js'
-import type { MdpClient } from '../mdp-client.js'
+import { createMdpClient, resolveServerUrl } from './api.js'
+import type { MdpClient } from './api.js'
 
 const SCRIPT_ATTRIBUTE_PREFIX = 'attr-mdp-'
 

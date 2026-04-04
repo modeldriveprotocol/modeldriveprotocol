@@ -2,7 +2,7 @@ import {
   type ClientTransport,
   HttpLoopClientTransport,
   WebSocketClientTransport
-} from '@modeldriveprotocol/client'
+} from '@modeldriveprotocol/client/browser'
 
 import type {
   PageRecordedAction,

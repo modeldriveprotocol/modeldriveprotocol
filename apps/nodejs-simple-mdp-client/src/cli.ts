@@ -3,7 +3,7 @@
 import process from 'node:process'
 
 import { bootNodejsSimpleMdpClient } from './index.js'
-import type { MdpClientReconnectEvent } from '@modeldriveprotocol/client'
+import type { MdpClientReconnectEvent } from '@modeldriveprotocol/client/node'
 
 interface CliOptions {
   helpRequested: boolean

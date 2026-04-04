@@ -1,4 +1,4 @@
-import type { MdpClient } from '@modeldriveprotocol/client'
+import type { MdpClient } from '@modeldriveprotocol/client/node'
 
 import { type PromptPayload, createReviewPrompt, createUnavailablePrompt } from '../model.js'
 import {

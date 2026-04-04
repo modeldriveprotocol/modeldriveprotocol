@@ -5,6 +5,7 @@ import { build } from 'esbuild'
 
 const appRoot = fileURLToPath(new URL('..', import.meta.url))
 const clientEntry = path.join(appRoot, '../../packages/client/src/index.ts')
+const clientNodeEntry = path.join(appRoot, '../../packages/client/src/node.ts')
 const protocolEntry = path.join(appRoot, '../../packages/protocol/src/index.ts')
 
 await build({
@@ -16,6 +17,7 @@ await build({
   sourcemap: true,
   target: 'node18',
   alias: {
+    '@modeldriveprotocol/client/node': clientNodeEntry,
     '@modeldriveprotocol/client': clientEntry,
     '@modeldriveprotocol/protocol': protocolEntry
   }
@@ -30,6 +32,7 @@ await build({
   sourcemap: true,
   target: 'node18',
   alias: {
+    '@modeldriveprotocol/client/node': clientNodeEntry,
     '@modeldriveprotocol/client': clientEntry,
     '@modeldriveprotocol/protocol': protocolEntry
   }

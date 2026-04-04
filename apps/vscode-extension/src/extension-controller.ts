@@ -1,4 +1,4 @@
-import type { MdpClient } from '@modeldriveprotocol/client'
+import type { MdpClient } from '@modeldriveprotocol/client/node'
 import * as vscode from 'vscode'
 
 import { isValidServerUrl, readExtensionConfiguration } from './config.js'

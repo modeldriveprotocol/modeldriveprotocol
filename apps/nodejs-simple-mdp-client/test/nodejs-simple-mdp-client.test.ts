@@ -5,10 +5,16 @@ import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { ClientToServerMessage, ServerToClientMessage } from '@modeldriveprotocol/protocol'
-import type { ClientTransport } from '@modeldriveprotocol/client'
+import type {
+  ClientTransport,
+  DefaultClientTransportOptions,
+  WebSocketClassLike,
+  WebSocketLike
+} from '@modeldriveprotocol/client/node'
 
 import {
   bootNodejsSimpleMdpClient,
+  createNodejsSimpleMdpClient,
   getNodejsRuntimeInfo,
   listWorkspaceSubpackages,
   readWorkspacePackageManifest,
@@ -197,6 +203,44 @@ describe('nodejs simple mdp client', () => {
     }
   })
 
+  it('forwards an injected websocket class to the default SDK transport', async () => {
+    const sockets: FakeWebSocket[] = []
+
+    class FakeWebSocketClass extends FakeWebSocket {
+      constructor(url: string) {
+        super()
+        void url
+        sockets.push(this)
+      }
+    }
+
+    const client = createNodejsSimpleMdpClient({
+      defaultTransport: {
+        webSocket: {
+          webSocketClass: FakeWebSocketClass as WebSocketClassLike
+        }
+      } satisfies DefaultClientTransportOptions
+    })
+
+    const connectPromise = client.connect()
+
+    await vi.waitFor(() => {
+      expect(sockets).toHaveLength(1)
+    })
+
+    if (sockets[0]) {
+      sockets[0].readyState = 1
+    }
+    sockets[0]?.emit('open', {} as Event)
+    await connectPromise
+
+    client.register()
+
+    expect(sockets[0]?.sent[0]).toContain('"type":"registerClient"')
+
+    await client.disconnect()
+  })
+
   async function createWorkspaceFixture(): Promise<string> {
     const workspaceRoot = await mkdtemp(path.join(tmpdir(), 'mdp-nodejs-simple-'))
     tempDirectories.push(workspaceRoot)
@@ -327,5 +371,37 @@ class FakeTestTransport implements ClientTransport {
 
   emitClose(): void {
     this.closeHandler?.()
+  }
+}
+
+class FakeWebSocket implements WebSocketLike {
+  readyState = 0
+  readonly sent: string[] = []
+
+  private readonly listeners = new Map<
+    'open' | 'message' | 'error' | 'close',
+    Array<(event: Event | MessageEvent | CloseEvent) => void>
+  >()
+
+  addEventListener(
+    type: 'open' | 'message' | 'error' | 'close',
+    listener: (event: Event | MessageEvent | CloseEvent) => void
+  ): void {
+    this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener])
+  }
+
+  close(): void {
+    this.readyState = 3
+    this.emit('close', {} as CloseEvent)
+  }
+
+  send(data: string): void {
+    this.sent.push(data)
+  }
+
+  emit(type: 'open' | 'message' | 'error' | 'close', event?: Event | MessageEvent | CloseEvent): void {
+    for (const listener of this.listeners.get(type) ?? []) {
+      listener((event ?? {}) as Event | MessageEvent | CloseEvent)
+    }
   }
 }

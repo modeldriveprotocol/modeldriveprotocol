@@ -1,6 +1,6 @@
 import type {
   MdpClient
-} from '@modeldriveprotocol/client'
+} from '@modeldriveprotocol/client/browser'
 
 import type { RouteClientConfig } from '#~/shared/config.js'
 import type { ChromeExtensionRuntimeApi } from '#~/background/runtime-api.js'

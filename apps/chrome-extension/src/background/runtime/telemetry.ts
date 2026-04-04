@@ -1,4 +1,4 @@
-import type { CapabilityInvocationMiddleware } from '@modeldriveprotocol/client'
+import type { CapabilityInvocationMiddleware } from '@modeldriveprotocol/client/browser'
 
 import type {
   ClientInvocationStats,

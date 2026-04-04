@@ -19,6 +19,9 @@
       "@modeldriveprotocol/client": [
         "../../packages/client/src/index.ts"
       ],
+      "@modeldriveprotocol/client/*": [
+        "../../packages/client/src/*.ts"
+      ],
       "@modeldriveprotocol/protocol": [
         "../../packages/protocol/src/index.ts"
       ]
