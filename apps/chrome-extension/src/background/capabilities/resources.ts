@@ -1,7 +1,7 @@
 import type { MdpClient } from '@modeldriveprotocol/client'
 
 import {
-  isBackgroundCapabilityEnabled,
+  isBackgroundExposeEnabled,
   type BackgroundClientConfig
 } from '#~/shared/config.js'
 import type { ChromeExtensionRuntimeApi } from '#~/background/runtime-api.js'
@@ -16,36 +16,36 @@ export function registerBackgroundResources(
   runtime: ChromeExtensionRuntimeApi,
   config: BackgroundClientConfig
 ): void {
-  exposeBackgroundResource(client, config, 'chrome-extension://status', () => {
+  exposeBackgroundResource(client, config, STATUS_RESOURCE_PATH, () => {
     client.expose(
       STATUS_RESOURCE_PATH,
       {
         method: 'GET',
-        description: 'Read a JSON resource snapshot of the extension status.',
+        description: 'Read a JSON snapshot of the extension status.',
         contentType: 'application/json'
       },
       async () => jsonResource(await runtime.getStatus()),
     )
   })
 
-  exposeBackgroundResource(client, config, 'chrome-extension://config', () => {
+  exposeBackgroundResource(client, config, CONFIG_RESOURCE_PATH, () => {
     client.expose(
       CONFIG_RESOURCE_PATH,
       {
         method: 'GET',
-        description: 'Read a JSON resource snapshot of the current extension workspace config.',
+        description: 'Read a JSON snapshot of the current extension workspace config.',
         contentType: 'application/json'
       },
       async () => jsonResource(await runtime.getConfig()),
     )
   })
 
-  exposeBackgroundResource(client, config, 'chrome-extension://tabs', () => {
+  exposeBackgroundResource(client, config, TABS_RESOURCE_PATH, () => {
     client.expose(
       TABS_RESOURCE_PATH,
       {
         method: 'GET',
-        description: 'Read a JSON resource snapshot of visible browser tabs.',
+        description: 'Read a JSON snapshot of visible browser tabs.',
         contentType: 'application/json'
       },
       async () => {
@@ -61,10 +61,10 @@ export function registerBackgroundResources(
 function exposeBackgroundResource(
   client: MdpClient,
   config: BackgroundClientConfig,
-  uri: string,
+  path: string,
   register: () => void
 ): void {
-  if (!isBackgroundCapabilityEnabled(config, 'resource', uri)) {
+  if (!isBackgroundExposeEnabled(config, path)) {
     return
   }
 

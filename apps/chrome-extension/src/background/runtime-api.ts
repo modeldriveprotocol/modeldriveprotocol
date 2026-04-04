@@ -33,6 +33,7 @@ export interface WorkspaceClientCreateInput {
   matchPatterns?: string[]
   autoInjectBridge?: boolean
   pathScriptSource?: string
+  disabledExposePaths?: string[]
   disabledTools?: string[]
   disabledResources?: string[]
   disabledSkills?: string[]
@@ -48,6 +49,7 @@ export interface WorkspaceClientUpdateInput extends WorkspaceClientTargetInput {
   matchPatterns?: string[]
   autoInjectBridge?: boolean
   pathScriptSource?: string
+  disabledExposePaths?: string[]
   disabledTools?: string[]
   disabledResources?: string[]
   disabledSkills?: string[]

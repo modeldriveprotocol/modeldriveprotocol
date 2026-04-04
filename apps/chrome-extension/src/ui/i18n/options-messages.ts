@@ -8,17 +8,15 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.clients.add': 'Add route client',
     'options.clients.addFromPage': 'Create from current page',
     'options.clients.backgroundSummary':
-      'Browser-level client with configurable built-in tools and resources',
+      'Browser-level client with configurable built-in exposes',
     'options.clients.backgroundAssetsDescription':
-      'Choose which built-in extension tools and resources the background client exposes. Disabled items stay hidden from the server until you turn them back on.',
-    'options.clients.backgroundTools': 'Built-in tools',
-    'options.clients.backgroundResources': 'Built-in resources',
+      'Choose which built-in MDP exposes the background client registers. Disabled exposes stay hidden from the server until you turn them back on.',
+    'options.clients.backgroundBrowserExposes': 'Browser exposes',
+    'options.clients.backgroundWorkspaceExposes': 'Workspace exposes',
     'options.clients.backgroundSkills': 'Built-in skills',
     'options.clients.backgroundDefaultName': 'Background Client {{count}}',
-    'options.clients.backgroundToolsCount':
-      '{{enabled}} / {{total}} tools enabled',
-    'options.clients.backgroundResourcesCount':
-      '{{enabled}} / {{total}} resources enabled',
+    'options.clients.backgroundExposesCount':
+      '{{enabled}} / {{total}} exposes enabled',
     'options.clients.backgroundSkillsCount':
       '{{enabled}} / {{total}} skills enabled',
     'options.clients.backgroundAssetsEnabledCount':
@@ -280,17 +278,15 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.clients.add': '添加路由客户端',
     'options.clients.addFromPage': '从当前页面创建',
     'options.clients.backgroundSummary':
-      '浏览器级客户端，可按需启停内置工具和资源',
+      '浏览器级客户端，可按需启停内置 exposes',
     'options.clients.backgroundAssetsDescription':
-      '这里可以控制 background client 对外暴露哪些内置工具和资源。停用后对应能力会从服务端视角隐藏，直到重新启用。',
-    'options.clients.backgroundTools': '内置工具',
-    'options.clients.backgroundResources': '内置资源',
+      '这里可以控制 background client 注册哪些内置 MDP exposes。停用后对应 expose 会从服务端视角隐藏，直到重新启用。',
+    'options.clients.backgroundBrowserExposes': '浏览器 exposes',
+    'options.clients.backgroundWorkspaceExposes': '工作区 exposes',
     'options.clients.backgroundSkills': '内置技能',
     'options.clients.backgroundDefaultName': '后台客户端 {{count}}',
-    'options.clients.backgroundToolsCount':
-      '已启用 {{enabled}} / {{total}} 个工具',
-    'options.clients.backgroundResourcesCount':
-      '已启用 {{enabled}} / {{total}} 个资源',
+    'options.clients.backgroundExposesCount':
+      '已启用 {{enabled}} / {{total}} 个 expose',
     'options.clients.backgroundSkillsCount':
       '已启用 {{enabled}} / {{total}} 个技能',
     'options.clients.backgroundAssetsEnabledCount':

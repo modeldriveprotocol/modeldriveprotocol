@@ -68,14 +68,14 @@ describe('workspace client management runtime helpers', () => {
       id: DEFAULT_BACKGROUND_CLIENT.id,
       clientName: 'Browser Control',
       enabled: false,
-      disabledTools: ['extension.listTabs']
+      disabledExposePaths: ['/extension/tabs']
     })
 
     expect(result.client).toMatchObject({
       id: DEFAULT_BACKGROUND_CLIENT.id,
       clientName: 'Browser Control',
       enabled: false,
-      disabledTools: ['extension.listTabs']
+      disabledExposePaths: ['/extension/tabs']
     })
 
     await vi.runAllTimersAsync()
@@ -115,18 +115,22 @@ describe('workspace client management runtime helpers', () => {
       clientId: 'mdp-workspace-helper',
       clientName: 'Workspace Helper',
       clientDescription: 'Extra background client for workspace automation.',
-      disabledTools: ['extension.getStatus'],
-      disabledResources: ['chrome-extension://status'],
-      disabledSkills: ['extension.manageClients']
+      disabledExposePaths: [
+        '/extension/status',
+        '/extension/resources/status',
+        '/extension/skills/manage-clients/skill.md'
+      ]
     })
 
     expect(created.client).toMatchObject({
       kind: 'background',
       clientId: 'mdp-workspace-helper',
       clientName: 'Workspace Helper',
-      disabledTools: ['extension.getStatus'],
-      disabledResources: ['chrome-extension://status'],
-      disabledSkills: ['extension.manageClients']
+      disabledExposePaths: [
+        '/extension/status',
+        '/extension/resources/status',
+        '/extension/skills/manage-clients/skill.md'
+      ]
     })
 
     const createdConfig = normalizeConfig({

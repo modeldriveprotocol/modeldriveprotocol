@@ -62,9 +62,10 @@ export const backgroundClientSchema = z.object({
   clientName: nonEmptyStringSchema,
   clientDescription: nonEmptyStringSchema,
   icon: z.enum(clientIconEnum),
-  disabledTools: z.array(nonEmptyStringSchema),
-  disabledResources: z.array(nonEmptyStringSchema),
-  disabledSkills: z.array(nonEmptyStringSchema)
+  disabledExposePaths: z.array(nonEmptyStringSchema).optional(),
+  disabledTools: z.array(nonEmptyStringSchema).optional(),
+  disabledResources: z.array(nonEmptyStringSchema).optional(),
+  disabledSkills: z.array(nonEmptyStringSchema).optional()
 })
 
 export const routeClientSchema = z.object({

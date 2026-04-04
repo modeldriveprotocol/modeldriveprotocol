@@ -1,8 +1,7 @@
 import {
-  BACKGROUND_BROWSER_TOOL_IDS,
-  BACKGROUND_RESOURCE_IDS,
-  BACKGROUND_SKILL_IDS,
-  BACKGROUND_WORKSPACE_TOOL_IDS
+  BACKGROUND_BROWSER_EXPOSE_PATHS,
+  BACKGROUND_SKILL_EXPOSE_PATHS,
+  BACKGROUND_WORKSPACE_EXPOSE_PATHS
 } from './background-assets.js'
 
 export type ClientIconKey =
@@ -139,9 +138,7 @@ export interface BackgroundClientConfig {
   clientName: string
   clientDescription: string
   icon: ClientIconKey
-  disabledTools: string[]
-  disabledResources: string[]
-  disabledSkills: string[]
+  disabledExposePaths: string[]
 }
 
 export interface RouteClientConfig {
@@ -203,9 +200,10 @@ export const DEFAULT_BACKGROUND_CLIENT: BackgroundClientConfig = {
   clientDescription:
     'Chrome extension runtime that exposes browser-level capabilities through Model Drive Protocol.',
   icon: 'chrome',
-  disabledTools: [...BACKGROUND_WORKSPACE_TOOL_IDS],
-  disabledResources: [],
-  disabledSkills: [...BACKGROUND_SKILL_IDS]
+  disabledExposePaths: [
+    ...BACKGROUND_WORKSPACE_EXPOSE_PATHS,
+    ...BACKGROUND_SKILL_EXPOSE_PATHS
+  ]
 }
 
 export const DEFAULT_WORKSPACE_MANAGEMENT_CLIENT: BackgroundClientConfig = {
@@ -218,9 +216,7 @@ export const DEFAULT_WORKSPACE_MANAGEMENT_CLIENT: BackgroundClientConfig = {
   clientDescription:
     'Chrome extension workspace manager that can create, update, and remove clients and persist route expose rules.',
   icon: 'layers',
-  disabledTools: [...BACKGROUND_BROWSER_TOOL_IDS],
-  disabledResources: [...BACKGROUND_RESOURCE_IDS],
-  disabledSkills: []
+  disabledExposePaths: [...BACKGROUND_BROWSER_EXPOSE_PATHS]
 }
 
 export const DEFAULT_BACKGROUND_CLIENTS: BackgroundClientConfig[] = [
@@ -238,9 +234,7 @@ export const DEFAULT_EXTENSION_CONFIG: ExtensionConfig = {
   notificationTitle: 'Model Drive Protocol for Chrome',
   backgroundClients: DEFAULT_BACKGROUND_CLIENTS.map((client) => ({
     ...client,
-    disabledTools: [...client.disabledTools],
-    disabledResources: [...client.disabledResources],
-    disabledSkills: [...client.disabledSkills]
+    disabledExposePaths: [...client.disabledExposePaths]
   })),
   routeClients: [],
   marketSources: [DEFAULT_OFFICIAL_MARKET_SOURCE],

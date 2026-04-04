@@ -72,11 +72,9 @@ export function createBackgroundClientConfig(
     clientName: sourceName,
     clientDescription:
       overrides.clientDescription?.trim() ||
-      'Browser-level client for extension tools, resources, and background automation capabilities.',
+      'Browser-level client for built-in extension exposes and background automation capabilities.',
     icon: overrides.icon ?? 'chrome',
-    disabledTools: overrides.disabledTools ?? [],
-    disabledResources: overrides.disabledResources ?? [],
-    disabledSkills: overrides.disabledSkills ?? []
+    disabledExposePaths: overrides.disabledExposePaths ?? []
   }
 }
 

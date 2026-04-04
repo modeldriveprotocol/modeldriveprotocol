@@ -1,12 +1,9 @@
 import type { MdpClient } from '@modeldriveprotocol/client'
 
 import {
-  isBackgroundCapabilityEnabled,
+  isBackgroundExposeEnabled,
   type BackgroundClientConfig
 } from '#~/shared/config.js'
-
-const MANAGE_CLIENTS_SKILL_ID = 'extension.manageClients'
-const MANAGE_EXPOSE_RULES_SKILL_ID = 'extension.manageClientExposeRules'
 
 const MANAGE_CLIENTS_SKILL_PATH = '/extension/skills/manage-clients/skill.md'
 const MANAGE_EXPOSE_RULES_SKILL_PATH =
@@ -16,7 +13,7 @@ export function registerBackgroundSkills(
   client: MdpClient,
   config: BackgroundClientConfig
 ): void {
-  exposeBackgroundSkill(client, config, MANAGE_CLIENTS_SKILL_ID, () => {
+  exposeBackgroundSkill(client, config, MANAGE_CLIENTS_SKILL_PATH, () => {
     client.expose(
       MANAGE_CLIENTS_SKILL_PATH,
       {
@@ -28,7 +25,7 @@ export function registerBackgroundSkills(
     )
   })
 
-  exposeBackgroundSkill(client, config, MANAGE_EXPOSE_RULES_SKILL_ID, () => {
+  exposeBackgroundSkill(client, config, MANAGE_EXPOSE_RULES_SKILL_PATH, () => {
     client.expose(
       MANAGE_EXPOSE_RULES_SKILL_PATH,
       {
@@ -44,10 +41,10 @@ export function registerBackgroundSkills(
 function exposeBackgroundSkill(
   client: MdpClient,
   config: BackgroundClientConfig,
-  id: string,
+  path: string,
   register: () => void
 ): void {
-  if (!isBackgroundCapabilityEnabled(config, 'skill', id)) {
+  if (!isBackgroundExposeEnabled(config, path)) {
     return
   }
 
@@ -64,7 +61,7 @@ function renderManageClientsSkill(): string {
     '',
     '1. Read `/extension/clients` to inspect the current `backgroundClients` and `routeClients` entries.',
     '2. Use `/extension/clients/create` to create a new `background` or `route` client.',
-    '3. Use `/extension/clients/update` to change metadata, enablement, icons, background capability toggles, route match patterns, or injected path scripts.',
+    '3. Use `/extension/clients/update` to change metadata, enablement, icons, built-in background exposes, route match patterns, or injected path scripts.',
     '4. Use `/extension/clients/delete` to remove a client when it is no longer needed.',
     '',
     '## Targeting rules',

@@ -1,7 +1,7 @@
 import type { MdpClient } from '@modeldriveprotocol/client'
 
 import {
-  isBackgroundCapabilityEnabled,
+  isBackgroundExposeEnabled,
   type BackgroundClientConfig
 } from '#~/shared/config.js'
 import { asRecord, readBoolean, readNumber, readString } from '#~/shared/utils.js'
@@ -29,7 +29,7 @@ export function registerExtensionCapabilities(
   runtime: ChromeExtensionRuntimeApi,
   config: BackgroundClientConfig
 ): void {
-  exposeBackgroundTool(client, config, 'extension.getStatus', () => {
+  exposeBackgroundTool(client, config, EXTENSION_STATUS_PATH, () => {
     client.expose(
       EXTENSION_STATUS_PATH,
       {
@@ -40,7 +40,7 @@ export function registerExtensionCapabilities(
     )
   })
 
-  exposeBackgroundTool(client, config, 'extension.getConfig', () => {
+  exposeBackgroundTool(client, config, EXTENSION_CONFIG_PATH, () => {
     client.expose(
       EXTENSION_CONFIG_PATH,
       {
@@ -51,7 +51,7 @@ export function registerExtensionCapabilities(
     )
   })
 
-  exposeBackgroundTool(client, config, 'extension.listGrantedOrigins', () => {
+  exposeBackgroundTool(client, config, EXTENSION_GRANTED_ORIGINS_PATH, () => {
     client.expose(
       EXTENSION_GRANTED_ORIGINS_PATH,
       {
@@ -62,7 +62,7 @@ export function registerExtensionCapabilities(
     )
   })
 
-  exposeBackgroundTool(client, config, 'extension.listTabs', () => {
+  exposeBackgroundTool(client, config, EXTENSION_TABS_PATH, () => {
     client.expose(
       EXTENSION_TABS_PATH,
       {
@@ -82,7 +82,7 @@ export function registerExtensionCapabilities(
     )
   })
 
-  exposeBackgroundTool(client, config, 'extension.activateTab', () => {
+  exposeBackgroundTool(client, config, EXTENSION_ACTIVATE_TAB_PATH, () => {
     client.expose(
       EXTENSION_ACTIVATE_TAB_PATH,
       {
@@ -101,7 +101,7 @@ export function registerExtensionCapabilities(
     )
   })
 
-  exposeBackgroundTool(client, config, 'extension.reloadTab', () => {
+  exposeBackgroundTool(client, config, EXTENSION_RELOAD_TAB_PATH, () => {
     client.expose(
       EXTENSION_RELOAD_TAB_PATH,
       {
@@ -113,7 +113,7 @@ export function registerExtensionCapabilities(
     )
   })
 
-  exposeBackgroundTool(client, config, 'extension.createTab', () => {
+  exposeBackgroundTool(client, config, EXTENSION_CREATE_TAB_PATH, () => {
     client.expose(
       EXTENSION_CREATE_TAB_PATH,
       {
@@ -140,7 +140,7 @@ export function registerExtensionCapabilities(
     )
   })
 
-  exposeBackgroundTool(client, config, 'extension.closeTab', () => {
+  exposeBackgroundTool(client, config, EXTENSION_CLOSE_TAB_PATH, () => {
     client.expose(
       EXTENSION_CLOSE_TAB_PATH,
       {
@@ -152,7 +152,7 @@ export function registerExtensionCapabilities(
     )
   })
 
-  exposeBackgroundTool(client, config, 'extension.showNotification', () => {
+  exposeBackgroundTool(client, config, EXTENSION_SHOW_NOTIFICATION_PATH, () => {
     client.expose(
       EXTENSION_SHOW_NOTIFICATION_PATH,
       {
@@ -184,7 +184,7 @@ export function registerExtensionCapabilities(
     )
   })
 
-  exposeBackgroundTool(client, config, 'extension.openOptionsPage', () => {
+  exposeBackgroundTool(client, config, EXTENSION_OPEN_OPTIONS_PAGE_PATH, () => {
     client.expose(
       EXTENSION_OPEN_OPTIONS_PAGE_PATH,
       {
@@ -199,10 +199,10 @@ export function registerExtensionCapabilities(
 function exposeBackgroundTool(
   client: MdpClient,
   config: BackgroundClientConfig,
-  name: string,
+  path: string,
   register: () => void
 ): void {
-  if (!isBackgroundCapabilityEnabled(config, 'tool', name)) {
+  if (!isBackgroundExposeEnabled(config, path)) {
     return
   }
 

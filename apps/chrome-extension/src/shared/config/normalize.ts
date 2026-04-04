@@ -10,7 +10,10 @@ import {
   createBackgroundClientConfig,
   createRouteClientConfig
 } from './create.js'
-import { normalizeDisabledBackgroundCapabilities } from './background-assets.js'
+import {
+  normalizeDisabledBackgroundExposePaths,
+  normalizeLegacyDisabledBackgroundExposePaths
+} from './background-assets.js'
 import {
   DEFAULT_BACKGROUND_CLIENT,
   DEFAULT_BACKGROUND_CLIENTS,
@@ -145,9 +148,7 @@ function migrateLegacyConfig(value: unknown): unknown {
         clientName: `${legacyClientName} Background`,
         clientDescription: legacyClientDescription,
         icon: 'chrome',
-        disabledTools: [...DEFAULT_BACKGROUND_CLIENT.disabledTools],
-        disabledResources: [...DEFAULT_BACKGROUND_CLIENT.disabledResources],
-        disabledSkills: [...DEFAULT_BACKGROUND_CLIENT.disabledSkills]
+        disabledExposePaths: [...DEFAULT_BACKGROUND_CLIENT.disabledExposePaths]
       })
     ],
     routeClients,
@@ -175,21 +176,18 @@ function normalizeBackgroundClient(value: unknown): BackgroundClientConfig {
       fallback.clientDescription
     ),
     icon: normalizeIcon(readString(record, 'icon'), fallback.icon),
-    disabledTools:
-      'disabledTools' in record
-        ? normalizeDisabledBackgroundCapabilities('tool', record.disabledTools)
-        : [...fallback.disabledTools],
-    disabledResources:
-      'disabledResources' in record
-        ? normalizeDisabledBackgroundCapabilities(
-            'resource',
-            record.disabledResources
-          )
-        : [...fallback.disabledResources],
-    disabledSkills:
-      'disabledSkills' in record
-        ? normalizeDisabledBackgroundCapabilities('skill', record.disabledSkills)
-        : [...fallback.disabledSkills]
+    disabledExposePaths:
+      'disabledExposePaths' in record
+        ? normalizeDisabledBackgroundExposePaths(record.disabledExposePaths)
+        : 'disabledTools' in record ||
+            'disabledResources' in record ||
+            'disabledSkills' in record
+          ? normalizeLegacyDisabledBackgroundExposePaths({
+              disabledTools: record.disabledTools,
+              disabledResources: record.disabledResources,
+              disabledSkills: record.disabledSkills
+            })
+          : [...fallback.disabledExposePaths]
   }
 
   return stabilizeRequiredBackgroundClient(normalized)
@@ -225,9 +223,7 @@ function resolveBackgroundClientFallback(
 function cloneDefaultBackgroundClients(): BackgroundClientConfig[] {
   return DEFAULT_BACKGROUND_CLIENTS.map((client) => ({
     ...client,
-    disabledTools: [...client.disabledTools],
-    disabledResources: [...client.disabledResources],
-    disabledSkills: [...client.disabledSkills]
+    disabledExposePaths: [...client.disabledExposePaths]
   }))
 }
 
@@ -240,9 +236,9 @@ function ensureRequiredBackgroundClients(
   if (!existingIds.has(DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id)) {
     normalized.push({
       ...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
-      disabledTools: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledTools],
-      disabledResources: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledResources],
-      disabledSkills: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledSkills]
+      disabledExposePaths: [
+        ...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledExposePaths
+      ]
     })
   }
 
@@ -264,9 +260,7 @@ function stabilizeRequiredBackgroundClient(
     id: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id,
     enabled: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.enabled,
     clientId: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.clientId,
-    disabledTools: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledTools],
-    disabledResources: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledResources],
-    disabledSkills: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledSkills]
+    disabledExposePaths: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledExposePaths]
   }
 }
 

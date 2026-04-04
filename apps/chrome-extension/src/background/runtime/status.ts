@@ -1,6 +1,6 @@
 import {
   canCreateRouteClientFromUrl,
-  countEnabledBackgroundCapabilities,
+  countEnabledBackgroundExposes,
   getOriginMatchPattern,
   listWorkspaceMatchPatterns,
   matchesAnyPattern,
@@ -68,7 +68,7 @@ export async function getRuntimeStatus(runtime: ChromeExtensionRuntime) {
         matchingTabCount: 0,
         recordingCount: 0,
         selectorResourceCount: 0,
-        skillCount: countEnabledBackgroundCapabilities(client, 'skill'),
+        skillCount: countEnabledBackgroundExposes(client, { kind: 'skill' }),
         invocationStats: toClientInvocationStats(runtime.clientTelemetry.get(key))
       }
     }),

@@ -238,23 +238,29 @@ describe('workspace management background client end-to-end flow', () => {
         clientId: 'mdp-workspace-helper',
         clientName: 'Workspace Helper',
         clientDescription: 'Extra background client managed through the workspace client.',
-        disabledTools: ['extension.getStatus'],
-        disabledResources: ['chrome-extension://status'],
-        disabledSkills: ['extension.manageClients']
+        disabledExposePaths: [
+          '/extension/status',
+          '/extension/resources/status',
+          '/extension/skills/manage-clients/skill.md'
+        ]
       }
     })) as {
       client: {
         id: string
         clientId: string
         clientName: string
-        disabledTools: string[]
+        disabledExposePaths: string[]
       }
     }
 
     expect(created.client).toMatchObject({
       clientId: 'mdp-workspace-helper',
       clientName: 'Workspace Helper',
-      disabledTools: ['extension.getStatus']
+      disabledExposePaths: [
+        '/extension/status',
+        '/extension/resources/status',
+        '/extension/skills/manage-clients/skill.md'
+      ]
     })
 
     await vi.runAllTimersAsync()

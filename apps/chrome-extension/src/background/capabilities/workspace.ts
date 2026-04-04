@@ -1,7 +1,7 @@
 import type { MdpClient } from '@modeldriveprotocol/client'
 
 import {
-  isBackgroundCapabilityEnabled,
+  isBackgroundExposeEnabled,
   type ClientIconKey,
   type RouteRuleMode,
   type BackgroundClientConfig
@@ -26,7 +26,7 @@ export function registerWorkspaceCapabilities(
   runtime: ChromeExtensionRuntimeApi,
   config: BackgroundClientConfig
 ): void {
-  exposeBackgroundTool(client, config, 'extension.listClients', () => {
+  exposeBackgroundTool(client, config, EXTENSION_CLIENTS_PATH, () => {
     client.expose(
       EXTENSION_CLIENTS_PATH,
       {
@@ -38,7 +38,7 @@ export function registerWorkspaceCapabilities(
     )
   })
 
-  exposeBackgroundTool(client, config, 'extension.createClient', () => {
+  exposeBackgroundTool(client, config, EXTENSION_CREATE_CLIENT_PATH, () => {
     client.expose(
       EXTENSION_CREATE_CLIENT_PATH,
       {
@@ -60,6 +60,7 @@ export function registerWorkspaceCapabilities(
             matchPatterns: { type: 'array', items: { type: 'string' } },
             autoInjectBridge: { type: 'boolean' },
             pathScriptSource: { type: 'string' },
+            disabledExposePaths: { type: 'array', items: { type: 'string' } },
             disabledTools: { type: 'array', items: { type: 'string' } },
             disabledResources: { type: 'array', items: { type: 'string' } },
             disabledSkills: { type: 'array', items: { type: 'string' } }
@@ -104,6 +105,9 @@ export function registerWorkspaceCapabilities(
           ...(readString(record, 'pathScriptSource') !== undefined
             ? { pathScriptSource: readString(record, 'pathScriptSource') }
             : {}),
+          ...(readStringArray(record, 'disabledExposePaths')
+            ? { disabledExposePaths: readStringArray(record, 'disabledExposePaths') }
+            : {}),
           ...(readStringArray(record, 'disabledTools')
             ? { disabledTools: readStringArray(record, 'disabledTools') }
             : {}),
@@ -118,7 +122,7 @@ export function registerWorkspaceCapabilities(
     )
   })
 
-  exposeBackgroundTool(client, config, 'extension.updateClient', () => {
+  exposeBackgroundTool(client, config, EXTENSION_UPDATE_CLIENT_PATH, () => {
     client.expose(
       EXTENSION_UPDATE_CLIENT_PATH,
       {
@@ -140,6 +144,7 @@ export function registerWorkspaceCapabilities(
             matchPatterns: { type: 'array', items: { type: 'string' } },
             autoInjectBridge: { type: 'boolean' },
             pathScriptSource: { type: 'string' },
+            disabledExposePaths: { type: 'array', items: { type: 'string' } },
             disabledTools: { type: 'array', items: { type: 'string' } },
             disabledResources: { type: 'array', items: { type: 'string' } },
             disabledSkills: { type: 'array', items: { type: 'string' } }
@@ -183,6 +188,9 @@ export function registerWorkspaceCapabilities(
           ...(readString(record, 'pathScriptSource') !== undefined
             ? { pathScriptSource: readString(record, 'pathScriptSource') }
             : {}),
+          ...(readStringArray(record, 'disabledExposePaths')
+            ? { disabledExposePaths: readStringArray(record, 'disabledExposePaths') }
+            : {}),
           ...(readStringArray(record, 'disabledTools')
             ? { disabledTools: readStringArray(record, 'disabledTools') }
             : {}),
@@ -197,7 +205,7 @@ export function registerWorkspaceCapabilities(
     )
   })
 
-  exposeBackgroundTool(client, config, 'extension.deleteClient', () => {
+  exposeBackgroundTool(client, config, EXTENSION_DELETE_CLIENT_PATH, () => {
     client.expose(
       EXTENSION_DELETE_CLIENT_PATH,
       {
@@ -228,7 +236,7 @@ export function registerWorkspaceCapabilities(
     )
   })
 
-  exposeBackgroundTool(client, config, 'extension.addClientExposeRule', () => {
+  exposeBackgroundTool(client, config, EXTENSION_ADD_EXPOSE_RULE_PATH, () => {
     client.expose(
       EXTENSION_ADD_EXPOSE_RULE_PATH,
       {
@@ -281,10 +289,10 @@ export function registerWorkspaceCapabilities(
 function exposeBackgroundTool(
   client: MdpClient,
   config: BackgroundClientConfig,
-  name: string,
+  path: string,
   register: () => void
 ): void {
-  if (!isBackgroundCapabilityEnabled(config, 'tool', name)) {
+  if (!isBackgroundExposeEnabled(config, path)) {
     return
   }
 

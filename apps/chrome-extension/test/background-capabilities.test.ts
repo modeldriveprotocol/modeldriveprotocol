@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
-  BACKGROUND_SKILL_DEFINITIONS,
-  BACKGROUND_RESOURCE_DEFINITIONS,
-  BACKGROUND_TOOL_DEFINITIONS,
+  BACKGROUND_BROWSER_EXPOSE_DEFINITIONS,
+  BACKGROUND_SKILL_EXPOSE_DEFINITIONS,
+  BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS,
   DEFAULT_BACKGROUND_CLIENT,
   DEFAULT_WORKSPACE_MANAGEMENT_CLIENT
 } from '../src/shared/config.js'
@@ -52,16 +52,14 @@ describe('chrome extension background capabilities', () => {
       runtime as any,
       {
         ...DEFAULT_BACKGROUND_CLIENT,
-        disabledTools: [],
-        disabledResources: [],
-        disabledSkills: []
+        disabledExposePaths: []
       }
     )
 
     expect(stub.paths).toHaveLength(
-      BACKGROUND_TOOL_DEFINITIONS.length +
-        BACKGROUND_RESOURCE_DEFINITIONS.length +
-        BACKGROUND_SKILL_DEFINITIONS.length
+      BACKGROUND_BROWSER_EXPOSE_DEFINITIONS.length +
+        BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS.length +
+        BACKGROUND_SKILL_EXPOSE_DEFINITIONS.length
     )
     expect(stub.paths).toContain('/extension/clients')
     expect(stub.paths).toContain('/extension/skills/manage-clients/skill.md')

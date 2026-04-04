@@ -33,8 +33,8 @@ describe('chrome extension config helpers', () => {
     })
 
     expect(migrated.backgroundClients[0]?.clientId).toBe('legacy-client-background')
-    expect(migrated.backgroundClients[0]?.disabledTools).toContain(
-      'extension.listClients'
+    expect(migrated.backgroundClients[0]?.disabledExposePaths).toContain(
+      '/extension/clients'
     )
     expect(migrated.backgroundClients[1]?.id).toBe(DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id)
     expect(migrated.routeClients).toHaveLength(1)
@@ -64,9 +64,7 @@ describe('chrome extension config helpers', () => {
           ...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
           enabled: false,
           clientId: 'custom-workspace-client',
-          disabledTools: [],
-          disabledResources: [],
-          disabledSkills: ['extension.manageClients']
+          disabledExposePaths: []
         }
       ]
     })
@@ -75,9 +73,7 @@ describe('chrome extension config helpers', () => {
       id: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id,
       enabled: true,
       clientId: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.clientId,
-      disabledTools: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledTools,
-      disabledResources: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledResources,
-      disabledSkills: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledSkills
+      disabledExposePaths: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledExposePaths
     })
   })
 
@@ -117,30 +113,35 @@ describe('chrome extension config helpers', () => {
     })
   })
 
-  it('normalizes background disabled capability lists against built-in ids', () => {
+  it('normalizes background expose configuration from legacy capability ids', () => {
+    const {
+      disabledExposePaths: _disabledExposePaths,
+      ...legacyBackgroundClient
+    } = DEFAULT_EXTENSION_CONFIG.backgroundClients[0]!
     const normalized = normalizeConfig({
       ...DEFAULT_EXTENSION_CONFIG,
       backgroundClients: [
         {
-          ...DEFAULT_EXTENSION_CONFIG.backgroundClients[0],
-        disabledTools: [
-          'extension.listTabs',
-          ' extension.listTabs ',
-          'extension.unknown'
-        ],
-        disabledResources: [
-          'chrome-extension://tabs',
-          'chrome-extension://missing',
-          'chrome-extension://tabs'
-        ],
-        disabledSkills: ['background.skill.missing']
-      }
+          ...legacyBackgroundClient,
+          disabledTools: [
+            'extension.listTabs',
+            ' extension.listTabs ',
+            'extension.unknown'
+          ],
+          disabledResources: [
+            'chrome-extension://tabs',
+            'chrome-extension://missing',
+            'chrome-extension://tabs'
+          ],
+          disabledSkills: ['background.skill.missing']
+        }
       ]
     })
 
-    expect(normalized.backgroundClients[0]?.disabledTools).toEqual(['extension.listTabs'])
-    expect(normalized.backgroundClients[0]?.disabledResources).toEqual(['chrome-extension://tabs'])
-    expect(normalized.backgroundClients[0]?.disabledSkills).toEqual([])
+    expect(normalized.backgroundClients[0]?.disabledExposePaths).toEqual([
+      '/extension/tabs',
+      '/extension/resources/tabs'
+    ])
   })
 
   it('deduplicates and trims match patterns', () => {

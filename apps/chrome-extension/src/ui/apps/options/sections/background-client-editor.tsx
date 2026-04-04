@@ -1,16 +1,27 @@
-import { Box, FormControlLabel, List, ListItem, ListItemText, Stack, Switch, Tab, Tabs, TextField, Typography } from '@mui/material'
+import {
+  Box,
+  FormControlLabel,
+  List,
+  ListItem,
+  ListItemText,
+  Stack,
+  Switch,
+  Tab,
+  Tabs,
+  TextField,
+  Typography
+} from '@mui/material'
 import { useEffect, useState } from 'react'
 
 import {
-  BACKGROUND_RESOURCE_DEFINITIONS,
-  BACKGROUND_SKILL_DEFINITIONS,
-  BACKGROUND_TOOL_DEFINITIONS,
-  countEnabledBackgroundCapabilities,
-  isBackgroundCapabilityEnabled,
+  BACKGROUND_BROWSER_EXPOSE_DEFINITIONS,
+  BACKGROUND_SKILL_EXPOSE_DEFINITIONS,
+  BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS,
+  countEnabledBackgroundExposes,
+  isBackgroundExposeEnabled,
   isRequiredBackgroundClientId,
-  type BackgroundCapabilityDefinition,
-  type BackgroundCapabilityKind,
   type BackgroundClientConfig,
+  type BackgroundExposeDefinition,
   type ExtensionConfig
 } from '#~/shared/config.js'
 import type { PopupState } from '#~/background/shared.js'
@@ -54,30 +65,36 @@ export function BackgroundClientEditor({
     })
   }
 
-  function setCapabilityEnabled(kind: BackgroundCapabilityKind, id: string, enabled: boolean) {
-    const key =
-      kind === 'tool'
-        ? 'disabledTools'
-        : kind === 'resource'
-          ? 'disabledResources'
-          : 'disabledSkills'
-    const disabled = new Set(client[key])
+  function setExposeEnabled(path: string, enabled: boolean) {
+    const disabledPaths = new Set(client.disabledExposePaths)
 
     if (enabled) {
-      disabled.delete(id)
+      disabledPaths.delete(path)
     } else {
-      disabled.add(id)
+      disabledPaths.add(path)
     }
 
     updateClient({
       ...client,
-      [key]: [...disabled]
+      disabledExposePaths: [...disabledPaths]
     })
   }
 
-  const enabledToolCount = countEnabledBackgroundCapabilities(client, 'tool')
-  const enabledResourceCount = countEnabledBackgroundCapabilities(client, 'resource')
-  const enabledSkillCount = countEnabledBackgroundCapabilities(client, 'skill')
+  const enabledExposeCount = countEnabledBackgroundExposes(client, {
+    kind: 'endpoint'
+  })
+  const enabledBrowserExposeCount = countEnabledBackgroundExposes(client, {
+    group: 'browser'
+  })
+  const enabledWorkspaceExposeCount = countEnabledBackgroundExposes(client, {
+    group: 'workspace'
+  })
+  const enabledSkillCount = countEnabledBackgroundExposes(client, {
+    kind: 'skill'
+  })
+  const totalExposeCount =
+    BACKGROUND_BROWSER_EXPOSE_DEFINITIONS.length +
+    BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS.length
   const isRequiredClient = isRequiredBackgroundClientId(client.id)
 
   return (
@@ -90,31 +107,45 @@ export function BackgroundClientEditor({
         sx={{ pt: 1.25 }}
       >
         <Stack spacing={0.25} sx={{ minWidth: 0 }}>
-          <Typography variant="body2" sx={{ color: runtimeState === 'connected' ? 'success.main' : 'text.secondary', fontWeight: 600 }}>
-            {runtimeState ? t(`connection.${runtimeState}`) : client.enabled ? t('options.clients.idle') : t('options.clients.off')}
+          <Typography
+            variant="body2"
+            sx={{
+              color:
+                runtimeState === 'connected' ? 'success.main' : 'text.secondary',
+              fontWeight: 600
+            }}
+          >
+            {runtimeState
+              ? t(`connection.${runtimeState}`)
+              : client.enabled
+                ? t('options.clients.idle')
+                : t('options.clients.off')}
           </Typography>
-          <Typography variant="caption" color="text.secondary" noWrap>{t('options.clients.backgroundSummary')}</Typography>
+          <Typography variant="caption" color="text.secondary" noWrap>
+            {t('options.clients.backgroundSummary')}
+          </Typography>
         </Stack>
         <Typography variant="caption" color="text.secondary">
           {[
-            t('options.clients.backgroundToolsCount', {
-              enabled: enabledToolCount,
-              total: BACKGROUND_TOOL_DEFINITIONS.length
-            }),
-            t('options.clients.backgroundResourcesCount', {
-              enabled: enabledResourceCount,
-              total: BACKGROUND_RESOURCE_DEFINITIONS.length
+            t('options.clients.backgroundExposesCount', {
+              enabled: enabledExposeCount,
+              total: totalExposeCount
             }),
             t('options.clients.backgroundSkillsCount', {
               enabled: enabledSkillCount,
-              total: BACKGROUND_SKILL_DEFINITIONS.length
+              total: BACKGROUND_SKILL_EXPOSE_DEFINITIONS.length
             })
           ].join(' · ')}
         </Typography>
       </Stack>
 
       <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Tabs value={tab} onChange={(_event, next) => setTab(next)} variant="scrollable" scrollButtons={false}>
+        <Tabs
+          value={tab}
+          onChange={(_event, next) => setTab(next)}
+          variant="scrollable"
+          scrollButtons={false}
+        >
           <Tab value="basics" label={t('options.clients.tab.basics')} />
           <Tab value="assets" label={t('options.clients.tab.assets')} />
           <Tab value="activity" label={t('options.clients.tab.activity')} />
@@ -122,117 +153,174 @@ export function BackgroundClientEditor({
       </Box>
 
       {tab === 'basics' ? (
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1.25 }}>
-          <FormControlLabel control={<Switch checked={client.enabled} disabled={isRequiredClient} onChange={(_, checked) => updateClient({ ...client, enabled: checked })} />} label={t('common.enabled')} />
-          <TextField size="small" label={t('options.clients.type')} value={t('options.clients.type.background')} disabled />
-          <IconPicker label={t('common.icon')} value={client.icon} onChange={(icon) => updateClient({ ...client, icon })} />
-          <TextField size="small" label={t('common.clientName')} value={client.clientName} onChange={(event) => updateClient({ ...client, clientName: event.target.value })} />
-          <TextField size="small" label={t('common.clientId')} value={client.clientId} disabled={isRequiredClient} onChange={(event) => updateClient({ ...client, clientId: event.target.value })} />
-          <TextField size="small" label={t('common.description')} value={client.clientDescription} onChange={(event) => updateClient({ ...client, clientDescription: event.target.value })} multiline minRows={3} sx={{ gridColumn: '1 / -1' }} />
-        </Box>
-      ) : (
-        tab === 'assets' ? (
-          <Stack spacing={1.25}>
-            <Typography variant="body2" color="text.secondary">{t('options.clients.backgroundAssetsDescription')}</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' }, gap: 1.25 }}>
-              <BackgroundCapabilityList
-                countLabel={t('options.clients.backgroundAssetsEnabledCount', {
-                  enabled: enabledToolCount,
-                  total: BACKGROUND_TOOL_DEFINITIONS.length
-                })}
-                definitions={BACKGROUND_TOOL_DEFINITIONS}
-                kind="tool"
-                onToggle={isRequiredClient ? () => undefined : setCapabilityEnabled}
-                title={t('options.clients.backgroundTools')}
-                statusLabel={t}
-                toggles={client}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: 1.25
+          }}
+        >
+          <FormControlLabel
+            control={
+              <Switch
+                checked={client.enabled}
+                disabled={isRequiredClient}
+                onChange={(_, checked) => updateClient({ ...client, enabled: checked })}
               />
-              <BackgroundCapabilityList
-                countLabel={t('options.clients.backgroundAssetsEnabledCount', {
-                  enabled: enabledResourceCount,
-                  total: BACKGROUND_RESOURCE_DEFINITIONS.length
-                })}
-                definitions={BACKGROUND_RESOURCE_DEFINITIONS}
-                kind="resource"
-                onToggle={isRequiredClient ? () => undefined : setCapabilityEnabled}
-                title={t('options.clients.backgroundResources')}
-                statusLabel={t}
-                toggles={client}
-              />
-              <BackgroundCapabilityList
-                countLabel={t('options.clients.backgroundAssetsEnabledCount', {
-                  enabled: enabledSkillCount,
-                  total: BACKGROUND_SKILL_DEFINITIONS.length
-                })}
-                definitions={BACKGROUND_SKILL_DEFINITIONS}
-                emptyLabel={t('options.clients.backgroundSkillsEmpty')}
-                kind="skill"
-                onToggle={isRequiredClient ? () => undefined : setCapabilityEnabled}
-                title={t('options.clients.backgroundSkills')}
-                statusLabel={t}
-                toggles={client}
-              />
-            </Box>
-          </Stack>
-        ) : (
-          <ClientInvocationPanel
-            description={t('options.clients.invocations.description')}
-            onClearHistory={onClearHistory}
-            stats={invocationStats}
+            }
+            label={t('common.enabled')}
           />
-        )
+          <TextField
+            size="small"
+            label={t('options.clients.type')}
+            value={t('options.clients.type.background')}
+            disabled
+          />
+          <IconPicker
+            label={t('common.icon')}
+            value={client.icon}
+            onChange={(icon) => updateClient({ ...client, icon })}
+          />
+          <TextField
+            size="small"
+            label={t('common.clientName')}
+            value={client.clientName}
+            onChange={(event) =>
+              updateClient({ ...client, clientName: event.target.value })
+            }
+          />
+          <TextField
+            size="small"
+            label={t('common.clientId')}
+            value={client.clientId}
+            disabled={isRequiredClient}
+            onChange={(event) =>
+              updateClient({ ...client, clientId: event.target.value })
+            }
+          />
+          <TextField
+            size="small"
+            label={t('common.description')}
+            value={client.clientDescription}
+            onChange={(event) =>
+              updateClient({ ...client, clientDescription: event.target.value })
+            }
+            multiline
+            minRows={3}
+            sx={{ gridColumn: '1 / -1' }}
+          />
+        </Box>
+      ) : tab === 'assets' ? (
+        <Stack spacing={1.25}>
+          <Typography variant="body2" color="text.secondary">
+            {t('options.clients.backgroundAssetsDescription')}
+          </Typography>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' },
+              gap: 1.25
+            }}
+          >
+            <BackgroundExposeList
+              countLabel={t('options.clients.backgroundAssetsEnabledCount', {
+                enabled: enabledBrowserExposeCount,
+                total: BACKGROUND_BROWSER_EXPOSE_DEFINITIONS.length
+              })}
+              definitions={BACKGROUND_BROWSER_EXPOSE_DEFINITIONS}
+              onToggle={isRequiredClient ? () => undefined : setExposeEnabled}
+              title={t('options.clients.backgroundBrowserExposes')}
+              toggles={client}
+            />
+            <BackgroundExposeList
+              countLabel={t('options.clients.backgroundAssetsEnabledCount', {
+                enabled: enabledWorkspaceExposeCount,
+                total: BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS.length
+              })}
+              definitions={BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS}
+              onToggle={isRequiredClient ? () => undefined : setExposeEnabled}
+              title={t('options.clients.backgroundWorkspaceExposes')}
+              toggles={client}
+            />
+            <BackgroundExposeList
+              countLabel={t('options.clients.backgroundAssetsEnabledCount', {
+                enabled: enabledSkillCount,
+                total: BACKGROUND_SKILL_EXPOSE_DEFINITIONS.length
+              })}
+              definitions={BACKGROUND_SKILL_EXPOSE_DEFINITIONS}
+              emptyLabel={t('options.clients.backgroundSkillsEmpty')}
+              onToggle={isRequiredClient ? () => undefined : setExposeEnabled}
+              title={t('options.clients.backgroundSkills')}
+              toggles={client}
+            />
+          </Box>
+        </Stack>
+      ) : (
+        <ClientInvocationPanel
+          description={t('options.clients.invocations.description')}
+          onClearHistory={onClearHistory}
+          stats={invocationStats}
+        />
       )}
     </Stack>
   )
 }
 
-function BackgroundCapabilityList({
+function BackgroundExposeList({
   definitions,
   emptyLabel,
   countLabel,
-  kind,
   onToggle,
   title,
-  statusLabel,
   toggles
 }: {
-  definitions: BackgroundCapabilityDefinition[]
+  definitions: BackgroundExposeDefinition[]
   emptyLabel?: string
   countLabel: string
-  kind: BackgroundCapabilityKind
-  onToggle: (kind: BackgroundCapabilityKind, id: string, enabled: boolean) => void
+  onToggle: (path: string, enabled: boolean) => void
   title: string
-  statusLabel: (key: string) => string
   toggles: BackgroundClientConfig
 }) {
   return (
     <Stack spacing={0.75}>
       <Stack spacing={0.25}>
         <Typography variant="subtitle2">{title}</Typography>
-        <Typography variant="caption" color="text.secondary">{countLabel}</Typography>
+        <Typography variant="caption" color="text.secondary">
+          {countLabel}
+        </Typography>
       </Stack>
 
       {definitions.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">{emptyLabel}</Typography>
+        <Typography variant="body2" color="text.secondary">
+          {emptyLabel}
+        </Typography>
       ) : (
         <List dense disablePadding>
           {definitions.map((definition) => {
-            const enabled = isBackgroundCapabilityEnabled(toggles, kind, definition.id)
+            const enabled = isBackgroundExposeEnabled(toggles, definition.path)
 
             return (
-              <ListItem key={definition.id} disablePadding sx={{ py: 0.25 }}>
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 1, alignItems: 'center', width: '100%' }}>
+              <ListItem key={definition.path} disablePadding sx={{ py: 0.25 }}>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(0, 1fr) auto',
+                    gap: 1,
+                    alignItems: 'center',
+                    width: '100%'
+                  }}
+                >
                   <ListItemText
-                    primary={definition.id}
-                    secondary={enabled ? statusLabel('options.clients.backgroundAssetStatus.enabled') : statusLabel('options.clients.backgroundAssetStatus.disabled')}
+                    primary={formatBackgroundExposeLabel(definition)}
+                    secondary={definition.description}
                     primaryTypographyProps={{ variant: 'body2', fontFamily: 'monospace' }}
                     secondaryTypographyProps={{ variant: 'caption' }}
                   />
                   <Switch
                     checked={enabled}
                     edge="end"
-                    inputProps={{ 'aria-label': definition.id }}
-                    onChange={(_, checked) => onToggle(kind, definition.id, checked)}
+                    inputProps={{ 'aria-label': definition.path }}
+                    onChange={(_, checked) => onToggle(definition.path, checked)}
                   />
                 </Box>
               </ListItem>
@@ -242,4 +330,10 @@ function BackgroundCapabilityList({
       )}
     </Stack>
   )
+}
+
+function formatBackgroundExposeLabel(definition: BackgroundExposeDefinition): string {
+  return definition.kind === 'skill'
+    ? definition.path
+    : `${definition.method ?? 'GET'} ${definition.path}`
 }

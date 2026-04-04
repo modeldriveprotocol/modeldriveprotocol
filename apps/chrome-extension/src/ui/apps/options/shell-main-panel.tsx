@@ -533,9 +533,7 @@ function forkEditableClient(
       ...backgroundRest,
       clientName: nextName,
       favorite: false,
-      disabledTools: [...item.client.disabledTools],
-      disabledResources: [...item.client.disabledResources],
-      disabledSkills: [...item.client.disabledSkills]
+      disabledExposePaths: [...item.client.disabledExposePaths]
     })
   }
 
