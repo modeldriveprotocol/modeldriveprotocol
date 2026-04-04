@@ -1,4 +1,4 @@
-import { createMdpClient } from '@modeldriveprotocol/client'
+import { createMdpClient } from '@modeldriveprotocol/client/browser'
 
 import {
   type BackgroundClientConfig,

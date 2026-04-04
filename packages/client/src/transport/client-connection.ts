@@ -1,17 +1,25 @@
 import { HttpLoopClientTransport } from './http-loop-client.js'
-import type { BrowserScriptClientAttributes, ClientTransport } from '../types.js'
+import type {
+  BrowserScriptClientAttributes,
+  ClientTransport,
+  DefaultClientTransportOptions
+} from '../types.js'
+import { getUrlProtocol } from '../runtime/url-utils.js'
 import { WebSocketClientTransport } from './ws-client.js'
 
-export function createDefaultTransport(serverUrl: string): ClientTransport {
-  const protocol = new URL(serverUrl).protocol
+export function createDefaultTransport(
+  serverUrl: string,
+  options: DefaultClientTransportOptions = {}
+): ClientTransport {
+  const protocol = getUrlProtocol(serverUrl)
 
   switch (protocol) {
     case 'ws:':
     case 'wss:':
-      return new WebSocketClientTransport(serverUrl)
+      return new WebSocketClientTransport(serverUrl, options.webSocket ?? {})
     case 'http:':
     case 'https:':
-      return new HttpLoopClientTransport(serverUrl)
+      return new HttpLoopClientTransport(serverUrl, options.fetch ?? {})
     default:
       throw new Error(`Unsupported MDP transport protocol: ${protocol}`)
   }

@@ -1,4 +1,4 @@
-import type { MdpClient } from '@modeldriveprotocol/client'
+import type { MdpClient } from '@modeldriveprotocol/client/browser'
 
 import type { BackgroundClientConfig } from '#~/shared/config.js'
 import type { ChromeExtensionRuntimeApi } from '#~/background/runtime-api.js'

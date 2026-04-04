@@ -54,6 +54,10 @@ export default defineConfig({
           replacement: resolve(appRoot, 'src')
         },
         {
+          find: /^@modeldriveprotocol\/client\/(.*)$/,
+          replacement: resolve(appRoot, '../../packages/client/src/$1.ts')
+        },
+        {
           find: '@modeldriveprotocol/client',
           replacement: resolve(appRoot, '../../packages/client/src/index.ts')
         },

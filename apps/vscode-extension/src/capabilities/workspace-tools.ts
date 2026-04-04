@@ -1,4 +1,4 @@
-import type { MdpClient } from '@modeldriveprotocol/client'
+import type { MdpClient } from '@modeldriveprotocol/client/node'
 import * as vscode from 'vscode'
 
 import { toJsonCompatible } from '../model.js'

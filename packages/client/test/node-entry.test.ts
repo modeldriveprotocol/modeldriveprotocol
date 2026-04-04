@@ -1,20 +1,12 @@
-// @vitest-environment jsdom
-
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  createClientFromScriptTag,
-  createMdpClient,
-  HttpLoopClientTransport,
-  resolveServerUrl,
-  WebSocketClientTransport,
-  type FetchRequestOptions,
-  type FetchResponseLike,
-  type WebSocketCloseEventLike,
-  type WebSocketEventLike,
-  type WebSocketLike,
-  type WebSocketMessageEventLike
-} from '../src/browser.js'
+import type { FetchRequestOptions, FetchResponseLike } from '../src/node.js'
+import type {
+  WebSocketCloseEventLike,
+  WebSocketEventLike,
+  WebSocketLike,
+  WebSocketMessageEventLike
+} from '../src/ws-client.js'
 
 class FakeWebSocket implements WebSocketLike {
   readyState = 0
@@ -92,18 +84,13 @@ function createJsonResponse(
   }
 }
 
-const originalWebSocket = globalThis.WebSocket
 const originalFetch = globalThis.fetch
 const originalAbortController = globalThis.AbortController
 
 afterEach(() => {
   vi.restoreAllMocks()
-
-  if (originalWebSocket) {
-    globalThis.WebSocket = originalWebSocket
-  } else {
-    Reflect.deleteProperty(globalThis, 'WebSocket')
-  }
+  vi.resetModules()
+  vi.doUnmock('ws')
 
   if (originalFetch) {
     globalThis.fetch = originalFetch
@@ -118,49 +105,11 @@ afterEach(() => {
   }
 })
 
-describe('browser entry', () => {
-  it('uses the default browser server URL when attributes are missing', () => {
-    expect(resolveServerUrl({})).toBe('ws://127.0.0.1:47372')
-  })
-
-  it('creates a browser client from script attributes', () => {
-    const script = document.createElement('script')
-    script.setAttribute('attr-mdp-server-host', 'localhost')
-    script.setAttribute('attr-mdp-server-port', '8080')
-    script.setAttribute('attr-mdp-server-protocol', 'wss')
-    script.setAttribute('attr-mdp-client-id', 'browser-01')
-    script.setAttribute('attr-mdp-client-name', 'Embedded Browser Client')
-    script.setAttribute('attr-mdp-client-description', 'Created from a script tag')
-
-    const client = createClientFromScriptTag(script)
-
-    expect(client.describe()).toEqual({
-      id: 'browser-01',
-      name: 'Embedded Browser Client',
-      description: 'Created from a script tag',
-      platform: 'web',
-      paths: []
-    })
-    expect(
-      resolveServerUrl({
-        serverHost: 'localhost',
-        serverPort: 8080,
-        serverProtocol: 'wss'
-      })
-    ).toBe('wss://localhost:8080')
-    expect(
-      resolveServerUrl({
-        serverHost: 'localhost',
-        serverPort: 8080,
-        serverProtocol: 'https'
-      })
-    ).toBe('https://localhost:8080')
-  })
-
-  it('binds the browser websocket implementation for default clients', async () => {
+describe('node entry', () => {
+  it('binds the node websocket implementation for default clients', async () => {
     const sockets: FakeWebSocket[] = []
 
-    class FakeBrowserWebSocket extends FakeWebSocket {
+    class FakeNodeWebSocket extends FakeWebSocket {
       constructor(url: string) {
         super()
         void url
@@ -168,13 +117,17 @@ describe('browser entry', () => {
       }
     }
 
-    globalThis.WebSocket = FakeBrowserWebSocket as unknown as typeof WebSocket
+    vi.doMock('ws', () => ({
+      default: FakeNodeWebSocket
+    }))
+
+    const { createMdpClient } = await import('../src/node.js')
 
     const client = createMdpClient({
       serverUrl: 'ws://127.0.0.1:47372',
       client: {
-        id: 'browser-01',
-        name: 'Browser Client'
+        id: 'node-01',
+        name: 'Node Client'
       }
     })
 
@@ -196,10 +149,10 @@ describe('browser entry', () => {
     expect(sockets[0]?.sent[0]).toContain('"type":"registerClient"')
   })
 
-  it('binds the browser websocket transport class', async () => {
+  it('binds the node websocket transport class', async () => {
     const sockets: FakeWebSocket[] = []
 
-    class FakeBrowserWebSocket extends FakeWebSocket {
+    class FakeNodeWebSocket extends FakeWebSocket {
       constructor(url: string) {
         super()
         void url
@@ -207,8 +160,11 @@ describe('browser entry', () => {
       }
     }
 
-    globalThis.WebSocket = FakeBrowserWebSocket as unknown as typeof WebSocket
+    vi.doMock('ws', () => ({
+      default: FakeNodeWebSocket
+    }))
 
+    const { WebSocketClientTransport } = await import('../src/node.js')
     const transport = new WebSocketClientTransport('ws://127.0.0.1:47372')
     const connectPromise = transport.connect()
 
@@ -224,7 +180,7 @@ describe('browser entry', () => {
     await connectPromise
   })
 
-  it('binds the browser http loop transport class', async () => {
+  it('binds the node http loop transport class', async () => {
     const calls: Array<{ url: string, init?: FetchRequestOptions }> = []
 
     globalThis.fetch = vi.fn(async (url: string, init?: FetchRequestOptions) => {
@@ -251,6 +207,7 @@ describe('browser entry', () => {
     }) as typeof fetch
     globalThis.AbortController = FakeAbortController as unknown as typeof AbortController
 
+    const { HttpLoopClientTransport } = await import('../src/node.js')
     const transport = new HttpLoopClientTransport('http://127.0.0.1:47372')
 
     await transport.connect()

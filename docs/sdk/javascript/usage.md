@@ -29,11 +29,26 @@ The default transport is selected from `serverUrl`:
 - `ws://` and `wss://` use the websocket transport
 - `http://` and `https://` use HTTP loop mode
 
+## Package entry points
+
+The package now exposes three environment-focused entry points:
+
+- `@modeldriveprotocol/client/pure` for the unbound core implementation
+- `@modeldriveprotocol/client/browser` for the browser-bound implementation
+- `@modeldriveprotocol/client/node` for the Node-bound implementation using `ws`
+
+The root `@modeldriveprotocol/client` entry is kept as a compatibility surface.
+The browser-focused examples in this SDK guide use `@modeldriveprotocol/client/browser`.
+
+For advanced transport customization, continue with [Advanced Usage](/sdk/javascript/advanced-usage).
+
 ## Auth bootstrap
 
 For browser websocket auth, passing `auth` is enough. `connect()` will bootstrap `/mdp/auth` on the matching `http` or `https` origin before opening the socket.
 
 ```ts
+import { createMdpClient } from '@modeldriveprotocol/client/browser'
+
 const client = createMdpClient({
   serverUrl: 'wss://127.0.0.1:47372',
   auth: {
