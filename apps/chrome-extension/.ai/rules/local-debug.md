@@ -103,3 +103,27 @@ pnpm --filter @modeldriveprotocol/chrome-extension dev -- --port 3001
 - If `dev` is pointed at the only installed stable Chrome channel, opening a normal Chrome window can collapse or steal the debug session. Prefer Canary specifically to avoid that app-instance collision.
 - When the local server is restarted, the extension may stay open but not reconnect immediately. The fastest recovery is to open `options.html` and send `runtime:refresh` from that page, or reload the extension service worker.
 - When you reuse a profile, extension pages can keep pointing at a previous Vite port. If the options page title renders but the body is empty, inspect the page HTML and restart WXT on the same `localhost:<port>` referenced by the injected script tags.
+
+## Notes From The April 5, 2026 Asset Workspace Debug Session
+
+- If a backend JS asset leaf whitescreens while markdown assets still render, do not assume Monaco is the problem first.
+- In the verified failure, the faster signal came from the running WXT/Vite client log, not the browser UI:
+  - `MUI X Tree View: changing the uncontrolled selectedItems state ... to be controlled`
+  - `Maximum update depth exceeded` in `TreeItem`
+  - later, after right-clicking, the same error in `InputBase` / `FormControl`
+- Those messages pointed to asset-tree state loops, not editor-language loading.
+- The specific failure pattern was:
+  1. asset path in the URL selected a JS leaf
+  2. tree selection was initialized after first render instead of at first render
+  3. `SimpleTreeView` switched from uncontrolled to controlled
+  4. selection, expansion, and route sync started bouncing and crashed the page
+- A second failure pattern was:
+  1. right-click on a node also changed selected item and displayed file
+  2. the same interaction could leave rename/input state alive
+  3. `InputBase` entered an update loop and the page crashed again
+- When this class of bug appears, inspect the local dev log before changing Monaco or runtime code.
+- The reliable fixes were:
+  - initialize tree selection from `assetPath` on first render
+  - keep `selectedItems` controlled for the whole lifetime
+  - make context menu open as a pure context action instead of a selection change
+  - clear rename state before opening the context menu
