@@ -57,7 +57,7 @@ jobs:
         run: |
           VERSION=$(node -p "JSON.parse(require('fs').readFileSync('apps/chrome-extension/package.json', 'utf8')).version")
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "archive=apps/chrome-extension/mdp-chrome-extension-v$VERSION.zip" >> "$GITHUB_OUTPUT"
+          echo "archive=apps/chrome-extension/dist/mdp-chrome-extension-v$VERSION.zip" >> "$GITHUB_OUTPUT"
 
       - name: Typecheck extension
         run: pnpm --filter @modeldriveprotocol/chrome-extension typecheck
