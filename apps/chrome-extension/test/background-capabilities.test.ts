@@ -52,6 +52,10 @@ describe('chrome extension background capabilities', () => {
       runtime as any,
       {
         ...DEFAULT_BACKGROUND_CLIENT,
+        exposes: DEFAULT_BACKGROUND_CLIENT.exposes.map((asset) => ({
+          ...asset,
+          enabled: true
+        })),
         disabledExposePaths: []
       }
     )
@@ -90,5 +94,30 @@ describe('chrome extension background capabilities', () => {
       '/extension/skills/manage-client-expose-rules/skill.md'
     )
     expect(workspaceClient.paths).not.toContain('/extension/tabs')
+  })
+
+  it('registers background capabilities from the configured expose assets', () => {
+    const runtime = createRuntimeStub()
+    const stub = createClientStub()
+
+    registerBackgroundCapabilities(
+      stub.client as any,
+      runtime as any,
+      {
+        ...DEFAULT_BACKGROUND_CLIENT,
+        exposes: DEFAULT_BACKGROUND_CLIENT.exposes.map((asset) =>
+          asset.id === 'extension.status'
+            ? {
+                ...asset,
+                path: '/browser/status',
+                description: 'Read status from a custom browser path.'
+              }
+            : { ...asset }
+        )
+      }
+    )
+
+    expect(stub.paths).toContain('/browser/status')
+    expect(stub.paths).not.toContain('/extension/status')
   })
 })

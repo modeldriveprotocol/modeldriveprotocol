@@ -219,8 +219,9 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
         }
       }
       const requestedOrigins = [...new Set([...draft.routeClients.flatMap((client) => client.matchPatterns), ...draft.marketSources.map((source) => getOriginMatchPattern(source.url)).filter(Boolean) as string[]])]
-      if (requestedOrigins.length > 0) {
-        const granted = await chrome.permissions.request({ origins: requestedOrigins })
+      const missingOrigins = await listMissingOrigins(requestedOrigins)
+      if (missingOrigins.length > 0) {
+        const granted = await chrome.permissions.request({ origins: missingOrigins })
         if (!granted) {
           throw new Error(t('options.error.hostAccessDenied'))
         }
@@ -235,6 +236,22 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
     } catch (nextError) {
       notify(String(nextError), 'error')
     }
+  }
+
+  async function listMissingOrigins(origins: string[]): Promise<string[]> {
+    const missing: string[] = []
+
+    for (const origin of origins) {
+      const granted = (await chrome.permissions.contains({
+        origins: [origin]
+      })) as boolean
+
+      if (!granted) {
+        missing.push(origin)
+      }
+    }
+
+    return missing
   }
 
   function handleDiscardChanges() {

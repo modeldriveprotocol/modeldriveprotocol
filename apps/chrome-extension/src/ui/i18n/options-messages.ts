@@ -8,12 +8,18 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.clients.add': 'Add route client',
     'options.clients.addFromPage': 'Create from current page',
     'options.clients.backgroundSummary':
-      'Browser-level client with configurable built-in exposes',
+      'Browser-level client with editable built-in exposes',
     'options.clients.backgroundAssetsDescription':
-      'Choose which built-in MDP exposes the background client registers. Disabled exposes stay hidden from the server until you turn them back on.',
+      'Edit the built-in exposes this background client registers. You can change each expose path and description, or disable it until you need it again.',
     'options.clients.backgroundBrowserExposes': 'Browser exposes',
     'options.clients.backgroundWorkspaceExposes': 'Workspace exposes',
     'options.clients.backgroundSkills': 'Built-in skills',
+    'options.clients.backgroundBrowserDescription':
+      'Select a browser expose from the tree to edit its path, description, and backend script.',
+    'options.clients.backgroundWorkspaceDescription':
+      'Select a workspace expose from the tree to edit its path, description, and backend script.',
+    'options.clients.backgroundSkillsDescription':
+      'Select a built-in backend skill from the tree to edit its path, description, and markdown content.',
     'options.clients.backgroundDefaultName': 'Background Client {{count}}',
     'options.clients.backgroundExposesCount':
       '{{enabled}} / {{total}} exposes enabled',
@@ -278,12 +284,18 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.clients.add': '添加路由客户端',
     'options.clients.addFromPage': '从当前页面创建',
     'options.clients.backgroundSummary':
-      '浏览器级客户端，可按需启停内置 exposes',
+      '浏览器级客户端，可直接编辑内置 exposes',
     'options.clients.backgroundAssetsDescription':
-      '这里可以控制 background client 注册哪些内置 MDP exposes。停用后对应 expose 会从服务端视角隐藏，直到重新启用。',
+      '这里可以直接编辑 background client 的内置 exposes。每个 expose 都可以修改路径、描述，也可以先停用，等需要时再打开。',
     'options.clients.backgroundBrowserExposes': '浏览器 exposes',
     'options.clients.backgroundWorkspaceExposes': '工作区 exposes',
     'options.clients.backgroundSkills': '内置技能',
+    'options.clients.backgroundBrowserDescription':
+      '从目录树里选择一个浏览器 expose，然后编辑它的路径、描述和 backend 脚本。',
+    'options.clients.backgroundWorkspaceDescription':
+      '从目录树里选择一个工作区 expose，然后编辑它的路径、描述和 backend 脚本。',
+    'options.clients.backgroundSkillsDescription':
+      '从目录树里选择一个内置 backend skill，然后编辑它的路径、描述和 markdown 内容。',
     'options.clients.backgroundDefaultName': '后台客户端 {{count}}',
     'options.clients.backgroundExposesCount':
       '已启用 {{enabled}} / {{total}} 个 expose',

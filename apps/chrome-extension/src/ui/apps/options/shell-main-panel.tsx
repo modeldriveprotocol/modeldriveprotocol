@@ -533,6 +533,7 @@ function forkEditableClient(
       ...backgroundRest,
       clientName: nextName,
       favorite: false,
+      exposes: item.client.exposes.map((asset) => ({ ...asset })),
       disabledExposePaths: [...item.client.disabledExposePaths]
     })
   }

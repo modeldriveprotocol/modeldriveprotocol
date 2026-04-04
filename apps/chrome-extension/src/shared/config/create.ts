@@ -1,5 +1,11 @@
 import { createRequestId } from '../utils.js'
 import {
+  cloneBackgroundExposeAssets,
+  createBackgroundExposeAssets,
+  deriveDisabledBackgroundExposePaths,
+  normalizeBackgroundExposeAssets
+} from './background-assets.js'
+import {
   type BackgroundClientConfig,
   DEFAULT_EXTENSION_CONFIG,
   MARKET_CATALOG_SYNC_PATH,
@@ -62,6 +68,9 @@ export function createBackgroundClientConfig(
     normalizeId(overrides.id) ?? createRequestId('background-client')
   const clientId =
     normalizeId(overrides.clientId) ?? buildClientId(sourceName, backgroundId)
+  const exposes = overrides.exposes
+    ? normalizeBackgroundExposeAssets(overrides.exposes, overrides.disabledExposePaths)
+    : createBackgroundExposeAssets(overrides.disabledExposePaths ?? [])
 
   return {
     kind: 'background',
@@ -74,7 +83,8 @@ export function createBackgroundClientConfig(
       overrides.clientDescription?.trim() ||
       'Browser-level client for built-in extension exposes and background automation capabilities.',
     icon: overrides.icon ?? 'chrome',
-    disabledExposePaths: overrides.disabledExposePaths ?? []
+    exposes: cloneBackgroundExposeAssets(exposes),
+    disabledExposePaths: deriveDisabledBackgroundExposePaths(exposes)
   }
 }
 

@@ -1,9 +1,12 @@
 import {
+  cloneBackgroundExposeAssets,
   createBackgroundClientConfig,
   createRouteClientConfig,
   createRouteRule,
+  deriveDisabledBackgroundExposePaths,
   isRequiredBackgroundClientId,
   normalizeDisabledBackgroundExposePaths,
+  normalizeBackgroundExposeAssets,
   normalizeLegacyDisabledBackgroundExposePaths,
   DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
   type BackgroundClientConfig,
@@ -44,6 +47,7 @@ export async function listWorkspaceClients(
   return {
     backgroundClients: config.backgroundClients.map((client) => ({
       ...client,
+      exposes: cloneBackgroundExposeAssets(client.exposes),
       disabledExposePaths: [...client.disabledExposePaths]
     })),
     routeClients: config.routeClients.map((client) => ({
@@ -99,7 +103,7 @@ export async function createWorkspaceClient(
   })
 
   if (input.kind === 'background') {
-    const disabledExposePaths = resolveBackgroundClientDisabledExposePaths(input)
+    const exposes = resolveBackgroundClientExposes(input)
     const client = createBackgroundClientConfig({
       ...(input.id?.trim() ? { id: input.id.trim() } : {}),
       ...(nextClientId ? { clientId: nextClientId } : {}),
@@ -110,7 +114,7 @@ export async function createWorkspaceClient(
       ...(input.icon ? { icon: input.icon } : {}),
       ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
       ...(input.favorite !== undefined ? { favorite: input.favorite } : {}),
-      ...(disabledExposePaths !== undefined ? { disabledExposePaths } : {})
+      ...(exposes !== undefined ? { exposes } : {})
     })
     const nextConfig = {
       ...config,
@@ -171,7 +175,7 @@ export async function updateWorkspaceClient(
 
   if (resolved.kind === 'background') {
     assertRequiredBackgroundClientUpdate(resolved.client, input)
-    const disabledExposePaths = resolveBackgroundClientDisabledExposePaths(input)
+    const exposes = resolveBackgroundClientExposes(input)
 
     const nextClient: BackgroundClientConfig = {
       ...resolved.client,
@@ -183,7 +187,12 @@ export async function updateWorkspaceClient(
       ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
       ...(input.favorite !== undefined ? { favorite: input.favorite } : {}),
       ...(nextClientId ? { clientId: nextClientId } : {}),
-      ...(disabledExposePaths !== undefined ? { disabledExposePaths } : {})
+      ...(exposes !== undefined
+        ? {
+            exposes,
+            disabledExposePaths: deriveDisabledBackgroundExposePaths(exposes)
+          }
+        : {})
     }
     const nextConfig = {
       ...config,
@@ -440,30 +449,13 @@ function assertRequiredBackgroundClientUpdate(
     )
   }
 
-  if (
-    hasBackgroundClientExposeOverride(input) &&
-    !sameStringArray(
-      resolveBackgroundClientDisabledExposePaths(input) ?? [],
-      DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledExposePaths
-    )
-  ) {
-    throw new Error(
-      `Background client "${client.clientName}" must keep its built-in exposes fixed`
-    )
-  }
-}
-
-function sameStringArray(left: string[], right: readonly string[]): boolean {
-  return (
-    left.length === right.length &&
-    left.every((value, index) => value === right[index])
-  )
 }
 
 function hasBackgroundClientExposeOverride(
   input: WorkspaceClientCreateInput | WorkspaceClientUpdateInput
 ): boolean {
   return (
+    input.exposes !== undefined ||
     input.disabledExposePaths !== undefined ||
     input.disabledTools !== undefined ||
     input.disabledResources !== undefined ||
@@ -471,20 +463,30 @@ function hasBackgroundClientExposeOverride(
   )
 }
 
-function resolveBackgroundClientDisabledExposePaths(
+function resolveBackgroundClientExposes(
   input: WorkspaceClientCreateInput | WorkspaceClientUpdateInput
-): string[] | undefined {
+): BackgroundClientConfig['exposes'] | undefined {
   if (!hasBackgroundClientExposeOverride(input)) {
     return undefined
   }
 
-  if (input.disabledExposePaths !== undefined) {
-    return normalizeDisabledBackgroundExposePaths(input.disabledExposePaths)
+  if (input.exposes !== undefined) {
+    return normalizeBackgroundExposeAssets(input.exposes)
   }
 
-  return normalizeLegacyDisabledBackgroundExposePaths({
-    disabledTools: input.disabledTools,
-    disabledResources: input.disabledResources,
-    disabledSkills: input.disabledSkills
-  })
+  if (input.disabledExposePaths !== undefined) {
+    return normalizeBackgroundExposeAssets(
+      undefined,
+      normalizeDisabledBackgroundExposePaths(input.disabledExposePaths)
+    )
+  }
+
+  return normalizeBackgroundExposeAssets(
+    undefined,
+    normalizeLegacyDisabledBackgroundExposePaths({
+      disabledTools: input.disabledTools,
+      disabledResources: input.disabledResources,
+      disabledSkills: input.disabledSkills
+    })
+  )
 }

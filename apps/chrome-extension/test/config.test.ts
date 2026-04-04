@@ -64,6 +64,15 @@ describe('chrome extension config helpers', () => {
           ...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
           enabled: false,
           clientId: 'custom-workspace-client',
+          exposes: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.exposes.map((asset) =>
+            asset.id === 'extension.clients.list'
+              ? {
+                  ...asset,
+                  path: '/workspace/clients',
+                  description: 'List workspace clients from a custom path.'
+                }
+              : { ...asset }
+          ),
           disabledExposePaths: []
         }
       ]
@@ -72,9 +81,13 @@ describe('chrome extension config helpers', () => {
     expect(normalized.backgroundClients[1]).toMatchObject({
       id: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id,
       enabled: true,
-      clientId: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.clientId,
-      disabledExposePaths: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledExposePaths
+      clientId: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.clientId
     })
+    expect(normalized.backgroundClients[1]?.exposes.find((asset) => asset.id === 'extension.clients.list'))
+      .toMatchObject({
+        path: '/workspace/clients',
+        description: 'List workspace clients from a custom path.'
+      })
   })
 
   it('normalizes script-based flows alongside recorded flows', () => {
@@ -115,6 +128,7 @@ describe('chrome extension config helpers', () => {
 
   it('normalizes background expose configuration from legacy capability ids', () => {
     const {
+      exposes: _exposes,
       disabledExposePaths: _disabledExposePaths,
       ...legacyBackgroundClient
     } = DEFAULT_EXTENSION_CONFIG.backgroundClients[0]!
@@ -142,6 +156,38 @@ describe('chrome extension config helpers', () => {
       '/extension/tabs',
       '/extension/resources/tabs'
     ])
+  })
+
+  it('preserves editable background expose assets and derives disabled paths from them', () => {
+    const normalized = normalizeConfig({
+      ...DEFAULT_EXTENSION_CONFIG,
+      backgroundClients: [
+        {
+          ...DEFAULT_BACKGROUND_CLIENT,
+          exposes: DEFAULT_BACKGROUND_CLIENT.exposes.map((asset) =>
+            asset.id === 'extension.status'
+              ? {
+                  ...asset,
+                  path: '/browser/status',
+                  description: 'Read browser status from a custom background path.',
+                  enabled: false
+                }
+              : { ...asset }
+          )
+        },
+        DEFAULT_WORKSPACE_MANAGEMENT_CLIENT
+      ]
+    })
+
+    expect(normalized.backgroundClients[0]?.exposes.find((asset) => asset.id === 'extension.status'))
+      .toMatchObject({
+        path: '/browser/status',
+        description: 'Read browser status from a custom background path.',
+        enabled: false
+      })
+    expect(normalized.backgroundClients[0]?.disabledExposePaths).toContain(
+      '/browser/status'
+    )
   })
 
   it('deduplicates and trims match patterns', () => {

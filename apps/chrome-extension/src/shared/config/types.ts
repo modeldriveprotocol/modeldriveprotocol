@@ -1,7 +1,9 @@
 import {
   BACKGROUND_BROWSER_EXPOSE_PATHS,
   BACKGROUND_SKILL_EXPOSE_PATHS,
-  BACKGROUND_WORKSPACE_EXPOSE_PATHS
+  BACKGROUND_WORKSPACE_EXPOSE_PATHS,
+  createBackgroundExposeAssets,
+  type BackgroundExposeAsset
 } from './background-assets.js'
 
 export type ClientIconKey =
@@ -138,6 +140,7 @@ export interface BackgroundClientConfig {
   clientName: string
   clientDescription: string
   icon: ClientIconKey
+  exposes: BackgroundExposeAsset[]
   disabledExposePaths: string[]
 }
 
@@ -200,6 +203,10 @@ export const DEFAULT_BACKGROUND_CLIENT: BackgroundClientConfig = {
   clientDescription:
     'Chrome extension runtime that exposes browser-level capabilities through Model Drive Protocol.',
   icon: 'chrome',
+  exposes: createBackgroundExposeAssets([
+    ...BACKGROUND_WORKSPACE_EXPOSE_PATHS,
+    ...BACKGROUND_SKILL_EXPOSE_PATHS
+  ]),
   disabledExposePaths: [
     ...BACKGROUND_WORKSPACE_EXPOSE_PATHS,
     ...BACKGROUND_SKILL_EXPOSE_PATHS
@@ -216,6 +223,7 @@ export const DEFAULT_WORKSPACE_MANAGEMENT_CLIENT: BackgroundClientConfig = {
   clientDescription:
     'Chrome extension workspace manager that can create, update, and remove clients and persist route expose rules.',
   icon: 'layers',
+  exposes: createBackgroundExposeAssets([...BACKGROUND_BROWSER_EXPOSE_PATHS]),
   disabledExposePaths: [...BACKGROUND_BROWSER_EXPOSE_PATHS]
 }
 
@@ -234,6 +242,7 @@ export const DEFAULT_EXTENSION_CONFIG: ExtensionConfig = {
   notificationTitle: 'Model Drive Protocol for Chrome',
   backgroundClients: DEFAULT_BACKGROUND_CLIENTS.map((client) => ({
     ...client,
+    exposes: client.exposes.map((asset) => ({ ...asset })),
     disabledExposePaths: [...client.disabledExposePaths]
   })),
   routeClients: [],

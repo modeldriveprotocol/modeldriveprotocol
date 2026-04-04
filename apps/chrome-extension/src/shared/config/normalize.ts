@@ -11,6 +11,9 @@ import {
   createRouteClientConfig
 } from './create.js'
 import {
+  cloneBackgroundExposeAssets,
+  deriveDisabledBackgroundExposePaths,
+  normalizeBackgroundExposeAssets,
   normalizeDisabledBackgroundExposePaths,
   normalizeLegacyDisabledBackgroundExposePaths
 } from './background-assets.js'
@@ -160,6 +163,23 @@ function migrateLegacyConfig(value: unknown): unknown {
 function normalizeBackgroundClient(value: unknown): BackgroundClientConfig {
   const record = asRecord(value)
   const fallback = resolveBackgroundClientFallback(record)
+  const fallbackDisabledExposePaths = [...fallback.disabledExposePaths]
+  const disabledExposePaths =
+    'disabledExposePaths' in record
+      ? normalizeDisabledBackgroundExposePaths(record.disabledExposePaths)
+      : 'disabledTools' in record ||
+          'disabledResources' in record ||
+          'disabledSkills' in record
+        ? normalizeLegacyDisabledBackgroundExposePaths({
+            disabledTools: record.disabledTools,
+            disabledResources: record.disabledResources,
+            disabledSkills: record.disabledSkills
+          })
+        : fallbackDisabledExposePaths
+  const exposes = normalizeBackgroundExposeAssets(
+    'exposes' in record ? record.exposes : undefined,
+    disabledExposePaths
+  )
 
   const normalized: BackgroundClientConfig = {
     kind: 'background',
@@ -176,18 +196,8 @@ function normalizeBackgroundClient(value: unknown): BackgroundClientConfig {
       fallback.clientDescription
     ),
     icon: normalizeIcon(readString(record, 'icon'), fallback.icon),
-    disabledExposePaths:
-      'disabledExposePaths' in record
-        ? normalizeDisabledBackgroundExposePaths(record.disabledExposePaths)
-        : 'disabledTools' in record ||
-            'disabledResources' in record ||
-            'disabledSkills' in record
-          ? normalizeLegacyDisabledBackgroundExposePaths({
-              disabledTools: record.disabledTools,
-              disabledResources: record.disabledResources,
-              disabledSkills: record.disabledSkills
-            })
-          : [...fallback.disabledExposePaths]
+    exposes,
+    disabledExposePaths: deriveDisabledBackgroundExposePaths(exposes)
   }
 
   return stabilizeRequiredBackgroundClient(normalized)
@@ -223,6 +233,7 @@ function resolveBackgroundClientFallback(
 function cloneDefaultBackgroundClients(): BackgroundClientConfig[] {
   return DEFAULT_BACKGROUND_CLIENTS.map((client) => ({
     ...client,
+    exposes: cloneBackgroundExposeAssets(client.exposes),
     disabledExposePaths: [...client.disabledExposePaths]
   }))
 }
@@ -236,6 +247,9 @@ function ensureRequiredBackgroundClients(
   if (!existingIds.has(DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id)) {
     normalized.push({
       ...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
+      exposes: cloneBackgroundExposeAssets(
+        DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.exposes
+      ),
       disabledExposePaths: [
         ...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledExposePaths
       ]
@@ -260,7 +274,8 @@ function stabilizeRequiredBackgroundClient(
     id: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id,
     enabled: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.enabled,
     clientId: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.clientId,
-    disabledExposePaths: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledExposePaths]
+    exposes: cloneBackgroundExposeAssets(client.exposes),
+    disabledExposePaths: [...client.disabledExposePaths]
   }
 }
 

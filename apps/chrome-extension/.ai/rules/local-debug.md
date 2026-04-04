@@ -22,22 +22,68 @@ pnpm --filter @modeldriveprotocol/chrome-extension dev
 
 ## Notes From The April 4, 2026 Real E2E Session
 
-- `dev:manual` is the safer base when you need the extension loaded in your own Chrome session and also need DevTools Protocol access.
-- A fixed Vite port avoids confusion. The reliable command in this environment was:
+- The previous recommendation to prefer `dev:manual` plus a hand-written `--load-extension` Chrome launch was too optimistic for this machine.
+- In this environment, the reliable path for DevTools Protocol access is:
+  1. create a gitignored `apps/chrome-extension/web-ext.config.ts`
+  2. point it at `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`
+  3. set `chromiumProfile` to `apps/chrome-extension/.artifacts/chrome-profile`
+  4. set `chromiumArgs` to include `--remote-debugging-port=9227`
+  5. run plain `pnpm --filter @modeldriveprotocol/chrome-extension dev`
+- A working local override looked like:
 
-```bash
-MDP_WXT_MANUAL=1 pnpm --filter @modeldriveprotocol/chrome-extension dev -- --port 3001
+```ts
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { defineWebExtConfig } from 'wxt'
+
+const appRoot = fileURLToPath(new URL('.', import.meta.url))
+
+export default defineWebExtConfig({
+  binaries: {
+    chrome: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+  },
+  chromiumProfile: resolve(appRoot, '.artifacts/chrome-profile'),
+  keepProfileChanges: true,
+  startUrls: ['about:blank'],
+  chromiumArgs: [
+    '--remote-debugging-port=9227',
+    '--enable-unsafe-extension-debugging',
+    '--unsafely-disable-devtools-self-xss-warnings',
+    '--no-first-run',
+    '--no-default-browser-check'
+  ]
+})
 ```
 
-- The most reliable manual browser launch on this machine was:
+- With that override in place, `dev` reliably loaded the unpacked extension and exposed both the extension service worker target and the extension page targets over CDP.
+- A fixed Vite port still helps avoid stale asset confusion. In the verified session, WXT served on `http://localhost:3001`.
 
 ```bash
-/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary \
-  --user-data-dir=/Users/bytedance/projects/mdp/apps/chrome-extension/.wxt/chrome-data \
+pnpm --filter @modeldriveprotocol/chrome-extension dev
+```
+
+- If you need a fixed port explicitly, still pass it through:
+
+```bash
+pnpm --filter @modeldriveprotocol/chrome-extension dev -- --port 3001
+```
+
+- Do not assume a raw Chrome launch like this is enough:
+
+```bash
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --user-data-dir=/path/to/profile \
   --remote-debugging-port=9227 \
   --enable-unsafe-extension-debugging \
   --unsafely-disable-devtools-self-xss-warnings \
+  --disable-extensions-except=/path/to/dist/chrome-mv3-dev \
+  --load-extension=/path/to/dist/chrome-mv3-dev \
   about:blank
 ```
 
-- When you reuse the persistent profile, extension pages can keep pointing at a previous Vite port. If the options page title renders but the body is empty, inspect the page HTML and restart WXT on the same `localhost:<port>` referenced by the injected script tags.
+- On this machine that direct launch often left Chrome running without the unpacked extension actually appearing as a debuggable target, even though the browser itself opened.
+- After WXT opens the browser, use `curl --noproxy '*' http://127.0.0.1:9227/json/list` and verify you can see:
+  - a `service_worker` target for `chrome-extension://<id>/background.js`
+  - at least one extension page target after opening `options.html` or `sidepanel.html`
+- When the local server is restarted, the extension may stay open but not reconnect immediately. The fastest recovery is to open `options.html` and send `runtime:refresh` from that page, or reload the extension service worker.
+- When you reuse a profile, extension pages can keep pointing at a previous Vite port. If the options page title renders but the body is empty, inspect the page HTML and restart WXT on the same `localhost:<port>` referenced by the injected script tags.

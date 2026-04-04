@@ -53,6 +53,13 @@ export const routeClientRecordingSchema = z.object({
   scriptSource: z.string().optional()
 })
 
+export const backgroundExposeAssetSchema = z.object({
+  id: nonEmptyStringSchema,
+  path: nonEmptyStringSchema,
+  description: z.string(),
+  enabled: z.boolean().default(true)
+})
+
 export const backgroundClientSchema = z.object({
   kind: z.literal('background'),
   id: nonEmptyStringSchema,
@@ -62,6 +69,7 @@ export const backgroundClientSchema = z.object({
   clientName: nonEmptyStringSchema,
   clientDescription: nonEmptyStringSchema,
   icon: z.enum(clientIconEnum),
+  exposes: z.array(backgroundExposeAssetSchema).optional(),
   disabledExposePaths: z.array(nonEmptyStringSchema).optional(),
   disabledTools: z.array(nonEmptyStringSchema).optional(),
   disabledResources: z.array(nonEmptyStringSchema).optional(),
