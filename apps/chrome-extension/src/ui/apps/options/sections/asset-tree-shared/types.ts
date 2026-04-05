@@ -26,3 +26,25 @@ export type AssetBreadcrumb = {
   itemId: string
   label: string
 }
+
+export type AssetPathEntry<AssetId extends string = string> = {
+  assetId: AssetId
+  path: string
+}
+
+export type AssetContextMenuTarget<AssetId extends string = string> = {
+  kind: 'asset' | 'folder' | 'root'
+  assetId?: AssetId
+  folderPath?: string
+}
+
+export type AssetMutationTarget<AssetId extends string = string> = {
+  assetId?: AssetId
+  folderPath?: string
+}
+
+export type AssetContextMenuState<AssetId extends string = string> =
+  AssetContextMenuTarget<AssetId> & {
+    mouseX: number
+    mouseY: number
+  }

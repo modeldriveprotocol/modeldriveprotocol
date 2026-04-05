@@ -1,4 +1,4 @@
-import type { AssetFileTreeNode } from './types.js'
+import type { AssetFileTreeNode, AssetPathEntry } from './types.js'
 
 export type AssetEnabledState = 'enabled' | 'disabled' | 'mixed'
 
@@ -69,6 +69,42 @@ export function applyEnabledValue<T extends { id: string }>(
       enabled
     }
   })
+}
+
+export function toggleEnabledAsset<T extends { id: AssetId }, AssetId extends string>(
+  assets: T[],
+  assetId: AssetId,
+  assetEnabled: ReadonlyMap<AssetId, boolean>
+): T[] | undefined {
+  const enabled = assetEnabled.get(assetId)
+
+  if (enabled === undefined) {
+    return undefined
+  }
+
+  return applyEnabledValue(assets, [assetId], !enabled)
+}
+
+export function toggleEnabledFolder<T extends { id: AssetId }, AssetId extends string>(
+  assets: T[],
+  items: ReadonlyArray<AssetPathEntry<AssetId>>,
+  folderPath: string,
+  assetEnabled: ReadonlyMap<AssetId, boolean>
+): T[] | undefined {
+  const assetIds = collectFolderAssetIds(
+    [...items],
+    folderPath
+  ) as AssetId[]
+
+  if (assetIds.length === 0) {
+    return undefined
+  }
+
+  return applyEnabledValue(
+    assets,
+    assetIds,
+    resolveNextEnabledValue(assetIds, assetEnabled)
+  )
 }
 
 function collectLeafEnabledStates(

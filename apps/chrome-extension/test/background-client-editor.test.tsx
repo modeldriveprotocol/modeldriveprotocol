@@ -10,6 +10,7 @@ import {
 } from '../src/shared/config.js'
 import { I18nProvider } from '../src/ui/i18n/provider.js'
 import { BackgroundClientEditor } from '../src/ui/apps/options/sections/background-client-editor.js'
+import { commitBackgroundRename } from '../src/ui/apps/options/sections/background-client-editor/tree-helpers.js'
 
 vi.mock('../src/ui/foundation/monaco-editor.js', () => ({
   MonacoCodeEditor: ({
@@ -233,5 +234,38 @@ describe('background client editor', () => {
 
     errorSpy.mockRestore()
     logSpy.mockRestore()
+  })
+
+  it('renames background folders against the real stored paths when a shared display prefix is hidden', () => {
+    const client =
+      DEFAULT_EXTENSION_CONFIG.backgroundClients[0] ?? DEFAULT_BACKGROUND_CLIENT
+    const renameTarget = {
+      kind: 'folder' as const,
+      path: 'clients',
+      value: 'workspace-clients'
+    }
+    let nextClient = client
+    let selectedItemId = ''
+
+    commitBackgroundRename(
+      client,
+      renameTarget,
+      false,
+      'extension',
+      () => {},
+      (nextItemId) => {
+        selectedItemId = nextItemId
+      },
+      (updatedClient) => {
+        nextClient = updatedClient
+      }
+    )
+
+    const renamedPaths = nextClient.exposes
+      .filter((asset) => asset.path.startsWith('/extension/workspace-clients/'))
+      .map((asset) => asset.path)
+
+    expect(renamedPaths.length).toBeGreaterThan(0)
+    expect(selectedItemId).toBe('asset-folder:workspace-clients')
   })
 })

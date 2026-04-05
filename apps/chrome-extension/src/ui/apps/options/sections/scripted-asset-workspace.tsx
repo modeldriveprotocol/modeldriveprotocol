@@ -1,6 +1,4 @@
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import UnfoldLessOutlined from '@mui/icons-material/UnfoldLessOutlined'
-import UnfoldMoreOutlined from '@mui/icons-material/UnfoldMoreOutlined'
 import SearchOutlined from '@mui/icons-material/SearchOutlined'
 import {
   Box,
@@ -19,31 +17,11 @@ import {
   type ReactNode
 } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
-
-export const sharedAssetTreeSx: SxProps<Theme> = {
-  minWidth: 0,
-  px: 0,
-  '& .MuiTreeItem-content': {
-    minHeight: 32,
-    pr: 1.25,
-    borderRadius: 0,
-    width: '100%',
-    cursor: 'pointer'
-  },
-  '& .MuiTreeItem-content.Mui-selected, & .MuiTreeItem-content.Mui-selected:hover': {
-    bgcolor: 'action.selected'
-  },
-  '& > .MuiTreeItem-root > .MuiTreeItem-content': {
-    pl: 0
-  },
-  '& .MuiTreeItem-content.Mui-focused:not(.Mui-selected)': {
-    bgcolor: 'transparent'
-  },
-  '& .MuiTreeItem-label': {
-    flex: 1,
-    minWidth: 0
-  }
-}
+import {
+  createAssetTreeSearchActions,
+  type AssetTreeToolbarAction
+} from './scripted-asset-workspace/search-actions.js'
+import { sharedAssetTreeSx } from './scripted-asset-workspace/tree-styles.js'
 
 export function ScriptedAssetWorkspace({
   detailPane,
@@ -286,33 +264,8 @@ export function ScriptedAssetWorkspace({
     </Box>
   )
 }
-
-export type AssetTreeToolbarAction = {
-  key: string
-  label: string
-  icon: ReactNode
-  onClick: () => void
-}
-
-export function createAssetTreeSearchActions(labels: {
-  expandAll: string
-  collapseAll: string
-}, handlers: {
-  onExpandAll: () => void
-  onCollapseAll: () => void
-}): AssetTreeToolbarAction[] {
-  return [
-    {
-      key: 'expand-all',
-      label: labels.expandAll,
-      icon: <UnfoldMoreOutlined fontSize="small" />,
-      onClick: handlers.onExpandAll
-    },
-    {
-      key: 'collapse-all',
-      label: labels.collapseAll,
-      icon: <UnfoldLessOutlined fontSize="small" />,
-      onClick: handlers.onCollapseAll
-    }
-  ]
+export {
+  createAssetTreeSearchActions,
+  sharedAssetTreeSx,
+  type AssetTreeToolbarAction
 }

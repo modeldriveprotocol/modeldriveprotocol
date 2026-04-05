@@ -24,6 +24,7 @@ import {
   handleBackgroundExpandableItemClick
 } from './tree-helpers.js'
 import type {
+  BackgroundContextMenuTarget,
   BackgroundRenameTarget,
   BackgroundTreePrefix
 } from './types.js'
@@ -50,11 +51,7 @@ export function BackgroundAssetTreeNodeItem({
   node: AssetFileTreeNode
   onOpenContextMenu: (
     event: ReactMouseEvent,
-    target: {
-      kind: 'asset' | 'folder' | 'root'
-      assetId?: BackgroundExposeAsset['id']
-      folderPath?: string
-    }
+    target: BackgroundContextMenuTarget
   ) => void
   prefix: BackgroundTreePrefix
   renameError: boolean

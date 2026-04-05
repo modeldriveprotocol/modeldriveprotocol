@@ -12,6 +12,8 @@ import { basename } from './asset-helpers.js'
 import type { ScriptedAssetContextMenuSection } from '../scripted-asset-shared.js'
 import type {
   RouteRenameTarget,
+  TreeContextMenuTarget,
+  TreeMutationTarget,
   TreeContextMenuState
 } from './types.js'
 
@@ -25,7 +27,9 @@ export function buildRouteContextMenuSections(options: {
   addFolder: (parentPath?: string) => void
   collapseAllFolders: () => void
   copyPath: (path: string) => void
-  deleteTarget: (target: { assetId?: string; folderPath?: string }) => void
+  deleteTarget: (
+    target: TreeMutationTarget
+  ) => void
   expandAllFolders: () => void
   startRename: (target: RouteRenameTarget, itemId: string) => void
   toggleFolder: (folderPath: string) => void

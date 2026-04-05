@@ -1,3 +1,9 @@
+import type {
+  AssetContextMenuState,
+  AssetContextMenuTarget,
+  AssetMutationTarget
+} from '../asset-tree-shared.js'
+
 export type ClientTreeItem =
   | {
       id: string
@@ -10,13 +16,15 @@ export type ClientTreeItem =
       method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
     }
 
-export type TreeContextMenuState = {
-  kind: 'asset' | 'folder' | 'root'
-  assetId?: string
+export type TreeContextMenuState = AssetContextMenuState<string> & {
   folderPath: string
-  mouseX: number
-  mouseY: number
 }
+
+export type TreeContextMenuTarget = AssetContextMenuTarget<string> & {
+  folderPath: string
+}
+
+export type TreeMutationTarget = AssetMutationTarget<string>
 
 export type RouteRenameTarget =
   | {

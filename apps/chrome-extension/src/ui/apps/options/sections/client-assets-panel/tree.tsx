@@ -24,7 +24,8 @@ import {
 import type {
   ClientTreeItem,
   DragState,
-  RouteRenameTarget
+  RouteRenameTarget,
+  TreeContextMenuTarget
 } from './types.js'
 
 export function renderTreeNodes(
@@ -35,11 +36,7 @@ export function renderTreeNodes(
     onCommitRename: () => void
     onOpenContextMenu: (
       event: ReactMouseEvent,
-      target: {
-        kind: 'asset' | 'folder' | 'root'
-        assetId?: string
-        folderPath: string
-      }
+      target: TreeContextMenuTarget
     ) => void
     onRenameChange: (value: string) => void
     onStartRename: (target: RouteRenameTarget, itemId: string) => void

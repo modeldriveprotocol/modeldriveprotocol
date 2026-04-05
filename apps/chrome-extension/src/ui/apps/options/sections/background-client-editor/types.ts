@@ -1,4 +1,8 @@
 import type { BackgroundExposeAsset } from '#~/shared/config.js'
+import type {
+  AssetContextMenuState,
+  AssetContextMenuTarget
+} from '../asset-tree-shared.js'
 
 export type BackgroundTreePrefix = 'asset'
 
@@ -15,10 +19,8 @@ export type BackgroundRenameTarget =
       value: string
     }
 
-export type BackgroundContextMenuState = {
-  kind: 'asset' | 'folder' | 'root'
-  assetId?: BackgroundExposeAsset['id']
-  folderPath?: string
-  mouseX: number
-  mouseY: number
-}
+export type BackgroundContextMenuState =
+  AssetContextMenuState<BackgroundExposeAsset['id']>
+
+export type BackgroundContextMenuTarget =
+  AssetContextMenuTarget<BackgroundExposeAsset['id']>

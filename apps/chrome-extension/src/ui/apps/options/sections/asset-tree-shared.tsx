@@ -1,6 +1,10 @@
 export type {
   AssetBreadcrumb,
+  AssetContextMenuState,
+  AssetContextMenuTarget,
   AssetFileTreeNode,
+  AssetMutationTarget,
+  AssetPathEntry,
   AssetScopeEntry
 } from './asset-tree-shared/types.js'
 export {
@@ -32,6 +36,9 @@ export {
   collectFolderAssetIds,
   resolveAssetEnabledState,
   resolveFolderEnabledState,
-  resolveNextEnabledValue
+  resolveNextEnabledValue,
+  toggleEnabledAsset,
+  toggleEnabledFolder
 } from './asset-tree-shared/enabled-state.js'
 export type { AssetEnabledState } from './asset-tree-shared/enabled-state.js'
+export { mergeExpandedFolderPaths } from './asset-tree-shared/tree-state.js'
