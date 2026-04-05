@@ -15,7 +15,7 @@ export function AssetTreeLabel({
   dropActive = false,
   label,
   onClick,
-  selected = false,
+  selected: _selected = false,
   searchTerm
 }: {
   action?: ReactNode
@@ -33,7 +33,7 @@ export function AssetTreeLabel({
         gap: 0.75,
         minWidth: 0,
         width: '100%',
-        bgcolor: selected ? 'action.selected' : dropActive ? 'action.hover' : undefined
+        bgcolor: dropActive ? 'action.hover' : undefined
       }}
     >
       <Box
@@ -98,7 +98,7 @@ export function AssetTreeLeaf({
   icon,
   label,
   onClick,
-  selected = false
+  selected: _selected = false
 }: {
   action?: ReactNode
   dragging?: boolean
@@ -117,7 +117,7 @@ export function AssetTreeLeaf({
         minWidth: 0,
         width: '100%',
         opacity: dragging ? 0.45 : 1,
-        bgcolor: selected ? 'action.selected' : dropActive ? 'action.hover' : undefined
+        bgcolor: dropActive ? 'action.hover' : undefined
       }}
     >
       <Box

@@ -30,6 +30,9 @@ export const sharedAssetTreeSx: SxProps<Theme> = {
     width: '100%',
     cursor: 'pointer'
   },
+  '& .MuiTreeItem-content.Mui-selected, & .MuiTreeItem-content.Mui-selected:hover': {
+    bgcolor: 'action.selected'
+  },
   '& > .MuiTreeItem-root > .MuiTreeItem-content': {
     pl: 0
   },

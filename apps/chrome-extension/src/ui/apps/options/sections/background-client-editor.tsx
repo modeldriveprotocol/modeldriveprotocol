@@ -202,6 +202,10 @@ export function BackgroundClientEditor({
   )
   const hasSearchResults = visibleItemIds.size > 1
   const searchTerm = searchQuery.trim()
+  const selectedTreeItemId =
+    selectedItemId !== 'root' && visibleItemIds.has(selectedItemId)
+      ? selectedItemId
+      : null
   const firstSearchResultItemId = useMemo(
     () => (searchTerm ? findFirstAssetTreeItemId('asset', filteredBackgroundTree) : undefined),
     [filteredBackgroundTree, searchTerm]
@@ -614,6 +618,16 @@ export function BackgroundClientEditor({
                     setExpandedFolders
                   )
                 }}
+                onSelectedItemsChange={(_event, itemId) => {
+                  const nextItemId = (itemId as string | null) ?? 'root'
+                  setSelectedItemId(nextItemId)
+                  const nextAssetId = getSelectedBackgroundAssetId(nextItemId)
+
+                  if (nextAssetId) {
+                    setDisplayedAssetId(nextAssetId)
+                  }
+                }}
+                selectedItems={selectedTreeItemId}
                 sx={sharedAssetTreeSx}
               >
                 {filteredBackgroundTree.map((node) => (
