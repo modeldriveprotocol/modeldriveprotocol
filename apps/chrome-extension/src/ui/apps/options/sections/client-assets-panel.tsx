@@ -25,11 +25,14 @@ import { useI18n } from '../../../i18n/provider.js'
 import { createLocalId } from '../types.js'
 import {
   AssetEmptyState,
+  applyEnabledValue,
   basename,
   buildAssetFileTree,
+  collectFolderAssetIds,
   collectAssetFolderPaths,
   filterAssetFileTree,
   listAncestorFolders,
+  resolveNextEnabledValue,
 } from './asset-tree-shared.js'
 import {
   createUniquePath,
@@ -52,7 +55,11 @@ import type {
   RouteRenameTarget,
   TreeContextMenuState
 } from './client-assets-panel/types.js'
-import { ScriptedAssetWorkspace } from './scripted-asset-workspace.js'
+import {
+  createAssetTreeSearchActions,
+  ScriptedAssetWorkspace,
+  sharedAssetTreeSx
+} from './scripted-asset-workspace.js'
 import {
   ScriptedAssetContextMenu,
   type ScriptedAssetContextMenuSection
@@ -378,8 +385,6 @@ export function ClientAssetsPanel({
       kind: 'asset' | 'folder' | 'root'
       assetId?: string
       folderPath: string
-      selectedItemId: string
-      displayedFileId?: string
     }
   ) {
     event.preventDefault()
@@ -486,19 +491,7 @@ export function ClientAssetsPanel({
   }
 
   function updateAssetEnabled(assetIds: string[], enabled: boolean) {
-    if (assetIds.length === 0) {
-      return
-    }
-
-    const assetIdSet = new Set(assetIds)
-
-    commitExposes(
-      client.exposes.map((asset) =>
-        'enabled' in asset && assetIdSet.has(asset.id)
-          ? { ...asset, enabled }
-          : asset
-      )
-    )
+    commitExposes(applyEnabledValue(client.exposes, assetIds, enabled))
   }
 
   function toggleAssetEnabled(assetId: string) {
@@ -512,17 +505,13 @@ export function ClientAssetsPanel({
   }
 
   function toggleFolderAssetEnabled(folderPath: string) {
-    const assetIds = fileItems
-      .filter(
-        (asset) => asset.path === folderPath || asset.path.startsWith(`${folderPath}/`)
-      )
-      .map((asset) => asset.assetId)
+    const assetIds = collectFolderAssetIds(fileItems, folderPath)
 
     if (assetIds.length === 0) {
       return
     }
 
-    const shouldEnable = assetIds.some((assetId) => !assetEnabled.get(assetId))
+    const shouldEnable = resolveNextEnabledValue(assetIds, assetEnabled)
     updateAssetEnabled(assetIds, shouldEnable)
   }
 
@@ -681,8 +670,7 @@ export function ClientAssetsPanel({
         onRootContextMenu={(event) =>
           openContextMenu(event, {
             kind: 'root',
-            folderPath: '',
-            selectedItemId: 'root'
+            folderPath: ''
           })
         }
         onRootDragOver={(event) => {
@@ -701,6 +689,17 @@ export function ClientAssetsPanel({
         onSearchChange={setSearchQuery}
         searchPlaceholder={t('options.assets.search')}
         searchQuery={searchQuery}
+        searchActions={createAssetTreeSearchActions(
+          {
+            expandAll: t('options.assets.menu.expandAll'),
+            collapseAll: t('options.assets.menu.collapseAll')
+          },
+          {
+            onExpandAll: expandAllFolders,
+            onCollapseAll: collapseAllFolders
+          }
+        )}
+        sx={{ mt: '-10px !important' }}
         storageKey="mdp-options-route-asset-tree-width"
         treePane={
           fileItems.length === 0 ? (
@@ -709,24 +708,7 @@ export function ClientAssetsPanel({
             <SimpleTreeView
               expandedItems={expandedItems}
               selectedItems={selectedItemId === 'root' ? null : selectedItemId}
-              sx={{
-                minWidth: 0,
-                px: 0.5,
-                '& .MuiTreeItem-content': {
-                  minHeight: 32,
-                  pr: 0.5,
-                  borderRadius: 1,
-                  width: '100%',
-                  cursor: 'pointer'
-                },
-                '& .MuiTreeItem-content.Mui-focused:not(.Mui-selected)': {
-                  bgcolor: 'transparent'
-                },
-                '& .MuiTreeItem-label': {
-                  flex: 1,
-                  minWidth: 0
-                }
-              }}
+              sx={sharedAssetTreeSx}
             >
               {renderTreeNodes(filteredTree, {
                 onCancelRename: () => setRenameTarget(undefined),
@@ -742,7 +724,6 @@ export function ClientAssetsPanel({
                 onSetDropTarget: setDropTargetItemId,
                 onStartDrag: setDragState,
                 dropTargetItemId,
-                renameLabel: t('options.assets.renameItem'),
                 renameError,
                 renameTarget,
                 searchTerm: searchQuery,

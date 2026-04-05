@@ -11,13 +11,14 @@ import {
   AssetTreeLabel,
   AssetTreeRenameField,
   dirname,
+  resolveAssetEnabledState,
+  resolveFolderEnabledState,
   renderHighlightedText,
   type AssetFileTreeNode
 } from '../asset-tree-shared.js'
 import {
   HttpMethodBadge,
-  ScriptedAssetEnabledButton,
-  type ScriptedAssetEnabledState
+  ScriptedAssetEnabledButton
 } from '../scripted-asset-shared.js'
 import {
   handleBackgroundExpandableItemClick
@@ -51,7 +52,6 @@ export function BackgroundAssetTreeNodeItem({
       kind: 'asset' | 'folder' | 'root'
       assetId?: BackgroundExposeAsset['id']
       folderPath?: string
-      itemId?: string
     }
   ) => void
   prefix: BackgroundTreePrefix
@@ -83,7 +83,6 @@ export function BackgroundAssetTreeNodeItem({
                 state={enabledState}
               />
             }
-            count={countLeafFiles(node)}
             onClick={(event) =>
               handleBackgroundExpandableItemClick(
                 event,
@@ -110,8 +109,7 @@ export function BackgroundAssetTreeNodeItem({
         onContextMenu={(event) =>
           onOpenContextMenu(event, {
             kind: 'folder',
-            folderPath: node.path,
-            itemId
+            folderPath: node.path
           })
         }
         onDoubleClick={() =>
@@ -163,7 +161,7 @@ export function BackgroundAssetTreeNodeItem({
           action={
             <ScriptedAssetEnabledButton
               onClick={() => onToggleAssetEnabled(assetId)}
-              state={assetEnabled.get(assetId) ? 'enabled' : 'disabled'}
+              state={resolveAssetEnabledState(assetId, assetEnabled)}
             />
           }
           icon={<BackgroundMethodBadge definition={definition} />}
@@ -190,8 +188,7 @@ export function BackgroundAssetTreeNodeItem({
         onOpenContextMenu(event, {
           kind: 'asset',
           assetId: node.assetId as BackgroundExposeAsset['id'],
-          folderPath: dirname(node.path),
-          itemId
+          folderPath: dirname(node.path)
         })
       }
       onDoubleClick={() =>
@@ -206,48 +203,6 @@ export function BackgroundAssetTreeNodeItem({
         )
       }
     />
-  )
-}
-
-function countLeafFiles(node: AssetFileTreeNode): number {
-  if (node.kind === 'file') {
-    return 1
-  }
-
-  return node.children.reduce((total, child) => total + countLeafFiles(child), 0)
-}
-
-function resolveFolderEnabledState(
-  node: AssetFileTreeNode,
-  assetEnabled: Map<BackgroundExposeAsset['id'], boolean>
-): ScriptedAssetEnabledState {
-  const leafStates = collectLeafEnabledStates(node, assetEnabled)
-
-  if (leafStates.length === 0) {
-    return 'disabled'
-  }
-
-  if (leafStates.every(Boolean)) {
-    return 'enabled'
-  }
-
-  if (leafStates.every((state) => !state)) {
-    return 'disabled'
-  }
-
-  return 'mixed'
-}
-
-function collectLeafEnabledStates(
-  node: AssetFileTreeNode,
-  assetEnabled: Map<BackgroundExposeAsset['id'], boolean>
-): boolean[] {
-  if (node.kind === 'file') {
-    return [assetEnabled.get(node.assetId as BackgroundExposeAsset['id']) ?? true]
-  }
-
-  return node.children.flatMap((child) =>
-    collectLeafEnabledStates(child, assetEnabled)
   )
 }
 

@@ -1,6 +1,5 @@
 import {
   Box,
-  ButtonBase,
   Divider,
   ListItemIcon,
   ListItemText,
@@ -15,6 +14,7 @@ import {
 import { alpha, useTheme, type Theme } from '@mui/material/styles'
 import type { ReactNode } from 'react'
 
+import type { AssetEnabledState } from './asset-tree-shared.js'
 import { MonacoCodeEditor } from '../../../foundation/monaco-editor.js'
 
 export function HttpMethodBadge({
@@ -141,28 +141,40 @@ export function ScriptedAssetContextMenu({
 export function ScriptedAssetEditorPanel({
   controls,
   descriptionLabel,
+  descriptionPlaceholder,
   descriptionValue,
   editorLabel,
   editorLanguage,
   editorMinHeight = 360,
   editorModelUri,
+  editorPlaceholder,
   editorValue,
+  sx,
   onDescriptionChange,
   onEditorChange
 }: {
   controls?: ReactNode
   descriptionLabel: string
+  descriptionPlaceholder?: string
   descriptionValue: string
   editorLabel: string
   editorLanguage: 'javascript' | 'markdown'
   editorMinHeight?: number
   editorModelUri: string
+  editorPlaceholder?: string
   editorValue: string
+  sx?: SxProps<MuiTheme>
   onDescriptionChange: (value: string) => void
   onEditorChange: (value: string) => void
 }) {
+  const alignedEditorGutterOptions = {
+    glyphMargin: false,
+    lineNumbers: 'on' as const,
+    lineNumbersMinChars: 3
+  }
+
   return (
-    <Stack spacing={0.75} sx={{ minHeight: 0, flex: 1 }}>
+    <Stack spacing={0.75} sx={{ minHeight: 0, flex: 1, ...sx }}>
       {controls}
       <Box
         sx={{
@@ -170,7 +182,6 @@ export function ScriptedAssetEditorPanel({
           flex: 1,
           border: '1px solid',
           borderColor: 'divider',
-          borderRadius: 1,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column'
@@ -185,15 +196,10 @@ export function ScriptedAssetEditorPanel({
             modelUri={`${editorModelUri}.description.md`}
             onChange={(nextValue) => onDescriptionChange(nextValue ?? '')}
             options={{
-              folding: false,
-              glyphMargin: false,
-              lineDecorationsWidth: 0,
-              lineNumbers: 'off',
-              lineNumbersMinChars: 0,
-              overviewRulerBorder: false,
-              overviewRulerLanes: 0,
+              ...alignedEditorGutterOptions,
               wordWrap: 'on'
             }}
+            placeholder={descriptionPlaceholder}
             value={descriptionValue}
           />
         </Box>
@@ -201,10 +207,13 @@ export function ScriptedAssetEditorPanel({
         <Box sx={{ minHeight: 0, flex: 1 }}>
           <MonacoCodeEditor
             ariaLabel={editorLabel}
+            height="100%"
             language={editorLanguage}
             minHeight={editorMinHeight}
             modelUri={editorModelUri}
             onChange={(nextValue) => onEditorChange(nextValue ?? '')}
+            options={alignedEditorGutterOptions}
+            placeholder={editorPlaceholder}
             value={editorValue}
           />
         </Box>
@@ -262,8 +271,6 @@ export function ScriptedAssetMethodField({
   )
 }
 
-export type ScriptedAssetEnabledState = 'enabled' | 'disabled' | 'mixed'
-
 export function ScriptedAssetEnabledButton({
   disabled = false,
   onClick,
@@ -271,13 +278,31 @@ export function ScriptedAssetEnabledButton({
 }: {
   disabled?: boolean
   onClick: () => void
-  state: ScriptedAssetEnabledState
+  state: AssetEnabledState
 }) {
   const theme = useTheme()
   const tone = getEnabledButtonTone(theme, state)
 
+  function trigger() {
+    if (disabled) {
+      return
+    }
+
+    onClick()
+  }
+
+  function markMuiEventHandled(event: {
+    defaultMuiPrevented?: boolean
+    preventDefault: () => void
+    stopPropagation: () => void
+  }) {
+    event.preventDefault()
+    event.stopPropagation()
+    event.defaultMuiPrevented = true
+  }
+
   return (
-    <ButtonBase
+    <Box
       aria-label={
         state === 'enabled'
           ? 'Disable'
@@ -285,12 +310,34 @@ export function ScriptedAssetEnabledButton({
             ? 'Enable'
             : 'Enable all'
       }
-      disabled={disabled}
-      onClick={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        onClick()
+      component="span"
+      onMouseDownCapture={(event) => {
+        if (event.button !== 0) {
+          return
+        }
+
+        markMuiEventHandled(event)
+        trigger()
       }}
+      onPointerDownCapture={(event) => {
+        markMuiEventHandled(event)
+      }}
+      onClickCapture={(event) => {
+        markMuiEventHandled(event)
+      }}
+      onKeyDownCapture={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') {
+          return
+        }
+
+        markMuiEventHandled(event)
+        if (disabled) {
+          return
+        }
+
+        trigger()
+      }}
+      role="button"
       sx={{
         width: 18,
         height: 18,
@@ -302,8 +349,11 @@ export function ScriptedAssetEnabledButton({
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        opacity: disabled ? 0.45 : 1
+        opacity: disabled ? 0.45 : 1,
+        cursor: disabled ? 'default' : 'pointer',
+        outline: 'none'
       }}
+      tabIndex={disabled ? -1 : 0}
     >
       <Box
         sx={{
@@ -313,7 +363,7 @@ export function ScriptedAssetEnabledButton({
           bgcolor: tone.dot
         }}
       />
-    </ButtonBase>
+    </Box>
   )
 }
 
@@ -357,7 +407,7 @@ function getMethodBadgeTone(
 
 function getEnabledButtonTone(
   theme: Theme,
-  state: ScriptedAssetEnabledState
+  state: AssetEnabledState
 ) {
   switch (state) {
     case 'enabled':

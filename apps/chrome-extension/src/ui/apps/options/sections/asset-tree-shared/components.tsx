@@ -1,18 +1,10 @@
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined'
 import FolderOutlined from '@mui/icons-material/FolderOutlined'
-import {
-  Box,
-  ButtonBase,
-  IconButton,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography
-} from '@mui/material'
+import { Box, ButtonBase, IconButton, Stack, TextField, Tooltip, Typography } from '@mui/material'
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
 
-import { countAssetFiles, renderHighlightedText } from './helpers.js'
+import { renderHighlightedText } from './helpers.js'
 import type {
   AssetBreadcrumb,
   AssetScopeEntry
@@ -20,14 +12,12 @@ import type {
 
 export function AssetTreeLabel({
   action,
-  count,
   dropActive = false,
   label,
   onClick,
   searchTerm
 }: {
   action?: ReactNode
-  count: number
   dropActive?: boolean
   label: ReactNode
   onClick?: (event: ReactMouseEvent<HTMLDivElement>) => void
@@ -35,12 +25,6 @@ export function AssetTreeLabel({
 }) {
   return (
     <Box
-      onMouseDown={(event) => {
-        if (event.button === 2) {
-          event.preventDefault()
-        }
-      }}
-      onClick={onClick}
       sx={{
         display: 'flex',
         alignItems: 'center',
@@ -50,18 +34,53 @@ export function AssetTreeLabel({
         bgcolor: dropActive ? 'action.hover' : undefined
       }}
     >
-      <FolderOutlined fontSize="small" />
-      {typeof label === 'string' ? (
-        <Typography variant="body2" noWrap sx={{ flex: 1, fontWeight: 600 }}>
-          {renderHighlightedText(label, searchTerm)}
-        </Typography>
-      ) : (
-        <Box sx={{ flex: 1, minWidth: 0 }}>{label}</Box>
-      )}
-      <Typography variant="caption" color="text.secondary">
-        {count}
-      </Typography>
-      {action ? <Box className="asset-tree-actions">{action}</Box> : null}
+      <Box
+        onMouseDown={(event) => {
+          if (event.button === 2) {
+            event.preventDefault()
+          }
+        }}
+        onClick={onClick}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.75,
+          minWidth: 0,
+          flex: 1
+        }}
+      >
+        <FolderOutlined fontSize="small" />
+        {typeof label === 'string' ? (
+          <Typography variant="body2" noWrap sx={{ flex: 1, fontWeight: 600 }}>
+            {renderHighlightedText(label, searchTerm)}
+          </Typography>
+        ) : (
+          <Box sx={{ flex: 1, minWidth: 0 }}>{label}</Box>
+        )}
+      </Box>
+      {action ? (
+        <Box
+          className="asset-tree-actions"
+          onPointerDownCapture={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
+          onClickCapture={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
+          onMouseDown={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
+          onClick={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
+        >
+          {action}
+        </Box>
+      ) : null}
     </Box>
   )
 }
@@ -83,12 +102,6 @@ export function AssetTreeLeaf({
 }) {
   return (
     <Box
-      onMouseDown={(event) => {
-        if (event.button === 2) {
-          event.preventDefault()
-        }
-      }}
-      onClick={onClick}
       sx={{
         display: 'flex',
         alignItems: 'center',
@@ -99,9 +112,47 @@ export function AssetTreeLeaf({
         bgcolor: dropActive ? 'action.hover' : undefined
       }}
     >
-      {icon}
-      <Box sx={{ flex: 1, minWidth: 0 }}>{label}</Box>
-      {action ? <Box className="asset-tree-actions">{action}</Box> : null}
+      <Box
+        onMouseDown={(event) => {
+          if (event.button === 2) {
+            event.preventDefault()
+          }
+        }}
+        onClick={onClick}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.75,
+          minWidth: 0,
+          flex: 1
+        }}
+      >
+        {icon}
+        <Box sx={{ flex: 1, minWidth: 0 }}>{label}</Box>
+      </Box>
+      {action ? (
+        <Box
+          className="asset-tree-actions"
+          onPointerDownCapture={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
+          onClickCapture={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
+          onMouseDown={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
+          onClick={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
+        >
+          {action}
+        </Box>
+      ) : null}
     </Box>
   )
 }

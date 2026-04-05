@@ -29,11 +29,14 @@ import { IconPicker } from '../icon-picker.js'
 import type { ClientDetailTab } from '../types.js'
 import {
   AssetEmptyState,
+  applyEnabledValue,
+  collectFolderAssetIds,
   collectAssetFolderPaths,
   collectAssetItemIds,
   filterAssetFileTree,
   findFirstAssetTreeItemId,
   listAncestorFolders,
+  resolveNextEnabledValue,
 } from './asset-tree-shared.js'
 import { BackgroundExposeDetailPanel } from './background-client-editor/detail-panel.js'
 import { buildBackgroundContextMenuSections } from './background-client-editor/context-menu.js'
@@ -57,7 +60,11 @@ import type {
 } from './background-client-editor/types.js'
 import { ClientInvocationPanel } from './invocation-insights.js'
 import { ScriptedAssetContextMenu, type ScriptedAssetContextMenuSection } from './scripted-asset-shared.js'
-import { ScriptedAssetWorkspace } from './scripted-asset-workspace.js'
+import {
+  createAssetTreeSearchActions,
+  ScriptedAssetWorkspace,
+  sharedAssetTreeSx
+} from './scripted-asset-workspace.js'
 
 export function BackgroundClientEditor({
   client,
@@ -238,6 +245,16 @@ export function BackgroundClientEditor({
           )
       })
     : []
+  const backgroundTreeSearchActions = createAssetTreeSearchActions(
+    {
+      expandAll: t('options.assets.menu.expandAll'),
+      collapseAll: t('options.assets.menu.collapseAll')
+    },
+    {
+      onExpandAll: () => setExpandedFolders(collectAssetFolderPaths(backgroundTree)),
+      onCollapseAll: () => setExpandedFolders([])
+    }
+  )
 
   useEffect(() => {
     if (!selectedAsset) {
@@ -248,9 +265,9 @@ export function BackgroundClientEditor({
       selectedAsset.path,
       sharedDisplayPrefix
     )
-    setExpandedFolders((current) => [
-      ...new Set([...current, ...listAncestorFolders(displayPath)])
-    ])
+    setExpandedFolders((current) =>
+      mergeExpandedFolders(current, listAncestorFolders(displayPath))
+    )
   }, [selectedAsset, sharedDisplayPrefix])
 
   useEffect(() => {
@@ -259,7 +276,7 @@ export function BackgroundClientEditor({
     }
 
     const nextPaths = [...new Set(listAncestorFolders(selectedFolderPath))]
-    setExpandedFolders((current) => [...new Set([...current, ...nextPaths])])
+    setExpandedFolders((current) => mergeExpandedFolders(current, nextPaths))
   }, [selectedFolderPath])
 
   useEffect(() => {
@@ -319,24 +336,6 @@ export function BackgroundClientEditor({
     (path) => `asset-folder:${path}`
   )
 
-  const assetTreeSx = {
-    px: 0.5,
-    '& .MuiTreeItem-content': {
-      minHeight: 32,
-      pr: 0.5,
-      borderRadius: 1,
-      width: '100%',
-      cursor: 'pointer'
-    },
-    '& .MuiTreeItem-content.Mui-focused:not(.Mui-selected)': {
-      bgcolor: 'transparent'
-    },
-    '& .MuiTreeItem-label': {
-      flex: 1,
-      minWidth: 0
-    }
-  }
-
   function updateBackgroundAssetEnabled(
     assetIds: BackgroundExposeAsset['id'][],
     enabled: boolean
@@ -344,17 +343,7 @@ export function BackgroundClientEditor({
     if (assetIds.length === 0) {
       return
     }
-
-    const assetIdSet = new Set(assetIds)
-
-    const exposes = client.exposes.map((asset) =>
-      assetIdSet.has(asset.id)
-        ? {
-            ...asset,
-            enabled
-          }
-        : asset
-    )
+    const exposes = applyEnabledValue(client.exposes, assetIds, enabled)
 
     updateClient({
       ...client,
@@ -374,25 +363,19 @@ export function BackgroundClientEditor({
   }
 
   function toggleBackgroundFolderEnabled(folderPath: string) {
-    const assetIds = client.exposes
-      .filter((asset) => {
-        const displayPath = getBackgroundDisplayPath(
-          asset.path,
-          sharedDisplayPrefix
-        )
-
-        return (
-          displayPath === folderPath ||
-          displayPath.startsWith(`${folderPath}/`)
-        )
-      })
-      .map((asset) => asset.id)
+    const assetIds = collectFolderAssetIds(
+      client.exposes.map((asset) => ({
+        assetId: asset.id,
+        path: getBackgroundDisplayPath(asset.path, sharedDisplayPrefix)
+      })),
+      folderPath
+    ) as BackgroundExposeAsset['id'][]
 
     if (assetIds.length === 0) {
       return
     }
 
-    const shouldEnable = assetIds.some((assetId) => !assetEnabled.get(assetId))
+    const shouldEnable = resolveNextEnabledValue(assetIds, assetEnabled)
     updateBackgroundAssetEnabled(assetIds, shouldEnable)
   }
 
@@ -402,7 +385,6 @@ export function BackgroundClientEditor({
       kind: 'asset' | 'folder' | 'root'
       assetId?: BackgroundExposeAsset['id']
       folderPath?: string
-      itemId?: string
     }
   ) {
     event.preventDefault()
@@ -546,12 +528,11 @@ export function BackgroundClientEditor({
           }
           onRootContextMenu={(event) =>
             openContextMenu(event, {
-              kind: 'root',
-              itemId: 'root'
+              kind: 'root'
             })
           }
-          onSearchChange={setSearchQuery}
-          onSearchKeyDown={(event) => {
+        onSearchChange={setSearchQuery}
+        onSearchKeyDown={(event) => {
             if (event.key === 'Escape' && searchQuery) {
               event.preventDefault()
               setSearchQuery('')
@@ -566,11 +547,13 @@ export function BackgroundClientEditor({
               setSelectedItemId(firstSearchResultItemId)
             }
           }}
-          searchInputRef={searchInputRef}
-          searchPlaceholder={t('options.assets.search')}
-          searchQuery={searchQuery}
-          storageKey="mdp-options-background-asset-tree-width"
-          treePane={
+        searchInputRef={searchInputRef}
+        searchPlaceholder={t('options.assets.search')}
+        searchQuery={searchQuery}
+        searchActions={backgroundTreeSearchActions}
+        sx={{ mt: '-1px !important' }}
+        storageKey="mdp-options-background-asset-tree-width"
+        treePane={
             searchQuery.trim() && !hasSearchResults ? (
               <AssetEmptyState
                 label={t('options.assets.searchEmpty')}
@@ -611,7 +594,7 @@ export function BackgroundClientEditor({
                   }
                 }}
                 selectedItems={selectedTreeItemId}
-                sx={assetTreeSx}
+                sx={sharedAssetTreeSx}
               >
                 {filteredBackgroundTree.map((node) => (
                   <BackgroundAssetTreeNodeItem
@@ -676,4 +659,13 @@ export function BackgroundClientEditor({
       ) : null}
     </Stack>
   )
+}
+
+function mergeExpandedFolders(current: string[], nextPaths: string[]) {
+  const merged = [...new Set([...current, ...nextPaths])]
+
+  return merged.length === current.length &&
+    merged.every((path, index) => path === current[index])
+    ? current
+    : merged
 }

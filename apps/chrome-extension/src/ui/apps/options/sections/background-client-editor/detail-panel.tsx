@@ -18,6 +18,7 @@ export function BackgroundExposeDetailPanel({
   return (
     <ScriptedAssetEditorPanel
       descriptionLabel={t('common.description')}
+      descriptionPlaceholder={t('options.assets.editor.descriptionPlaceholder')}
       descriptionValue={asset.description}
       editorLabel={
         definition?.sourceKind === 'markdown'
@@ -28,6 +29,11 @@ export function BackgroundExposeDetailPanel({
         definition?.sourceKind === 'markdown' ? 'markdown' : 'javascript'
       }
       editorModelUri={`inmemory://background-exposes/${asset.id}.${definition?.sourceKind === 'markdown' ? 'md' : 'js'}`}
+      editorPlaceholder={t(
+        definition?.sourceKind === 'markdown'
+          ? 'options.assets.editor.markdownPlaceholder'
+          : 'options.assets.editor.codePlaceholder'
+      )}
       editorValue={asset.source}
       onDescriptionChange={(description) =>
         onUpdate(asset.id, (current) => ({

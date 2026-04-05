@@ -26,11 +26,13 @@ export function RouteMarkdownEditor({
   return (
     <ScriptedAssetEditorPanel
       descriptionLabel={t('common.description')}
+      descriptionPlaceholder={t('options.assets.editor.descriptionPlaceholder')}
       descriptionValue={asset.metadata.summary}
       editorLabel={t('options.assets.skills.markdown')}
       editorLanguage="markdown"
       editorMinHeight={420}
       editorModelUri={`inmemory://route-assets/${asset.id}.md`}
+      editorPlaceholder={t('options.assets.editor.markdownPlaceholder')}
       editorValue={asset.content}
       onDescriptionChange={(summary) =>
         onChange({
@@ -79,11 +81,13 @@ export function RouteCodeEditor({
         />
       }
       descriptionLabel={t('common.description')}
+      descriptionPlaceholder={t('options.assets.editor.descriptionPlaceholder')}
       descriptionValue={asset.description}
       editorLabel={t('options.assets.flows.scriptEditor')}
       editorLanguage="javascript"
       editorMinHeight={420}
       editorModelUri={`inmemory://route-assets/${asset.id}.js`}
+      editorPlaceholder={t('options.assets.editor.codePlaceholder')}
       editorValue={source}
       onDescriptionChange={(description) =>
         onChange({

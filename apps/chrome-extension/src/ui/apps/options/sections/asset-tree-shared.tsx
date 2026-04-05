@@ -27,3 +27,11 @@ export {
   listAncestorFolders,
   renderHighlightedText
 } from './asset-tree-shared/helpers.js'
+export {
+  applyEnabledValue,
+  collectFolderAssetIds,
+  resolveAssetEnabledState,
+  resolveFolderEnabledState,
+  resolveNextEnabledValue
+} from './asset-tree-shared/enabled-state.js'
+export type { AssetEnabledState } from './asset-tree-shared/enabled-state.js'

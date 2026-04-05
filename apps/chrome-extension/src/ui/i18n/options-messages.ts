@@ -122,6 +122,12 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.assets.noSelection': 'Select an item.',
     'options.assets.search': 'Search assets',
     'options.assets.searchEmpty': 'No assets match this search.',
+    'options.assets.editor.descriptionPlaceholder':
+      'Describe what this asset is for.',
+    'options.assets.editor.markdownPlaceholder':
+      'Write the markdown content for this file.',
+    'options.assets.editor.codePlaceholder':
+      'Write the implementation for this asset.',
     'options.assets.openParentFolder': 'Open parent folder',
     'options.assets.scopeChildren': '{{count}} item(s)',
     'options.assets.path': 'Path',
@@ -410,6 +416,12 @@ export const optionsMessages: Record<Locale, Record<string, string>> = {
     'options.assets.noSelection': '选择一个项目。',
     'options.assets.search': '搜索资产',
     'options.assets.searchEmpty': '没有匹配的资产。',
+    'options.assets.editor.descriptionPlaceholder':
+      '描述这个节点的用途。',
+    'options.assets.editor.markdownPlaceholder':
+      '在这里填写这个文件的 Markdown 内容。',
+    'options.assets.editor.codePlaceholder':
+      '在这里编写这个节点的实现代码。',
     'options.assets.openParentFolder': '打开上一级目录',
     'options.assets.scopeChildren': '{{count}} 项',
     'options.assets.path': '路径',

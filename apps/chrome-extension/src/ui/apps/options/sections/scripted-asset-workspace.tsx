@@ -1,4 +1,6 @@
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
+import UnfoldLessOutlined from '@mui/icons-material/UnfoldLessOutlined'
+import UnfoldMoreOutlined from '@mui/icons-material/UnfoldMoreOutlined'
 import SearchOutlined from '@mui/icons-material/SearchOutlined'
 import {
   Box,
@@ -16,6 +18,29 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode
 } from 'react'
+import type { SxProps, Theme } from '@mui/material/styles'
+
+export const sharedAssetTreeSx: SxProps<Theme> = {
+  minWidth: 0,
+  px: 0,
+  '& .MuiTreeItem-content': {
+    minHeight: 32,
+    pr: 1.25,
+    borderRadius: 0,
+    width: '100%',
+    cursor: 'pointer'
+  },
+  '& > .MuiTreeItem-root > .MuiTreeItem-content': {
+    pl: 0
+  },
+  '& .MuiTreeItem-content.Mui-focused:not(.Mui-selected)': {
+    bgcolor: 'transparent'
+  },
+  '& .MuiTreeItem-label': {
+    flex: 1,
+    minWidth: 0
+  }
+}
 
 export function ScriptedAssetWorkspace({
   detailPane,
@@ -28,7 +53,9 @@ export function ScriptedAssetWorkspace({
   searchInputRef,
   searchPlaceholder,
   searchQuery,
+  searchActions,
   storageKey,
+  sx,
   treePane
 }: {
   detailPane: ReactNode
@@ -41,7 +68,9 @@ export function ScriptedAssetWorkspace({
   searchInputRef?: MutableRefObject<HTMLInputElement | null>
   searchPlaceholder: string
   searchQuery: string
+  searchActions?: AssetTreeToolbarAction[]
   storageKey: string
+  sx?: SxProps<Theme>
   treePane: ReactNode
 }) {
   const [treeWidth, setTreeWidth] = useState(272)
@@ -102,62 +131,89 @@ export function ScriptedAssetWorkspace({
   return (
     <Box
       ref={layoutRef}
-      sx={{
-        flex: 1,
-        minHeight: 0,
-        display: 'grid',
-        gridTemplateColumns: `${treeWidth}px 6px minmax(0, 1fr)`,
-        gridTemplateRows: 'minmax(0, 1fr)',
-        alignItems: 'stretch'
-      }}
+      sx={[
+        {
+          flex: 1,
+          minHeight: 0,
+          display: 'grid',
+          gridTemplateColumns: `${treeWidth}px 2px minmax(0, 1fr)`,
+          gridTemplateRows: 'minmax(0, 1fr)',
+          alignItems: 'stretch'
+        },
+        ...(Array.isArray(sx) ? sx : sx ? [sx] : [])
+      ]}
     >
       <Box sx={{ minWidth: 0, minHeight: 0, overflow: 'hidden', display: 'flex' }}>
         <Box sx={{ height: '100%', minHeight: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <Box
-            sx={{
-              py: 0.5,
-              borderBottom: '1px solid',
-              borderColor: 'divider'
-            }}
-          >
-            <TextField
-              inputRef={searchInputRef}
-              size="small"
-              placeholder={searchPlaceholder}
-              value={searchQuery}
-              onChange={(event) => onSearchChange(event.target.value)}
-              onKeyDown={onSearchKeyDown}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchOutlined fontSize="small" color="action" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: searchQuery ? (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="clear"
-                        size="small"
-                        onClick={() => onSearchChange('')}
-                      >
-                        <CloseOutlined fontSize="small" />
-                      </IconButton>
-                    </InputAdornment>
-                  ) : undefined
-                }
-              }}
+          <Box sx={{ py: 0 }}>
+            <Box
               sx={{
-                width: '100%',
-                '& .MuiOutlinedInput-root': {
-                  minHeight: 34,
-                  borderRadius: 1.5
-                },
-                '& .MuiOutlinedInput-input': {
-                  py: 0.75
-                }
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5
               }}
-            />
+            >
+              <TextField
+                inputRef={searchInputRef}
+                size="small"
+                placeholder={searchPlaceholder}
+                value={searchQuery}
+                onChange={(event) => onSearchChange(event.target.value)}
+                onKeyDown={onSearchKeyDown}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchOutlined sx={{ fontSize: 16 }} color="action" />
+                      </InputAdornment>
+                    ),
+                    endAdornment: searchQuery ? (
+                      <InputAdornment position="end" sx={{ mr: -0.25 }}>
+                        <IconButton
+                          aria-label="clear"
+                          size="small"
+                          onClick={() => onSearchChange('')}
+                          sx={{ width: 22, height: 22 }}
+                        >
+                          <CloseOutlined sx={{ fontSize: 14 }} />
+                        </IconButton>
+                      </InputAdornment>
+                    ) : undefined
+                  }
+                }}
+                sx={{
+                  flex: 1,
+                  '& .MuiOutlinedInput-root': {
+                    minHeight: 30,
+                    borderRadius: 0
+                  },
+                  '& .MuiInputBase-input': {
+                    fontSize: 13
+                  },
+                  '& .MuiOutlinedInput-input': {
+                    py: 0.5,
+                    px: 0.25
+                  },
+                  '& .MuiInputAdornment-positionStart': {
+                    mr: 0.5
+                  },
+                  '& .MuiInputAdornment-positionEnd .MuiSvgIcon-root': {
+                    fontSize: 14
+                  }
+                }}
+              />
+              {searchActions?.map((action) => (
+                <IconButton
+                  key={action.key}
+                  aria-label={action.label}
+                  size="small"
+                  onClick={action.onClick}
+                  sx={{ width: 22, height: 22, flexShrink: 0 }}
+                >
+                  {action.icon}
+                </IconButton>
+              ))}
+            </Box>
           </Box>
 
           <Box
@@ -187,18 +243,32 @@ export function ScriptedAssetWorkspace({
         sx={{
           cursor: 'col-resize',
           position: 'relative',
+          overflow: 'visible',
+          zIndex: 1,
           '&::before': {
             content: '""',
             position: 'absolute',
             top: 0,
             bottom: 0,
             left: '50%',
-            width: 1,
+            width: 2,
             transform: 'translateX(-50%)',
             bgcolor: isResizingTree ? 'text.primary' : 'divider'
           },
-          '&:hover::before': {
-            bgcolor: 'text.primary'
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: '50%',
+            width: 8,
+            transform: 'translateX(-50%)',
+            bgcolor: 'text.primary',
+            opacity: isResizingTree ? 0.18 : 0,
+            transition: 'opacity 120ms ease'
+          },
+          '&:hover::after': {
+            opacity: 0.14
           }
         }}
       />
@@ -208,11 +278,42 @@ export function ScriptedAssetWorkspace({
           minWidth: 0,
           minHeight: 0,
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          overflow: 'hidden'
         }}
       >
         {detailPane}
       </Box>
     </Box>
   )
+}
+
+export type AssetTreeToolbarAction = {
+  key: string
+  label: string
+  icon: ReactNode
+  onClick: () => void
+}
+
+export function createAssetTreeSearchActions(labels: {
+  expandAll: string
+  collapseAll: string
+}, handlers: {
+  onExpandAll: () => void
+  onCollapseAll: () => void
+}): AssetTreeToolbarAction[] {
+  return [
+    {
+      key: 'expand-all',
+      label: labels.expandAll,
+      icon: <UnfoldMoreOutlined fontSize="small" />,
+      onClick: handlers.onExpandAll
+    },
+    {
+      key: 'collapse-all',
+      label: labels.collapseAll,
+      icon: <UnfoldLessOutlined fontSize="small" />,
+      onClick: handlers.onCollapseAll
+    }
+  ]
 }

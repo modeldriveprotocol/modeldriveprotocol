@@ -11,15 +11,15 @@ import {
   AssetTreeLeaf,
   AssetTreeLabel,
   AssetTreeRenameField,
-  countAssetFiles,
   dirname,
+  resolveAssetEnabledState,
+  resolveFolderEnabledState,
   renderHighlightedText,
   type AssetFileTreeNode
 } from '../asset-tree-shared.js'
 import {
   HttpMethodBadge,
-  ScriptedAssetEnabledButton,
-  type ScriptedAssetEnabledState
+  ScriptedAssetEnabledButton
 } from '../scripted-asset-shared.js'
 import type {
   ClientTreeItem,
@@ -39,8 +39,6 @@ export function renderTreeNodes(
         kind: 'asset' | 'folder' | 'root'
         assetId?: string
         folderPath: string
-        selectedItemId: string
-        displayedFileId?: string
       }
     ) => void
     onRenameChange: (value: string) => void
@@ -49,7 +47,6 @@ export function renderTreeNodes(
     onSetDropTarget: (itemId: string | undefined) => void
     onStartDrag: (value: DragState | undefined) => void
     dropTargetItemId: string | undefined
-    renameLabel: string
     renameError: boolean
     renameTarget: RouteRenameTarget | undefined
     searchTerm: string
@@ -81,8 +78,7 @@ export function renderTreeNodes(
               onContextMenu={(event) =>
                 options.onOpenContextMenu(event, {
                   kind: 'folder',
-                  folderPath: node.path,
-                  selectedItemId: itemId
+                  folderPath: node.path
                 })
               }
               onDoubleClick={() =>
@@ -115,7 +111,6 @@ export function renderTreeNodes(
                     state={enabledState}
                   />
                 }
-                count={countTreeFiles(node.children)}
                 dropActive={options.dropTargetItemId === itemId}
                 label={
                   options.renameTarget?.kind === 'folder' &&
@@ -146,8 +141,6 @@ export function renderTreeNodes(
     const isRootSkill =
       options.assetKinds.get(node.assetId) === 'skill' &&
       node.path === ROOT_ROUTE_SKILL_PATH
-    const enabledState = options.assetEnabled.get(node.assetId)
-
     return (
       <TreeItem
         key={itemId}
@@ -159,9 +152,7 @@ export function renderTreeNodes(
               options.onOpenContextMenu(event, {
                 kind: 'asset',
                 assetId: node.assetId,
-                folderPath: dirname(node.path),
-                selectedItemId: itemId,
-                displayedFileId: node.assetId
+                folderPath: dirname(node.path)
               })
             }
             onDoubleClick={() => {
@@ -192,10 +183,10 @@ export function renderTreeNodes(
           >
             <AssetTreeLeaf
               action={
-                enabledState !== undefined ? (
+                options.assetEnabled.has(node.assetId) ? (
                   <ScriptedAssetEnabledButton
                     onClick={() => options.onToggleAssetEnabled(node.assetId)}
-                    state={enabledState ? 'enabled' : 'disabled'}
+                    state={resolveAssetEnabledState(node.assetId, options.assetEnabled)}
                   />
                 ) : undefined
               }
@@ -228,44 +219,6 @@ export function renderTreeNodes(
       />
     )
   })
-}
-
-function resolveFolderEnabledState(
-  node: AssetFileTreeNode,
-  assetEnabled: Map<string, boolean>
-): ScriptedAssetEnabledState {
-  const leafStates = collectLeafEnabledStates(node, assetEnabled)
-
-  if (leafStates.length === 0) {
-    return 'disabled'
-  }
-
-  if (leafStates.every(Boolean)) {
-    return 'enabled'
-  }
-
-  if (leafStates.every((state) => !state)) {
-    return 'disabled'
-  }
-
-  return 'mixed'
-}
-
-function collectLeafEnabledStates(
-  node: AssetFileTreeNode,
-  assetEnabled: Map<string, boolean>
-): boolean[] {
-  if (node.kind === 'file') {
-    return [assetEnabled.get(node.assetId) ?? true]
-  }
-
-  return node.children.flatMap((child) =>
-    collectLeafEnabledStates(child, assetEnabled)
-  )
-}
-
-export function countTreeFiles(nodes: AssetFileTreeNode[]): number {
-  return countAssetFiles(nodes)
 }
 
 function resolveAssetBadge(kind: ClientTreeItem['kind']): 'G' | 'P' | 'M' {
