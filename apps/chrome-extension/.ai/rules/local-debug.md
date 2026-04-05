@@ -127,3 +127,24 @@ pnpm --filter @modeldriveprotocol/chrome-extension dev -- --port 3001
   - keep `selectedItems` controlled for the whole lifetime
   - make context menu open as a pure context action instead of a selection change
   - clear rename state before opening the context menu
+
+## Notes From The April 5, 2026 Backend Route-Sync Session
+
+- If backend asset pages flicker, rapidly switch back to `SKILL.md`, or whitescreen after clicking a JS leaf, inspect route-selection sync before blaming the tree widget.
+- The verified root cause in this session was:
+  1. the page opened on `/extension/SKILL.md`
+  2. the user clicked `/extension/status`
+  3. local state switched to `status`
+  4. a backend effect still replayed the old routed `assetPath`
+  5. local selection sync and route-correction sync started fighting until React hit `Maximum update depth exceeded`
+- The durable fix was to treat route correction as an external-input sync:
+  - reapply it only when the routed `assetPath` actually changes
+  - or when the currently displayed asset no longer exists
+  - never on every local selection change
+- When WXT logs are noisy or existing extension tabs may already be dirty, create a fresh extension page target from the browser-level CDP endpoint instead of trusting the current tab list:
+
+```python
+Target.createTarget(url="chrome-extension://<id>/options.html?...#/clients/<client-id>/assets")
+```
+
+- On this machine, a fresh target created from the browser endpoint gave a clean proof path even when `/json/list` was empty or the long-lived page target had stale state.

@@ -25,6 +25,7 @@ export function RouteMarkdownEditor({
 
   return (
     <ScriptedAssetEditorPanel
+      breadcrumbPath={asset.path}
       descriptionLabel={t('common.description')}
       descriptionPlaceholder={t('options.assets.editor.descriptionPlaceholder')}
       descriptionValue={asset.metadata.summary}
@@ -67,6 +68,7 @@ export function RouteCodeEditor({
 
   return (
     <ScriptedAssetEditorPanel
+      breadcrumbPath={asset.path}
       controls={
         <ScriptedAssetMethodField
           label="Method"

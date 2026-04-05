@@ -64,13 +64,21 @@ export function resolveInitialBackgroundAssetId(
 
 export function handleBackgroundExpandedItemsChange(
   itemIds: string[],
-  setExpandedFolders: (paths: string[]) => void
+  setExpandedFolders: (updater: (paths: string[]) => string[]) => void
 ) {
-  setExpandedFolders(
-    itemIds
-      .filter((itemId) => itemId.startsWith('asset-folder:'))
-      .map((itemId) => itemId.slice('asset-folder:'.length))
-  )
+  const nextPaths = itemIds
+    .filter((itemId) => itemId.startsWith('asset-folder:'))
+    .map((itemId) => itemId.slice('asset-folder:'.length))
+    .sort()
+
+  setExpandedFolders((current) => {
+    const currentSorted = [...current].sort()
+
+    return currentSorted.length === nextPaths.length &&
+      currentSorted.every((path, index) => path === nextPaths[index])
+      ? current
+      : nextPaths
+  })
 }
 
 export function handleBackgroundExpandableItemClick(

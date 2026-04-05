@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act } from 'react'
+import { act, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -167,5 +167,71 @@ describe('background client editor', () => {
 
     expect(clientAssets.length).toBeGreaterThan(0)
     expect(clientAssets.every((asset: { enabled: boolean }) => !asset.enabled)).toBe(true)
+  })
+
+  it('switches backend assets without entering an update loop when the parent rehydrates the client', async () => {
+    const root = createRoot(container)
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    function Harness() {
+      const [assetPath, setAssetPath] = useState<string | undefined>(
+        '/extension/SKILL.md'
+      )
+      const [detailTab, setDetailTab] = useState<'assets' | 'basics' | 'activity'>(
+        'assets'
+      )
+      const [draft, setDraft] = useState(DEFAULT_EXTENSION_CONFIG)
+      const client = JSON.parse(
+        JSON.stringify(
+          draft.backgroundClients[0] ?? DEFAULT_BACKGROUND_CLIENT
+        )
+      ) as typeof DEFAULT_BACKGROUND_CLIENT
+
+      return (
+        <I18nProvider>
+          <BackgroundClientEditor
+            client={client}
+            draft={draft}
+            initialAssetPath={assetPath}
+            initialTab={detailTab}
+            invocationStats={undefined}
+            onAssetPathChange={(nextPath, nextTab) => {
+              setAssetPath(nextPath)
+              setDetailTab(nextTab)
+            }}
+            onClearHistory={() => {}}
+            onTabChange={setDetailTab}
+            onChange={setDraft}
+            runtimeState="connected"
+          />
+        </I18nProvider>
+      )
+    }
+
+    await act(async () => {
+      root.render(<Harness />)
+    })
+
+    expect(container.textContent).toContain('# /extension')
+
+    const statusNode = container.querySelector('#asset\\:status')
+    expect(statusNode).not.toBeNull()
+
+    await act(async () => {
+      statusNode?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true })
+      )
+    })
+
+    expect(container.textContent).toContain('return await api.getStatus();')
+    expect(
+      errorSpy.mock.calls.some((call) =>
+        String(call[0]).includes('Maximum update depth exceeded')
+      )
+    ).toBe(false)
+
+    errorSpy.mockRestore()
+    logSpy.mockRestore()
   })
 })

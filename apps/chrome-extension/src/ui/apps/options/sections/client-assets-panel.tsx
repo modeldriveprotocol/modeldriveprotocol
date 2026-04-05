@@ -3,6 +3,7 @@ import { SimpleTreeView } from '@mui/x-tree-view'
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type MouseEvent as ReactMouseEvent
 } from 'react'
@@ -89,6 +90,9 @@ export function ClientAssetsPanel({
   const [renameTarget, setRenameTarget] = useState<RouteRenameTarget>()
   const [dragState, setDragState] = useState<DragState>()
   const [dropTargetItemId, setDropTargetItemId] = useState<string>()
+  const onSelectedPathChangeRef = useRef(onSelectedPathChange)
+
+  onSelectedPathChangeRef.current = onSelectedPathChange
 
   const recordings = client.recordings
   const selectorResources = client.selectorResources
@@ -210,27 +214,27 @@ export function ClientAssetsPanel({
   }, [assetsById, displayedFileId, rootSkillId])
 
   useEffect(() => {
-    if (!displayedAsset) {
+    if (!displayedAsset?.path) {
       return
     }
 
-    setExpandedFolders((current) => [
-      ...new Set([...current, ...listAncestorFolders(displayedAsset.path)])
-    ])
-  }, [displayedAsset])
+    setExpandedFolders((current) =>
+      mergeExpandedFolders(current, listAncestorFolders(displayedAsset.path))
+    )
+  }, [displayedAsset?.path])
 
   useEffect(() => {
-    onSelectedPathChange(displayedAsset?.path)
-  }, [displayedAsset?.path, onSelectedPathChange])
+    onSelectedPathChangeRef.current(displayedAsset?.path)
+  }, [displayedAsset?.path])
 
   useEffect(() => {
     if (!selectedFolderPath) {
       return
     }
 
-    setExpandedFolders((current) => [
-      ...new Set([...current, ...listAncestorFolders(selectedFolderPath)])
-    ])
+    setExpandedFolders((current) =>
+      mergeExpandedFolders(current, listAncestorFolders(selectedFolderPath))
+    )
   }, [selectedFolderPath])
 
   function updateClient(next: RouteClientConfig) {
@@ -750,4 +754,13 @@ export function ClientAssetsPanel({
       />
     </Stack>
   )
+}
+
+function mergeExpandedFolders(current: string[], nextPaths: string[]) {
+  const merged = [...new Set([...current, ...nextPaths])]
+
+  return merged.length === current.length &&
+    merged.every((path, index) => path === current[index])
+    ? current
+    : merged
 }

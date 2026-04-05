@@ -1,5 +1,6 @@
 import {
   Box,
+  Breadcrumbs,
   Divider,
   ListItemIcon,
   ListItemText,
@@ -139,6 +140,7 @@ export function ScriptedAssetContextMenu({
 }
 
 export function ScriptedAssetEditorPanel({
+  breadcrumbPath,
   controls,
   descriptionLabel,
   descriptionPlaceholder,
@@ -153,6 +155,7 @@ export function ScriptedAssetEditorPanel({
   onDescriptionChange,
   onEditorChange
 }: {
+  breadcrumbPath?: string
   controls?: ReactNode
   descriptionLabel: string
   descriptionPlaceholder?: string
@@ -172,6 +175,7 @@ export function ScriptedAssetEditorPanel({
     lineNumbers: 'on' as const,
     lineNumbersMinChars: 3
   }
+  const breadcrumbSegments = getBreadcrumbSegments(breadcrumbPath)
 
   return (
     <Stack spacing={0.75} sx={{ minHeight: 0, flex: 1, ...sx }}>
@@ -187,6 +191,60 @@ export function ScriptedAssetEditorPanel({
           flexDirection: 'column'
         }}
       >
+        {breadcrumbSegments.length > 0 ? (
+          <>
+            <Box
+              sx={{
+                minHeight: 32,
+                px: 1.25,
+                display: 'flex',
+                alignItems: 'center',
+                bgcolor: (theme) => alpha(theme.palette.text.primary, 0.04),
+                borderBottom: '1px solid',
+                borderColor: 'divider'
+              }}
+            >
+              <Breadcrumbs
+                aria-label="asset path"
+                separator={
+                  <Typography
+                    component="span"
+                    sx={{ color: 'text.disabled', fontSize: 12 }}
+                  >
+                    ›
+                  </Typography>
+                }
+                sx={{
+                  '& .MuiBreadcrumbs-separator': {
+                    mx: 0.5
+                  }
+                }}
+              >
+                {breadcrumbSegments.map((segment, index) => (
+                  <Typography
+                    key={`${segment}-${index}`}
+                    noWrap
+                    sx={{
+                      maxWidth: 220,
+                      fontSize: 12,
+                      lineHeight: 1.5,
+                      fontFamily:
+                        'ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace',
+                      color:
+                        index === breadcrumbSegments.length - 1
+                          ? 'text.primary'
+                          : 'text.secondary',
+                      fontWeight: index === breadcrumbSegments.length - 1 ? 600 : 500
+                    }}
+                  >
+                    {segment}
+                  </Typography>
+                ))}
+              </Breadcrumbs>
+            </Box>
+            <Divider />
+          </>
+        ) : null}
         <Box sx={{ height: 112, minHeight: 112 }}>
           <MonacoCodeEditor
             ariaLabel={descriptionLabel}
@@ -220,6 +278,16 @@ export function ScriptedAssetEditorPanel({
       </Box>
     </Stack>
   )
+}
+
+function getBreadcrumbSegments(path: string | undefined): string[] {
+  if (!path) {
+    return []
+  }
+
+  return path
+    .split('/')
+    .filter(Boolean)
 }
 
 export function ScriptedAssetMethodField({

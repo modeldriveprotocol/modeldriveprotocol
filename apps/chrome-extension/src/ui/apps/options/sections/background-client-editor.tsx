@@ -116,7 +116,13 @@ export function BackgroundClientEditor({
   const [contextMenu, setContextMenu] = useState<
     BackgroundContextMenuState | undefined
   >()
+  const onAssetPathChangeRef = useRef(onAssetPathChange)
+  const onTabChangeRef = useRef(onTabChange)
+  const lastAppliedRouteSelectionKeyRef = useRef<string | undefined>(undefined)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
+
+  onAssetPathChangeRef.current = onAssetPathChange
+  onTabChangeRef.current = onTabChange
 
   useEffect(() => {
     setTab(
@@ -129,8 +135,8 @@ export function BackgroundClientEditor({
   }, [client.id, initialTab])
 
   useEffect(() => {
-    onTabChange(tab)
-  }, [onTabChange, tab])
+    onTabChangeRef.current(tab)
+  }, [tab])
 
   function updateClient(next: BackgroundClientConfig) {
     onChange({
@@ -196,10 +202,6 @@ export function BackgroundClientEditor({
   )
   const hasSearchResults = visibleItemIds.size > 1
   const searchTerm = searchQuery.trim()
-  const selectedTreeItemId =
-    selectedItemId !== 'root' && visibleItemIds.has(selectedItemId)
-      ? selectedItemId
-      : null
   const firstSearchResultItemId = useMemo(
     () => (searchTerm ? findFirstAssetTreeItemId('asset', filteredBackgroundTree) : undefined),
     [filteredBackgroundTree, searchTerm]
@@ -268,7 +270,7 @@ export function BackgroundClientEditor({
     setExpandedFolders((current) =>
       mergeExpandedFolders(current, listAncestorFolders(displayPath))
     )
-  }, [selectedAsset, sharedDisplayPrefix])
+  }, [selectedAsset?.path, sharedDisplayPrefix])
 
   useEffect(() => {
     if (!selectedFolderPath) {
@@ -280,35 +282,64 @@ export function BackgroundClientEditor({
   }, [selectedFolderPath])
 
   useEffect(() => {
+    const routeSelectionKey = `${client.id}:${initialAssetPath ?? ''}`
     const preferredAssetId = resolveInitialBackgroundAssetId(
       allExposes,
       initialAssetPath
     )
+    const displayedAssetStillExists = displayedAssetId
+      ? exposesById.has(displayedAssetId)
+      : false
+    const shouldApplyRouteSelection =
+      lastAppliedRouteSelectionKeyRef.current !== routeSelectionKey ||
+      !displayedAssetStillExists
+
+    if (!shouldApplyRouteSelection) {
+      return
+    }
+
+    lastAppliedRouteSelectionKeyRef.current = routeSelectionKey
 
     if (!preferredAssetId) {
+      if (displayedAssetId === undefined && selectedItemId === 'root') {
+        return
+      }
       setDisplayedAssetId(undefined)
       setSelectedItemId('root')
       return
     }
 
-    const currentAssetPath = displayedAssetId
-      ? exposesById.get(displayedAssetId)?.path
-      : undefined
-
     if (
       displayedAssetId === preferredAssetId &&
-      (!initialAssetPath || currentAssetPath === initialAssetPath)
+      selectedItemId === `asset:${preferredAssetId}`
     ) {
       return
     }
 
     setDisplayedAssetId(preferredAssetId)
     setSelectedItemId(`asset:${preferredAssetId}`)
-  }, [allExposes, displayedAssetId, exposesById, initialAssetPath])
+  }, [
+    allExposes,
+    client.id,
+    displayedAssetId,
+    exposesById,
+    initialAssetPath,
+    selectedItemId
+  ])
 
   useEffect(() => {
-    onAssetPathChange(selectedAsset?.path, tab)
-  }, [onAssetPathChange, selectedAsset?.path, tab])
+    onAssetPathChangeRef.current(selectedAsset?.path, tab)
+  }, [selectedAsset?.path, tab])
+
+  useEffect(() => {
+    const nextAssetId = getSelectedBackgroundAssetId(selectedItemId)
+
+    if (!nextAssetId || displayedAssetId === nextAssetId) {
+      return
+    }
+
+    setDisplayedAssetId(nextAssetId)
+  }, [displayedAssetId, selectedItemId])
 
   useEffect(() => {
     if (visibleItemIds.has(selectedItemId)) {
@@ -583,17 +614,6 @@ export function BackgroundClientEditor({
                     setExpandedFolders
                   )
                 }}
-                onSelectedItemsChange={(_event, itemId) => {
-                  const nextItemId = (itemId as string | null) ?? 'root'
-                  setSelectedItemId(nextItemId)
-                  const nextAssetId =
-                    getSelectedBackgroundAssetId(nextItemId)
-
-                  if (nextAssetId) {
-                    setDisplayedAssetId(nextAssetId)
-                  }
-                }}
-                selectedItems={selectedTreeItemId}
                 sx={sharedAssetTreeSx}
               >
                 {filteredBackgroundTree.map((node) => (
@@ -605,8 +625,10 @@ export function BackgroundClientEditor({
                     renameError={renameError}
                     renameTarget={renameTarget}
                     searchTerm={searchTerm}
+                    selectedItemId={selectedItemId}
                     assetEnabled={assetEnabled}
                     setExpandedFolders={setExpandedFolders}
+                    setDisplayedAssetId={setDisplayedAssetId}
                     setSelectedItemId={setSelectedItemId}
                     onCancelRename={() => setRenameTarget(undefined)}
                     onCommitRename={() =>

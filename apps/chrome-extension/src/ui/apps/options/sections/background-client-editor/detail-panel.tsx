@@ -17,6 +17,7 @@ export function BackgroundExposeDetailPanel({
 
   return (
     <ScriptedAssetEditorPanel
+      breadcrumbPath={asset.path}
       descriptionLabel={t('common.description')}
       descriptionPlaceholder={t('options.assets.editor.descriptionPlaceholder')}
       descriptionValue={asset.description}

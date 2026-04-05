@@ -35,8 +35,10 @@ export function BackgroundAssetTreeNodeItem({
   renameError,
   renameTarget,
   searchTerm,
+  selectedItemId,
   assetEnabled = new Map(),
   setExpandedFolders,
+  setDisplayedAssetId,
   setSelectedItemId,
   onCancelRename,
   onCommitRename,
@@ -58,8 +60,12 @@ export function BackgroundAssetTreeNodeItem({
   renameError: boolean
   renameTarget: BackgroundRenameTarget | undefined
   searchTerm?: string
+  selectedItemId: string
   assetEnabled?: Map<BackgroundExposeAsset['id'], boolean>
   setExpandedFolders: (updater: (paths: string[]) => string[]) => void
+  setDisplayedAssetId: (
+    assetId: BackgroundExposeAsset['id'] | undefined
+  ) => void
   setSelectedItemId: (itemId: string) => void
   onCancelRename: () => void
   onCommitRename: () => void
@@ -83,6 +89,7 @@ export function BackgroundAssetTreeNodeItem({
                 state={enabledState}
               />
             }
+            selected={selectedItemId === itemId}
             onClick={(event) =>
               handleBackgroundExpandableItemClick(
                 event,
@@ -132,8 +139,10 @@ export function BackgroundAssetTreeNodeItem({
             renameError={renameError}
             renameTarget={renameTarget}
             searchTerm={searchTerm}
+            selectedItemId={selectedItemId}
             assetEnabled={assetEnabled}
             setExpandedFolders={setExpandedFolders}
+            setDisplayedAssetId={setDisplayedAssetId}
             setSelectedItemId={setSelectedItemId}
             onCancelRename={onCancelRename}
             onCommitRename={onCommitRename}
@@ -165,6 +174,7 @@ export function BackgroundAssetTreeNodeItem({
             />
           }
           icon={<BackgroundMethodBadge definition={definition} />}
+          selected={selectedItemId === itemId}
           label={
             renameTarget?.kind === 'asset' &&
             renameTarget.assetId === node.assetId ? (
@@ -181,7 +191,10 @@ export function BackgroundAssetTreeNodeItem({
               </Typography>
             )
           }
-          onClick={() => setSelectedItemId(itemId)}
+          onClick={() => {
+            setSelectedItemId(itemId)
+            setDisplayedAssetId(assetId)
+          }}
         />
       }
       onContextMenu={(event) =>

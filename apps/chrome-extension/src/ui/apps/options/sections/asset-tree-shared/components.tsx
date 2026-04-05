@@ -15,12 +15,14 @@ export function AssetTreeLabel({
   dropActive = false,
   label,
   onClick,
+  selected = false,
   searchTerm
 }: {
   action?: ReactNode
   dropActive?: boolean
   label: ReactNode
   onClick?: (event: ReactMouseEvent<HTMLDivElement>) => void
+  selected?: boolean
   searchTerm?: string
 }) {
   return (
@@ -31,7 +33,7 @@ export function AssetTreeLabel({
         gap: 0.75,
         minWidth: 0,
         width: '100%',
-        bgcolor: dropActive ? 'action.hover' : undefined
+        bgcolor: selected ? 'action.selected' : dropActive ? 'action.hover' : undefined
       }}
     >
       <Box
@@ -40,7 +42,11 @@ export function AssetTreeLabel({
             event.preventDefault()
           }
         }}
-        onClick={onClick}
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          onClick?.(event)
+        }}
         sx={{
           display: 'flex',
           alignItems: 'center',
@@ -91,7 +97,8 @@ export function AssetTreeLeaf({
   dropActive = false,
   icon,
   label,
-  onClick
+  onClick,
+  selected = false
 }: {
   action?: ReactNode
   dragging?: boolean
@@ -99,6 +106,7 @@ export function AssetTreeLeaf({
   icon: ReactNode
   label: ReactNode
   onClick?: (event: ReactMouseEvent<HTMLDivElement>) => void
+  selected?: boolean
 }) {
   return (
     <Box
@@ -109,7 +117,7 @@ export function AssetTreeLeaf({
         minWidth: 0,
         width: '100%',
         opacity: dragging ? 0.45 : 1,
-        bgcolor: dropActive ? 'action.hover' : undefined
+        bgcolor: selected ? 'action.selected' : dropActive ? 'action.hover' : undefined
       }}
     >
       <Box
@@ -118,7 +126,11 @@ export function AssetTreeLeaf({
             event.preventDefault()
           }
         }}
-        onClick={onClick}
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          onClick?.(event)
+        }}
         sx={{
           display: 'flex',
           alignItems: 'center',

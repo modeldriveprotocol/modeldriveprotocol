@@ -6,7 +6,7 @@ import {
   Box,
   IconButton,
   InputAdornment,
-  TextField
+  OutlinedInput
 } from '@mui/material'
 import {
   useEffect,
@@ -153,44 +153,40 @@ export function ScriptedAssetWorkspace({
                 gap: 0.5
               }}
             >
-              <TextField
+              <OutlinedInput
                 inputRef={searchInputRef}
                 size="small"
                 placeholder={searchPlaceholder}
                 value={searchQuery}
                 onChange={(event) => onSearchChange(event.target.value)}
                 onKeyDown={onSearchKeyDown}
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchOutlined sx={{ fontSize: 16 }} color="action" />
-                      </InputAdornment>
-                    ),
-                    endAdornment: searchQuery ? (
-                      <InputAdornment position="end" sx={{ mr: -0.25 }}>
-                        <IconButton
-                          aria-label="clear"
-                          size="small"
-                          onClick={() => onSearchChange('')}
-                          sx={{ width: 22, height: 22 }}
-                        >
-                          <CloseOutlined sx={{ fontSize: 14 }} />
-                        </IconButton>
-                      </InputAdornment>
-                    ) : undefined
-                  }
-                }}
+                startAdornment={
+                  <InputAdornment position="start">
+                    <SearchOutlined sx={{ fontSize: 16 }} color="action" />
+                  </InputAdornment>
+                }
+                endAdornment={
+                  searchQuery ? (
+                    <InputAdornment position="end" sx={{ mr: -0.25 }}>
+                      <IconButton
+                        aria-label="clear"
+                        size="small"
+                        onClick={() => onSearchChange('')}
+                        sx={{ width: 22, height: 22 }}
+                      >
+                        <CloseOutlined sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : undefined
+                }
                 sx={{
                   flex: 1,
-                  '& .MuiOutlinedInput-root': {
-                    minHeight: 30,
-                    borderRadius: 0
-                  },
+                  minHeight: 30,
+                  borderRadius: 0,
                   '& .MuiInputBase-input': {
                     fontSize: 13
                   },
-                  '& .MuiOutlinedInput-input': {
+                  '& .MuiOutlinedInput-input, & .MuiInputBase-input': {
                     py: 0.5,
                     px: 0.25
                   },
