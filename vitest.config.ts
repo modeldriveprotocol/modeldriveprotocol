@@ -17,7 +17,13 @@ export default defineConfig({
     }
   },
   test: {
-    include: ['packages/*/test/**/*.test.ts', 'apps/*/test/**/*.test.ts'],
+    include: [
+      'packages/*/test/**/*.test.ts',
+      'packages/*/test/**/*.test.tsx',
+      'apps/*/test/**/*.test.ts',
+      'apps/*/test/**/*.test.tsx'
+    ],
+    setupFiles: ['apps/chrome-extension/test/setup.ts'],
     clearMocks: true,
     restoreMocks: true
   }

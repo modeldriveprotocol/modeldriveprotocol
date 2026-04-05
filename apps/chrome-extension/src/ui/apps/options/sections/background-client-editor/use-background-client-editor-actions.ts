@@ -12,7 +12,8 @@ import {
 } from '../asset-tree-shared.js'
 import {
   commitBackgroundRename,
-  getBackgroundDisplayPath
+  getBackgroundDisplayPath,
+  stripLeadingSlash
 } from './tree-helpers.js'
 import type {
   BackgroundContextMenuState,
@@ -99,7 +100,9 @@ export function useBackgroundClientEditorActions({
       client.exposes,
       client.exposes.map((asset) => ({
         assetId: asset.id,
-        path: getBackgroundDisplayPath(asset.path, sharedDisplayPrefix)
+        path: stripLeadingSlash(
+          getBackgroundDisplayPath(asset.path, sharedDisplayPrefix)
+        )
       })),
       folderPath,
       assetEnabled

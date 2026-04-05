@@ -65,6 +65,34 @@ describe('background client editor', () => {
     container.remove()
   })
 
+  function findTreeItemBySuffix(suffix: string) {
+    return Array.from(container.querySelectorAll('[role="treeitem"]')).find(
+      (item) => item.id.endsWith(suffix)
+    ) as HTMLElement | undefined
+  }
+
+  function clickTreeItem(treeItem: HTMLElement | undefined) {
+    const content = treeItem?.querySelector('.MuiTreeItem-content') as
+      | HTMLElement
+      | null
+
+    content?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+  }
+
+  function triggerEnabledButton(treeItem: HTMLElement | undefined) {
+    const button = treeItem?.querySelector(
+      '[role="button"][aria-label]'
+    ) as
+      | HTMLElement
+      | null
+
+    button?.dispatchEvent(
+      new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0 })
+    )
+  }
+
   it('renders a javascript background asset path without crashing', async () => {
     const root = createRoot(container)
 
@@ -144,16 +172,11 @@ describe('background client editor', () => {
       )
     })
 
-    const toggle = container.querySelector(
-      '[id="asset-folder:clients"] [role="button"][aria-label="Disable"]'
-    )
-
-    expect(toggle).not.toBeNull()
+    const resourcesFolderNode = findTreeItemBySuffix('asset-folder:resources')
+    expect(resourcesFolderNode).toBeDefined()
 
     await act(async () => {
-      toggle?.dispatchEvent(
-        new MouseEvent('click', { bubbles: true, cancelable: true })
-      )
+      triggerEnabledButton(resourcesFolderNode)
     })
 
     expect(onChange).toHaveBeenCalledTimes(1)
@@ -162,12 +185,14 @@ describe('background client editor', () => {
     const nextClient = nextConfig.backgroundClients.find(
       (item: { id: string }) => item.id === client.id
     )
-    const clientAssets = nextClient.exposes.filter((asset: { path: string }) =>
-      asset.path.startsWith('/extension/clients/')
+    const resourceAssets = nextClient.exposes.filter((asset: { path: string }) =>
+      asset.path.startsWith('/extension/resources/')
     )
 
-    expect(clientAssets.length).toBeGreaterThan(0)
-    expect(clientAssets.every((asset: { enabled: boolean }) => !asset.enabled)).toBe(true)
+    expect(resourceAssets.length).toBeGreaterThan(0)
+    expect(
+      resourceAssets.every((asset: { enabled: boolean }) => !asset.enabled)
+    ).toBe(true)
   })
 
   it('switches backend assets without entering an update loop when the parent rehydrates the client', async () => {
@@ -216,13 +241,11 @@ describe('background client editor', () => {
 
     expect(container.textContent).toContain('# /extension')
 
-    const statusNode = container.querySelector('#asset\\:status')
-    expect(statusNode).not.toBeNull()
+    const statusNode = findTreeItemBySuffix('asset:extension.status')
+    expect(statusNode).toBeDefined()
 
     await act(async () => {
-      statusNode?.dispatchEvent(
-        new MouseEvent('click', { bubbles: true, cancelable: true })
-      )
+      clickTreeItem(statusNode)
     })
 
     expect(container.textContent).toContain('return await api.getStatus();')

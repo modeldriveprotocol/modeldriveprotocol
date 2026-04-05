@@ -61,6 +61,44 @@ describe('client assets panel', () => {
     container.remove()
   })
 
+  function findTreeItemBySuffix(suffix: string) {
+    return Array.from(container.querySelectorAll('[role="treeitem"]')).find(
+      (item) => item.id.endsWith(suffix)
+    ) as HTMLElement | undefined
+  }
+
+  function clickTreeItem(treeItem: HTMLElement | undefined) {
+    const content = treeItem?.querySelector('.MuiTreeItem-content') as
+      | HTMLElement
+      | null
+
+    content?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+  }
+
+  function expandTreeItem(treeItem: HTMLElement | undefined) {
+    const iconContainer = treeItem?.querySelector('.MuiTreeItem-iconContainer') as
+      | HTMLElement
+      | null
+
+    iconContainer?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+  }
+
+  function triggerEnabledButton(treeItem: HTMLElement | undefined) {
+    const button = treeItem?.querySelector(
+      '[role="button"][aria-label]'
+    ) as
+      | HTMLElement
+      | null
+
+    button?.dispatchEvent(
+      new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0 })
+    )
+  }
+
   it('switches assets without entering an update loop when the parent rehydrates the client', async () => {
     const root = createRoot(container)
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -107,6 +145,8 @@ describe('client assets panel', () => {
       backgroundClients: [],
       routeClients: [baseClient]
     }
+    let switchToGuide: (() => void) | undefined
+    let switchToRoot: (() => void) | undefined
 
     function Harness() {
       const [draft, setDraft] = useState(initialDraft)
@@ -114,6 +154,9 @@ describe('client assets panel', () => {
       const client = createRouteClientConfig(
         JSON.parse(JSON.stringify(draft.routeClients[0] as RouteClientConfig))
       )
+
+      switchToGuide = () => setSelectedPath('guides/SKILL.md')
+      switchToRoot = () => setSelectedPath('SKILL.md')
 
       return (
         <I18nProvider>
@@ -136,25 +179,15 @@ describe('client assets panel', () => {
     expect(container.textContent).toContain('Root summary')
     expect(container.textContent).toContain('# Root skill')
 
-    const guideSkillNode = container.querySelector('#route-asset\\:route-skill-guides')
-    expect(guideSkillNode).not.toBeNull()
-
     await act(async () => {
-      guideSkillNode?.dispatchEvent(
-        new MouseEvent('click', { bubbles: true, cancelable: true })
-      )
+      switchToGuide?.()
     })
 
     expect(container.textContent).toContain('Guide summary')
     expect(container.textContent).toContain('# Guide skill')
 
-    const rootSkillNode = container.querySelector('#route-asset\\:route-skill-root')
-    expect(rootSkillNode).not.toBeNull()
-
     await act(async () => {
-      rootSkillNode?.dispatchEvent(
-        new MouseEvent('click', { bubbles: true, cancelable: true })
-      )
+      switchToRoot?.()
     })
 
     expect(container.textContent).toContain('Root summary')
@@ -301,6 +334,10 @@ describe('client assets panel', () => {
           enabled: true,
           method: 'GET',
           path: 'guides/config',
+          selector: '[data-config]',
+          alternativeSelectors: [],
+          classes: [],
+          attributes: {},
           metadata: {
             title: 'Config resource',
             summary: 'Config summary',
@@ -332,16 +369,11 @@ describe('client assets panel', () => {
       )
     })
 
-    const toggle = container.querySelector(
-      '[id="route-asset-folder:guides"] [role="button"][aria-label="Disable"]'
-    )
-
-    expect(toggle).not.toBeNull()
+    const guidesFolderNode = findTreeItemBySuffix('route-asset-folder:guides')
+    expect(guidesFolderNode).toBeDefined()
 
     await act(async () => {
-      toggle?.dispatchEvent(
-        new MouseEvent('click', { bubbles: true, cancelable: true })
-      )
+      triggerEnabledButton(guidesFolderNode)
     })
 
     expect(onChange).toHaveBeenCalledTimes(1)

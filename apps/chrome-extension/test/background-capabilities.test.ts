@@ -32,15 +32,24 @@ function createRuntimeStub() {
 function createClientStub() {
   const paths: string[] = []
   const descriptors = new Map<string, Record<string, unknown>>()
+  const handlers = new Map<string, (request?: unknown) => unknown>()
 
   return {
     paths,
     descriptors,
+    handlers,
     client: {
-      expose(path: string, descriptor?: Record<string, unknown>) {
+      expose(
+        path: string,
+        descriptor?: Record<string, unknown>,
+        handler?: (request?: unknown) => unknown
+      ) {
         paths.push(path)
         if (descriptor) {
           descriptors.set(path, descriptor)
+        }
+        if (handler) {
+          handlers.set(path, handler)
         }
       }
     }
@@ -155,5 +164,66 @@ describe('chrome extension background capabilities', () => {
         (definition) => definition.id === 'extension.clients.delete'
       )?.method
     ).toBe('DELETE')
+  })
+
+  it('runs built-in background handlers without relying on dynamic eval', async () => {
+    const runtime = createRuntimeStub()
+    const status = { onlineClientCount: 3 }
+    const clients = { backgroundClients: [], routeClients: [] }
+
+    runtime.getStatus.mockResolvedValue(status)
+    runtime.listWorkspaceClients.mockResolvedValue(clients)
+
+    const browserStub = createClientStub()
+    registerBackgroundCapabilities(
+      browserStub.client as any,
+      runtime as any,
+      DEFAULT_BACKGROUND_CLIENT
+    )
+
+    const workspaceStub = createClientStub()
+    registerBackgroundCapabilities(
+      workspaceStub.client as any,
+      runtime as any,
+      DEFAULT_WORKSPACE_MANAGEMENT_CLIENT
+    )
+
+    await expect(
+      browserStub.handlers.get('/extension/status')?.({})
+    ).resolves.toEqual(
+      status
+    )
+    await expect(
+      workspaceStub.handlers.get('/extension/clients')?.({})
+    ).resolves.toEqual(
+      clients
+    )
+    expect(runtime.getStatus).toHaveBeenCalledTimes(1)
+    expect(runtime.listWorkspaceClients).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports an explicit error when a background expose has custom javascript source', async () => {
+    const runtime = createRuntimeStub()
+    const stub = createClientStub()
+
+    registerBackgroundCapabilities(
+      stub.client as any,
+      runtime as any,
+      {
+        ...DEFAULT_BACKGROUND_CLIENT,
+        exposes: DEFAULT_BACKGROUND_CLIENT.exposes.map((asset) =>
+          asset.id === 'extension.status'
+            ? {
+                ...asset,
+                source: `${asset.source}\nreturn { overridden: true };`
+              }
+            : asset
+        )
+      }
+    )
+
+    await expect(
+      stub.handlers.get('/extension/status')?.({})
+    ).rejects.toThrow(/blocks dynamic code execution/i)
   })
 })

@@ -16,21 +16,13 @@ function AssetTreeActionSlot({
   return (
     <Box
       className="asset-tree-actions"
-      onPointerDownCapture={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-      }}
-      onClickCapture={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-      }}
-      onMouseDown={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-      }}
-      onClick={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        pointerEvents: 'none',
+        '& > *': {
+          pointerEvents: 'auto'
+        }
       }}
     >
       {action}
