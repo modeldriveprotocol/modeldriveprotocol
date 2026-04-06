@@ -97,6 +97,16 @@ describe('background client editor', () => {
     )
   }
 
+  function expandTreeItem(treeItem: HTMLElement | undefined) {
+    const iconContainer = treeItem?.querySelector('.MuiTreeItem-iconContainer') as
+      | HTMLElement
+      | null
+
+    iconContainer?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+  }
+
   it('renders a javascript background asset path without crashing', async () => {
     const root = createRoot(container)
 
@@ -261,6 +271,95 @@ describe('background client editor', () => {
 
     errorSpy.mockRestore()
     logSpy.mockRestore()
+  })
+
+  it('moves selection back to the collapsed background folder when the current file becomes hidden', async () => {
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <I18nProvider>
+          <BackgroundClientEditor
+            client={DEFAULT_EXTENSION_CONFIG.backgroundClients[0] ?? DEFAULT_BACKGROUND_CLIENT}
+            draft={DEFAULT_EXTENSION_CONFIG}
+            initialAssetPath="/extension/resources/SKILL.md"
+            initialTab="assets"
+            invocationStats={undefined}
+            onAssetPathChange={() => {}}
+            onClearHistory={() => {}}
+            onTabChange={() => {}}
+            onChange={() => {}}
+            runtimeState="connected"
+          />
+        </I18nProvider>
+      )
+    })
+
+    const resourcesFolderNode = findTreeItemBySuffix('asset-folder:resources')
+    expect(resourcesFolderNode).toBeDefined()
+
+    await act(async () => {
+      expandTreeItem(resourcesFolderNode)
+    })
+
+    const folderContent = resourcesFolderNode?.querySelector(
+      '.MuiTreeItem-content'
+    ) as HTMLElement | null
+    expect(folderContent?.classList.contains('Mui-selected')).toBe(true)
+  })
+
+  it('keeps ctrl+a scoped to visible background items after expanding a collapsed folder', async () => {
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <I18nProvider>
+          <BackgroundClientEditor
+            client={DEFAULT_EXTENSION_CONFIG.backgroundClients[0] ?? DEFAULT_BACKGROUND_CLIENT}
+            draft={DEFAULT_EXTENSION_CONFIG}
+            initialAssetPath="/extension/SKILL.md"
+            initialTab="assets"
+            invocationStats={undefined}
+            onAssetPathChange={() => {}}
+            onClearHistory={() => {}}
+            onTabChange={() => {}}
+            onChange={() => {}}
+            runtimeState="connected"
+          />
+        </I18nProvider>
+      )
+    })
+
+    const tree = container.querySelector('[role="tree"]') as HTMLElement | null
+    const resourcesFolderNode = findTreeItemBySuffix('asset-folder:resources')
+
+    expect(tree).toBeTruthy()
+    expect(resourcesFolderNode).toBeDefined()
+    expect(findTreeItemBySuffix('asset:extension.skills.resources')).toBeUndefined()
+
+    await act(async () => {
+      tree?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'a',
+          ctrlKey: true,
+          bubbles: true,
+          cancelable: true
+        })
+      )
+    })
+
+    await act(async () => {
+      expandTreeItem(resourcesFolderNode)
+    })
+
+    const resourcesSkillNode = findTreeItemBySuffix('asset:extension.skills.resources')
+
+    expect(resourcesSkillNode).toBeDefined()
+    expect(
+      resourcesSkillNode
+        ?.querySelector('.MuiTreeItem-content')
+        ?.classList.contains('Mui-selected')
+    ).toBe(false)
   })
 
   it('renames background folders against the real stored paths when a shared display prefix is hidden', () => {

@@ -391,7 +391,7 @@ describe('client assets panel', () => {
     ).toBe(true)
   })
 
-  it('selects every filtered asset tree item with ctrl+a', async () => {
+  it('expands folders from the icon and keeps ctrl+a scoped to visible route items', async () => {
     const root = createRoot(container)
     const client = createRouteClientConfig({
       id: 'route-client-ui-verify',
@@ -454,6 +454,10 @@ describe('client assets panel', () => {
 
     const tree = container.querySelector('[role="tree"]') as HTMLElement | null
     expect(tree).toBeTruthy()
+    const guidesFolderNode = findTreeItemBySuffix('route-asset-folder:guides')
+
+    expect(guidesFolderNode).toBeDefined()
+    expect(findTreeItemBySuffix('route-asset:route-skill-guides')).toBeUndefined()
 
     await act(async () => {
       tree?.dispatchEvent(
@@ -469,5 +473,17 @@ describe('client assets panel', () => {
     expect(
       container.querySelectorAll('.MuiTreeItem-content.Mui-selected').length
     ).toBe(2)
+
+    await act(async () => {
+      expandTreeItem(guidesFolderNode)
+    })
+
+    const guideSkillNode = findTreeItemBySuffix('route-asset:route-skill-guides')
+    expect(guideSkillNode).toBeDefined()
+    expect(
+      guideSkillNode
+        ?.querySelector('.MuiTreeItem-content')
+        ?.classList.contains('Mui-selected')
+    ).toBe(false)
   })
 })

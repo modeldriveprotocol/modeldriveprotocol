@@ -11,7 +11,8 @@ import {
   AssetEmptyState,
   basename,
   collectAssetFolderPaths,
-  collectAssetSubtreeItemIds
+  collectAssetSubtreeItemIds,
+  getCollapsedTreeSelectionTarget
 } from './asset-tree-shared.js'
 import { buildRouteContextMenuSections } from './client-assets-panel/context-menu.js'
 import { RouteCodeEditor, RouteMarkdownEditor } from './client-assets-panel/editors.js'
@@ -126,6 +127,36 @@ export function ClientAssetsPanel({
 
     state.setSelectedItemId(`route-asset-folder:${folderPath}`)
     state.setSelectedItemIds(nextItemIds)
+  }
+
+  function handleExpandedItemsChange(nextExpandedItemIds: string[]) {
+    const collapsedSelectionTarget = getCollapsedTreeSelectionTarget({
+      prefix: 'route-asset',
+      previousExpandedItemIds: state.expandedItems,
+      nextExpandedItemIds,
+      selectedItemId: state.selectedItemId,
+      selectedAssetPath: state.displayedAsset?.path,
+      selectedFolderPath: state.selectedFolderPath
+    })
+
+    if (collapsedSelectionTarget) {
+      state.setSelectedItemId(collapsedSelectionTarget)
+      state.setSelectedItemIds([collapsedSelectionTarget])
+    }
+
+    const nextExpandedFolders = nextExpandedItemIds
+      .filter((itemId) => itemId.startsWith('route-asset-folder:'))
+      .map((itemId) => itemId.slice('route-asset-folder:'.length))
+      .sort()
+
+    state.setExpandedFolders((current) => {
+      const currentSorted = [...current].sort()
+
+      return currentSorted.length === nextExpandedFolders.length &&
+        currentSorted.every((path, index) => path === nextExpandedFolders[index])
+        ? current
+        : nextExpandedFolders
+    })
   }
 
   function copySelectedPaths() {
@@ -329,6 +360,7 @@ export function ClientAssetsPanel({
         dropTargetItemId={state.dropTargetItemId}
         expandedItems={state.expandedItems}
         filteredTree={state.filteredTree}
+        onExpandedItemsChange={handleExpandedItemsChange}
         onCloseContextMenu={() => state.setContextMenu(undefined)}
         onCommitRename={actions.commitRename}
         onDropItem={actions.handleDrop}

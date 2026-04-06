@@ -22,6 +22,7 @@ export {
   buildAssetFileTree,
   collectAssetFolderPaths,
   collectAssetItemIds,
+  collectVisibleAssetItemIds,
   collectAssetSubtreeItemIds,
   countAssetFiles,
   dirname,
@@ -43,6 +44,7 @@ export {
 } from './asset-tree-shared/enabled-state.js'
 export type { AssetEnabledState } from './asset-tree-shared/enabled-state.js'
 export {
+  getCollapsedTreeSelectionTarget,
   hasTreeMultiSelection,
   normalizeTreeSelection,
   resolveNextTreeSelection

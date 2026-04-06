@@ -35,6 +35,28 @@ export function collectAssetItemIds(
   )
 }
 
+export function collectVisibleAssetItemIds(
+  prefix: string,
+  nodes: AssetFileTreeNode[],
+  expandedFolderPaths: Iterable<string>
+): string[] {
+  const expandedSet =
+    expandedFolderPaths instanceof Set
+      ? expandedFolderPaths
+      : new Set(expandedFolderPaths)
+
+  return nodes.flatMap((node) =>
+    node.kind === 'folder'
+      ? [
+          `${prefix}-folder:${node.path}`,
+          ...(expandedSet.has(node.path)
+            ? collectVisibleAssetItemIds(prefix, node.children, expandedSet)
+            : [])
+        ]
+      : [`${prefix}:${node.assetId}`]
+  )
+}
+
 export function collectAssetFolderPaths(nodes: AssetFileTreeNode[]): string[] {
   return nodes.flatMap((node) =>
     node.kind === 'folder'

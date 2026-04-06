@@ -8,7 +8,7 @@ import {
 } from '#~/shared/config.js'
 import {
   collectAssetFolderPaths,
-  collectAssetItemIds,
+  collectVisibleAssetItemIds,
   filterAssetFileTree,
   findFirstAssetTreeItemId,
   normalizeTreeSelection,
@@ -115,13 +115,30 @@ export function useBackgroundClientEditorState({
       searchQuery.trim() ? collectAssetFolderPaths(filteredBackgroundTree) : [],
     [filteredBackgroundTree, searchQuery]
   )
+  const visibleExpandedFolders = useMemo(
+    () => [...new Set([...expandedFolders, ...forcedExpandedFolders])],
+    [expandedFolders, forcedExpandedFolders]
+  )
   const visibleItemIds = useMemo(
-    () => new Set(['root', ...collectAssetItemIds('asset', filteredBackgroundTree)]),
-    [filteredBackgroundTree]
+    () =>
+      new Set([
+        'root',
+        ...collectVisibleAssetItemIds(
+          'asset',
+          filteredBackgroundTree,
+          visibleExpandedFolders
+        )
+      ]),
+    [filteredBackgroundTree, visibleExpandedFolders]
   )
   const orderedVisibleItemIds = useMemo(
-    () => collectAssetItemIds('asset', filteredBackgroundTree),
-    [filteredBackgroundTree]
+    () =>
+      collectVisibleAssetItemIds(
+        'asset',
+        filteredBackgroundTree,
+        visibleExpandedFolders
+      ),
+    [filteredBackgroundTree, visibleExpandedFolders]
   )
   const hasSearchResults = visibleItemIds.size > 1
   const searchTerm = searchQuery.trim()
@@ -252,9 +269,7 @@ export function useBackgroundClientEditorState({
     )
   }, [orderedVisibleItemIds])
 
-  const expandedItems = [...new Set([...expandedFolders, ...forcedExpandedFolders])].map(
-    (path) => `asset-folder:${path}`
-  )
+  const expandedItems = visibleExpandedFolders.map((path) => `asset-folder:${path}`)
 
   return {
     allExposes,

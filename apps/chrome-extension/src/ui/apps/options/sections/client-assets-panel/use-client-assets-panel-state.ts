@@ -8,7 +8,7 @@ import type { OptionsAssetsTab } from '../../../../platform/extension-api.js'
 import {
   buildAssetFileTree,
   collectAssetFolderPaths,
-  collectAssetItemIds,
+  collectVisibleAssetItemIds,
   filterAssetFileTree,
   listAncestorFolders,
   normalizeTreeSelection,
@@ -122,13 +122,22 @@ export function useClientAssetsPanelState({
     () => filterAssetFileTree(routeTree, searchQuery),
     [routeTree, searchQuery]
   )
-  const orderedVisibleItemIds = useMemo(
-    () => collectAssetItemIds('route-asset', filteredTree),
-    [filteredTree]
-  )
   const forcedExpandedFolders = useMemo(
     () => (searchQuery.trim() ? collectAssetFolderPaths(filteredTree) : []),
     [filteredTree, searchQuery]
+  )
+  const visibleExpandedFolders = useMemo(
+    () => [...new Set([...expandedFolders, ...forcedExpandedFolders])],
+    [expandedFolders, forcedExpandedFolders]
+  )
+  const orderedVisibleItemIds = useMemo(
+    () =>
+      collectVisibleAssetItemIds(
+        'route-asset',
+        filteredTree,
+        visibleExpandedFolders
+      ),
+    [filteredTree, visibleExpandedFolders]
   )
   const displayedAsset = displayedFileId
     ? assetsById.get(displayedFileId)
@@ -149,7 +158,7 @@ export function useClientAssetsPanelState({
     () => getRouteRenameError(renameTarget, client),
     [client, renameTarget]
   )
-  const expandedItems = [...new Set([...expandedFolders, ...forcedExpandedFolders])].map(
+  const expandedItems = visibleExpandedFolders.map(
     (path) => `route-asset-folder:${path}`
   )
 

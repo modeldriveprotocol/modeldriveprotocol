@@ -165,6 +165,7 @@ export function BackgroundClientAssetsTab({
 
               if (collapsedSelectionTarget) {
                 setSelectedItemId(collapsedSelectionTarget)
+                setSelectedItemIds([collapsedSelectionTarget])
               }
 
               handleBackgroundExpandedItemsChange(nextItemIds, setExpandedFolders)
@@ -187,7 +188,7 @@ export function BackgroundClientAssetsTab({
                 setDisplayedAssetId(nextAssetId)
               }
             }}
-            selectedItems={selectedItemIds.length > 0 ? selectedItemIds : undefined}
+            selectedItems={selectedItemIds}
             sx={sharedAssetTreeSx}
           >
             {filteredBackgroundTree.map((node) => (

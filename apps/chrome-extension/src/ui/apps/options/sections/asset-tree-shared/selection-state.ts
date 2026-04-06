@@ -4,6 +4,49 @@ export type TreeSelectionModifiers = {
   shiftKey: boolean
 }
 
+export function getCollapsedTreeSelectionTarget(options: {
+  prefix: string
+  previousExpandedItemIds: string[]
+  nextExpandedItemIds: string[]
+  selectedItemId: string
+  selectedAssetPath: string | undefined
+  selectedFolderPath: string | undefined
+}) {
+  const collapsedFolderItemIds = options.previousExpandedItemIds.filter(
+    (itemId) =>
+      itemId.startsWith(`${options.prefix}-folder:`) &&
+      !options.nextExpandedItemIds.includes(itemId)
+  )
+
+  return collapsedFolderItemIds.find((itemId) => {
+    const folderPath = getTreeFolderPath(options.prefix, itemId)
+
+    if (!folderPath) {
+      return false
+    }
+
+    if (options.selectedItemId === itemId) {
+      return true
+    }
+
+    if (options.selectedFolderPath) {
+      return (
+        options.selectedFolderPath === folderPath ||
+        options.selectedFolderPath.startsWith(`${folderPath}/`)
+      )
+    }
+
+    if (!options.selectedAssetPath) {
+      return false
+    }
+
+    return (
+      options.selectedAssetPath === folderPath ||
+      options.selectedAssetPath.startsWith(`${folderPath}/`)
+    )
+  })
+}
+
 export function resolveNextTreeSelection(options: {
   currentPrimaryItemId: string
   currentSelectedItemIds: string[]
@@ -67,4 +110,12 @@ export function normalizeTreeSelection(
 
 export function hasTreeMultiSelection(selectedItemIds: string[]) {
   return selectedItemIds.length > 1
+}
+
+function getTreeFolderPath(prefix: string, itemId: string) {
+  if (itemId.startsWith(`${prefix}-folder:`)) {
+    return itemId.slice(`${prefix}-folder:`.length)
+  }
+
+  return undefined
 }

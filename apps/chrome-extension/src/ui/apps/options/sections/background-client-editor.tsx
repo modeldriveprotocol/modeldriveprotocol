@@ -384,6 +384,7 @@ export function BackgroundClientEditor({
             ) {
               event.preventDefault()
               state.setSelectedItemId(state.firstSearchResultItemId)
+              state.setSelectedItemIds([state.firstSearchResultItemId])
             }
           }}
           onSelectItem={actions.selectItem}

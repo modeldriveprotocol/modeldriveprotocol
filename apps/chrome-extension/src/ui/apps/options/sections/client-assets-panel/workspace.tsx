@@ -36,6 +36,7 @@ export function ClientAssetsWorkspace({
   dropTargetItemId,
   expandedItems,
   filteredTree,
+  onExpandedItemsChange,
   onCloseContextMenu,
   onCommitRename,
   onDropItem,
@@ -75,6 +76,7 @@ export function ClientAssetsWorkspace({
   dropTargetItemId: string | undefined
   expandedItems: string[]
   filteredTree: AssetFileTreeNode[]
+  onExpandedItemsChange: (itemIds: string[]) => void
   onCloseContextMenu: () => void
   onCommitRename: () => void
   onDropItem: (folderPath: string, itemId: string, dragState: DragState | undefined) => void
@@ -144,9 +146,13 @@ export function ClientAssetsWorkspace({
             <AssetEmptyState label={t('options.assets.searchEmpty')} minHeight={180} />
           ) : (
             <SimpleTreeView
+              expansionTrigger="iconContainer"
               expandedItems={expandedItems}
               multiSelect
-              selectedItems={selectedItemIds.length > 0 ? selectedItemIds : undefined}
+              onExpandedItemsChange={(_event, itemIds) =>
+                onExpandedItemsChange(itemIds as string[])
+              }
+              selectedItems={selectedItemIds}
               sx={sharedAssetTreeSx}
             >
               {renderTreeNodes(filteredTree, {
