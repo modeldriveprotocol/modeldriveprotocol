@@ -73,14 +73,14 @@ const panelSx = {
   bgcolor: 'background.paper',
   border: '1px solid',
   borderColor: 'divider',
-  borderRadius: '14px !important',
+  borderRadius: '4px !important',
   overflow: 'hidden'
 }
 
 const iconBoxSx = {
   width: 34,
   height: 34,
-  borderRadius: '10px',
+  borderRadius: '4px',
   border: '1px solid',
   borderColor: 'divider',
   bgcolor: 'background.paper',

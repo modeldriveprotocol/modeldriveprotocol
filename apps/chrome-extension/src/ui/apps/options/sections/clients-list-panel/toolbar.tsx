@@ -1,12 +1,17 @@
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import DeleteOutlineOutlined from '@mui/icons-material/DeleteOutlineOutlined'
+import DnsOutlined from '@mui/icons-material/DnsOutlined'
+import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
 import SearchOutlined from '@mui/icons-material/SearchOutlined'
 import StarBorderOutlined from '@mui/icons-material/StarBorderOutlined'
 import StarOutlined from '@mui/icons-material/StarOutlined'
+import ViewModuleOutlined from '@mui/icons-material/ViewModuleOutlined'
+import WebOutlined from '@mui/icons-material/WebOutlined'
 import WindowOutlined from '@mui/icons-material/WindowOutlined'
 import {
   Button,
   Checkbox,
+  Collapse,
   InputAdornment,
   Menu,
   MenuItem,
@@ -14,6 +19,7 @@ import {
   TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography
 } from '@mui/material'
 import { useState, type MouseEvent as ReactMouseEvent } from 'react'
@@ -29,6 +35,7 @@ export function ClientsListToolbar({
   canCreateFromPage,
   canDeleteSelection,
   clientTypeFilter,
+  controlsExpanded,
   filteredClientCount,
   onApplyBulk,
   onCreateClient,
@@ -37,6 +44,7 @@ export function ClientsListToolbar({
   onRequestDeleteSelection,
   onRouteSearchChange,
   onSelectAllVisible,
+  onToggleControlsExpanded,
   routeSearch,
   selectedCount,
   t
@@ -45,6 +53,7 @@ export function ClientsListToolbar({
   canCreateFromPage: boolean
   canDeleteSelection: boolean
   clientTypeFilter: ClientTypeFilter
+  controlsExpanded: boolean
   filteredClientCount: number
   onApplyBulk: (action: BulkClientAction) => void
   onCreateClient: (kind: 'background' | 'route') => void
@@ -53,6 +62,7 @@ export function ClientsListToolbar({
   onRequestDeleteSelection: (anchorEl: HTMLElement) => void
   onRouteSearchChange: (value: string) => void
   onSelectAllVisible: (checked: boolean) => void
+  onToggleControlsExpanded: () => void
   routeSearch: string
   selectedCount: number
   t: (key: string, values?: Record<string, string | number>) => string
@@ -62,7 +72,7 @@ export function ClientsListToolbar({
   )
 
   return (
-    <Stack spacing={1} sx={{ py: 1 }}>
+    <Stack spacing={1} sx={{ pt: 1, pb: 0 }}>
       <Stack direction="row" alignItems="center" spacing={1}>
         <TextField
           fullWidth
@@ -77,13 +87,46 @@ export function ClientsListToolbar({
               </InputAdornment>
             )
           }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              height: 40
+            }
+          }}
         />
         <Button
           variant="contained"
           onClick={(event) => setCreateMenuAnchor(event.currentTarget)}
-          sx={{ minWidth: 40, px: 1.25 }}
+          sx={{
+            width: 40,
+            minWidth: 40,
+            height: 40,
+            p: 0
+          }}
         >
           <AddOutlined fontSize="small" />
+        </Button>
+        <Button
+          aria-label={
+            controlsExpanded
+              ? t('options.clients.hideFiltersAndSelection')
+              : t('options.clients.showFiltersAndSelection')
+          }
+          variant="outlined"
+          onClick={onToggleControlsExpanded}
+          sx={{
+            width: 40,
+            minWidth: 40,
+            height: 40,
+            p: 0
+          }}
+        >
+          <ExpandMoreOutlined
+            fontSize="small"
+            sx={{
+              transform: controlsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 120ms ease'
+            }}
+          />
         </Button>
       </Stack>
 
@@ -119,94 +162,119 @@ export function ClientsListToolbar({
         </MenuItem>
       </Menu>
 
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        spacing={1}
-      >
-        <ToggleButtonGroup
-          exclusive
-          size="small"
-          value={clientTypeFilter}
-          onChange={(_event, nextValue) => {
-            if (nextValue) {
-              onFilterChange(nextValue)
-            }
-          }}
-        >
-          <ToggleButton value="all">
-            {t('options.clients.filter.all')}
-          </ToggleButton>
-          <ToggleButton value="background">
-            {t('options.clients.type.background')}
-          </ToggleButton>
-          <ToggleButton value="route">
-            {t('options.clients.type.route')}
-          </ToggleButton>
-        </ToggleButtonGroup>
-        {filteredClientCount > 0 ? (
-          <Checkbox
-            size="small"
-            checked={allVisibleSelected}
-            indeterminate={!allVisibleSelected && selectedCount > 0}
-            onChange={(_event, checked) => onSelectAllVisible(checked)}
-          />
-        ) : null}
-      </Stack>
-
-      {selectedCount > 0 ? (
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          spacing={1}
-        >
-          <Typography variant="caption" color="text.secondary">
-            {t('options.clients.selected', { count: selectedCount })}
-          </Typography>
-          <Stack direction="row" spacing={0.5}>
-            <ToolbarIcon
-              label={t('options.clients.enable')}
-              onClick={() => onApplyBulk('enable')}
-            >
-              <WindowOutlined fontSize="small" />
-            </ToolbarIcon>
-            <ToolbarIcon
-              label={t('options.clients.disable')}
-              onClick={() => onApplyBulk('disable')}
-            >
-              <DeleteOutlineOutlined
-                fontSize="small"
-                sx={{ transform: 'rotate(45deg)' }}
+      <Collapse in={controlsExpanded} timeout="auto" unmountOnExit>
+        <Stack spacing={1} sx={{ pt: 1 }}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            spacing={1}
+          >
+            {filteredClientCount > 0 ? (
+              <Checkbox
+                size="small"
+                checked={allVisibleSelected}
+                indeterminate={!allVisibleSelected && selectedCount > 0}
+                onChange={(_event, checked) => onSelectAllVisible(checked)}
               />
-            </ToolbarIcon>
-            <ToolbarIcon
-              label={t('options.clients.favorite')}
-              onClick={() => onApplyBulk('favorite')}
+            ) : null}
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              value={clientTypeFilter}
+              onChange={(_event, nextValue) => {
+                if (nextValue) {
+                  onFilterChange(nextValue)
+                }
+              }}
             >
-              <StarOutlined fontSize="small" />
-            </ToolbarIcon>
-            <ToolbarIcon
-              label={t('options.clients.unfavorite')}
-              onClick={() => onApplyBulk('unfavorite')}
-            >
-              <StarBorderOutlined fontSize="small" />
-            </ToolbarIcon>
-            <ToolbarIcon
-              label={t('options.clients.delete')}
-              onClick={(event) =>
-                onRequestDeleteSelection(
-                  (event as ReactMouseEvent<HTMLButtonElement>).currentTarget
-                )
-              }
-              disabled={!canDeleteSelection}
-            >
-              <DeleteOutlineOutlined fontSize="small" />
-            </ToolbarIcon>
+              <Tooltip title={t('options.clients.filter.all')}>
+                <ToggleButton
+                  value="all"
+                  aria-label={t('options.clients.filter.all')}
+                  sx={{ width: 36, height: 32, p: 0 }}
+                >
+                  <ViewModuleOutlined fontSize="small" />
+                </ToggleButton>
+              </Tooltip>
+              <Tooltip title={t('options.clients.type.background')}>
+                <ToggleButton
+                  value="background"
+                  aria-label={t('options.clients.type.background')}
+                  sx={{ width: 36, height: 32, p: 0 }}
+                >
+                  <DnsOutlined fontSize="small" />
+                </ToggleButton>
+              </Tooltip>
+              <Tooltip title={t('options.clients.type.route')}>
+                <ToggleButton
+                  value="route"
+                  aria-label={t('options.clients.type.route')}
+                  sx={{ width: 36, height: 32, p: 0 }}
+                >
+                  <WebOutlined fontSize="small" />
+                </ToggleButton>
+              </Tooltip>
+            </ToggleButtonGroup>
           </Stack>
+
+          {selectedCount > 0 ? (
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              spacing={1}
+            >
+              <Typography variant="caption" color="text.secondary">
+                {t('options.clients.selected', { count: selectedCount })}
+              </Typography>
+              <Stack direction="row" spacing={0.5}>
+                <ToolbarIcon
+                  label={t('options.clients.enable')}
+                  onClick={() => onApplyBulk('enable')}
+                >
+                  <WindowOutlined fontSize="small" />
+                </ToolbarIcon>
+                <ToolbarIcon
+                  label={t('options.clients.disable')}
+                  onClick={() => onApplyBulk('disable')}
+                >
+                  <WindowOutlined
+                    fontSize="small"
+                    sx={{ transform: 'rotate(180deg)' }}
+                  />
+                </ToolbarIcon>
+                <ToolbarIcon
+                  label={t('options.clients.favorite')}
+                  onClick={() => onApplyBulk('favorite')}
+                  tone="warning"
+                >
+                  <StarOutlined fontSize="small" />
+                </ToolbarIcon>
+                <ToolbarIcon
+                  label={t('options.clients.unfavorite')}
+                  onClick={() => onApplyBulk('unfavorite')}
+                  tone="warning"
+                >
+                  <StarBorderOutlined fontSize="small" />
+                </ToolbarIcon>
+                <ToolbarIcon
+                  label={t('options.clients.delete')}
+                  onClick={(event) =>
+                    onRequestDeleteSelection(
+                      (event as ReactMouseEvent<HTMLButtonElement>).currentTarget
+                    )
+                  }
+                  disabled={!canDeleteSelection}
+                  tone="error"
+                >
+                  <DeleteOutlineOutlined fontSize="small" />
+                </ToolbarIcon>
+              </Stack>
+            </Stack>
+          ) : null}
         </Stack>
-      ) : null}
+      </Collapse>
     </Stack>
   )
 }

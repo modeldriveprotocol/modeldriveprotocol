@@ -1,4 +1,4 @@
-import { Divider, List, ListItem, ListItemText, Stack } from '@mui/material'
+import { List, ListItem, ListItemText, Stack } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 
 import type {
@@ -6,6 +6,7 @@ import type {
   RouteClientConfig
 } from '#~/shared/config.js'
 import { useI18n } from '../../../i18n/provider.js'
+import { forkEditableClient } from '../editable-client-copy.js'
 import { uniqueEditableIds, type EditableClientId } from '../types.js'
 import { ClientRow } from './clients-list-panel/client-row.js'
 import { ClientsDeletePopover } from './clients-list-panel/delete-popover.js'
@@ -47,6 +48,7 @@ export function ClientsListPanel({
   const [deleteConfirmation, setDeleteConfirmation] =
     useState<DeleteConfirmationState>()
   const [selectedIds, setSelectedIds] = useState<EditableClientId[]>([])
+  const [controlsExpanded, setControlsExpanded] = useState(false)
 
   const filteredClients = useMemo(
     () =>
@@ -114,6 +116,42 @@ export function ClientsListPanel({
     onChange(applyBulkClientAction(draft, selectedIds, action))
   }
 
+  function duplicateClient(item: (typeof filteredClients)[number]) {
+    if (item.kind === 'background') {
+      const nextClient = forkEditableClient(item, t)
+
+      onChange({
+        ...draft,
+        backgroundClients: [...draft.backgroundClients, nextClient]
+      })
+      onSelectClient(nextClient.id)
+      onOpenDetail(nextClient.id)
+      return
+    }
+
+    const nextClient = forkEditableClient(item, t)
+
+    onChange({
+      ...draft,
+      routeClients: [...draft.routeClients, nextClient]
+    })
+    onSelectClient(nextClient.id)
+    onOpenDetail(nextClient.id)
+  }
+
+  function toggleControlsExpanded() {
+    setControlsExpanded((current) => {
+      const next = !current
+
+      if (!next) {
+        setClientTypeFilter('all')
+        setSelectedIds([])
+      }
+
+      return next
+    })
+  }
+
   const allVisibleSelected =
     filteredClients.length > 0 &&
     filteredClients.every((item) => selectedIds.includes(item.id))
@@ -129,12 +167,13 @@ export function ClientsListPanel({
 
   return (
     <>
-      <Stack spacing={1.25}>
+      <Stack spacing={0}>
         <ClientsListToolbar
           allVisibleSelected={allVisibleSelected}
           canCreateFromPage={canCreateFromPage}
           canDeleteSelection={canDeleteSelection}
           clientTypeFilter={clientTypeFilter}
+          controlsExpanded={controlsExpanded}
           filteredClientCount={filteredClients.length}
           onApplyBulk={applyBulk}
           onCreateClient={onCreateClient}
@@ -149,12 +188,11 @@ export function ClientsListPanel({
               checked ? filteredClients.map((item) => item.id) : []
             )
           }
+          onToggleControlsExpanded={toggleControlsExpanded}
           routeSearch={routeSearch}
           selectedCount={selectedIds.length}
           t={t}
         />
-
-        <Divider />
 
         <List dense disablePadding sx={{ py: 0.5 }}>
           {filteredClients.length === 0 ? (
@@ -192,7 +230,15 @@ export function ClientsListPanel({
                     favorite: !client.favorite
                   }))
                 }
+                onTogglePinned={(clientId) =>
+                  updateDraftClient(clientId, (client) => ({
+                    ...client,
+                    pinned: !client.pinned
+                  }))
+                }
                 onToggleSelected={toggleSelected}
+                onDuplicateClient={duplicateClient}
+                selectionMode={controlsExpanded}
                 runtimeState={runtimeState}
                 t={t}
               />

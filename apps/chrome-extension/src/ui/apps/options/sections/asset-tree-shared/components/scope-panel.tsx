@@ -55,7 +55,7 @@ export function AssetContextHeader({
                     minWidth: 0,
                     color: 'text.secondary',
                     justifyContent: 'flex-start',
-                    borderRadius: 0.5,
+                    borderRadius: 1,
                     px: 0.25
                   }}
                 >

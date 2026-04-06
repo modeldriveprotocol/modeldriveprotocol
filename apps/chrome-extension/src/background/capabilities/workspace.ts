@@ -16,6 +16,7 @@ const backgroundClientMutationSchema = {
     icon: { type: 'string' },
     enabled: { type: 'boolean' },
     favorite: { type: 'boolean' },
+    pinned: { type: 'boolean' },
     matchPatterns: { type: 'array', items: { type: 'string' } },
     autoInjectBridge: { type: 'boolean' },
     pathScriptSource: { type: 'string' },

@@ -63,8 +63,10 @@ export const backgroundExposeAssetSchema = z.object({
 export const backgroundClientSchema = z.object({
   kind: z.literal('background'),
   id: nonEmptyStringSchema,
+  createdAt: dateTimeStringSchema,
   enabled: z.boolean().default(true),
   favorite: z.boolean().default(false),
+  pinned: z.boolean().default(false),
   clientId: nonEmptyStringSchema,
   clientName: nonEmptyStringSchema,
   clientDescription: nonEmptyStringSchema,
@@ -79,8 +81,10 @@ export const backgroundClientSchema = z.object({
 export const routeClientSchema = z.object({
   kind: z.literal('route'),
   id: nonEmptyStringSchema,
+  createdAt: dateTimeStringSchema,
   enabled: z.boolean().default(true),
   favorite: z.boolean().default(false),
+  pinned: z.boolean().default(false),
   clientId: nonEmptyStringSchema,
   clientName: nonEmptyStringSchema,
   clientDescription: nonEmptyStringSchema,

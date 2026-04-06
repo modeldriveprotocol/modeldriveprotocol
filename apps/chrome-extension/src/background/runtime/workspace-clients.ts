@@ -88,6 +88,7 @@ export async function createWorkspaceClient(
       ...(input.icon ? { icon: input.icon } : {}),
       ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
       ...(input.favorite !== undefined ? { favorite: input.favorite } : {}),
+      ...(input.pinned !== undefined ? { pinned: input.pinned } : {}),
       ...(exposes !== undefined ? { exposes } : {})
     })
     const nextConfig = {
@@ -111,6 +112,7 @@ export async function createWorkspaceClient(
     ...(input.icon ? { icon: input.icon } : {}),
     ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
     ...(input.favorite !== undefined ? { favorite: input.favorite } : {}),
+    ...(input.pinned !== undefined ? { pinned: input.pinned } : {}),
     ...(input.matchPatterns ? { matchPatterns: [...input.matchPatterns] } : {}),
     ...(input.autoInjectBridge !== undefined
       ? { autoInjectBridge: input.autoInjectBridge }
@@ -160,6 +162,7 @@ export async function updateWorkspaceClient(
       ...(input.icon ? { icon: input.icon } : {}),
       ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
       ...(input.favorite !== undefined ? { favorite: input.favorite } : {}),
+      ...(input.pinned !== undefined ? { pinned: input.pinned } : {}),
       ...(nextClientId ? { clientId: nextClientId } : {}),
       ...(exposes !== undefined
         ? {
@@ -192,6 +195,7 @@ export async function updateWorkspaceClient(
     ...(input.icon ? { icon: input.icon } : {}),
     ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
     ...(input.favorite !== undefined ? { favorite: input.favorite } : {}),
+    ...(input.pinned !== undefined ? { pinned: input.pinned } : {}),
     ...(nextClientId ? { clientId: nextClientId } : {}),
     ...(input.matchPatterns ? { matchPatterns: [...input.matchPatterns] } : {}),
     ...(input.autoInjectBridge !== undefined

@@ -13,7 +13,6 @@ import {
 } from '@mui/material'
 import { createClientKey } from '#~/background/shared.js'
 import {
-  cloneRouteExposeAssets,
   createBackgroundClientConfig,
   createRouteClientConfig,
   type BackgroundClientConfig,
@@ -23,6 +22,7 @@ import {
 import type { AppearancePreference } from '../../foundation/appearance.js'
 import { createPresetRouteClient } from '../../platform/extension-api.js'
 import type { LocalePreference } from '../../i18n/provider.js'
+import { forkEditableClient } from './editable-client-copy.js'
 import { OPTIONS_SHELL_HEADER_HEIGHT } from './layout.js'
 import { ClientsSection } from './sections/clients-section.js'
 import { GlobalSettingsSection } from './sections/global-settings-section.js'
@@ -143,11 +143,14 @@ export function OptionsMainPanel({
                 size="small"
                 aria-label={t('options.clients.duplicate')}
                 onClick={() => {
-                  const nextClient = forkEditableClient(selectedClientItem, t)
+                  if (selectedClientItem.kind === 'background') {
+                    const nextClient = forkEditableClient(
+                      selectedClientItem,
+                      t
+                    )
 
-                  controller.setDraft((current: any) =>
-                    current
-                      ? selectedClientItem.kind === 'background'
+                    controller.setDraft((current: any) =>
+                      current
                         ? {
                             ...current,
                             backgroundClients: [
@@ -155,10 +158,30 @@ export function OptionsMainPanel({
                               nextClient
                             ]
                           }
-                        : {
-                            ...current,
-                            routeClients: [...current.routeClients, nextClient]
-                          }
+                        : current
+                    )
+                    controller.setSelectedClientId(nextClient.id)
+                    controller.setSectionAndHash('clients', {
+                      clientId: nextClient.id,
+                      clientDetailOpen: true
+                    })
+                    controller.notify(
+                      t('options.status.clientForked', {
+                        name: nextClient.clientName
+                      }),
+                      'success'
+                    )
+                    return
+                  }
+
+                  const nextClient = forkEditableClient(selectedClientItem, t)
+
+                  controller.setDraft((current: any) =>
+                    current
+                      ? {
+                          ...current,
+                          routeClients: [...current.routeClients, nextClient]
+                        }
                       : current
                   )
                   controller.setSelectedClientId(nextClient.id)
@@ -533,52 +556,6 @@ function createBackgroundClient(
     clientName: t('options.clients.backgroundDefaultName', { count: index }),
     clientId: `mdp-background-client-${index}`,
     icon: 'chrome'
-  })
-}
-
-function forkEditableClient(
-  item:
-    | {
-        kind: 'background'
-        id: string
-        client: BackgroundClientConfig
-      }
-    | {
-        kind: 'route'
-        id: string
-        client: RouteClientConfig
-      },
-  t: (key: string, values?: Record<string, string | number>) => string
-) {
-  const nextName = `${item.client.clientName} ${t(
-    'options.clients.copySuffix'
-  )}`
-
-  if (item.kind === 'background') {
-    const { id: _id, clientId: _clientId, ...backgroundRest } = item.client
-
-    return createBackgroundClientConfig({
-      ...backgroundRest,
-      clientName: nextName,
-      favorite: false,
-      exposes: item.client.exposes.map((asset) => ({ ...asset })),
-      disabledExposePaths: [...item.client.disabledExposePaths]
-    })
-  }
-
-  const {
-    id: _id,
-    clientId: _clientId,
-    installSource: _installSource,
-    ...routeRest
-  } = item.client
-
-  return createRouteClientConfig({
-    ...routeRest,
-    clientName: nextName,
-    favorite: false,
-    routeRules: item.client.routeRules.map((rule) => ({ ...rule })),
-    exposes: cloneRouteExposeAssets(item.client.exposes)
   })
 }
 

@@ -131,7 +131,7 @@ export function ScriptedAssetWorkspace({
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 0.5
+                gap: 0
               }}
             >
               <OutlinedInput
@@ -185,7 +185,16 @@ export function ScriptedAssetWorkspace({
                   aria-label={action.label}
                   size="small"
                   onClick={action.onClick}
-                  sx={{ width: 22, height: 22, flexShrink: 0 }}
+                  sx={{
+                    width: 30,
+                    height: 30,
+                    p: 0,
+                    flexShrink: 0,
+                    borderRadius: 0,
+                    '& .MuiSvgIcon-root': {
+                      fontSize: 18
+                    }
+                  }}
                 >
                   {action.icon}
                 </IconButton>

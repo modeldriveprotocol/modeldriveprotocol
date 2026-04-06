@@ -223,7 +223,7 @@ function IconOnlySetting({
       sx={{
         width: 40,
         height: 40,
-        borderRadius: 1.5,
+        borderRadius: 1,
         color: selected ? 'primary.main' : 'text.secondary',
         bgcolor: selected ? 'action.selected' : 'transparent'
       }}

@@ -235,7 +235,7 @@ export function ClientFlowsPanel({
           sx={{
             border: '1px solid',
             borderColor: 'divider',
-            borderRadius: '12px',
+            borderRadius: '4px',
             overflow: 'hidden'
           }}
         >
@@ -341,7 +341,7 @@ export function ClientFlowsPanel({
               sx={{
                 border: '1px solid',
                 borderColor: 'divider',
-                borderRadius: '12px',
+                borderRadius: '4px',
                 overflow: 'hidden'
               }}
             >

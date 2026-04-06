@@ -129,7 +129,7 @@ function EmptyState({
 const cardSx = {
   border: '1px solid',
   borderColor: 'divider',
-  borderRadius: '14px',
+  borderRadius: '4px',
   bgcolor: 'background.paper',
   p: 1.5
 }
@@ -137,7 +137,7 @@ const cardSx = {
 const iconBoxSx = {
   width: 34,
   height: 34,
-  borderRadius: '10px',
+  borderRadius: '4px',
   border: '1px solid',
   borderColor: 'divider',
   bgcolor: 'background.paper',

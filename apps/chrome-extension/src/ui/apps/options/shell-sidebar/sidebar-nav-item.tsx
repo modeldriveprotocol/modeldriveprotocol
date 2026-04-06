@@ -32,7 +32,7 @@ export function SidebarNavItem({
               ? OPTIONS_SIDEBAR_COLLAPSED_PADDING_X
               : OPTIONS_SIDEBAR_EXPANDED_PADDING_X,
             justifyContent: collapsed ? 'center' : 'flex-start',
-            borderRadius: 1.5
+            borderRadius: 1
           }}
         >
           <ListItemIcon

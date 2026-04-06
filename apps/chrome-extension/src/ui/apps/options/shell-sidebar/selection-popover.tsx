@@ -17,7 +17,7 @@ export function SidebarSelectionPopover({
       onClose={onClose}
       anchorOrigin={{ vertical: 'center', horizontal: 'right' }}
       transformOrigin={{ vertical: 'center', horizontal: 'left' }}
-      slotProps={{ paper: { sx: { ml: 1, width: 220, borderRadius: '10px' } } }}
+      slotProps={{ paper: { sx: { ml: 1, width: 220, borderRadius: '4px' } } }}
     >
       {children}
     </Popover>

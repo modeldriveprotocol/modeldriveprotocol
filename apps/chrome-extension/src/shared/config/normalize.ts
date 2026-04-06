@@ -151,6 +151,7 @@ function migrateLegacyConfig(value: unknown): unknown {
         id: 'background-client-default',
         enabled: legacyAutoConnect,
         favorite: false,
+        pinned: false,
         clientId: `${legacyClientId}-background`,
         clientName: `${legacyClientName} Background`,
         clientDescription: legacyClientDescription,
@@ -188,8 +189,10 @@ function normalizeBackgroundClient(value: unknown): BackgroundClientConfig {
   const normalized: BackgroundClientConfig = {
     kind: 'background',
     id: normalizeId(readString(record, 'id')) ?? fallback.id,
+    createdAt: normalizeTimestamp(readString(record, 'createdAt')),
     enabled: readBoolean(record, 'enabled') ?? fallback.enabled,
     favorite: readBoolean(record, 'favorite') ?? fallback.favorite,
+    pinned: readBoolean(record, 'pinned') ?? fallback.pinned,
     clientId: normalizeId(readString(record, 'clientId')) ?? fallback.clientId,
     clientName: normalizeString(
       readString(record, 'clientName'),
@@ -409,8 +412,10 @@ function normalizeRouteClient(value: unknown): RouteClientConfig {
   return syncRouteClientAssetViews({
     kind: 'route',
     id: routeId,
+    createdAt: normalizeTimestamp(readString(record, 'createdAt')),
     enabled: readBoolean(record, 'enabled') ?? true,
     favorite: readBoolean(record, 'favorite') ?? false,
+    pinned: readBoolean(record, 'pinned') ?? false,
     clientId,
     clientName,
     clientDescription: normalizeString(

@@ -17,7 +17,7 @@ export function HttpMethodBadge({
       sx={{
         width: 18,
         height: 18,
-        borderRadius: 0.75,
+        borderRadius: 1,
         border: '1px solid',
         borderColor: alpha(tone.accent, 0.4),
         display: 'inline-flex',

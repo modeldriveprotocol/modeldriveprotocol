@@ -31,6 +31,7 @@ export interface WorkspaceClientCreateInput {
   icon?: ClientIconKey
   enabled?: boolean
   favorite?: boolean
+  pinned?: boolean
   matchPatterns?: string[]
   autoInjectBridge?: boolean
   pathScriptSource?: string
@@ -47,6 +48,7 @@ export interface WorkspaceClientUpdateInput extends WorkspaceClientTargetInput {
   icon?: ClientIconKey
   enabled?: boolean
   favorite?: boolean
+  pinned?: boolean
   nextClientId?: string
   matchPatterns?: string[]
   autoInjectBridge?: boolean

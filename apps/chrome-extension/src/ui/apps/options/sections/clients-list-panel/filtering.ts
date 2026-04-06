@@ -100,6 +100,10 @@ function compareClientItems(
   left: ClientListItem,
   right: ClientListItem
 ): number {
+  if (left.client.pinned !== right.client.pinned) {
+    return left.client.pinned ? -1 : 1
+  }
+
   if (left.client.favorite !== right.client.favorite) {
     return left.client.favorite ? -1 : 1
   }

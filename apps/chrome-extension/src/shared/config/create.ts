@@ -23,6 +23,7 @@ import {
   normalizeId,
   normalizeMarketSourceUrl,
   normalizePatterns,
+  normalizeTimestamp,
   normalizeRepositoryIdentifier
 } from './internal.js'
 import { getOriginMatchPattern, suggestPathnameRule } from './matching.js'
@@ -54,8 +55,10 @@ export function createRouteClientConfig(
   return syncRouteClientAssetViews({
     kind: 'route',
     id: routeId,
+    createdAt: normalizeTimestamp(overrides.createdAt),
     enabled: overrides.enabled ?? true,
     favorite: overrides.favorite ?? false,
+    pinned: overrides.pinned ?? false,
     clientId,
     clientName: sourceName,
     clientDescription:
@@ -88,8 +91,10 @@ export function createBackgroundClientConfig(
   return {
     kind: 'background',
     id: backgroundId,
+    createdAt: normalizeTimestamp(overrides.createdAt),
     enabled: overrides.enabled ?? true,
     favorite: overrides.favorite ?? false,
+    pinned: overrides.pinned ?? false,
     clientId,
     clientName: sourceName,
     clientDescription:

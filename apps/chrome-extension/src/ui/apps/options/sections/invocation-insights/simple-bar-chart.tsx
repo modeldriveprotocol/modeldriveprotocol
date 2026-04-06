@@ -69,7 +69,7 @@ export function SimpleBarChart({
               <Box
                 sx={{
                   height: `${Math.max(14, (item.value / maxValue) * 88)}px`,
-                  borderRadius: '10px 10px 6px 6px',
+                  borderRadius: '4px',
                   bgcolor: item.tone ?? 'primary.main',
                   opacity: item.value === 0 ? 0.35 : 1
                 }}

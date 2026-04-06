@@ -4,6 +4,7 @@ import type {
   InvocationOverviewStats,
   InvocationRecord
 } from '#~/background/shared.js'
+export { formatDateTime, formatTimeLabel } from '../format-date-time.js'
 
 export const INVOCATION_KIND_ORDER: InvocationCapabilityKind[] = [
   'endpoint',
@@ -63,29 +64,8 @@ export function formatPercent(successCount: number, totalCount: number): string 
   return `${Math.round((successCount / totalCount) * 100)}%`
 }
 
-export function formatDateTime(value: string | undefined): string {
-  if (!value) {
-    return '—'
-  }
-
-  return new Date(value).toLocaleString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    month: 'numeric',
-    day: 'numeric'
-  })
-}
-
 export function formatBarValue(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1)
-}
-
-export function formatTimeLabel(value: string): string {
-  return new Date(value).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit'
-  })
 }
 
 export function shortenLabel(value: string, maxLength: number): string {

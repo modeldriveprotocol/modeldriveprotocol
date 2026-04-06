@@ -1,4 +1,6 @@
 import { Box, IconButton, Stack, Tooltip, Typography } from '@mui/material'
+import { alpha } from '@mui/material/styles'
+import type { Theme } from '@mui/material/styles'
 import type { MouseEvent, ReactNode } from 'react'
 
 export function OverviewStat({
@@ -20,7 +22,7 @@ export function OverviewStat({
         px: 1,
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: '10px'
+        borderRadius: '4px'
       }}
     >
       <Box sx={{ color: tone, display: 'grid', placeItems: 'center' }}>{icon}</Box>
@@ -64,20 +66,50 @@ export function SectionPanel({
 }
 
 export function ToolbarIcon({
+  active = false,
   children,
   disabled,
   label,
-  onClick
+  onClick,
+  tone = 'default'
 }: {
+  active?: boolean
   children: ReactNode
   disabled?: boolean
   label: string
   onClick: (event: MouseEvent<HTMLButtonElement>) => void
+  tone?: 'default' | 'error' | 'primary' | 'warning'
 }) {
+  const toneSx =
+    tone === 'default'
+      ? undefined
+      : (theme: Theme) => {
+          const palette = theme.palette[tone]
+
+          return {
+            color: palette.main,
+            backgroundColor: active ? alpha(palette.main, 0.14) : 'transparent',
+            '&:hover': {
+              backgroundColor: alpha(palette.main, active ? 0.22 : 0.12)
+            }
+          }
+        }
+
   return (
     <Tooltip title={label}>
       <span>
-        <IconButton size="small" disabled={disabled} onClick={onClick} aria-label={label}>
+        <IconButton
+          size="small"
+          disabled={disabled}
+          onClick={onClick}
+          aria-label={label}
+          sx={(theme) => ({
+            width: 30,
+            height: 30,
+            borderRadius: '4px',
+            ...(toneSx ? toneSx(theme) : {})
+          })}
+        >
           {children}
         </IconButton>
       </span>

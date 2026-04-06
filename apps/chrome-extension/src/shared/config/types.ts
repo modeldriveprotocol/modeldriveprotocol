@@ -152,8 +152,10 @@ export interface MarketClientInstallSource {
 export interface BackgroundClientConfig {
   kind: 'background'
   id: string
+  createdAt: string
   enabled: boolean
   favorite: boolean
+  pinned: boolean
   clientId: string
   clientName: string
   clientDescription: string
@@ -165,8 +167,10 @@ export interface BackgroundClientConfig {
 export interface RouteClientConfig {
   kind: 'route'
   id: string
+  createdAt: string
   enabled: boolean
   favorite: boolean
+  pinned: boolean
   clientId: string
   clientName: string
   clientDescription: string
@@ -215,8 +219,10 @@ export const DEFAULT_OFFICIAL_MARKET_SOURCE: MarketSourceConfig = {
 export const DEFAULT_BACKGROUND_CLIENT: BackgroundClientConfig = {
   kind: 'background',
   id: 'background-client-default',
+  createdAt: new Date().toISOString(),
   enabled: true,
   favorite: false,
+  pinned: false,
   clientId: 'mdp-chrome-background',
   clientName: 'MDP Chrome Background',
   clientDescription:
@@ -239,8 +245,10 @@ export const DEFAULT_BACKGROUND_CLIENT: BackgroundClientConfig = {
 export const DEFAULT_WORKSPACE_MANAGEMENT_CLIENT: BackgroundClientConfig = {
   kind: 'background',
   id: 'background-client-workspace',
+  createdAt: new Date().toISOString(),
   enabled: true,
   favorite: false,
+  pinned: false,
   clientId: 'mdp-chrome-workspace',
   clientName: 'MDP Chrome Workspace',
   clientDescription:

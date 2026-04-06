@@ -79,9 +79,21 @@ describe('clients list panel', () => {
     expect(container.textContent).toContain('MDP Chrome Background')
     expect(container.textContent).toContain('Route Review Client')
 
-    const routeFilterButton = Array.from(
-      container.querySelectorAll('button')
-    ).find((button) => button.textContent?.trim() === 'Route')
+    const controlsToggleButton = container.querySelector(
+      'button[aria-label="Show filters and multi-select"]'
+    )
+
+    expect(controlsToggleButton).not.toBeNull()
+
+    await act(async () => {
+      controlsToggleButton?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true })
+      )
+    })
+
+    const routeFilterButton = container.querySelector(
+      'button[aria-label="Route"]'
+    )
 
     expect(routeFilterButton).not.toBeUndefined()
 
@@ -131,6 +143,18 @@ describe('clients list panel', () => {
       )
     })
 
+    const controlsToggleButton = container.querySelector(
+      'button[aria-label="Show filters and multi-select"]'
+    )
+
+    expect(controlsToggleButton).not.toBeNull()
+
+    await act(async () => {
+      controlsToggleButton?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true })
+      )
+    })
+
     const routeRow = Array.from(container.querySelectorAll('li')).find((item) =>
       item.textContent?.includes('Route Review Client')
     )
@@ -160,5 +184,76 @@ describe('clients list panel', () => {
 
     const nextDraft = onChange.mock.calls[0]?.[0] as ExtensionConfig
     expect(nextDraft.routeClients[0]?.favorite).toBe(true)
+  })
+
+  it('duplicates a client from the more menu', async () => {
+    const root = createRoot(container)
+    const onChange = vi.fn()
+    const routeClient = createRouteClientConfig({
+      id: 'route-client-review',
+      clientId: 'route-client-review',
+      clientName: 'Route Review Client',
+      matchPatterns: ['https://example.com/*']
+    })
+    const draft: ExtensionConfig = {
+      ...DEFAULT_EXTENSION_CONFIG,
+      routeClients: [routeClient]
+    }
+
+    await act(async () => {
+      root.render(
+        <I18nProvider>
+          <ClientsListPanel
+            canCreateFromPage={false}
+            currentPageUrl="https://example.com/"
+            draft={draft}
+            routeSearch=""
+            runtimeState={undefined}
+            selectedClientId={undefined}
+            onChange={onChange}
+            onCreateClient={() => {}}
+            onCreateClientFromPage={() => {}}
+            onOpenDetail={() => {}}
+            onRouteSearchChange={() => {}}
+            onSelectClient={() => {}}
+          />
+        </I18nProvider>
+      )
+    })
+
+    const routeRow = Array.from(container.querySelectorAll('li')).find((item) =>
+      item.textContent?.includes('Route Review Client')
+    )
+    const moreButton = routeRow?.querySelector(
+      'button[aria-label="More actions"]'
+    )
+
+    expect(moreButton).not.toBeNull()
+
+    await act(async () => {
+      moreButton?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true })
+      )
+    })
+
+    const copyMenuItem = Array.from(
+      document.querySelectorAll('[role="menuitem"]')
+    ).find((item) => item.textContent?.includes('Copy'))
+
+    expect(copyMenuItem).not.toBeUndefined()
+
+    await act(async () => {
+      copyMenuItem?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true })
+      )
+    })
+
+    expect(onChange).toHaveBeenCalledTimes(1)
+
+    const nextDraft = onChange.mock.calls[0]?.[0] as ExtensionConfig
+    expect(nextDraft.routeClients).toHaveLength(2)
+    expect(nextDraft.routeClients[1]?.clientName).toBe('Route Review Client Copy')
+    expect(nextDraft.routeClients[1]?.favorite).toBe(false)
+    expect(nextDraft.routeClients[1]?.pinned).toBe(false)
   })
 })

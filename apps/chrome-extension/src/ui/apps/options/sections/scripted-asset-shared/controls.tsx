@@ -26,7 +26,7 @@ export function ScriptedAssetMethodField({
         },
         '& .MuiOutlinedInput-root': {
           minHeight: 34,
-          borderRadius: 1.25
+          borderRadius: 1
         },
         '& .MuiSelect-select': {
           fontSize: 13,

@@ -31,7 +31,7 @@ export function renderHighlightedText(text: string, searchTerm?: string) {
         key={`${matchIndex}-${endIndex}`}
         sx={{
           bgcolor: 'action.selected',
-          borderRadius: 0.5,
+          borderRadius: 1,
           px: 0.25
         }}
       >

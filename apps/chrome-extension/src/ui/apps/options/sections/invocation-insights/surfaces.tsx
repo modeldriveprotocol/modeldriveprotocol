@@ -24,7 +24,7 @@ export function InvocationSurface({
       sx={{
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: '12px',
+        borderRadius: '4px',
         bgcolor: 'background.paper',
         ...sx
       }}
@@ -46,7 +46,7 @@ export function InvocationListSurface({
       sx={{
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: '12px',
+        borderRadius: '4px',
         bgcolor: 'background.paper',
         overflow: 'hidden'
       }}
