@@ -1,6 +1,10 @@
 import { Box, Stack, Typography } from '@mui/material'
 
 import { formatBarValue } from './formatters.js'
+import {
+  InvocationSectionTitle,
+  InvocationSurface
+} from './surfaces.js'
 
 export function SimpleBarChart({
   items,
@@ -20,14 +24,9 @@ export function SimpleBarChart({
 
   return (
     <Stack spacing={1}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-        {title}
-      </Typography>
-      <Box
+      <InvocationSectionTitle>{title}</InvocationSectionTitle>
+      <InvocationSurface
         sx={{
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: '12px',
           p: 1.25,
           overflowX: 'auto'
         }}
@@ -89,7 +88,7 @@ export function SimpleBarChart({
             </Stack>
           ))}
         </Box>
-      </Box>
+      </InvocationSurface>
     </Stack>
   )
 }

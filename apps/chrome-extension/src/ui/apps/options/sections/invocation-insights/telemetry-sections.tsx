@@ -1,4 +1,4 @@
-import { Box, Button, Divider, List, ListItem, ListItemButton, ListItemText, Stack, Typography } from '@mui/material'
+import { Box, Button, Divider, ListItem, ListItemButton, ListItemText, Stack, Typography } from '@mui/material'
 
 import type {
   ClientInvocationStats,
@@ -15,6 +15,11 @@ import {
   kindLabel,
   statusLabel
 } from './formatters.js'
+import {
+  InvocationListSurface,
+  InvocationSectionTitle,
+  InvocationSurface
+} from './surfaces.js'
 
 export function RecentActivityHeader({
   clearDisabled,
@@ -36,9 +41,9 @@ export function RecentActivityHeader({
       alignItems={{ xs: 'stretch', sm: 'center' }}
       justifyContent="space-between"
     >
-      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+      <InvocationSectionTitle>
         {t('options.invocations.recentCalls')}
-      </Typography>
+      </InvocationSectionTitle>
       <Stack direction="row" spacing={0.75}>
         <Button
           size="small"
@@ -75,18 +80,8 @@ export function ClientBreakdownList({
 
   return (
     <Stack spacing={1}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-        {t('options.invocations.clients')}
-      </Typography>
-      <List
-        disablePadding
-        sx={{
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: '12px',
-          overflow: 'hidden'
-        }}
-      >
+      <InvocationSectionTitle>{t('options.invocations.clients')}</InvocationSectionTitle>
+      <InvocationListSurface>
         {clients.map((client, index) => (
           <Box key={client.clientKey}>
             {index > 0 ? <Divider /> : null}
@@ -121,7 +116,7 @@ export function ClientBreakdownList({
             </ListItem>
           </Box>
         ))}
-      </List>
+      </InvocationListSurface>
     </Stack>
   )
 }
@@ -135,9 +130,9 @@ export function KindBreakdown({
 
   return (
     <Stack spacing={1}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+      <InvocationSectionTitle>
         {t('options.invocations.kindBreakdown')}
-      </Typography>
+      </InvocationSectionTitle>
       <Stack spacing={0.75}>
         {INVOCATION_KIND_ORDER.map((kind) => {
           const item = stats.byKind.find((entry) => entry.kind === kind)
@@ -147,14 +142,11 @@ export function KindBreakdown({
           }
 
           return (
-            <Box
+            <InvocationSurface
               key={kind}
               sx={{
                 px: 1.25,
-                py: 1,
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: '12px'
+                py: 1
               }}
             >
               <Stack
@@ -173,7 +165,7 @@ export function KindBreakdown({
               <Typography variant="caption" color="text.secondary">
                 {`${t('options.invocations.status.success')} ${item.successCount} · ${t('options.invocations.status.error')} ${item.errorCount}`}
               </Typography>
-            </Box>
+            </InvocationSurface>
           )
         })}
       </Stack>
@@ -199,15 +191,7 @@ export function RecentInvocationList({
           {emptyLabel}
         </Typography>
       ) : (
-        <List
-          disablePadding
-          sx={{
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: '12px',
-            overflow: 'hidden'
-          }}
-        >
+        <InvocationListSurface>
           {items.map((item, index) => {
             const metaLine = `${statusLabel(t, item.status)} · ${formatDuration(item.durationMs)} · ${formatDateTime(item.finishedAt)}`
 
@@ -252,9 +236,9 @@ export function RecentInvocationList({
                 />
               </ListItem>
             </Box>
-          )
+            )
           })}
-        </List>
+        </InvocationListSurface>
       )}
     </Stack>
   )

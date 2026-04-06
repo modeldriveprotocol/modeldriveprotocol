@@ -1,5 +1,7 @@
 import { Box, Typography } from '@mui/material'
 
+import { InvocationSurface } from './surfaces.js'
+
 export function SummaryGrid({
   columns = {
     xs: 'repeat(2, minmax(0, 1fr))',
@@ -17,15 +19,11 @@ export function SummaryGrid({
   return (
     <Box sx={{ display: 'grid', gridTemplateColumns: columns, gap: 1 }}>
       {items.map((item) => (
-        <Box
+        <InvocationSurface
           key={item.label}
           sx={{
             px: 1.25,
-            py: 1,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: '12px',
-            bgcolor: 'background.paper'
+            py: 1
           }}
         >
           <Typography variant="caption" color="text.secondary">
@@ -37,7 +35,7 @@ export function SummaryGrid({
           >
             {item.value}
           </Typography>
-        </Box>
+        </InvocationSurface>
       ))}
     </Box>
   )
