@@ -1,4 +1,4 @@
-import { List, ListItem, ListItemText, Stack } from '@mui/material'
+import { Divider, List, ListItem, ListItemText, Stack } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
 
 import type {
@@ -193,6 +193,8 @@ export function ClientsListPanel({
           selectedCount={selectedIds.length}
           t={t}
         />
+
+        <Divider sx={{ mt: 0.75, mb: 0.75 }} />
 
         <List dense disablePadding sx={{ py: 0.5 }}>
           {filteredClients.length === 0 ? (

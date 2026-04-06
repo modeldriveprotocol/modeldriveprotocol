@@ -19,7 +19,7 @@ import {
   Switch,
   Tooltip
 } from '@mui/material'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 
 import {
   canCreateRouteClientFromUrl,
@@ -30,11 +30,9 @@ import type { PopupState } from '#~/background/shared.js'
 import { renderClientIcon } from '../../../../foundation/client-icons.js'
 import { ToolbarIcon } from '../../shared.js'
 import type { EditableClientId } from '../../types.js'
+import { useDelayedHoverActions } from '../use-delayed-hover-actions.js'
 import { formatDateTime } from '../format-date-time.js'
 import type { ClientListItem } from './types.js'
-
-const ACTION_SHOW_DELAY_MS = 240
-const ACTION_HIDE_DELAY_MS = 90
 
 export function ClientRow({
   currentPageUrl,
@@ -72,10 +70,6 @@ export function ClientRow({
   t: (key: string, values?: Record<string, string | number>) => string
 }) {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
-  const [pointerInside, setPointerInside] = useState(false)
-  const [focusWithin, setFocusWithin] = useState(false)
-  const [showActionControls, setShowActionControls] = useState(false)
-  const actionVisibilityTimerRef = useRef<number | null>(null)
   const moreButtonRef = useRef<HTMLButtonElement | null>(null)
   const matched =
     item.kind === 'route'
@@ -120,29 +114,12 @@ export function ClientRow({
     item.kind === 'background' &&
     (draftBackgroundClientCount <= 1 || isRequiredBackgroundClientId(item.id))
   const moreMenuOpen = Boolean(menuAnchor)
-  const shouldShowActions = pointerInside || focusWithin || moreMenuOpen
-  const actionControlsVisible = moreMenuOpen || showActionControls
+  const { actionControlsVisible, bind } = useDelayedHoverActions({
+    forcedVisible: moreMenuOpen
+  })
   const createdAtLabel = `${t('options.clients.createdAt')}${formatDateTime(
     item.client.createdAt
   )}`
-
-  useEffect(() => {
-    if (actionVisibilityTimerRef.current !== null) {
-      window.clearTimeout(actionVisibilityTimerRef.current)
-    }
-
-    actionVisibilityTimerRef.current = window.setTimeout(() => {
-      setShowActionControls(shouldShowActions)
-      actionVisibilityTimerRef.current = null
-    }, shouldShowActions ? ACTION_SHOW_DELAY_MS : ACTION_HIDE_DELAY_MS)
-
-    return () => {
-      if (actionVisibilityTimerRef.current !== null) {
-        window.clearTimeout(actionVisibilityTimerRef.current)
-        actionVisibilityTimerRef.current = null
-      }
-    }
-  }, [shouldShowActions])
 
   function closeMenu() {
     setMenuAnchor(null)
@@ -156,16 +133,7 @@ export function ClientRow({
           onSelectClient(item.id)
           onOpenDetail(item.id)
         }}
-        onMouseEnter={() => setPointerInside(true)}
-        onMouseLeave={() => setPointerInside(false)}
-        onFocus={() => setFocusWithin(true)}
-        onBlur={(event) => {
-          if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
-            return
-          }
-
-          setFocusWithin(false)
-        }}
+        {...bind}
         sx={{
           minHeight: 60,
           px: 1.25,
