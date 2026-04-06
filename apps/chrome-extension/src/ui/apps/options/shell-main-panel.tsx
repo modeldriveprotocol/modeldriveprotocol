@@ -11,6 +11,7 @@ import {
   Tooltip,
   Typography
 } from '@mui/material'
+import { useState } from 'react'
 import { createClientKey } from '#~/background/shared.js'
 import {
   createBackgroundClientConfig,
@@ -47,6 +48,7 @@ export function OptionsMainPanel({
   setLocalePreference,
   t
 }: OptionsMainPanelProps) {
+  const [marketDetailTitle, setMarketDetailTitle] = useState<string>()
   const clientItems = [
     ...draft.backgroundClients.map((client) => ({
       kind: 'background' as const,
@@ -69,6 +71,9 @@ export function OptionsMainPanel({
       : undefined
   const headerTitle =
     clientDetailTitle ??
+    (controller.section === 'market' && controller.marketDetailOpen
+      ? marketDetailTitle
+      : undefined) ??
     (controller.section === 'workspace'
       ? t('options.header.workspace')
       : controller.section === 'settings'
@@ -100,16 +105,28 @@ export function OptionsMainPanel({
           bgcolor: 'background.default'
         }}
       >
-        {controller.section === 'clients' && controller.clientDetailOpen ? (
+        {(
+          controller.section === 'clients' && controller.clientDetailOpen
+        ) || (
+          controller.section === 'market' && controller.marketDetailOpen
+        ) ? (
           <Tooltip title={t('options.clients.backToList')}>
             <IconButton
               size="small"
               aria-label={t('options.clients.backToList')}
-              onClick={() =>
-                controller.setSectionAndHash('clients', {
-                  clientDetailOpen: false
+              onClick={() => {
+                if (controller.section === 'clients') {
+                  controller.setSectionAndHash('clients', {
+                    clientDetailOpen: false
+                  })
+                  return
+                }
+
+                controller.setSectionAndHash('market', {
+                  marketDetailOpen: false,
+                  marketEntryKey: undefined
                 })
-              }
+              }}
               sx={{ ml: -0.5 }}
             >
               <ArrowBackOutlined fontSize="small" />
@@ -236,7 +253,8 @@ export function OptionsMainPanel({
           px: 1.5,
           pb: 1.5,
           pt:
-            controller.section === 'clients' && controller.clientDetailOpen
+            (controller.section === 'clients' && controller.clientDetailOpen) ||
+            (controller.section === 'market' && controller.marketDetailOpen)
               ? 0
               : 1.5,
           minHeight: 0,
@@ -456,13 +474,8 @@ export function OptionsMainPanel({
             routeClients={draft.routeClients}
             selectedEntryKey={controller.selectedMarketEntryKey}
             onAddSource={async (input) => controller.addMarketSource(input)}
+            onDetailTitleChange={setMarketDetailTitle}
             onInstall={controller.installMarketClient}
-            onCloseDetail={() =>
-              controller.setSectionAndHash('market', {
-                marketDetailOpen: false,
-                marketEntryKey: undefined
-              })
-            }
             onOpenDetail={(entryKey) =>
               controller.setSectionAndHash('market', {
                 marketEntryKey: entryKey,

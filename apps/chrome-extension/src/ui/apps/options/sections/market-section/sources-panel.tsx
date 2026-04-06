@@ -1,13 +1,8 @@
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import DeleteOutlineOutlined from '@mui/icons-material/DeleteOutlineOutlined'
-import EditOutlined from '@mui/icons-material/EditOutlined'
 import SaveOutlined from '@mui/icons-material/SaveOutlined'
 import {
   List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
   MenuItem,
   Stack,
   TextField,
@@ -15,7 +10,7 @@ import {
   ToggleButtonGroup,
   Typography
 } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type {
   MarketSourceConfig,
@@ -25,14 +20,8 @@ import type {
 import type { MarketCatalogSourceResult } from '../../../../market/catalog.js'
 import { ToolbarIcon } from '../../shared.js'
 import type { MarketSourceDraftInput } from '../../types.js'
-
-type MarketSourceSummary = MarketCatalogSourceResult | {
-  source: MarketSourceConfig
-  title: string
-  version: string
-  compatible: boolean
-  clients: []
-}
+import { MarketSourceRow } from './source-row.js'
+import type { MarketSourceSummary } from './types.js'
 
 export function MarketSourcesPanel({
   catalogs,
@@ -54,6 +43,8 @@ export function MarketSourcesPanel({
   const [sourceRefType, setSourceRefType] = useState<MarketSourceRefType>('branch')
   const [sourceRef, setSourceRef] = useState('main')
   const [editingSourceId, setEditingSourceId] = useState<string>()
+  const directUrlInputRef = useRef<HTMLInputElement | null>(null)
+  const repositoryInputRef = useRef<HTMLInputElement | null>(null)
 
   const sourceSummaries = useMemo<MarketSourceSummary[]>(
     () =>
@@ -69,6 +60,19 @@ export function MarketSourcesPanel({
       }),
     [catalogs, marketSources]
   )
+  const canSubmitSource =
+    sourceMode === 'direct'
+      ? sourceUrl.trim().length > 0
+      : sourceRepository.trim().length > 0 && sourceRef.trim().length > 0
+
+  useEffect(() => {
+    if (sourceMode === 'direct') {
+      directUrlInputRef.current?.focus()
+      return
+    }
+
+    repositoryInputRef.current?.focus()
+  }, [editingSourceId, sourceMode])
 
   async function submitSource() {
     if (sourceMode === 'direct') {
@@ -149,6 +153,20 @@ export function MarketSourcesPanel({
         direction={{ xs: 'column', sm: 'row' }}
         spacing={1}
         alignItems={{ sm: 'center' }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault()
+            if (canSubmitSource) {
+              void submitSource()
+            }
+            return
+          }
+
+          if (event.key === 'Escape') {
+            event.preventDefault()
+            resetSourceEditor()
+          }
+        }}
       >
         <ToggleButtonGroup
           exclusive
@@ -177,6 +195,7 @@ export function MarketSourcesPanel({
             fullWidth
             size="small"
             label={t('options.market.sourceUrl')}
+            inputRef={directUrlInputRef}
             value={sourceUrl}
             onChange={(event) => setSourceUrl(event.target.value)}
             onKeyDown={(event) => {
@@ -205,6 +224,7 @@ export function MarketSourcesPanel({
               fullWidth
               size="small"
               label={t('options.market.repository')}
+              inputRef={repositoryInputRef}
               value={sourceRepository}
               onChange={(event) => setSourceRepository(event.target.value)}
             />
@@ -245,6 +265,7 @@ export function MarketSourcesPanel({
               ? 'options.market.saveSource'
               : 'options.market.addSource'
           )}
+          disabled={!canSubmitSource}
           onClick={() => void submitSource()}
         >
           {editingSourceId ? (
@@ -257,65 +278,14 @@ export function MarketSourcesPanel({
 
       {sourceSummaries.length > 0 ? (
         <List dense disablePadding sx={{ py: 0.5 }}>
-          {sourceSummaries.map((catalog) => (
-            <ListItem
-              key={catalog.source.id}
-              disablePadding
-              secondaryAction={
-                <Stack direction="row" spacing={0.5}>
-                  <ToolbarIcon
-                    label={t('options.market.editSource')}
-                    onClick={() => startEditingSource(catalog.source)}
-                  >
-                    <EditOutlined fontSize="small" />
-                  </ToolbarIcon>
-                  <ToolbarIcon
-                    label={t('options.market.removeSource')}
-                    onClick={() => onRemoveSource(catalog.source.id)}
-                    tone="error"
-                  >
-                    <DeleteOutlineOutlined fontSize="small" />
-                  </ToolbarIcon>
-                </Stack>
-              }
-            >
-              <ListItemButton sx={{ px: 1.25, py: 0.75 }}>
-                <ListItemText
-                  primary={
-                    catalog.source.kind === 'repository' &&
-                    catalog.source.repository &&
-                    catalog.source.ref
-                      ? `${catalog.title} · ${catalog.source.repository}@${catalog.source.ref}`
-                      : catalog.title
-                  }
-                  secondary={
-                    'error' in catalog && catalog.error
-                      ? catalog.error
-                      : [
-                          ...(catalog.version
-                            ? [`${t('options.market.version')}: ${catalog.version}`]
-                            : []),
-                          catalog.compatible
-                            ? t('options.market.available')
-                            : t('options.market.incompatible'),
-                          t('options.market.sourceClients', {
-                            count: catalog.clients.length
-                          })
-                        ].join(' · ')
-                  }
-                  primaryTypographyProps={{
-                    variant: 'body2',
-                    fontWeight: 600,
-                    noWrap: true
-                  }}
-                  secondaryTypographyProps={{
-                    variant: 'caption',
-                    color:
-                      'error' in catalog && catalog.error ? 'error.main' : 'text.secondary'
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
+          {sourceSummaries.map((summary) => (
+            <MarketSourceRow
+              key={summary.source.id}
+              summary={summary}
+              onEdit={() => startEditingSource(summary.source)}
+              onRemove={() => onRemoveSource(summary.source.id)}
+              t={t}
+            />
           ))}
         </List>
       ) : (

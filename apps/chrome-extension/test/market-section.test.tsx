@@ -124,7 +124,7 @@ describe('market section', () => {
             routeClients={[]}
             selectedEntryKey={undefined}
             onAddSource={vi.fn().mockResolvedValue(undefined)}
-            onCloseDetail={vi.fn()}
+            onDetailTitleChange={vi.fn()}
             onOpenDetail={vi.fn()}
             onInstall={vi.fn()}
             onRemoveSource={vi.fn()}
@@ -159,6 +159,44 @@ describe('market section', () => {
     expect(container.textContent).toContain('Sources')
     expect(container.textContent).toContain('Catalog URL')
     expect(container.textContent).toContain('Example catalog')
+  })
+
+  it('starts editing a source when the source row is clicked', async () => {
+    await renderSection()
+
+    const toggleButton = container.querySelector(
+      'button[aria-label="Show source controls"]'
+    ) as HTMLButtonElement | null
+
+    await act(async () => {
+      toggleButton?.click()
+    })
+
+    const sourceRow = Array.from(
+      container.querySelectorAll('.MuiListItemButton-root')
+    ).find((element) => element.textContent?.includes('Example catalog'))
+
+    expect(sourceRow).toBeTruthy()
+
+    await act(async () => {
+      sourceRow?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const sourceInput = container.querySelector(
+      'input[value="https://example.com/catalog.json"]'
+    ) as HTMLInputElement | null
+
+    expect(sourceInput).toBeTruthy()
+
+    await act(async () => {
+      sourceInput?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+      )
+    })
+
+    expect(
+      container.querySelector('input[value="https://example.com/catalog.json"]')
+    ).toBeNull()
   })
 
   it('opens the market detail view and installs from the detail action', async () => {

@@ -1,4 +1,3 @@
-import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import DownloadOutlined from '@mui/icons-material/DownloadOutlined'
 import Inventory2Outlined from '@mui/icons-material/Inventory2Outlined'
 import SourceOutlined from '@mui/icons-material/SourceOutlined'
@@ -16,12 +15,10 @@ import type { MarketEntryItem } from './types.js'
 
 export function MarketDetailView({
   item,
-  onCloseDetail,
   onInstall,
   t
 }: {
   item: MarketEntryItem | undefined
-  onCloseDetail: () => void
   onInstall: () => void
   t: (key: string, values?: Record<string, string | number>) => string
 }) {
@@ -37,17 +34,8 @@ export function MarketDetailView({
   const routeRuleCount = item.entry.template.routeRules.length
 
   return (
-    <Stack spacing={1.25} sx={{ pt: 1 }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-        <Button
-          size="small"
-          variant="text"
-          startIcon={<ArrowBackOutlined fontSize="small" />}
-          onClick={onCloseDetail}
-          sx={{ px: 0 }}
-        >
-          {t('options.clients.backToList')}
-        </Button>
+    <Stack spacing={1.25} sx={{ pt: 1.5 }}>
+      <Stack direction="row" justifyContent="flex-end">
         <Button
           variant="contained"
           startIcon={<DownloadOutlined fontSize="small" />}

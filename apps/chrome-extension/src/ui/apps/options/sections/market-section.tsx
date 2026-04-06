@@ -33,7 +33,7 @@ export function MarketSection({
   routeClients,
   selectedEntryKey,
   onAddSource,
-  onCloseDetail,
+  onDetailTitleChange,
   onOpenDetail,
   onInstall,
   onRemoveSource
@@ -44,7 +44,7 @@ export function MarketSection({
   routeClients: RouteClientConfig[]
   selectedEntryKey?: string
   onAddSource: (input: MarketSourceDraftInput) => Promise<void>
-  onCloseDetail: () => void
+  onDetailTitleChange: (title: string | undefined) => void
   onOpenDetail: (entryKey: string) => void
   onInstall: (catalog: MarketCatalogSourceData, entry: MarketCatalogClientEntry) => void
   onRemoveSource: (sourceId: string) => void
@@ -104,11 +104,16 @@ export function MarketSection({
 
   const selectedMarketEntry = marketEntries.find((item) => item.key === selectedEntryKey) ?? marketEntries[0]
 
+  useEffect(() => {
+    onDetailTitleChange(
+      marketDetailOpen ? selectedMarketEntry?.entry.title : undefined
+    )
+  }, [marketDetailOpen, onDetailTitleChange, selectedMarketEntry?.entry.title])
+
   return (
     marketDetailOpen ? (
       <MarketDetailView
         item={selectedMarketEntry}
-        onCloseDetail={onCloseDetail}
         onInstall={() => {
           if (selectedMarketEntry) {
             onInstall(selectedMarketEntry.catalog, selectedMarketEntry.entry)
