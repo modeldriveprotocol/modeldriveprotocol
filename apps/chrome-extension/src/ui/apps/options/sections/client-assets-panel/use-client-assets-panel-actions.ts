@@ -14,6 +14,8 @@ import {
   isRootRouteSkillPath
 } from '#~/shared/config.js'
 import {
+  applyEnabledValue,
+  collectFolderAssetIds,
   type AssetFileTreeNode,
   toggleEnabledAsset,
   toggleEnabledFolder
@@ -51,12 +53,15 @@ export function useClientAssetsPanelActions({
   renameTarget,
   rootSkillId,
   routeTree,
+  selectedItemId,
+  selectedItemIds,
   setContextMenu,
   setDisplayedFileId,
   setDragState,
   setDropTargetItemId,
   setExpandedFolders,
   setRenameTarget,
+  setSelectedItemIds,
   setSelectedItemId,
   t
 }: {
@@ -70,6 +75,8 @@ export function useClientAssetsPanelActions({
   renameTarget: RouteRenameTarget | undefined
   rootSkillId: string | undefined
   routeTree: AssetFileTreeNode[]
+  selectedItemId: string
+  selectedItemIds: string[]
   setContextMenu: (state: TreeContextMenuState | undefined) => void
   setDisplayedFileId: (value: string | undefined) => void
   setDragState: (value: DragState | undefined) => void
@@ -81,6 +88,7 @@ export function useClientAssetsPanelActions({
       | undefined
       | ((current: RouteRenameTarget | undefined) => RouteRenameTarget | undefined)
   ) => void
+  setSelectedItemIds: (value: string[]) => void
   setSelectedItemId: (value: string) => void
   t: (key: string) => string
 }) {
@@ -169,6 +177,43 @@ export function useClientAssetsPanelActions({
     }
   }
 
+  function deleteSelection(itemIds: string[]) {
+    if (itemIds.length === 0) {
+      return
+    }
+
+    const selectedFolderPaths = itemIds
+      .filter((itemId) => itemId.startsWith('route-asset-folder:'))
+      .map((itemId) => itemId.slice('route-asset-folder:'.length))
+    const selectedAssetIds = new Set(
+      itemIds
+        .filter((itemId) => itemId.startsWith('route-asset:'))
+        .map((itemId) => itemId.slice('route-asset:'.length))
+    )
+    const nextExposes = client.exposes.filter((asset) => {
+      if (asset.kind === 'skill' && isRootRouteSkillPath(asset.path)) {
+        return true
+      }
+
+      if (selectedAssetIds.has(asset.id)) {
+        return false
+      }
+
+      return !selectedFolderPaths.some((folderPath) =>
+        isPathWithinFolder(asset.path, folderPath)
+      )
+    })
+
+    if (nextExposes.length === client.exposes.length) {
+      return
+    }
+
+    commitExposes(nextExposes)
+    setSelectedItemId('root')
+    setSelectedItemIds([])
+    setDisplayedFileId(rootSkillId)
+  }
+
   function startRename(target: RouteRenameTarget, itemId: string) {
     if (target.kind === 'asset' && isRootRouteSkillPath(target.path)) {
       return
@@ -244,16 +289,50 @@ export function useClientAssetsPanelActions({
     }
   }
 
+  function setSelectionEnabled(itemIds: string[], enabled: boolean) {
+    const selectedAssetIds = new Set<string>()
+
+    for (const itemId of itemIds) {
+      if (itemId.startsWith('route-asset:')) {
+        selectedAssetIds.add(itemId.slice('route-asset:'.length))
+        continue
+      }
+
+      if (itemId.startsWith('route-asset-folder:')) {
+        for (const assetId of collectFolderAssetIds(
+          fileItems.map((item) => ({
+            assetId: item.assetId,
+            path: item.path
+          })),
+          itemId.slice('route-asset-folder:'.length)
+        )) {
+          selectedAssetIds.add(assetId)
+        }
+      }
+    }
+
+    if (selectedAssetIds.size === 0) {
+      return
+    }
+
+    commitExposes(
+      applyEnabledValue(client.exposes, [...selectedAssetIds], enabled)
+    )
+  }
+
   const treeActions = useClientAssetsPanelTreeActions({
     client,
     commitExposes,
     routeTree,
+    selectedItemId,
+    selectedItemIds,
     setContextMenu,
     setDisplayedFileId,
     setDragState,
     setDropTargetItemId,
     setExpandedFolders,
     setRenameTarget,
+    setSelectedItemIds,
     setSelectedItemId
   })
 
@@ -262,8 +341,10 @@ export function useClientAssetsPanelActions({
     addFolder,
     addMarkdown,
     commitRename,
+    deleteSelection,
     deleteTarget,
     replaceExposeKind,
+    setSelectionEnabled,
     toggleAssetEnabled,
     toggleFolderAssetEnabled,
     ...treeActions,

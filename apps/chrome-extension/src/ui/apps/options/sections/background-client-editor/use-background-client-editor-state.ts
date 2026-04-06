@@ -11,6 +11,7 @@ import {
   collectAssetItemIds,
   filterAssetFileTree,
   findFirstAssetTreeItemId,
+  normalizeTreeSelection,
   listAncestorFolders,
   mergeExpandedFolderPaths
 } from '../asset-tree-shared.js'
@@ -25,6 +26,7 @@ import {
 } from './tree-helpers.js'
 import type {
   BackgroundContextMenuState,
+  BackgroundDragState,
   BackgroundRenameTarget
 } from './types.js'
 
@@ -54,6 +56,9 @@ export function useBackgroundClientEditorState({
   const [selectedItemId, setSelectedItemId] = useState<string>(
     initialSelectedAssetId ? `asset:${initialSelectedAssetId}` : 'root'
   )
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>(
+    initialSelectedAssetId ? [`asset:${initialSelectedAssetId}`] : []
+  )
   const [displayedAssetId, setDisplayedAssetId] = useState<
     BackgroundExposeAsset['id'] | undefined
   >(initialSelectedAssetId)
@@ -63,6 +68,8 @@ export function useBackgroundClientEditorState({
   const [contextMenu, setContextMenu] = useState<
     BackgroundContextMenuState | undefined
   >()
+  const [dragState, setDragState] = useState<BackgroundDragState>()
+  const [dropTargetItemId, setDropTargetItemId] = useState<string>()
   const onAssetPathChangeRef = useRef(onAssetPathChange)
   const onTabChangeRef = useRef(onTabChange)
   const lastAppliedRouteSelectionKeyRef = useRef<string | undefined>(undefined)
@@ -110,6 +117,10 @@ export function useBackgroundClientEditorState({
   )
   const visibleItemIds = useMemo(
     () => new Set(['root', ...collectAssetItemIds('asset', filteredBackgroundTree)]),
+    [filteredBackgroundTree]
+  )
+  const orderedVisibleItemIds = useMemo(
+    () => collectAssetItemIds('asset', filteredBackgroundTree),
     [filteredBackgroundTree]
   )
   const hasSearchResults = visibleItemIds.size > 1
@@ -185,6 +196,7 @@ export function useBackgroundClientEditorState({
 
       setDisplayedAssetId(undefined)
       setSelectedItemId('root')
+      setSelectedItemIds([])
       return
     }
 
@@ -197,6 +209,7 @@ export function useBackgroundClientEditorState({
 
     setDisplayedAssetId(preferredAssetId)
     setSelectedItemId(`asset:${preferredAssetId}`)
+    setSelectedItemIds([`asset:${preferredAssetId}`])
   }, [
     allExposes,
     client.id,
@@ -233,6 +246,12 @@ export function useBackgroundClientEditorState({
     }
   }, [firstSearchResultItemId, searchTerm, selectedItemId, visibleItemIds])
 
+  useEffect(() => {
+    setSelectedItemIds((current) =>
+      normalizeTreeSelection(current, orderedVisibleItemIds)
+    )
+  }, [orderedVisibleItemIds])
+
   const expandedItems = [...new Set([...expandedFolders, ...forcedExpandedFolders])].map(
     (path) => `asset-folder:${path}`
   )
@@ -242,6 +261,8 @@ export function useBackgroundClientEditorState({
     assetEnabled,
     backgroundTree,
     contextMenu,
+    dragState,
+    dropTargetItemId,
     enabledAssetCount,
     expandedFolders,
     expandedItems,
@@ -257,16 +278,20 @@ export function useBackgroundClientEditorState({
     selectedAsset,
     selectedFolderPath,
     selectedItemId,
-    selectedTreeItemId,
+    selectedItemIds,
+    orderedVisibleItemIds,
     sharedDisplayPrefix,
     tab,
     totalAssetCount,
     setContextMenu,
     setDisplayedAssetId,
+    setDragState,
+    setDropTargetItemId,
     setExpandedFolders,
     setRenameTarget,
     setSearchQuery,
     setSelectedItemId,
+    setSelectedItemIds,
     setTab
   }
 }

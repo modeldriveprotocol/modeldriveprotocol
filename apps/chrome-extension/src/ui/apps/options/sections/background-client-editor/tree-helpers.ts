@@ -4,12 +4,15 @@ export {
   resolveInitialBackgroundAssetId
 } from './tree-helpers/tree-data.js'
 export {
+  createUniqueBackgroundDisplayPath,
   computeBackgroundFolderRenamePaths,
   getBackgroundDisplayPath,
   getSharedBackgroundDisplayPrefix,
+  isBackgroundTreePathWithinFolder,
   normalizeBackgroundPath,
   normalizeBackgroundTreeLeaf,
   pathExistsInBackgroundExposes,
+  replaceBackgroundDisplayPathPrefix,
   replaceBackgroundPathLeaf,
   replaceTreeFolderLeaf,
   restoreBackgroundTreePath,
@@ -24,6 +27,5 @@ export {
   getCollapsedBackgroundSelectionTarget,
   getSelectedBackgroundAssetId,
   getSelectedBackgroundFolderPath,
-  handleBackgroundExpandableItemClick,
   handleBackgroundExpandedItemsChange
 } from './tree-helpers/selection.js'

@@ -10,6 +10,7 @@ import type {
 } from '#~/shared/config.js'
 import {
   collectAssetFolderPaths,
+  resolveNextTreeSelection,
   type AssetFileTreeNode
 } from '../asset-tree-shared.js'
 import {
@@ -27,17 +28,22 @@ export function useClientAssetsPanelTreeActions({
   client,
   commitExposes,
   routeTree,
+  selectedItemId,
+  selectedItemIds,
   setContextMenu,
   setDisplayedFileId,
   setDragState,
   setDropTargetItemId,
   setExpandedFolders,
   setRenameTarget,
+  setSelectedItemIds,
   setSelectedItemId
 }: {
   client: RouteClientConfig
   commitExposes: (nextExposes: RouteExposeAsset[]) => void
   routeTree: AssetFileTreeNode[]
+  selectedItemId: string
+  selectedItemIds: string[]
   setContextMenu: (state: TreeContextMenuState | undefined) => void
   setDisplayedFileId: (value: string | undefined) => void
   setDragState: (value: DragState | undefined) => void
@@ -49,10 +55,32 @@ export function useClientAssetsPanelTreeActions({
       | undefined
       | ((current: RouteRenameTarget | undefined) => RouteRenameTarget | undefined)
   ) => void
+  setSelectedItemIds: (value: string[]) => void
   setSelectedItemId: (value: string) => void
 }) {
-  function openItem(itemId: string) {
-    setSelectedItemId(itemId)
+  function openItem(
+    itemId: string,
+    orderedItemIds: string[],
+    event: ReactMouseEvent
+  ) {
+    const nextSelection = resolveNextTreeSelection({
+      currentPrimaryItemId: selectedItemId,
+      currentSelectedItemIds: selectedItemIds,
+      nextItemId: itemId,
+      orderedItemIds,
+      modifiers: {
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        shiftKey: event.shiftKey
+      }
+    })
+
+    setSelectedItemId(nextSelection.primaryItemId)
+    setSelectedItemIds(nextSelection.selectedItemIds)
+
+    if (event.metaKey || event.ctrlKey || event.shiftKey) {
+      return
+    }
 
     if (itemId.startsWith('route-asset-folder:')) {
       const folderPath = itemId.slice('route-asset-folder:'.length)

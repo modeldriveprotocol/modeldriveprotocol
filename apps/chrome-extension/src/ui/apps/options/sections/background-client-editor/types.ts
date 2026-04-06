@@ -24,3 +24,14 @@ export type BackgroundContextMenuState =
 
 export type BackgroundContextMenuTarget =
   AssetContextMenuTarget<BackgroundExposeAsset['id']>
+
+export type BackgroundDragState =
+  | {
+      kind: 'asset'
+      assetId: BackgroundExposeAsset['id']
+      path: string
+    }
+  | {
+      kind: 'folder'
+      path: string
+    }

@@ -31,6 +31,7 @@ export function ScriptedAssetWorkspace({
   onRootDrop,
   onSearchChange,
   onSearchKeyDown,
+  onTreeKeyDown,
   searchInputRef,
   searchPlaceholder,
   searchQuery,
@@ -46,6 +47,7 @@ export function ScriptedAssetWorkspace({
   onRootDrop?: DragEventHandler<HTMLDivElement>
   onSearchChange: (value: string) => void
   onSearchKeyDown?: (event: ReactKeyboardEvent<HTMLInputElement>) => void
+  onTreeKeyDown?: (event: ReactKeyboardEvent<HTMLDivElement>) => void
   searchInputRef?: MutableRefObject<HTMLInputElement | null>
   searchPlaceholder: string
   searchQuery: string
@@ -213,6 +215,7 @@ export function ScriptedAssetWorkspace({
             onDragLeave={onRootDragLeave}
             onDragOver={onRootDragOver}
             onDrop={onRootDrop}
+            onKeyDownCapture={onTreeKeyDown}
           >
             {treePane}
           </Box>

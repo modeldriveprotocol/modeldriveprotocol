@@ -43,6 +43,41 @@ export function collectAssetFolderPaths(nodes: AssetFileTreeNode[]): string[] {
   )
 }
 
+export function collectAssetSubtreeItemIds(
+  prefix: string,
+  nodes: AssetFileTreeNode[],
+  folderPath: string,
+  options: {
+    includeFolder?: boolean
+  } = {}
+): string[] {
+  for (const node of nodes) {
+    if (node.kind !== 'folder') {
+      continue
+    }
+
+    if (node.path === folderPath) {
+      return [
+        ...(options.includeFolder ? [`${prefix}-folder:${node.path}`] : []),
+        ...collectAssetItemIds(prefix, node.children)
+      ]
+    }
+
+    const nestedItemIds = collectAssetSubtreeItemIds(
+      prefix,
+      node.children,
+      folderPath,
+      options
+    )
+
+    if (nestedItemIds.length > 0) {
+      return nestedItemIds
+    }
+  }
+
+  return []
+}
+
 export function countAssetFiles(nodes: AssetFileTreeNode[]): number {
   return nodes.reduce(
     (count, node) =>

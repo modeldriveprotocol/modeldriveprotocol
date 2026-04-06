@@ -8,6 +8,7 @@ export {
   basename,
   collectAssetFolderPaths,
   collectAssetItemIds,
+  collectAssetSubtreeItemIds,
   countAssetFiles,
   dirname,
   findFirstAssetTreeItemId,

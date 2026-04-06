@@ -32,7 +32,11 @@ export function renderTreeNodes(
   nodes: AssetFileTreeNode[],
   options: {
     onCancelRename: () => void
-    onOpenItem: (itemId: string) => void
+    onOpenItem: (
+      itemId: string,
+      orderedItemIds: string[],
+      event: ReactMouseEvent
+    ) => void
     onCommitRename: () => void
     onOpenContextMenu: (
       event: ReactMouseEvent,
@@ -44,6 +48,7 @@ export function renderTreeNodes(
     onSetDropTarget: (itemId: string | undefined) => void
     onStartDrag: (value: DragState | undefined) => void
     dropTargetItemId: string | undefined
+    orderedVisibleItemIds: string[]
     renameError: boolean
     renameTarget: RouteRenameTarget | undefined
     searchTerm: string
@@ -123,7 +128,13 @@ export function renderTreeNodes(
                     node.label
                   )
                 }
-                onClick={() => options.onOpenItem(itemId)}
+                onClick={(event) =>
+                  options.onOpenItem(
+                    itemId,
+                    options.orderedVisibleItemIds,
+                    event
+                  )
+                }
                 searchTerm={options.searchTerm}
               />
             </Box>
@@ -209,7 +220,13 @@ export function renderTreeNodes(
                   </Typography>
                 )
               }
-              onClick={() => options.onOpenItem(itemId)}
+              onClick={(event) =>
+                options.onOpenItem(
+                  itemId,
+                  options.orderedVisibleItemIds,
+                  event
+                )
+              }
             />
           </Box>
         }

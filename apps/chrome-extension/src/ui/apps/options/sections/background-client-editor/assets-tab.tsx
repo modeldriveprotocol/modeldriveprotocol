@@ -1,8 +1,8 @@
 import type {
   Dispatch,
-  MouseEvent as ReactMouseEvent,
   KeyboardEvent as ReactKeyboardEvent,
   MutableRefObject,
+  MouseEvent as ReactMouseEvent,
   ReactNode,
   SetStateAction
 } from 'react'
@@ -23,23 +23,27 @@ import {
   handleBackgroundExpandedItemsChange
 } from './tree-helpers.js'
 import type {
+  BackgroundDragState,
   BackgroundContextMenuTarget,
   BackgroundRenameTarget
 } from './types.js'
 
 export function BackgroundClientAssetsTab({
   detailPane,
+  dragState,
   emptyLabel,
   expandedItems,
   filteredBackgroundTree,
-  firstSearchResultItemId,
   hasSearchResults,
   onCommitRename,
+  onDropItem,
   onOpenContextMenu,
   onRenameChange,
   onSearchChange,
   onSearchKeyDown,
+  onSelectItem,
   onStartRename,
+  onTreeKeyDown,
   renameError,
   renameTarget,
   searchActions,
@@ -50,23 +54,31 @@ export function BackgroundClientAssetsTab({
   selectedAssetPath,
   selectedFolderPath,
   selectedItemId,
-  selectedTreeItemId,
-  setDisplayedAssetId,
+  selectedItemIds,
+  orderedVisibleItemIds,
+  onRootDragLeave,
+  onRootDrop,
+  onSetDropTarget,
+  onStartDrag,
   setExpandedFolders,
+  setDisplayedAssetId,
   setRenameTarget,
+  setSelectedItemIds,
   setSelectedItemId,
   sharedDisplayPrefix,
   toggleBackgroundAssetEnabled,
   toggleBackgroundFolderEnabled,
+  dropTargetItemId,
   treeAssetEnabled
 }: {
   detailPane: ReactNode
+  dragState: BackgroundDragState | undefined
   emptyLabel: string
   expandedItems: string[]
   filteredBackgroundTree: AssetFileTreeNode[]
-  firstSearchResultItemId: string | undefined
   hasSearchResults: boolean
   onCommitRename: () => void
+  onDropItem: (folderPath: string, dragState: BackgroundDragState | undefined) => void
   onOpenContextMenu: (
     event: ReactMouseEvent,
     target: BackgroundContextMenuTarget
@@ -74,7 +86,13 @@ export function BackgroundClientAssetsTab({
   onRenameChange: (value: string) => void
   onSearchChange: (value: string) => void
   onSearchKeyDown: (event: ReactKeyboardEvent<HTMLInputElement>) => void
+  onSelectItem: (
+    itemId: string,
+    orderedItemIds: string[],
+    event: ReactMouseEvent
+  ) => void
   onStartRename: (target: BackgroundRenameTarget, itemId: string) => void
+  onTreeKeyDown?: (event: ReactKeyboardEvent<HTMLDivElement>) => void
   renameError: boolean
   renameTarget: BackgroundRenameTarget | undefined
   searchActions: AssetTreeToolbarAction[]
@@ -85,24 +103,41 @@ export function BackgroundClientAssetsTab({
   selectedAssetPath: string | undefined
   selectedFolderPath: string | undefined
   selectedItemId: string
-  selectedTreeItemId: string | null
+  selectedItemIds: string[]
+  orderedVisibleItemIds: string[]
+  onRootDragLeave: () => void
+  onRootDrop: (dragState: BackgroundDragState | undefined) => void
+  onSetDropTarget: (itemId: string | undefined) => void
+  onStartDrag: (state: BackgroundDragState | undefined) => void
+  setExpandedFolders: Dispatch<SetStateAction<string[]>>
   setDisplayedAssetId: (
     assetId: BackgroundExposeAsset['id'] | undefined
   ) => void
-  setExpandedFolders: Dispatch<SetStateAction<string[]>>
   setRenameTarget: Dispatch<SetStateAction<BackgroundRenameTarget | undefined>>
+  setSelectedItemIds: Dispatch<SetStateAction<string[]>>
   setSelectedItemId: Dispatch<SetStateAction<string>>
   sharedDisplayPrefix: string | undefined
   toggleBackgroundAssetEnabled: (assetId: BackgroundExposeAsset['id']) => void
   toggleBackgroundFolderEnabled: (folderPath: string) => void
+  dropTargetItemId: string | undefined
   treeAssetEnabled: Map<BackgroundExposeAsset['id'], boolean>
 }) {
   return (
     <ScriptedAssetWorkspace
       detailPane={detailPane}
       onRootContextMenu={(event) => onOpenContextMenu(event, { kind: 'root' })}
+      onRootDragLeave={onRootDragLeave}
+      onRootDragOver={(event) => {
+        event.preventDefault()
+        onSetDropTarget('root')
+      }}
+      onRootDrop={(event) => {
+        event.preventDefault()
+        onRootDrop(dragState)
+      }}
       onSearchChange={onSearchChange}
       onSearchKeyDown={onSearchKeyDown}
+      onTreeKeyDown={onTreeKeyDown}
       searchActions={searchActions}
       searchInputRef={searchInputRef}
       searchPlaceholder={searchPlaceholder}
@@ -116,6 +151,7 @@ export function BackgroundClientAssetsTab({
           <SimpleTreeView
             expandedItems={expandedItems}
             expansionTrigger="iconContainer"
+            multiSelect
             onExpandedItemsChange={(_event, itemIds) => {
               const nextItemIds = itemIds as string[]
               const collapsedSelectionTarget = getCollapsedBackgroundSelectionTarget(
@@ -133,38 +169,49 @@ export function BackgroundClientAssetsTab({
 
               handleBackgroundExpandedItemsChange(nextItemIds, setExpandedFolders)
             }}
-            onSelectedItemsChange={(_event, itemId) => {
-              const nextItemId = (itemId as string | null) ?? 'root'
-              setSelectedItemId(nextItemId)
-              const nextAssetId = getSelectedBackgroundAssetId(nextItemId)
+            onSelectedItemsChange={(_event, itemIds) => {
+              const nextSelectedItemIds = Array.isArray(itemIds)
+                ? (itemIds as string[])
+                : itemIds
+                  ? [itemIds as string]
+                  : []
+              const nextPrimaryItemId =
+                nextSelectedItemIds.at(-1) ?? nextSelectedItemIds[0] ?? 'root'
+
+              setSelectedItemIds(nextSelectedItemIds)
+              setSelectedItemId(nextPrimaryItemId)
+
+              const nextAssetId = getSelectedBackgroundAssetId(nextPrimaryItemId)
 
               if (nextAssetId) {
                 setDisplayedAssetId(nextAssetId)
               }
             }}
-            selectedItems={selectedTreeItemId}
+            selectedItems={selectedItemIds.length > 0 ? selectedItemIds : undefined}
             sx={sharedAssetTreeSx}
           >
             {filteredBackgroundTree.map((node) => (
               <BackgroundAssetTreeNodeItem
                 key={node.id}
                 node={node}
+                dropTargetItemId={dropTargetItemId}
                 onCancelRename={() => setRenameTarget(undefined)}
                 onCommitRename={onCommitRename}
                 onOpenContextMenu={onOpenContextMenu}
+                onDropItem={(folderPath) => onDropItem(folderPath, dragState)}
                 onRenameChange={onRenameChange}
+                onSelectItem={onSelectItem}
+                onSetDropTarget={onSetDropTarget}
+                onStartDrag={onStartDrag}
                 onStartRename={onStartRename}
                 onToggleAssetEnabled={toggleBackgroundAssetEnabled}
                 onToggleFolderEnabled={toggleBackgroundFolderEnabled}
+                orderedVisibleItemIds={orderedVisibleItemIds}
                 prefix="asset"
                 renameError={renameError}
                 renameTarget={renameTarget}
                 searchTerm={searchTerm}
-                selectedItemId={selectedItemId}
                 assetEnabled={treeAssetEnabled}
-                setDisplayedAssetId={setDisplayedAssetId}
-                setExpandedFolders={setExpandedFolders}
-                setSelectedItemId={setSelectedItemId}
               />
             ))}
           </SimpleTreeView>

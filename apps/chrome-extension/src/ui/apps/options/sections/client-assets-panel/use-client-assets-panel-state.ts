@@ -8,8 +8,10 @@ import type { OptionsAssetsTab } from '../../../../platform/extension-api.js'
 import {
   buildAssetFileTree,
   collectAssetFolderPaths,
+  collectAssetItemIds,
   filterAssetFileTree,
   listAncestorFolders,
+  normalizeTreeSelection,
   mergeExpandedFolderPaths
 } from '../asset-tree-shared.js'
 import {
@@ -36,6 +38,7 @@ export function useClientAssetsPanelState({
   onSelectedPathChange: (path: string | undefined) => void
 }) {
   const [selectedItemId, setSelectedItemId] = useState('root')
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([])
   const [displayedFileId, setDisplayedFileId] = useState<string>()
   const [expandedFolders, setExpandedFolders] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -119,6 +122,10 @@ export function useClientAssetsPanelState({
     () => filterAssetFileTree(routeTree, searchQuery),
     [routeTree, searchQuery]
   )
+  const orderedVisibleItemIds = useMemo(
+    () => collectAssetItemIds('route-asset', filteredTree),
+    [filteredTree]
+  )
   const forcedExpandedFolders = useMemo(
     () => (searchQuery.trim() ? collectAssetFolderPaths(filteredTree) : []),
     [filteredTree, searchQuery]
@@ -156,11 +163,14 @@ export function useClientAssetsPanelState({
 
     if (!preferredId) {
       setSelectedItemId('root')
+      setSelectedItemIds([])
       setDisplayedFileId(undefined)
       return
     }
 
-    setSelectedItemId(`route-asset:${preferredId}`)
+    const nextSelectedItemId = `route-asset:${preferredId}`
+    setSelectedItemId(nextSelectedItemId)
+    setSelectedItemIds([nextSelectedItemId])
     setDisplayedFileId(preferredId)
   }, [client.id, client.exposes, initialPath, initialTab, rootSkillId])
 
@@ -179,6 +189,12 @@ export function useClientAssetsPanelState({
       )
     }
   }, [displayedAsset?.path])
+
+  useEffect(() => {
+    setSelectedItemIds((current) =>
+      normalizeTreeSelection(current, orderedVisibleItemIds)
+    )
+  }, [orderedVisibleItemIds])
 
   useEffect(() => {
     onSelectedPathChangeRef.current(displayedAsset?.path)
@@ -215,9 +231,11 @@ export function useClientAssetsPanelState({
     renameTarget,
     rootSkillId,
     routeTree,
+    orderedVisibleItemIds,
     searchQuery,
     selectedFolderPath,
     selectedItemId,
+    selectedItemIds,
     selectorResources,
     skillEntries,
     setContextMenu,
@@ -227,6 +245,7 @@ export function useClientAssetsPanelState({
     setExpandedFolders,
     setRenameTarget,
     setSearchQuery,
-    setSelectedItemId
+    setSelectedItemId,
+    setSelectedItemIds
   }
 }

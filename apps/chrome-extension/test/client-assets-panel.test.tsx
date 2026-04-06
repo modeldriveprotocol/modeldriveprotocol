@@ -390,4 +390,84 @@ describe('client assets panel', () => {
       folderAssets.every((asset) => !('enabled' in asset) || asset.enabled === false)
     ).toBe(true)
   })
+
+  it('selects every filtered asset tree item with ctrl+a', async () => {
+    const root = createRoot(container)
+    const client = createRouteClientConfig({
+      id: 'route-client-ui-verify',
+      clientId: 'route-client-ui-verify',
+      clientName: 'UI Verify Client',
+      exposes: [
+        {
+          kind: 'skill',
+          id: 'route-skill-root',
+          enabled: true,
+          path: 'SKILL.md',
+          metadata: {
+            title: 'Root skill',
+            summary: 'Root summary',
+            queryParameters: [],
+            headerParameters: []
+          },
+          content: '# Root skill'
+        },
+        {
+          kind: 'folder',
+          id: 'route-folder-guides',
+          path: 'guides'
+        },
+        {
+          kind: 'skill',
+          id: 'route-skill-guides',
+          enabled: true,
+          path: 'guides/SKILL.md',
+          metadata: {
+            title: 'Guide skill',
+            summary: 'Guide summary',
+            queryParameters: [],
+            headerParameters: []
+          },
+          content: '# Guide skill'
+        }
+      ]
+    })
+    const draft: ExtensionConfig = {
+      ...DEFAULT_EXTENSION_CONFIG,
+      backgroundClients: [],
+      routeClients: [client]
+    }
+
+    await act(async () => {
+      root.render(
+        <I18nProvider>
+          <ClientAssetsPanel
+            client={client}
+            draft={draft}
+            initialPath="SKILL.md"
+            initialTab="assets"
+            onSelectedPathChange={() => {}}
+            onChange={() => {}}
+          />
+        </I18nProvider>
+      )
+    })
+
+    const tree = container.querySelector('[role="tree"]') as HTMLElement | null
+    expect(tree).toBeTruthy()
+
+    await act(async () => {
+      tree?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'a',
+          ctrlKey: true,
+          bubbles: true,
+          cancelable: true
+        })
+      )
+    })
+
+    expect(
+      container.querySelectorAll('.MuiTreeItem-content.Mui-selected').length
+    ).toBe(2)
+  })
 })

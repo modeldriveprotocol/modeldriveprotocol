@@ -82,6 +82,59 @@ export function stripLeadingSlash(path: string): string {
   return path.replace(/^\/+/, '')
 }
 
+export function isBackgroundTreePathWithinFolder(
+  path: string,
+  folderPath: string
+): boolean {
+  const normalizedPath = stripLeadingSlash(normalizeBackgroundPath(path))
+  const normalizedFolderPath = stripLeadingSlash(normalizeBackgroundPath(folderPath))
+
+  return normalizedPath === normalizedFolderPath ||
+    normalizedPath.startsWith(`${normalizedFolderPath}/`)
+}
+
+export function replaceBackgroundDisplayPathPrefix(
+  path: string,
+  currentPrefix: string,
+  nextPrefix: string
+): string {
+  const normalizedPath = stripLeadingSlash(normalizeBackgroundPath(path))
+  const normalizedCurrentPrefix = stripLeadingSlash(
+    normalizeBackgroundPath(currentPrefix)
+  )
+  const normalizedNextPrefix = stripLeadingSlash(normalizeBackgroundPath(nextPrefix))
+
+  if (normalizedPath === normalizedCurrentPrefix) {
+    return normalizedNextPrefix
+  }
+
+  return `${normalizedNextPrefix}/${normalizedPath.slice(
+    normalizedCurrentPrefix.length + 1
+  )}`
+}
+
+export function createUniqueBackgroundDisplayPath(
+  existingPaths: string[],
+  parentPath: string,
+  leafName: string
+): string {
+  const safeLeafName = normalizeBackgroundTreeLeaf(leafName)
+  const normalizedParentPath = stripLeadingSlash(normalizeBackgroundPath(parentPath))
+  const basePath = normalizedParentPath
+    ? `${normalizedParentPath}/${safeLeafName}`
+    : safeLeafName
+  let candidate = basePath
+  let counter = 2
+  const used = new Set(existingPaths.map((path) => stripLeadingSlash(normalizeBackgroundPath(path))))
+
+  while (used.has(candidate)) {
+    candidate = `${basePath}-${counter}`
+    counter += 1
+  }
+
+  return candidate
+}
+
 export function pathExistsInBackgroundExposes(
   exposes: BackgroundExposeAsset[],
   nextPath: string,

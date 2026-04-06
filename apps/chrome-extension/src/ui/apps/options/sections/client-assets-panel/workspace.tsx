@@ -1,4 +1,8 @@
-import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
+import type {
+  KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent as ReactMouseEvent,
+  ReactNode
+} from 'react'
 
 import { SimpleTreeView } from '@mui/x-tree-view'
 
@@ -41,6 +45,7 @@ export function ClientAssetsWorkspace({
   onRootDragLeave,
   onRootDrop,
   onSearchChange,
+  onTreeKeyDown,
   onSetDropTarget,
   onStartDrag,
   onStartRename,
@@ -49,6 +54,8 @@ export function ClientAssetsWorkspace({
   searchActions,
   searchQuery,
   selectedItemId,
+  selectedItemIds,
+  orderedVisibleItemIds,
   setRenameTarget,
   storageKey,
   t,
@@ -75,11 +82,16 @@ export function ClientAssetsWorkspace({
     event: ReactMouseEvent,
     target: TreeContextMenuTarget
   ) => void
-  onOpenItem: (itemId: string) => void
+  onOpenItem: (
+    itemId: string,
+    orderedItemIds: string[],
+    event: ReactMouseEvent
+  ) => void
   onRenameChange: (value: string) => void
   onRootDragLeave: () => void
   onRootDrop: (dragState: DragState | undefined) => void
   onSearchChange: (value: string) => void
+  onTreeKeyDown?: (event: ReactKeyboardEvent<HTMLDivElement>) => void
   onSetDropTarget: (value: string | undefined) => void
   onStartDrag: (value: DragState | undefined) => void
   onStartRename: (target: RouteRenameTarget, itemId: string) => void
@@ -88,6 +100,8 @@ export function ClientAssetsWorkspace({
   searchActions: AssetTreeToolbarAction[]
   searchQuery: string
   selectedItemId: string
+  selectedItemIds: string[]
+  orderedVisibleItemIds: string[]
   setRenameTarget: (
     value:
       | RouteRenameTarget
@@ -119,6 +133,7 @@ export function ClientAssetsWorkspace({
           onRootDrop(dragState)
         }}
         onSearchChange={onSearchChange}
+        onTreeKeyDown={onTreeKeyDown}
         searchActions={searchActions}
         searchPlaceholder={t('options.assets.search')}
         searchQuery={searchQuery}
@@ -130,7 +145,8 @@ export function ClientAssetsWorkspace({
           ) : (
             <SimpleTreeView
               expandedItems={expandedItems}
-              selectedItems={selectedItemId === 'root' ? null : selectedItemId}
+              multiSelect
+              selectedItems={selectedItemIds.length > 0 ? selectedItemIds : undefined}
               sx={sharedAssetTreeSx}
             >
               {renderTreeNodes(filteredTree, {
@@ -144,6 +160,7 @@ export function ClientAssetsWorkspace({
                 onSetDropTarget,
                 onStartDrag,
                 onStartRename,
+                orderedVisibleItemIds,
                 dropTargetItemId,
                 renameError,
                 renameTarget,

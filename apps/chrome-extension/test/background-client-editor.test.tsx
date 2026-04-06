@@ -10,7 +10,11 @@ import {
 } from '../src/shared/config.js'
 import { I18nProvider } from '../src/ui/i18n/provider.js'
 import { BackgroundClientEditor } from '../src/ui/apps/options/sections/background-client-editor.js'
-import { commitBackgroundRename } from '../src/ui/apps/options/sections/background-client-editor/tree-helpers.js'
+import {
+  commitBackgroundRename,
+  getSharedBackgroundDisplayPrefix
+} from '../src/ui/apps/options/sections/background-client-editor/tree-helpers.js'
+import { useBackgroundClientEditorActions } from '../src/ui/apps/options/sections/background-client-editor/use-background-client-editor-actions.js'
 
 vi.mock('../src/ui/foundation/monaco-editor.js', () => ({
   MonacoCodeEditor: ({
@@ -290,5 +294,88 @@ describe('background client editor', () => {
 
     expect(renamedPaths.length).toBeGreaterThan(0)
     expect(selectedItemId).toBe('asset-folder:workspace-clients')
+  })
+
+  it('moves a background asset into another folder when dropped', async () => {
+    const root = createRoot(container)
+    const onChange = vi.fn()
+    const client =
+      DEFAULT_EXTENSION_CONFIG.backgroundClients[0] ?? DEFAULT_BACKGROUND_CLIENT
+    let handleDrop:
+      | ((folderPath: string, dragState: { kind: 'asset'; assetId: string; path: string }) => void)
+      | undefined
+
+    function Harness() {
+      const [selectedItemId, setSelectedItemId] = useState('asset:extension.status')
+      const [selectedItemIds, setSelectedItemIds] = useState<string[]>([
+        'asset:extension.status'
+      ])
+      const [displayedAssetId, setDisplayedAssetId] = useState<
+        string | undefined
+      >('extension.status')
+      const [expandedFolders, setExpandedFolders] = useState<string[]>([])
+      const [dragState, setDragState] = useState<any>()
+      const [dropTargetItemId, setDropTargetItemId] = useState<string | undefined>()
+      const [contextMenu, setContextMenu] = useState<any>()
+      const [renameTarget, setRenameTarget] = useState<any>()
+
+      const actions = useBackgroundClientEditorActions({
+        assetEnabled: new Map(client.exposes.map((asset) => [asset.id, asset.enabled])),
+        client,
+        draft: DEFAULT_EXTENSION_CONFIG,
+        onChange,
+        renameError: false,
+        renameTarget,
+        selectedItemId,
+        selectedItemIds,
+        setContextMenu,
+        setDisplayedAssetId,
+        setDragState,
+        setDropTargetItemId,
+        setExpandedFolders,
+        setRenameTarget,
+        setSelectedItemIds,
+        setSelectedItemId,
+        sharedDisplayPrefix: getSharedBackgroundDisplayPrefix(client.exposes)
+      })
+
+      handleDrop = (folderPath, nextDragState) =>
+        actions.handleDrop(folderPath, nextDragState)
+
+      return (
+        <div>
+          {selectedItemId}
+          {displayedAssetId}
+          {expandedFolders.join(',')}
+          {dragState?.kind}
+          {dropTargetItemId}
+          {contextMenu?.kind}
+        </div>
+      )
+    }
+
+    await act(async () => {
+      root.render(<Harness />)
+    })
+
+    await act(async () => {
+      handleDrop?.('clients', {
+        kind: 'asset',
+        assetId: 'extension.status',
+        path: '/status'
+      })
+    })
+
+    expect(onChange).toHaveBeenCalledTimes(1)
+
+    const nextConfig = onChange.mock.calls[0]?.[0]
+    const nextClient = nextConfig.backgroundClients.find(
+      (item: { id: string }) => item.id === client.id
+    )
+    const movedAsset = nextClient.exposes.find(
+      (asset: { id: string }) => asset.id === 'extension.status'
+    )
+
+    expect(movedAsset?.path).toBe('/extension/clients/status')
   })
 })
