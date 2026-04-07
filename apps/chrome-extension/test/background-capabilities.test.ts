@@ -79,13 +79,13 @@ describe('chrome extension background capabilities', () => {
         BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS.length +
         BACKGROUND_SKILL_EXPOSE_DEFINITIONS.length
     )
-    expect(stub.paths).toContain('/extension/clients')
-    expect(stub.paths).toContain('/extension/SKILL.md')
-    expect(stub.paths).toContain('/extension/clients/SKILL.md')
+    expect(stub.paths).toContain('/clients')
+    expect(stub.paths).toContain('/SKILL.md')
+    expect(stub.paths).toContain('/clients/SKILL.md')
     expect(stub.paths).toContain(
-      '/extension/clients/.ai/skills/manage-client-expose-rules/SKILL.md'
+      '/clients/.ai/skills/manage-client-expose-rules/SKILL.md'
     )
-    expect(stub.paths).toContain('/extension/resources/SKILL.md')
+    expect(stub.paths).toContain('/resources/SKILL.md')
   })
 
   it('keeps workspace management capabilities scoped to the dedicated default client', () => {
@@ -104,18 +104,18 @@ describe('chrome extension background capabilities', () => {
       DEFAULT_WORKSPACE_MANAGEMENT_CLIENT
     )
 
-    expect(browserClient.paths).not.toContain('/extension/clients')
-    expect(browserClient.paths).toContain('/extension/SKILL.md')
-    expect(browserClient.paths).toContain('/extension/resources/SKILL.md')
-    expect(browserClient.paths).not.toContain('/extension/clients/SKILL.md')
-    expect(workspaceClient.paths).toContain('/extension/clients')
-    expect(workspaceClient.paths).toContain('/extension/SKILL.md')
+    expect(browserClient.paths).not.toContain('/clients')
+    expect(browserClient.paths).toContain('/SKILL.md')
+    expect(browserClient.paths).toContain('/resources/SKILL.md')
+    expect(browserClient.paths).not.toContain('/clients/SKILL.md')
+    expect(workspaceClient.paths).toContain('/clients')
+    expect(workspaceClient.paths).toContain('/SKILL.md')
     expect(workspaceClient.paths).toContain(
-      '/extension/clients/.ai/skills/manage-client-expose-rules/SKILL.md'
+      '/clients/.ai/skills/manage-client-expose-rules/SKILL.md'
     )
-    expect(workspaceClient.paths).toContain('/extension/clients/SKILL.md')
-    expect(workspaceClient.paths).not.toContain('/extension/resources/SKILL.md')
-    expect(workspaceClient.paths).not.toContain('/extension/tabs')
+    expect(workspaceClient.paths).toContain('/clients/SKILL.md')
+    expect(workspaceClient.paths).not.toContain('/resources/SKILL.md')
+    expect(workspaceClient.paths).not.toContain('/tabs')
   })
 
   it('registers background capabilities from the configured expose assets', () => {
@@ -140,7 +140,7 @@ describe('chrome extension background capabilities', () => {
     )
 
     expect(stub.paths).toContain('/browser/status')
-    expect(stub.paths).not.toContain('/extension/status')
+    expect(stub.paths).not.toContain('/status')
   })
 
   it('uses REST-style methods for mutating built-in background endpoints', () => {
@@ -189,12 +189,12 @@ describe('chrome extension background capabilities', () => {
     )
 
     await expect(
-      browserStub.handlers.get('/extension/status')?.({})
+      browserStub.handlers.get('/status')?.({})
     ).resolves.toEqual(
       status
     )
     await expect(
-      workspaceStub.handlers.get('/extension/clients')?.({})
+      workspaceStub.handlers.get('/clients')?.({})
     ).resolves.toEqual(
       clients
     )
@@ -223,7 +223,7 @@ describe('chrome extension background capabilities', () => {
     )
 
     await expect(
-      stub.handlers.get('/extension/status')?.({})
+      stub.handlers.get('/status')?.({})
     ).rejects.toThrow(/blocks dynamic code execution/i)
   })
 })

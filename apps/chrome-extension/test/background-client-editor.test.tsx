@@ -116,33 +116,7 @@ describe('background client editor', () => {
           <BackgroundClientEditor
             client={DEFAULT_EXTENSION_CONFIG.backgroundClients[0] ?? DEFAULT_BACKGROUND_CLIENT}
             draft={DEFAULT_EXTENSION_CONFIG}
-            initialAssetPath="/extension/status"
-            initialTab="assets"
-            invocationStats={undefined}
-            onAssetPathChange={() => {}}
-            onClearHistory={() => {}}
-            onTabChange={() => {}}
-            onChange={() => {}}
-            runtimeState="connected"
-          />
-        </I18nProvider>
-      )
-    })
-
-    expect(container.textContent).toContain('Read the extension workspace status')
-    expect(container.textContent).toContain('return await api.getStatus();')
-  })
-
-  it('renders the root background SKILL markdown without crashing', async () => {
-    const root = createRoot(container)
-
-    await act(async () => {
-      root.render(
-        <I18nProvider>
-          <BackgroundClientEditor
-            client={DEFAULT_EXTENSION_CONFIG.backgroundClients[0] ?? DEFAULT_BACKGROUND_CLIENT}
-            draft={DEFAULT_EXTENSION_CONFIG}
-            initialAssetPath="/extension/SKILL.md"
+            initialAssetPath="/status"
             initialTab="assets"
             invocationStats={undefined}
             onAssetPathChange={() => {}}
@@ -156,9 +130,37 @@ describe('background client editor', () => {
     })
 
     expect(container.textContent).toContain(
-      'Overview for the /extension directory and the built-in Chrome extension capabilities exposed from it.'
+      'Read the extension workspace status, multi-client connection state, and active tab summary.'
     )
-    expect(container.textContent).toContain('# /extension')
+    expect(container.textContent).toContain('return await api.getStatus();')
+  })
+
+  it('renders the root background SKILL markdown without crashing', async () => {
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <I18nProvider>
+          <BackgroundClientEditor
+            client={DEFAULT_EXTENSION_CONFIG.backgroundClients[0] ?? DEFAULT_BACKGROUND_CLIENT}
+            draft={DEFAULT_EXTENSION_CONFIG}
+            initialAssetPath="/SKILL.md"
+            initialTab="assets"
+            invocationStats={undefined}
+            onAssetPathChange={() => {}}
+            onClearHistory={() => {}}
+            onTabChange={() => {}}
+            onChange={() => {}}
+            runtimeState="connected"
+          />
+        </I18nProvider>
+      )
+    })
+
+    expect(container.textContent).toContain(
+      'Overview for the root directory and the built-in Chrome extension capabilities exposed from it.'
+    )
+    expect(container.textContent).toContain('# /')
   })
 
   it('toggles every asset under a folder from the tree control', async () => {
@@ -173,7 +175,7 @@ describe('background client editor', () => {
           <BackgroundClientEditor
             client={client}
             draft={DEFAULT_EXTENSION_CONFIG}
-            initialAssetPath="/extension/SKILL.md"
+            initialAssetPath="/SKILL.md"
             initialTab="assets"
             invocationStats={undefined}
             onAssetPathChange={() => {}}
@@ -200,7 +202,7 @@ describe('background client editor', () => {
       (item: { id: string }) => item.id === client.id
     )
     const resourceAssets = nextClient.exposes.filter((asset: { path: string }) =>
-      asset.path.startsWith('/extension/resources/')
+      asset.path.startsWith('/resources/')
     )
 
     expect(resourceAssets.length).toBeGreaterThan(0)
@@ -216,7 +218,7 @@ describe('background client editor', () => {
 
     function Harness() {
       const [assetPath, setAssetPath] = useState<string | undefined>(
-        '/extension/SKILL.md'
+        '/SKILL.md'
       )
       const [detailTab, setDetailTab] = useState<'assets' | 'basics' | 'activity'>(
         'assets'
@@ -253,7 +255,7 @@ describe('background client editor', () => {
       root.render(<Harness />)
     })
 
-    expect(container.textContent).toContain('# /extension')
+    expect(container.textContent).toContain('# /')
 
     const statusNode = findTreeItemBySuffix('asset:extension.status')
     expect(statusNode).toBeDefined()
@@ -282,7 +284,7 @@ describe('background client editor', () => {
           <BackgroundClientEditor
             client={DEFAULT_EXTENSION_CONFIG.backgroundClients[0] ?? DEFAULT_BACKGROUND_CLIENT}
             draft={DEFAULT_EXTENSION_CONFIG}
-            initialAssetPath="/extension/resources/SKILL.md"
+            initialAssetPath="/resources/SKILL.md"
             initialTab="assets"
             invocationStats={undefined}
             onAssetPathChange={() => {}}
@@ -317,7 +319,7 @@ describe('background client editor', () => {
           <BackgroundClientEditor
             client={DEFAULT_EXTENSION_CONFIG.backgroundClients[0] ?? DEFAULT_BACKGROUND_CLIENT}
             draft={DEFAULT_EXTENSION_CONFIG}
-            initialAssetPath="/extension/SKILL.md"
+            initialAssetPath="/SKILL.md"
             initialTab="assets"
             invocationStats={undefined}
             onAssetPathChange={() => {}}
@@ -377,7 +379,7 @@ describe('background client editor', () => {
       client,
       renameTarget,
       false,
-      'extension',
+      getSharedBackgroundDisplayPrefix(client.exposes),
       () => {},
       (nextItemId) => {
         selectedItemId = nextItemId
@@ -388,7 +390,7 @@ describe('background client editor', () => {
     )
 
     const renamedPaths = nextClient.exposes
-      .filter((asset) => asset.path.startsWith('/extension/workspace-clients/'))
+      .filter((asset) => asset.path.startsWith('/workspace-clients/'))
       .map((asset) => asset.path)
 
     expect(renamedPaths.length).toBeGreaterThan(0)
@@ -475,6 +477,6 @@ describe('background client editor', () => {
       (asset: { id: string }) => asset.id === 'extension.status'
     )
 
-    expect(movedAsset?.path).toBe('/extension/clients/status')
+    expect(movedAsset?.path).toBe('/clients/status')
   })
 })

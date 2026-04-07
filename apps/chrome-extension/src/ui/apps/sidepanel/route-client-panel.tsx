@@ -4,71 +4,73 @@ import FolderOutlined from '@mui/icons-material/FolderOutlined'
 import HubOutlined from '@mui/icons-material/HubOutlined'
 import InsertDriveFileOutlined from '@mui/icons-material/InsertDriveFileOutlined'
 import PlayArrowOutlined from '@mui/icons-material/PlayArrowOutlined'
+import WebOutlined from '@mui/icons-material/WebOutlined'
 import { Alert, Button, IconButton, List, ListItem, ListItemText, Stack, TextField, Tooltip, Typography } from '@mui/material'
+import { useMemo } from 'react'
 
 import { clearPendingSelectorCapture, injectBridge, openOptionsSection, runRecording, startRecording, startSelectorCapture, stopRecording } from '../../platform/extension-api.js'
+import { SidepanelAssetPreview } from './client-asset-preview.js'
+import {
+  createRouteAssetPreviewEntries,
+  getPreferredPreviewPath,
+  ROOT_ROUTE_SKILL_PATH
+} from './client-asset-preview-model.js'
 import { ClientPanelShell } from './client-panel-shell.js'
-import { abilitySummary, connectionStateLabel, routeClientNextStepLabel, routeClientStatusLabel } from './helpers.js'
+import { ConnectionStateIndicator } from './connection-state-indicator.js'
 import { ActionIcon } from './action-icon.js'
 import type { SidepanelController, SidepanelClientEntry } from './types.js'
 
 export function RouteClientPanel({
   controller,
-  item
+  expanded,
+  item,
+  onExpandedChange
 }: {
   controller: SidepanelController
+  expanded: boolean
   item: SidepanelClientEntry
+  onExpandedChange: (expanded: boolean) => void
 }) {
   const client = item.client
   const routeConfig = controller.state?.config.routeClients.find((entry) => entry.id === client.id)
   const isRecordingClient = controller.state?.activeRecording?.routeClientId === client.id
   const isCapturingSelector = controller.state?.pendingSelectorCapture?.routeClientId === client.id
   const primaryAction = controller.buildRouteClientPrimaryAction(client)
-  const clientStatus = routeClientStatusLabel({
-    client,
-    hasPermission: controller.activeTabHasPermission,
-    hasBridge: Boolean(controller.state?.bridgeState),
-    hasFlows: Boolean(routeConfig?.recordings.length),
-    isRecording: isRecordingClient,
-    isCapturingSelector,
-    t: controller.t
-  })
-  const nextStep = routeClientNextStepLabel({
-    hasPermission: controller.activeTabHasPermission,
-    hasFlows: Boolean(routeConfig?.recordings.length),
-    hasResources: Boolean(routeConfig?.selectorResources.length),
-    hasSkills: Boolean(routeConfig?.skillEntries.length),
-    isRecording: isRecordingClient,
-    isCapturingSelector,
-    t: controller.t
-  })
+  const assetEntries = useMemo(
+    () => (routeConfig ? createRouteAssetPreviewEntries(routeConfig) : []),
+    [routeConfig]
+  )
 
   return (
     <ClientPanelShell
-      expanded={controller.expandedClientKey === client.id}
+      collapseLabel={controller.t('common.collapse')}
+      expandLabel={controller.t('common.expand')}
+      expanded={expanded}
       onChange={(expanded) => {
-        controller.setExpandedClientKey(expanded ? client.id : undefined)
+        onExpandedChange(expanded)
         if (expanded) {
           controller.setSelectedClientId(client.id)
         }
       }}
       icon={client.icon}
+      iconBadge={(
+        <ConnectionStateIndicator state={client.connectionState} t={controller.t} />
+      )}
+      titlePrefix={(
+        <Tooltip title={controller.t('popup.section.currentPage')}>
+          <WebOutlined fontSize="inherit" />
+        </Tooltip>
+      )}
       title={client.clientName}
       onTitleClick={() => void openOptionsSection('clients', { clientId: client.id })}
-      subtitle={client.routeRuleSummary ?? client.matchPatterns[0] ?? controller.t('popup.noRouteRules')}
-      summaryMeta={(
-        <Stack spacing={0.25} sx={{ minWidth: 120, textAlign: 'right' }}>
-          <Typography variant="caption" color="text.secondary">
-            {connectionStateLabel(client.connectionState, controller.t)}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">{clientStatus}</Typography>
-        </Stack>
-      )}
     >
       <Stack spacing={1.25}>
-        <Typography variant="caption" color="text.secondary">{abilitySummary(client, controller.t).join(' · ')}</Typography>
-        <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 600 }}>{nextStep}</Typography>
-
+        <SidepanelAssetPreview
+          entries={assetEntries}
+          preferredPath={getPreferredPreviewPath(assetEntries, ROOT_ROUTE_SKILL_PATH)}
+          emptyLabel={controller.t('popup.noExposedAssets')}
+          pathLabel={controller.t('common.path')}
+        />
         <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
           <Button size="small" variant="contained" startIcon={primaryAction.icon} onClick={primaryAction.onClick}>{primaryAction.label}</Button>
           <Stack direction="row" spacing={0.5}>

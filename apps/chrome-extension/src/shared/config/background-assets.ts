@@ -61,11 +61,25 @@ type LegacyBackgroundExposeToggleState = {
   disabledSkills?: unknown
 }
 
+function withLegacyExtensionPrefix(
+  definitions: readonly BackgroundExposeDefinition[]
+): BackgroundExposeDefinition[] {
+  return definitions.map((definition) => {
+    const legacyPaths = new Set(definition.legacyPaths ?? [])
+    legacyPaths.add(`/extension${definition.path === '/SKILL.md' ? '/SKILL.md' : definition.path}`)
+
+    return {
+      ...definition,
+      legacyPaths: [...legacyPaths]
+    }
+  })
+}
+
 export const BACKGROUND_BROWSER_EXPOSE_DEFINITIONS: BackgroundExposeDefinition[] =
-  [
+  withLegacyExtensionPrefix([
     {
       id: 'extension.status',
-      path: '/extension/status',
+      path: '/status',
       kind: 'endpoint',
       group: 'browser',
       method: 'GET',
@@ -77,7 +91,7 @@ export const BACKGROUND_BROWSER_EXPOSE_DEFINITIONS: BackgroundExposeDefinition[]
     },
     {
       id: 'extension.config',
-      path: '/extension/config',
+      path: '/config',
       kind: 'endpoint',
       group: 'browser',
       method: 'GET',
@@ -88,7 +102,7 @@ export const BACKGROUND_BROWSER_EXPOSE_DEFINITIONS: BackgroundExposeDefinition[]
     },
     {
       id: 'extension.granted-origins',
-      path: '/extension/granted-origins',
+      path: '/granted-origins',
       kind: 'endpoint',
       group: 'browser',
       method: 'GET',
@@ -100,7 +114,7 @@ export const BACKGROUND_BROWSER_EXPOSE_DEFINITIONS: BackgroundExposeDefinition[]
     },
     {
       id: 'extension.tabs',
-      path: '/extension/tabs',
+      path: '/tabs',
       kind: 'endpoint',
       group: 'browser',
       method: 'GET',
@@ -111,7 +125,7 @@ export const BACKGROUND_BROWSER_EXPOSE_DEFINITIONS: BackgroundExposeDefinition[]
     },
     {
       id: 'extension.activate-tab',
-      path: '/extension/activate-tab',
+      path: '/activate-tab',
       kind: 'endpoint',
       group: 'browser',
       method: 'PATCH',
@@ -122,7 +136,7 @@ export const BACKGROUND_BROWSER_EXPOSE_DEFINITIONS: BackgroundExposeDefinition[]
     },
     {
       id: 'extension.reload-tab',
-      path: '/extension/reload-tab',
+      path: '/reload-tab',
       kind: 'endpoint',
       group: 'browser',
       method: 'POST',
@@ -133,7 +147,7 @@ export const BACKGROUND_BROWSER_EXPOSE_DEFINITIONS: BackgroundExposeDefinition[]
     },
     {
       id: 'extension.create-tab',
-      path: '/extension/create-tab',
+      path: '/create-tab',
       kind: 'endpoint',
       group: 'browser',
       method: 'POST',
@@ -150,7 +164,7 @@ return await api.createTab({
     },
     {
       id: 'extension.close-tab',
-      path: '/extension/close-tab',
+      path: '/close-tab',
       kind: 'endpoint',
       group: 'browser',
       method: 'DELETE',
@@ -161,7 +175,7 @@ return await api.createTab({
     },
     {
       id: 'extension.show-notification',
-      path: '/extension/show-notification',
+      path: '/show-notification',
       kind: 'endpoint',
       group: 'browser',
       method: 'POST',
@@ -183,7 +197,7 @@ return await api.showNotification({
     },
     {
       id: 'extension.open-options-page',
-      path: '/extension/open-options-page',
+      path: '/open-options-page',
       kind: 'endpoint',
       group: 'browser',
       method: 'POST',
@@ -194,7 +208,7 @@ return await api.showNotification({
     },
     {
       id: 'extension.resources.status',
-      path: '/extension/resources/status',
+      path: '/resources/status',
       kind: 'endpoint',
       group: 'browser',
       method: 'GET',
@@ -206,7 +220,7 @@ return await api.showNotification({
     },
     {
       id: 'extension.resources.config',
-      path: '/extension/resources/config',
+      path: '/resources/config',
       kind: 'endpoint',
       group: 'browser',
       method: 'GET',
@@ -218,7 +232,7 @@ return await api.showNotification({
     },
     {
       id: 'extension.resources.tabs',
-      path: '/extension/resources/tabs',
+      path: '/resources/tabs',
       kind: 'endpoint',
       group: 'browser',
       method: 'GET',
@@ -230,13 +244,13 @@ return await api.showNotification({
 });`,
       legacyId: 'chrome-extension://tabs'
     }
-  ]
+  ])
 
 export const BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS: BackgroundExposeDefinition[] =
-  [
+  withLegacyExtensionPrefix([
     {
       id: 'extension.clients.list',
-      path: '/extension/clients',
+      path: '/clients',
       kind: 'endpoint',
       group: 'workspace',
       method: 'GET',
@@ -248,7 +262,7 @@ export const BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS: BackgroundExposeDefinition
     },
     {
       id: 'extension.clients.create',
-      path: '/extension/clients/create',
+      path: '/clients/create',
       kind: 'endpoint',
       group: 'workspace',
       method: 'POST',
@@ -260,7 +274,7 @@ export const BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS: BackgroundExposeDefinition
     },
     {
       id: 'extension.clients.update',
-      path: '/extension/clients/update',
+      path: '/clients/update',
       kind: 'endpoint',
       group: 'workspace',
       method: 'PATCH',
@@ -272,7 +286,7 @@ export const BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS: BackgroundExposeDefinition
     },
     {
       id: 'extension.clients.delete',
-      path: '/extension/clients/delete',
+      path: '/clients/delete',
       kind: 'endpoint',
       group: 'workspace',
       method: 'DELETE',
@@ -284,7 +298,7 @@ export const BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS: BackgroundExposeDefinition
     },
     {
       id: 'extension.clients.add-expose-rule',
-      path: '/extension/clients/add-expose-rule',
+      path: '/clients/add-expose-rule',
       kind: 'endpoint',
       group: 'workspace',
       method: 'POST',
@@ -293,28 +307,28 @@ export const BACKGROUND_WORKSPACE_EXPOSE_DEFINITIONS: BackgroundExposeDefinition
       defaultSource: `return await api.addExposeRuleToClient(args);`,
       legacyId: 'extension.addClientExposeRule'
     }
-  ]
+  ])
 
 export const BACKGROUND_SKILL_EXPOSE_DEFINITIONS: BackgroundExposeDefinition[] =
-  [
+  withLegacyExtensionPrefix([
     {
       id: 'extension.skills.root',
-      path: '/extension/SKILL.md',
+      path: '/SKILL.md',
       kind: 'skill',
       group: 'skill',
       contentType: 'text/markdown',
       description:
-        'Overview for the /extension directory and the built-in Chrome extension capabilities exposed from it.',
+        'Overview for the root directory and the built-in Chrome extension capabilities exposed from it.',
       sourceKind: 'markdown',
-      defaultSource: `# /extension
+      defaultSource: `# /
 
 This directory is the root of the built-in Chrome extension capabilities exposed through Model Drive Protocol.
 
 ## How to navigate
 
-- Read the files directly under \`/extension\` for runtime status and browser actions.
-- Read \`/extension/resources/SKILL.md\` before working with JSON snapshot resources.
-- Read \`/extension/clients/SKILL.md\` before creating, updating, or deleting stored clients.
+- Read the files directly under \`/\` for runtime status and browser actions.
+- Read \`/resources/SKILL.md\` before working with JSON snapshot resources.
+- Read \`/clients/SKILL.md\` before creating, updating, or deleting stored clients.
 
 ## Notes
 
@@ -325,27 +339,27 @@ This directory is the root of the built-in Chrome extension capabilities exposed
     },
     {
       id: 'extension.skills.resources',
-      path: '/extension/resources/SKILL.md',
+      path: '/resources/SKILL.md',
       kind: 'skill',
       group: 'skill',
       contentType: 'text/markdown',
       description:
-        'Overview for the /extension/resources directory and its JSON snapshot resources.',
+        'Overview for the /resources directory and its JSON snapshot resources.',
       sourceKind: 'markdown',
-      defaultSource: `# /extension/resources
+      defaultSource: `# /resources
 
 This directory contains read-only JSON snapshot resources for the built-in Chrome extension runtime.
 
 ## What lives here
 
-- \`/extension/resources/status\`: extension status snapshot
-- \`/extension/resources/config\`: workspace configuration snapshot
-- \`/extension/resources/tabs\`: visible browser tabs snapshot
+- \`/resources/status\`: extension status snapshot
+- \`/resources/config\`: workspace configuration snapshot
+- \`/resources/tabs\`: visible browser tabs snapshot
 
 ## How to work in this folder
 
 1. Prefer these resources when you need structured snapshots instead of imperative actions.
-2. Read \`/extension/SKILL.md\` if you need a broader overview of the extension capability tree.
+2. Read \`/SKILL.md\` if you need a broader overview of the extension capability tree.
 
 ## Notes
 
@@ -355,35 +369,36 @@ This directory contains read-only JSON snapshot resources for the built-in Chrom
     },
     {
       id: 'extension.skills.manage-clients',
-      path: '/extension/clients/SKILL.md',
+      path: '/clients/SKILL.md',
       legacyPaths: [
         '/extension/skills/manage-clients/skill.md',
-        '/extension/clients/skill.md'
+        '/extension/clients/skill.md',
+        '/clients/skill.md'
       ],
       kind: 'skill',
       group: 'skill',
       contentType: 'text/markdown',
       description:
-        'Overview for the /extension/clients workspace folder and its built-in management capabilities.',
+        'Overview for the /clients workspace folder and its built-in management capabilities.',
       sourceKind: 'markdown',
-      defaultSource: `# /extension/clients
+      defaultSource: `# /clients
 
 This folder contains the built-in workspace management capabilities for stored Chrome extension clients.
 
 ## What lives here
 
-- \`/extension/clients\`: list stored background and route clients
-- \`POST /extension/clients/create\`: create a new stored client
-- \`PATCH /extension/clients/update\`: update a stored client
-- \`DELETE /extension/clients/delete\`: delete a stored client
-- \`POST /extension/clients/add-expose-rule\`: persist a new route expose rule
+- \`/clients\`: list stored background and route clients
+- \`POST /clients/create\`: create a new stored client
+- \`PATCH /clients/update\`: update a stored client
+- \`DELETE /clients/delete\`: delete a stored client
+- \`POST /clients/add-expose-rule\`: persist a new route expose rule
 
 ## How to work in this folder
 
-1. Read \`/extension/clients\` first so you know the current \`backgroundClients\` and \`routeClients\`.
+1. Read \`/clients\` first so you know the current \`backgroundClients\` and \`routeClients\`.
 2. Use the create, update, and delete paths to mutate stored clients.
 3. Prefer the internal \`id\` when mutating a specific client.
-4. Read \`/extension/clients/.ai/skills/manage-client-expose-rules/SKILL.md\` if the task is specifically about route expose rules.
+4. Read \`/clients/.ai/skills/manage-client-expose-rules/SKILL.md\` if the task is specifically about route expose rules.
 
 ## Notes
 
@@ -395,25 +410,26 @@ This folder contains the built-in workspace management capabilities for stored C
     },
     {
       id: 'extension.skills.manage-client-expose-rules',
-      path: '/extension/clients/.ai/skills/manage-client-expose-rules/SKILL.md',
+      path: '/clients/.ai/skills/manage-client-expose-rules/SKILL.md',
       legacyPaths: [
         '/extension/skills/manage-client-expose-rules/skill.md',
-        '/extension/clients/.ai/skills/manage-client-expose-rules/skill.md'
+        '/extension/clients/.ai/skills/manage-client-expose-rules/skill.md',
+        '/clients/.ai/skills/manage-client-expose-rules/skill.md'
       ],
       kind: 'skill',
       group: 'skill',
       contentType: 'text/markdown',
       description:
-        'Detailed skill for persisting route expose rules under the /extension/clients workspace folder.',
+        'Detailed skill for persisting route expose rules under the /clients workspace folder.',
       sourceKind: 'markdown',
-      defaultSource: `# /extension/clients/.ai/skills/manage-client-expose-rules
+      defaultSource: `# /clients/.ai/skills/manage-client-expose-rules
 
 Use this skill when the task is specifically about persisting new expose rules for a stored route client.
 
 ## Recommended workflow
 
-1. Read \`/extension/clients\` and find the target route client.
-2. Call \`/extension/clients/add-expose-rule\` with the route client \`id\`, a \`mode\`, and a \`value\`.
+1. Read \`/clients\` and find the target route client.
+2. Call \`/clients/add-expose-rule\` with the route client \`id\`, a \`mode\`, and a \`value\`.
 3. Re-read the client listing if you need to confirm the saved route rule list.
 
 ## Supported modes
@@ -431,7 +447,7 @@ Use this skill when the task is specifically about persisting new expose rules f
 `,
       legacyId: 'extension.manageClientExposeRules'
     }
-  ]
+  ])
 
 export const BACKGROUND_EXPOSE_DEFINITIONS: BackgroundExposeDefinition[] = [
   ...BACKGROUND_BROWSER_EXPOSE_DEFINITIONS,

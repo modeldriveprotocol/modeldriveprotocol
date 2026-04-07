@@ -55,7 +55,6 @@ export function useSidepanelController(): SidepanelController {
   const { t } = useI18n()
   const runtime = useSidepanelRuntime(t)
   const [selectedClientId, setSelectedClientId] = useState<string>()
-  const [expandedClientKey, setExpandedClientKey] = useState<string>()
   const [clientFilter, setClientFilter] = useState<SidepanelClientFilter>('all')
   const [clientSearch, setClientSearch] = useState('')
   const [contentMode, setContentMode] = useState<SidepanelContentMode>('clients')
@@ -199,16 +198,6 @@ export function useSidepanelController(): SidepanelController {
   }, [pageRouteClients, selectedClientId])
 
   useEffect(() => {
-    if (!filteredSidepanelClients.length) {
-      setExpandedClientKey(undefined)
-      return
-    }
-    if (!expandedClientKey || !filteredSidepanelClients.some((item) => item.listId === expandedClientKey)) {
-      setExpandedClientKey(filteredSidepanelClients[0].listId)
-    }
-  }, [expandedClientKey, filteredSidepanelClients])
-
-  useEffect(() => {
     if (contentMode !== 'market') {
       return
     }
@@ -319,9 +308,7 @@ export function useSidepanelController(): SidepanelController {
       ? { label: t('popup.errorRecovery.grant'), onClick: () => void runtime.runAction(t('popup.permissionGranted'), async () => grantOrigin(selectedClient.id, runtime.state?.activeOriginPattern), { suggestSelectedClientPrimary: true }) }
       : errorRecoveryType === 'create'
         ? { label: t('popup.errorRecovery.create'), onClick: () => void runtime.runAction(t('popup.routePresetCreated'), async () => { await requestRouteClientFromActiveTab() }, { suggestSelectedClientPrimary: true }) }
-        : errorRecoveryType === 'clients'
-          ? { label: t('popup.errorRecovery.clients'), onClick: () => void openOptionsSection('clients', { clientId: selectedClient?.id }) }
-          : undefined
+        : undefined
 
   async function installMarketClient(catalog: MarketCatalogSourceData, entry: MarketCatalogClientEntry) {
     const currentConfig = await loadWorkspaceConfig()
@@ -350,7 +337,6 @@ export function useSidepanelController(): SidepanelController {
     setClientFilter('route')
     setClientSearch('')
     setSelectedClientId(nextClient.id)
-    setExpandedClientKey(nextClient.id)
   }
 
   const sidepanelFocusText =
@@ -399,18 +385,12 @@ export function useSidepanelController(): SidepanelController {
     installMarketClient,
     selectedClient,
     selectedRouteConfig,
-    selectedOptionsClientId:
-      filteredSidepanelClients.find(
-        (item) => item.listId === expandedClientKey && item.type === 'background'
-      )?.client.id ?? selectedClient?.id,
     activeTabHasPermission,
     canCreateFromActivePage,
     clientFilter,
     setClientFilter,
     clientSearch,
     setClientSearch,
-    expandedClientKey,
-    setExpandedClientKey,
     setSelectedClientId,
     sidepanelPrimaryAction,
     sidepanelFocusText,

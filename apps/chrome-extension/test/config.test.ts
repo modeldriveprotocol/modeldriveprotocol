@@ -35,7 +35,7 @@ describe('chrome extension config helpers', () => {
 
     expect(migrated.backgroundClients[0]?.clientId).toBe('legacy-client-background')
     expect(migrated.backgroundClients[0]?.disabledExposePaths).toContain(
-      '/extension/clients'
+      '/clients'
     )
     expect(migrated.backgroundClients[1]?.id).toBe(DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id)
     expect(migrated.routeClients).toHaveLength(1)
@@ -154,8 +154,8 @@ describe('chrome extension config helpers', () => {
     })
 
     expect(normalized.backgroundClients[0]?.disabledExposePaths).toEqual([
-      '/extension/tabs',
-      '/extension/resources/tabs'
+      '/tabs',
+      '/resources/tabs'
     ])
   })
 
@@ -224,7 +224,7 @@ describe('chrome extension config helpers', () => {
         (asset) => asset.id === 'extension.skills.manage-clients'
       )
     ).toMatchObject({
-      path: '/extension/clients/SKILL.md',
+      path: '/clients/SKILL.md',
       enabled: false
     })
     expect(
@@ -232,13 +232,13 @@ describe('chrome extension config helpers', () => {
         (asset) => asset.id === 'extension.skills.manage-client-expose-rules'
       )
     ).toMatchObject({
-      path: '/extension/clients/.ai/skills/manage-client-expose-rules/SKILL.md'
+      path: '/clients/.ai/skills/manage-client-expose-rules/SKILL.md'
     })
     expect(normalized.backgroundClients[0]?.disabledExposePaths).toContain(
-      '/extension/clients/SKILL.md'
+      '/clients/SKILL.md'
     )
     expect(normalized.backgroundClients[0]?.disabledExposePaths).toContain(
-      '/extension/clients/.ai/skills/manage-client-expose-rules/SKILL.md'
+      '/clients/.ai/skills/manage-client-expose-rules/SKILL.md'
     )
   })
 

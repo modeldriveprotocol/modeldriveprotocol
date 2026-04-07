@@ -68,14 +68,14 @@ describe('workspace client management runtime helpers', () => {
       id: DEFAULT_BACKGROUND_CLIENT.id,
       clientName: 'Browser Control',
       enabled: false,
-      disabledExposePaths: ['/extension/tabs']
+      disabledExposePaths: ['/tabs']
     })
 
     expect(result.client).toMatchObject({
       id: DEFAULT_BACKGROUND_CLIENT.id,
       clientName: 'Browser Control',
       enabled: false,
-      disabledExposePaths: ['/extension/tabs']
+      disabledExposePaths: ['/tabs']
     })
 
     await vi.runAllTimersAsync()
@@ -116,9 +116,9 @@ describe('workspace client management runtime helpers', () => {
       clientName: 'Workspace Helper',
       clientDescription: 'Extra background client for workspace automation.',
       disabledExposePaths: [
-        '/extension/status',
-        '/extension/resources/status',
-        '/extension/clients/SKILL.md'
+        '/status',
+        '/resources/status',
+        '/clients/SKILL.md'
       ]
     })
 
@@ -127,9 +127,9 @@ describe('workspace client management runtime helpers', () => {
       clientId: 'mdp-workspace-helper',
       clientName: 'Workspace Helper',
       disabledExposePaths: [
-        '/extension/status',
-        '/extension/resources/status',
-        '/extension/clients/SKILL.md'
+        '/status',
+        '/resources/status',
+        '/clients/SKILL.md'
       ]
     })
 

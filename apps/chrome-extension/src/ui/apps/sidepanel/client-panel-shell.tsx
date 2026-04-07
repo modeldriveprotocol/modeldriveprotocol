@@ -1,75 +1,116 @@
 import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
-import { Accordion, AccordionDetails, AccordionSummary, Box, ButtonBase, Stack, Typography } from '@mui/material'
+import { Box, ButtonBase, Collapse, IconButton, Stack, Tooltip, Typography } from '@mui/material'
 import type { ReactNode } from 'react'
 
 import type { ClientIconKey } from '#~/shared/config.js'
 
 import { renderClientIcon } from '../../foundation/client-icons.js'
 
+const panelInsetX = 1.5
+const panelInsetY = 1
+
 export function ClientPanelShell({
+  collapseLabel,
+  expandLabel,
   expanded,
   onChange,
   icon,
+  iconBadge,
+  titlePrefix,
   title,
   onTitleClick,
   subtitle,
-  summaryMeta,
   children
 }: {
+  collapseLabel: string
+  expandLabel: string
   expanded: boolean
   onChange: (expanded: boolean) => void
   icon: ClientIconKey
+  iconBadge?: ReactNode
+  titlePrefix?: ReactNode
   title: string
   onTitleClick?: () => void
-  subtitle: string
-  summaryMeta: ReactNode
+  subtitle?: ReactNode
   children: ReactNode
 }) {
   return (
-    <Accordion
-      disableGutters
-      expanded={expanded}
-      onChange={(_event, nextExpanded) => onChange(nextExpanded)}
-      sx={panelSx}
-    >
-      <AccordionSummary expandIcon={<ExpandMoreOutlined fontSize="small" />} sx={{ px: 1.5, py: 0.5 }}>
-        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
+    <Stack spacing={0} sx={panelSx}>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ px: panelInsetX, py: panelInsetY }}>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
           <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
-            <Box sx={iconBoxSx}>{renderClientIcon(icon)}</Box>
+            <Box sx={iconBoxSx}>
+              {renderClientIcon(icon)}
+              {iconBadge ? (
+                <Box sx={iconBadgeShellSx}>
+                  {iconBadge}
+                </Box>
+              ) : null}
+            </Box>
             <Box sx={{ minWidth: 0 }}>
-              {onTitleClick ? (
-                <ButtonBase
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    onTitleClick()
-                  }}
-                  onFocus={(event) => {
-                    event.stopPropagation()
-                  }}
-                  onKeyDown={(event) => {
-                    event.stopPropagation()
-                  }}
-                  sx={titleButtonSx}
-                >
+              <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
+                {titlePrefix ? (
+                  <Box sx={{ color: 'text.secondary', lineHeight: 0, display: 'grid', placeItems: 'center' }}>
+                    {titlePrefix}
+                  </Box>
+                ) : null}
+                {onTitleClick ? (
+                  <ButtonBase
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onTitleClick()
+                    }}
+                    onFocus={(event) => {
+                      event.stopPropagation()
+                    }}
+                    onKeyDown={(event) => {
+                      event.stopPropagation()
+                    }}
+                    sx={titleButtonSx}
+                  >
+                    <Typography variant="subtitle2" noWrap>{title}</Typography>
+                  </ButtonBase>
+                ) : (
                   <Typography variant="subtitle2" noWrap>{title}</Typography>
-                </ButtonBase>
-              ) : (
-                <Typography variant="subtitle2" noWrap>{title}</Typography>
-              )}
-              <Typography variant="caption" color="text.secondary" noWrap>{subtitle}</Typography>
+                )}
+              </Stack>
+              {subtitle ? (
+                <Box sx={{ color: 'text.secondary', lineHeight: 0, mt: 0.25 }}>
+                  {subtitle}
+                </Box>
+              ) : null}
             </Box>
           </Stack>
-          {summaryMeta}
         </Stack>
-      </AccordionSummary>
-      <AccordionDetails sx={{ px: 1.5, py: 1.25 }}>{children}</AccordionDetails>
-    </Accordion>
+        <Tooltip title={expanded ? collapseLabel : expandLabel}>
+          <IconButton
+            size="small"
+            aria-label={expanded ? collapseLabel : expandLabel}
+            onClick={() => onChange(!expanded)}
+            sx={{
+              width: 28,
+              height: 28,
+              flexShrink: 0
+            }}
+          >
+            <ExpandMoreOutlined
+              fontSize="small"
+              style={{
+                transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 120ms ease'
+              }}
+            />
+          </IconButton>
+        </Tooltip>
+      </Stack>
+      <Collapse in={expanded} timeout="auto" unmountOnExit>
+        <Box sx={{ px: panelInsetX, py: panelInsetY }}>{children}</Box>
+      </Collapse>
+    </Stack>
   )
 }
 
 const panelSx = {
-  '&::before': { display: 'none' },
-  boxShadow: 'none',
   bgcolor: 'background.paper',
   border: '1px solid',
   borderColor: 'divider',
@@ -80,6 +121,7 @@ const panelSx = {
 const iconBoxSx = {
   width: 34,
   height: 34,
+  position: 'relative',
   borderRadius: '4px',
   border: '1px solid',
   borderColor: 'divider',
@@ -87,7 +129,22 @@ const iconBoxSx = {
   color: 'text.primary',
   display: 'grid',
   placeItems: 'center',
-  flexShrink: 0
+  flexShrink: 0,
+  overflow: 'visible'
+}
+
+const iconBadgeShellSx = {
+  position: 'absolute',
+  right: -4,
+  bottom: -4,
+  width: 14,
+  height: 14,
+  borderRadius: '50%',
+  display: 'grid',
+  placeItems: 'center',
+  bgcolor: 'background.paper',
+  boxShadow: (theme: { palette: { background: { paper: string } } }) =>
+    `0 0 0 2px ${theme.palette.background.paper}`
 }
 
 const titleButtonSx = {
