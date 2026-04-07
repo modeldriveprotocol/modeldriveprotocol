@@ -1,13 +1,18 @@
+import ContentCopyOutlined from '@mui/icons-material/ContentCopyOutlined'
 import DeleteOutlineOutlined from '@mui/icons-material/DeleteOutlineOutlined'
 import EditOutlined from '@mui/icons-material/EditOutlined'
 import {
+  alpha,
   Box,
+  Button,
   ListItem,
   ListItemButton,
   ListItemText,
+  Popover,
   Stack,
   Tooltip
 } from '@mui/material'
+import { useState, type MouseEvent as ReactMouseEvent } from 'react'
 
 import { ToolbarIcon } from '../../shared.js'
 import { useDelayedHoverActions } from '../use-delayed-hover-actions.js'
@@ -24,7 +29,10 @@ export function MarketSourceRow({
   onRemove: () => void
   t: (key: string, values?: Record<string, string | number>) => string
 }) {
-  const { actionControlsVisible, bind } = useDelayedHoverActions()
+  const [deleteAnchor, setDeleteAnchor] = useState<HTMLElement | null>(null)
+  const { actionControlsVisible, bind } = useDelayedHoverActions({
+    forcedVisible: Boolean(deleteAnchor)
+  })
   const primaryText =
     summary.source.kind === 'repository' &&
     summary.source.repository &&
@@ -45,6 +53,21 @@ export function MarketSourceRow({
             count: summary.clients.length
           })
         ].join(' · ')
+  const modeLabel =
+    summary.source.kind === 'repository'
+      ? t('options.market.sourceMode.repository')
+      : t('options.market.sourceMode.direct')
+  const confirmDeleteOpen = Boolean(deleteAnchor)
+
+  async function handleCopySource(event: ReactMouseEvent<HTMLButtonElement>) {
+    event.stopPropagation()
+    await navigator.clipboard.writeText(summary.source.url)
+  }
+
+  function handleRequestRemove(event: ReactMouseEvent<HTMLButtonElement>) {
+    event.stopPropagation()
+    setDeleteAnchor(event.currentTarget)
+  }
 
   return (
     <ListItem disablePadding>
@@ -78,7 +101,7 @@ export function MarketSourceRow({
         <Box
           sx={{
             pl: 1,
-            width: 96,
+            width: 132,
             flexShrink: 0,
             height: 30,
             display: 'flex',
@@ -102,12 +125,17 @@ export function MarketSourceRow({
                 <EditOutlined fontSize="small" />
               </ToolbarIcon>
               <ToolbarIcon
+                label={t('options.market.copySource')}
+                onClick={(event) => {
+                  void handleCopySource(event)
+                }}
+              >
+                <ContentCopyOutlined fontSize="small" />
+              </ToolbarIcon>
+              <ToolbarIcon
                 label={t('options.market.removeSource')}
                 tone="error"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  onRemove()
-                }}
+                onClick={handleRequestRemove}
               >
                 <DeleteOutlineOutlined fontSize="small" />
               </ToolbarIcon>
@@ -123,20 +151,67 @@ export function MarketSourceRow({
                   whiteSpace: 'nowrap',
                   textAlign: 'right',
                   fontSize: 12,
+                  fontWeight: 600,
                   color:
                     'error' in summary && summary.error
                       ? 'error.main'
                       : 'text.secondary'
                 }}
               >
-                {summary.source.kind === 'repository'
-                  ? `${t('options.market.sourceMode.repository')}`
-                  : `${t('options.market.sourceMode.direct')}`}
+                {modeLabel}
               </Box>
             </Tooltip>
           )}
         </Box>
       </ListItemButton>
+
+      <Popover
+        open={confirmDeleteOpen}
+        anchorEl={deleteAnchor}
+        onClose={() => setDeleteAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Stack spacing={1} sx={{ p: 1.25, maxWidth: 300 }}>
+          <Box sx={{ fontSize: 14, fontWeight: 700 }}>
+            {t('options.market.confirmRemoveSource.title')}
+          </Box>
+          <Box sx={{ fontSize: 14 }}>
+            {t('options.market.confirmRemoveSource.body', {
+              title: summary.title
+            })}
+          </Box>
+          <Box sx={{ fontSize: 12, color: 'text.secondary' }}>
+            {t('options.market.confirmRemoveSource.hint')}
+          </Box>
+          <Stack
+            direction="row"
+            justifyContent="flex-end"
+            spacing={1}
+            sx={{ pt: 0.5 }}
+          >
+            <Button size="small" onClick={() => setDeleteAnchor(null)}>
+              {t('options.market.confirmRemoveSource.cancel')}
+            </Button>
+            <Button
+              size="small"
+              color="error"
+              variant="contained"
+              onClick={() => {
+                setDeleteAnchor(null)
+                onRemove()
+              }}
+              sx={{
+                '&:hover': {
+                  backgroundColor: (theme) => alpha(theme.palette.error.main, 0.9)
+                }
+              }}
+            >
+              {t('options.market.confirmRemoveSource.confirm')}
+            </Button>
+          </Stack>
+        </Stack>
+      </Popover>
     </ListItem>
   )
 }

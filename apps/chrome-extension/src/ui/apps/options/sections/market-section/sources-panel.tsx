@@ -276,6 +276,14 @@ export function MarketSourcesPanel({
         </ToolbarIcon>
       </Stack>
 
+      <Typography variant="caption" color="text.secondary">
+        {t(
+          editingSourceId
+            ? 'options.market.sourceEditor.editingHint'
+            : 'options.market.sourceEditor.createHint'
+        )}
+      </Typography>
+
       {sourceSummaries.length > 0 ? (
         <List dense disablePadding sx={{ py: 0.5 }}>
           {sourceSummaries.map((summary) => (

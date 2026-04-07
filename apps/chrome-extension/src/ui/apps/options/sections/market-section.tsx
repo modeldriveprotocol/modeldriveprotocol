@@ -1,13 +1,13 @@
 import {
+  Button,
   Collapse,
   Divider,
   List,
   ListItem,
-  ListItemText,
   Stack,
   Typography
 } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { MarketSourceConfig, RouteClientConfig } from '#~/shared/config.js'
 import type { PopupState } from '#~/background/shared.js'
@@ -33,6 +33,7 @@ export function MarketSection({
   routeClients,
   selectedEntryKey,
   onAddSource,
+  onCloseDetail,
   onDetailTitleChange,
   onOpenDetail,
   onInstall,
@@ -44,6 +45,7 @@ export function MarketSection({
   routeClients: RouteClientConfig[]
   selectedEntryKey?: string
   onAddSource: (input: MarketSourceDraftInput) => Promise<void>
+  onCloseDetail: () => void
   onDetailTitleChange: (title: string | undefined) => void
   onOpenDetail: (entryKey: string) => void
   onInstall: (catalog: MarketCatalogSourceData, entry: MarketCatalogClientEntry) => void
@@ -57,12 +59,80 @@ export function MarketSection({
   )
   const [catalogs, setCatalogs] = useState<MarketCatalogSourceResult[]>([])
   const [loadingCatalogs, setLoadingCatalogs] = useState(false)
+  const [highlightedEntryKey, setHighlightedEntryKey] = useState<string>()
+  const highlightedEntryKeyRef = useRef<string | undefined>(undefined)
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
+
+  function updateHighlightedEntryKey(nextKey: string | undefined) {
+    highlightedEntryKeyRef.current = nextKey
+    setHighlightedEntryKey(nextKey)
+  }
 
   useEffect(() => {
     if (marketSources.length === 0) {
       setControlsExpanded(true)
     }
   }, [marketSources.length])
+
+  useEffect(() => {
+    if (marketDetailOpen) {
+      function onWindowKeyDown(event: KeyboardEvent) {
+        if (event.key === 'Escape' && !event.metaKey && !event.ctrlKey && !event.altKey) {
+          event.preventDefault()
+          onCloseDetail()
+        }
+      }
+
+      window.addEventListener('keydown', onWindowKeyDown)
+      return () => {
+        window.removeEventListener('keydown', onWindowKeyDown)
+      }
+    }
+
+    function isTypingTarget(target: EventTarget | null) {
+      if (!(target instanceof HTMLElement)) {
+        return false
+      }
+
+      return (
+        target.isContentEditable ||
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT'
+      )
+    }
+
+    function focusSearch() {
+      searchInputRef.current?.focus()
+      searchInputRef.current?.select()
+    }
+
+    function onWindowKeyDown(event: KeyboardEvent) {
+      if (isTypingTarget(event.target)) {
+        return
+      }
+
+      if (event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        event.preventDefault()
+        focusSearch()
+        return
+      }
+
+      if (
+        event.key.toLowerCase() === 'k' &&
+        (event.metaKey || event.ctrlKey) &&
+        !event.altKey
+      ) {
+        event.preventDefault()
+        focusSearch()
+      }
+    }
+
+    window.addEventListener('keydown', onWindowKeyDown)
+    return () => {
+      window.removeEventListener('keydown', onWindowKeyDown)
+    }
+  }, [marketDetailOpen, onCloseDetail])
 
   useEffect(() => {
     let cancelled = false
@@ -103,6 +173,52 @@ export function MarketSection({
   }, [catalogs, routeClients, search])
 
   const selectedMarketEntry = marketEntries.find((item) => item.key === selectedEntryKey) ?? marketEntries[0]
+  const highlightedMarketEntry =
+    marketEntries.find((item) => item.key === highlightedEntryKey) ??
+    marketEntries[0]
+  const toolbarStatusText = search.trim()
+    ? t('options.market.resultsFilteredSummary', {
+        count: marketEntries.length,
+        query: search.trim(),
+        sourceCount: marketSources.length
+      })
+    : t('options.market.resultsSummary', {
+        clientCount: marketEntries.length,
+        sourceCount: marketSources.length
+      })
+  const toolbarShortcutText = marketEntries.length > 0
+    ? t('options.market.searchShortcutWithSelection')
+    : t('options.market.searchShortcut')
+
+  useEffect(() => {
+    if (marketEntries.length === 0) {
+      updateHighlightedEntryKey(undefined)
+      return
+    }
+
+    const currentKey = highlightedEntryKeyRef.current
+    const nextKey =
+      currentKey && marketEntries.some((item) => item.key === currentKey)
+        ? currentKey
+        : marketEntries[0]?.key
+
+    updateHighlightedEntryKey(nextKey)
+  }, [marketEntries])
+
+  function moveHighlightedEntry(direction: 1 | -1) {
+    if (marketEntries.length === 0) {
+      return
+    }
+
+    const currentIndex = highlightedMarketEntry
+      ? marketEntries.findIndex((item) => item.key === highlightedMarketEntry.key)
+      : 0
+    const safeIndex = currentIndex < 0 ? 0 : currentIndex
+    const nextIndex =
+      (safeIndex + direction + marketEntries.length) % marketEntries.length
+
+    updateHighlightedEntryKey(marketEntries[nextIndex]?.key)
+  }
 
   useEffect(() => {
     onDetailTitleChange(
@@ -128,8 +244,30 @@ export function MarketSection({
           loading={loadingCatalogs}
           pendingUpdateCount={marketUpdates?.pendingUpdateCount ?? 0}
           search={search}
+          searchInputRef={searchInputRef}
+          statusText={toolbarStatusText}
+          shortcutText={toolbarShortcutText}
           onRefresh={() => setRefreshKey((value) => value + 1)}
           onSearchChange={setSearch}
+          onSelectNextResult={() => moveHighlightedEntry(1)}
+          onSelectPreviousResult={() => moveHighlightedEntry(-1)}
+          onSubmitSearch={
+            marketEntries.length > 0
+              ? () => {
+                  const entryKey =
+                    highlightedEntryKeyRef.current &&
+                    marketEntries.some(
+                      (item) => item.key === highlightedEntryKeyRef.current
+                    )
+                      ? highlightedEntryKeyRef.current
+                      : marketEntries[0]?.key
+
+                  if (entryKey) {
+                    onOpenDetail(entryKey)
+                  }
+                }
+              : undefined
+          }
           onToggleControlsExpanded={() =>
             setControlsExpanded((current) => !current)
           }
@@ -151,25 +289,50 @@ export function MarketSection({
         <List dense disablePadding sx={{ py: 0.5 }}>
           {loadingCatalogs ? (
             <ListItem disablePadding sx={{ px: 1.25, py: 1.5 }}>
-              <ListItemText
-                primary={t('options.loadingWorkspace')}
-                primaryTypographyProps={{ variant: 'body2' }}
-              />
+              <Typography variant="body2" color="text.secondary">
+                {t('options.loadingWorkspace')}
+              </Typography>
             </ListItem>
           ) : marketEntries.length === 0 ? (
             <ListItem disablePadding sx={{ px: 1.25, py: 1.5 }}>
-              <ListItemText
-                primary={t('options.market.emptyResults')}
-                secondary={t('options.market.emptyResultsHint')}
-                primaryTypographyProps={{ variant: 'body2' }}
-                secondaryTypographyProps={{ variant: 'caption' }}
-              />
+              <Stack spacing={0.75} alignItems="flex-start">
+                <Typography variant="body2">
+                  {t('options.market.emptyResults')}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {t('options.market.emptyResultsHint')}
+                </Typography>
+                {search.trim() || !controlsExpanded ? (
+                  <Stack direction="row" spacing={0.75}>
+                    {search.trim() ? (
+                      <Button
+                        size="small"
+                        onClick={() => setSearch('')}
+                        sx={{ minWidth: 0, px: 0.75 }}
+                      >
+                        {t('options.market.clearSearch')}
+                      </Button>
+                    ) : null}
+                    {!controlsExpanded ? (
+                      <Button
+                        size="small"
+                        onClick={() => setControlsExpanded(true)}
+                        sx={{ minWidth: 0, px: 0.75 }}
+                      >
+                        {t('options.market.showSources')}
+                      </Button>
+                    ) : null}
+                  </Stack>
+                ) : null}
+              </Stack>
             </ListItem>
           ) : (
             marketEntries.map((item) => (
               <MarketEntryRow
+                active={item.key === highlightedMarketEntry?.key}
                 key={item.key}
                 item={item}
+                onActivate={() => updateHighlightedEntryKey(item.key)}
                 onInstall={() => onInstall(item.catalog, item.entry)}
                 onOpenDetail={() => onOpenDetail(item.key)}
                 t={t}

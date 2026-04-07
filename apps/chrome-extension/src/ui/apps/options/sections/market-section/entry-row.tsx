@@ -16,12 +16,16 @@ import { useDelayedHoverActions } from '../use-delayed-hover-actions.js'
 import type { MarketEntryItem } from './types.js'
 
 export function MarketEntryRow({
+  active,
   item,
+  onActivate,
   onInstall,
   onOpenDetail,
   t
 }: {
+  active: boolean
   item: MarketEntryItem
+  onActivate: () => void
   onInstall: () => void
   onOpenDetail: () => void
   t: (key: string, values?: Record<string, string | number>) => string
@@ -33,8 +37,18 @@ export function MarketEntryRow({
     <ListItem disablePadding>
       <ListItemButton
         className="market-entry-row-button"
+        selected={active}
         onClick={onOpenDetail}
-        {...bind}
+        onFocus={(event) => {
+          bind.onFocus()
+          onActivate()
+        }}
+        onBlur={bind.onBlur}
+        onMouseEnter={() => {
+          bind.onMouseEnter()
+          onActivate()
+        }}
+        onMouseLeave={bind.onMouseLeave}
         sx={{
           minHeight: 60,
           px: 1.25,

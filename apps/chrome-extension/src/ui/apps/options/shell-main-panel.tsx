@@ -474,6 +474,12 @@ export function OptionsMainPanel({
             routeClients={draft.routeClients}
             selectedEntryKey={controller.selectedMarketEntryKey}
             onAddSource={async (input) => controller.addMarketSource(input)}
+            onCloseDetail={() =>
+              controller.setSectionAndHash('market', {
+                marketDetailOpen: false,
+                marketEntryKey: undefined
+              })
+            }
             onDetailTitleChange={setMarketDetailTitle}
             onInstall={controller.installMarketClient}
             onOpenDetail={(entryKey) =>
