@@ -51,6 +51,19 @@ Use a real MCP consumer, for example:
 Wait for `listClients` to return `mdp-chrome-workspace` before starting the scenario.
 If the local server started after the extension, open the real `options.html` page and trigger `runtime:refresh` once to force a reconnect; on this machine that was much faster than waiting for background reconnect on its own.
 
+## Refactor Validation Floor
+
+For shared UI or config refactors, the minimum proof is:
+
+1. `pnpm --filter @modeldriveprotocol/chrome-extension test`
+2. `pnpm --filter @modeldriveprotocol/chrome-extension typecheck`
+3. `pnpm --filter @modeldriveprotocol/chrome-extension build`
+4. one real `options` validation pass
+5. one real `sidepanel` validation pass if sidepanel code or shared client preview code changed
+
+Do not stop at a narrow test subset when the change touched shared render state, shared tree helpers, or test infrastructure itself.
+In this app, missing `.test.tsx` coverage previously let real UI regressions slip through even though focused tests passed.
+
 ## Known Runtime Behavior
 
 Workspace-management writes trigger an extension runtime refresh.
@@ -68,6 +81,25 @@ The reliable loop is:
 4. retry the mutating call
 
 Use this retry pattern for `/extension/clients/create`, `/extension/clients/update`, `/extension/clients/delete`, and `/extension/clients/add-expose-rule`.
+
+## Real UI Checklist
+
+When the refactor changes the shared client/asset model, validate these concrete routes in a live extension session:
+
+1. `#/workspace`
+   - confirm the list surface renders and recent activity/insights are visible
+2. `#/clients/background-client-default/assets`
+   - confirm `SKILL.md` loads
+   - switch to a JS/code leaf and confirm the body changes without flicker or crash
+3. one route/page client asset route
+   - confirm `SKILL.md` loads and routing stays in sync
+4. `sidepanel.html`
+   - confirm client cards render
+   - confirm inline asset preview defaults to `SKILL.md`
+   - confirm path-bar switching changes the preview body
+
+If the change includes path migration, inspect the live stored config or runtime payload too.
+Do not accept "the new path renders in the tree" as proof when persisted `source` or markdown copy can still contain old `/extension/...` content.
 
 ## Visual Confirmation
 

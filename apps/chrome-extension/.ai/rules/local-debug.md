@@ -104,6 +104,26 @@ pnpm --filter @modeldriveprotocol/chrome-extension dev -- --port 3001
 - When the local server is restarted, the extension may stay open but not reconnect immediately. The fastest recovery is to open `options.html` and send `runtime:refresh` from that page, or reload the extension service worker.
 - When you reuse a profile, extension pages can keep pointing at a previous Vite port. If the options page title renders but the body is empty, inspect the page HTML and restart WXT on the same `localhost:<port>` referenced by the injected script tags.
 
+## Target Reuse Rule
+
+- do not keep opening new extension pages during one debugging session if an existing target can be reused
+- first look for the already-open `options.html` or `sidepanel.html` page and inspect or drive that target
+- create a fresh page target only when:
+  - no relevant extension page exists
+  - the existing page is already dirty or stuck in stale runtime state
+  - you need one clean proof path for a route that the current page can no longer reach reliably
+- if you create a temporary target just for inspection, close it after validation so the browser does not accumulate duplicate pages
+
+## WXT Instability Signals
+
+- if the live page suddenly loses HMR updates or starts behaving inconsistently after a refactor, check the running `dev` logs before blaming the browser UI
+- in this environment, these log patterns were strong signals that the WXT/Vite session itself had become unhealthy:
+  - `DataCloneError: Failed to execute 'measure' on 'Performance'`
+  - `Should not already be working.`
+  - module export mismatches after a file split or re-export change
+- when those appear, do not keep debugging inside a dirty extension page; restart `pnpm --filter @modeldriveprotocol/chrome-extension dev`, then reopen or reuse one clean extension target
+- keep the current stability work tracked outside ad hoc chat notes; see the open WXT stabilization issue before inventing a new local workaround
+
 ## Notes From The April 5, 2026 Asset Workspace Debug Session
 
 - If a backend JS asset leaf whitescreens while markdown assets still render, do not assume Monaco is the problem first.
