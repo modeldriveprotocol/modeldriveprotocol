@@ -32,6 +32,14 @@ Treat page clients and background clients as one asset editing surface with one 
 - when syncing selected asset from the routed `assetPath`, only apply that correction when the external route actually changed or the current asset disappeared from the model
 - never let a route-correction effect keep reapplying a stale `assetPath` after the user already clicked to a different node; that pattern will fight the local `selectedItemId -> displayedAssetId` sync and can crash the page
 
+## Selection Scope Rules
+
+- multi-select, `Ctrl/Cmd+A`, and keyboard navigation must operate on the currently visible tree, not on the fully filtered asset universe
+- if a folder is collapsed, hidden descendants must drop out of "select all" and any range-like selection logic
+- if a search narrows the tree, selected ids must be normalized back to visible items; do not keep invisible rows highlighted in state
+- when collapsing a folder that contains the current file, update both the primary selected item and the selected item set in the same transition; otherwise the detail pane and row highlight diverge
+- search-result keyboard navigation must update the selection collection together with the displayed asset, not only the detail pane target
+
 ## Context Menu Rules
 
 - context menu state is about the menu target, not the active editor selection
@@ -69,3 +77,14 @@ When those appear, inspect:
 - shared editor chrome belongs in shared asset editor components
 - feature-specific files should only supply asset data, target-specific actions, and runtime-specific detail controls
 - if page and background views start diverging visually, first ask whether the logic should be moved back into the shared workspace instead of patched twice
+- folder enable-state aggregation, bulk enable/disable mutations, shared tree `sx`, and context-menu target types should live in shared helpers or shared types once both page and background need them
+- do not duplicate visible-selection rules in page and background editors; that logic drifts quickly and is hard to review by inspection alone
+
+## Validation Rules
+
+- after refactoring shared asset workspace code, run the full app test suite, not just one or two focused tests
+- keep component coverage for both `options` asset editors and any shared tree helpers; shared render-loop bugs often pass typecheck and narrow unit tests
+- when the change touches routing, selection, or context menus, prove all three in a real browser:
+  1. `SKILL.md` opens
+  2. switching to a JS/code leaf works
+  3. right-click does not change detail state or crash the page
