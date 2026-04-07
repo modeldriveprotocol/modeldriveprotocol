@@ -59,6 +59,7 @@ jobs:
           printf "registry=https://registry.npmjs.org/\n" >> "$NPM_CONFIG_USERCONFIG"
           printf "always-auth=true\n" >> "$NPM_CONFIG_USERCONFIG"
           printf "//registry.npmjs.org/:_authToken=%s\n" "$NODE_AUTH_TOKEN" >> "$NPM_CONFIG_USERCONFIG"
+          printf "//registry.npmjs.com/:_authToken=%s\n" "$NODE_AUTH_TOKEN" >> "$NPM_CONFIG_USERCONFIG"
 
       - name: Build workspace
         run: pnpm build
