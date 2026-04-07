@@ -71,7 +71,8 @@ export function SidepanelAssetPreview({
       selectedEntry
         ? findPreviewTrail(
             previewTree,
-            getBreadcrumbSegments(selectedEntry.displayPath ?? selectedEntry.path)
+            getBreadcrumbSegments(selectedEntry.displayPath ?? selectedEntry.path),
+            selectedEntry.path
           )
         : [],
     [previewTree, selectedEntry]
@@ -197,7 +198,7 @@ export function SidepanelAssetPreview({
                   'ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace'
               }}
             >
-              {node.label}
+              {getPreviewNodeMenuLabel(node)}
             </Typography>
           </MenuItem>
         ))}
@@ -497,15 +498,23 @@ function sortPreviewTree(node: PreviewNode): void {
   }
 }
 
-function findPreviewTrail(root: PreviewNode, segments: string[]): PreviewNode[] {
+function findPreviewTrail(
+  root: PreviewNode,
+  segments: string[],
+  selectedPath?: string
+): PreviewNode[] {
   const trail: PreviewNode[] = []
   let current = root
 
-  for (const segment of segments) {
+  for (const [index, segment] of segments.entries()) {
     if (current.kind !== 'folder') {
       break
     }
-    const next = current.children.find((child) => child.label === segment)
+    const isLeaf = index === segments.length - 1
+    const next = findPreviewChild(current, segment, {
+      isLeaf,
+      ...(selectedPath ? { selectedPath } : {})
+    })
     if (!next) {
       break
     }
@@ -514,6 +523,37 @@ function findPreviewTrail(root: PreviewNode, segments: string[]): PreviewNode[] 
   }
 
   return trail
+}
+
+function findPreviewChild(
+  parent: PreviewFolderNode,
+  label: string,
+  options: {
+    isLeaf: boolean
+    selectedPath?: string
+  }
+): PreviewNode | undefined {
+  if (!options.isLeaf) {
+    return parent.children.find(
+      (child): child is PreviewFolderNode =>
+        child.kind === 'folder' && child.label === label
+    )
+  }
+
+  if (options.selectedPath) {
+    const exactFile = parent.children.find(
+      (child): child is PreviewFileNode =>
+        child.kind === 'file' &&
+        child.label === label &&
+        child.path === options.selectedPath
+    )
+
+    if (exactFile) {
+      return exactFile
+    }
+  }
+
+  return parent.children.find((child) => child.label === label)
 }
 
 function resolveNodeSelection(node: PreviewNode): string | undefined {
@@ -542,6 +582,10 @@ function resolveNodeSelection(node: PreviewNode): string | undefined {
 
 function getFolderChildren(node: PreviewNode | undefined): PreviewNode[] {
   return node?.kind === 'folder' ? node.children : []
+}
+
+function getPreviewNodeMenuLabel(node: PreviewNode): string {
+  return node.kind === 'folder' ? `${node.label}/` : node.label
 }
 
 const previewFrameSx = {

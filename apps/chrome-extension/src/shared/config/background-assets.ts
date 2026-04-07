@@ -32,6 +32,8 @@ export interface BackgroundExposeDefinition {
   id: BackgroundExposeId
   path: string
   legacyPaths?: readonly string[]
+  legacyDescriptions?: readonly string[]
+  legacySources?: readonly string[]
   kind: BackgroundExposeKind
   group: BackgroundExposeGroup
   description: string
@@ -74,6 +76,153 @@ function withLegacyExtensionPrefix(
     }
   })
 }
+
+const LEGACY_ROOT_SKILL_DESCRIPTION =
+  'Overview for the /extension directory and the built-in Chrome extension capabilities exposed from it.'
+const LEGACY_ROOT_SKILL_SOURCE = `# /extension
+
+This directory is the root of the built-in Chrome extension capabilities exposed through Model Drive Protocol.
+
+## How to navigate
+
+- Read the files directly under \`/extension\` for runtime status and browser actions.
+- Read \`/extension/resources/SKILL.md\` before working with JSON snapshot resources.
+- Read \`/extension/clients/SKILL.md\` before creating, updating, or deleting stored clients.
+
+## Notes
+
+- Different background clients can expose different subsets of this directory.
+- Prefer reading the nearest \`SKILL.md\` in the folder you are working in.
+- If a folder contains \`.ai/skills\` or \`.ai/rules\`, use those for more detailed guidance.
+`
+
+const LEGACY_RESOURCES_SKILL_DESCRIPTION =
+  'Overview for the /extension/resources directory and its JSON snapshot resources.'
+const LEGACY_RESOURCES_SKILL_SOURCE = `# /extension/resources
+
+This directory contains read-only JSON snapshot resources for the built-in Chrome extension runtime.
+
+## What lives here
+
+- \`/extension/resources/status\`: extension status snapshot
+- \`/extension/resources/config\`: workspace configuration snapshot
+- \`/extension/resources/tabs\`: visible browser tabs snapshot
+
+## How to work in this folder
+
+1. Prefer these resources when you need structured snapshots instead of imperative actions.
+2. Read \`/extension/SKILL.md\` if you need a broader overview of the extension capability tree.
+
+## Notes
+
+- These paths are read-only snapshots.
+- The payloads are returned as JSON resources.
+`
+
+const LEGACY_MANAGE_CLIENTS_SKILL_DESCRIPTION =
+  'Overview for the /extension/clients workspace folder and its built-in management capabilities.'
+const LEGACY_MANAGE_CLIENTS_SKILL_SOURCE = `# /extension/clients
+
+This folder contains the built-in workspace management capabilities for stored Chrome extension clients.
+
+## What lives here
+
+- \`/extension/clients\`: list stored background and route clients
+- \`POST /extension/clients/create\`: create a new stored client
+- \`PATCH /extension/clients/update\`: update a stored client
+- \`DELETE /extension/clients/delete\`: delete a stored client
+- \`POST /extension/clients/add-expose-rule\`: persist a new route expose rule
+
+## How to work in this folder
+
+1. Read \`/extension/clients\` first so you know the current \`backgroundClients\` and \`routeClients\`.
+2. Use the create, update, and delete paths to mutate stored clients.
+3. Prefer the internal \`id\` when mutating a specific client.
+4. Read \`/extension/clients/.ai/skills/manage-client-expose-rules/SKILL.md\` if the task is specifically about route expose rules.
+
+## Notes
+
+- Changes are persisted to extension storage.
+- Saved changes are applied to connected clients immediately.
+- The built-in \`background-client-workspace\` client is required and cannot be deleted.
+`
+
+const LEGACY_MANAGE_CLIENTS_GUIDE_DESCRIPTION =
+  'Guide for creating, updating, and deleting stored Chrome extension clients.'
+const LEGACY_MANAGE_CLIENTS_GUIDE_SOURCE = `# Manage Chrome Workspace Clients
+
+Use this skill to inspect, create, update, or delete the Chrome extension clients stored in the workspace.
+
+## Recommended workflow
+
+1. Read \`/extension/clients\` and inspect the current \`backgroundClients\` and \`routeClients\` entries.
+2. Create a new \`background\` or \`route\` client with \`/extension/clients/create\`.
+3. Update client metadata, enablement, icons, expose paths, descriptions, or backend scripts with \`/extension/clients/update\`.
+4. Delete a client when it is no longer needed with \`/extension/clients/delete\`.
+
+## Targeting rules
+
+- Prefer the internal \`id\` field from the client listing result when mutating a specific client.
+- Pass \`kind\` together with \`clientId\` if the target would otherwise be ambiguous.
+- The built-in \`background-client-workspace\` client is required and cannot be deleted.
+
+## Notes
+
+- Mutations are persisted to extension storage.
+- Saved changes are applied to connected clients right after the write completes.
+`
+
+const LEGACY_MANAGE_CLIENT_EXPOSE_RULES_SKILL_DESCRIPTION =
+  'Detailed skill for persisting route expose rules under the /extension/clients workspace folder.'
+const LEGACY_MANAGE_CLIENT_EXPOSE_RULES_SKILL_SOURCE = `# /extension/clients/.ai/skills/manage-client-expose-rules
+
+Use this skill when the task is specifically about persisting new expose rules for a stored route client.
+
+## Recommended workflow
+
+1. Read \`/extension/clients\` and find the target route client.
+2. Call \`/extension/clients/add-expose-rule\` with the route client \`id\`, a \`mode\`, and a \`value\`.
+3. Re-read the client listing if you need to confirm the saved route rule list.
+
+## Supported modes
+
+- \`pathname-prefix\`
+- \`pathname-exact\`
+- \`url-contains\`
+- \`regex\`
+
+## Notes
+
+- This endpoint only works for \`route\` clients.
+- The response sets \`duplicate: true\` when the same \`mode\` and \`value\` already exist.
+- Stored expose rules are persisted and then applied to the live route client registration.
+`
+
+const LEGACY_MANAGE_CLIENT_EXPOSE_RULES_GUIDE_DESCRIPTION =
+  'Guide for persisting route expose rules for a stored Chrome extension client.'
+const LEGACY_MANAGE_CLIENT_EXPOSE_RULES_GUIDE_SOURCE = `# Add Stored Expose Rules To Route Clients
+
+Use this skill when you need to add and persist a new expose rule for a route client.
+
+## Recommended workflow
+
+1. Read \`/extension/clients\` and find the target route client.
+2. Call \`/extension/clients/add-expose-rule\` with the route client \`id\`, a \`mode\`, and a \`value\`.
+3. Re-read the client listing if you need to confirm the saved route rule list.
+
+## Supported modes
+
+- \`pathname-prefix\`
+- \`pathname-exact\`
+- \`url-contains\`
+- \`regex\`
+
+## Notes
+
+- This endpoint only works for \`route\` clients.
+- The response sets \`duplicate: true\` when the same \`mode\` and \`value\` already exist.
+- Stored expose rules are persisted and then applied to the live route client registration.
+`
 
 export const BACKGROUND_BROWSER_EXPOSE_DEFINITIONS: BackgroundExposeDefinition[] =
   withLegacyExtensionPrefix([
@@ -314,6 +463,8 @@ export const BACKGROUND_SKILL_EXPOSE_DEFINITIONS: BackgroundExposeDefinition[] =
     {
       id: 'extension.skills.root',
       path: '/SKILL.md',
+      legacyDescriptions: [LEGACY_ROOT_SKILL_DESCRIPTION],
+      legacySources: [LEGACY_ROOT_SKILL_SOURCE],
       kind: 'skill',
       group: 'skill',
       contentType: 'text/markdown',
@@ -340,6 +491,8 @@ This directory is the root of the built-in Chrome extension capabilities exposed
     {
       id: 'extension.skills.resources',
       path: '/resources/SKILL.md',
+      legacyDescriptions: [LEGACY_RESOURCES_SKILL_DESCRIPTION],
+      legacySources: [LEGACY_RESOURCES_SKILL_SOURCE],
       kind: 'skill',
       group: 'skill',
       contentType: 'text/markdown',
@@ -374,6 +527,14 @@ This directory contains read-only JSON snapshot resources for the built-in Chrom
         '/extension/skills/manage-clients/skill.md',
         '/extension/clients/skill.md',
         '/clients/skill.md'
+      ],
+      legacyDescriptions: [
+        LEGACY_MANAGE_CLIENTS_SKILL_DESCRIPTION,
+        LEGACY_MANAGE_CLIENTS_GUIDE_DESCRIPTION
+      ],
+      legacySources: [
+        LEGACY_MANAGE_CLIENTS_SKILL_SOURCE,
+        LEGACY_MANAGE_CLIENTS_GUIDE_SOURCE
       ],
       kind: 'skill',
       group: 'skill',
@@ -415,6 +576,14 @@ This folder contains the built-in workspace management capabilities for stored C
         '/extension/skills/manage-client-expose-rules/skill.md',
         '/extension/clients/.ai/skills/manage-client-expose-rules/skill.md',
         '/clients/.ai/skills/manage-client-expose-rules/skill.md'
+      ],
+      legacyDescriptions: [
+        LEGACY_MANAGE_CLIENT_EXPOSE_RULES_SKILL_DESCRIPTION,
+        LEGACY_MANAGE_CLIENT_EXPOSE_RULES_GUIDE_DESCRIPTION
+      ],
+      legacySources: [
+        LEGACY_MANAGE_CLIENT_EXPOSE_RULES_SKILL_SOURCE,
+        LEGACY_MANAGE_CLIENT_EXPOSE_RULES_GUIDE_SOURCE
       ],
       kind: 'skill',
       group: 'skill',
@@ -583,12 +752,14 @@ export function normalizeBackgroundExposeAssets(
       ),
       description: normalizeBackgroundExposeDescription(
         readString(record, 'description'),
-        fallback?.description ?? definition.description
+        fallback?.description ?? definition.description,
+        definition
       ),
       enabled: readBoolean(record, 'enabled') ?? fallback?.enabled ?? true,
       source: normalizeBackgroundExposeSource(
         readString(record, 'source'),
-        fallback?.source ?? definition.defaultSource
+        fallback?.source ?? definition.defaultSource,
+        definition
       )
     })
   }
@@ -743,15 +914,33 @@ function normalizeBackgroundExposePath(
 
 function normalizeBackgroundExposeDescription(
   value: string | undefined,
-  fallback: string
+  fallback: string,
+  definition: BackgroundExposeDefinition
 ): string {
   const normalized = value?.trim()
-  return normalized && normalized.length > 0 ? normalized : fallback
+  if (!normalized || normalized.length === 0) {
+    return fallback
+  }
+
+  if (definition.legacyDescriptions?.includes(normalized)) {
+    return definition.description
+  }
+
+  return normalized
 }
 
 function normalizeBackgroundExposeSource(
   value: string | undefined,
-  fallback: string
+  fallback: string,
+  definition: BackgroundExposeDefinition
 ): string {
-  return value !== undefined ? value : fallback
+  if (value === undefined) {
+    return fallback
+  }
+
+  if (definition.legacySources?.includes(value)) {
+    return definition.defaultSource
+  }
+
+  return value
 }

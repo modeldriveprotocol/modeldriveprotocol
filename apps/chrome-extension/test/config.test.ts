@@ -242,6 +242,162 @@ describe('chrome extension config helpers', () => {
     )
   })
 
+  it('migrates legacy built-in background skill descriptions and markdown content to root paths', () => {
+    const normalized = normalizeConfig({
+      ...DEFAULT_EXTENSION_CONFIG,
+      backgroundClients: [
+        {
+          ...DEFAULT_BACKGROUND_CLIENT,
+          exposes: DEFAULT_BACKGROUND_CLIENT.exposes.map((asset) =>
+            asset.id === 'extension.skills.root'
+              ? {
+                  ...asset,
+                  path: '/extension/SKILL.md',
+                  description:
+                    'Overview for the /extension directory and the built-in Chrome extension capabilities exposed from it.',
+                  source: `# /extension
+
+This directory is the root of the built-in Chrome extension capabilities exposed through Model Drive Protocol.
+
+## How to navigate
+
+- Read the files directly under \`/extension\` for runtime status and browser actions.
+- Read \`/extension/resources/SKILL.md\` before working with JSON snapshot resources.
+- Read \`/extension/clients/SKILL.md\` before creating, updating, or deleting stored clients.
+
+## Notes
+
+- Different background clients can expose different subsets of this directory.
+- Prefer reading the nearest \`SKILL.md\` in the folder you are working in.
+- If a folder contains \`.ai/skills\` or \`.ai/rules\`, use those for more detailed guidance.
+`
+                }
+              : asset.id === 'extension.skills.manage-clients'
+                ? {
+                    ...asset,
+                    path: '/extension/clients/SKILL.md',
+                    description:
+                      'Guide for creating, updating, and deleting stored Chrome extension clients.',
+                    source: `# Manage Chrome Workspace Clients
+
+Use this skill to inspect, create, update, or delete the Chrome extension clients stored in the workspace.
+
+## Recommended workflow
+
+1. Read \`/extension/clients\` and inspect the current \`backgroundClients\` and \`routeClients\` entries.
+2. Create a new \`background\` or \`route\` client with \`/extension/clients/create\`.
+3. Update client metadata, enablement, icons, expose paths, descriptions, or backend scripts with \`/extension/clients/update\`.
+4. Delete a client when it is no longer needed with \`/extension/clients/delete\`.
+
+## Targeting rules
+
+- Prefer the internal \`id\` field from the client listing result when mutating a specific client.
+- Pass \`kind\` together with \`clientId\` if the target would otherwise be ambiguous.
+- The built-in \`background-client-workspace\` client is required and cannot be deleted.
+
+## Notes
+
+- Mutations are persisted to extension storage.
+- Saved changes are applied to connected clients right after the write completes.
+`
+                  }
+                : asset.id === 'extension.skills.manage-client-expose-rules'
+                  ? {
+                      ...asset,
+                      path: '/extension/clients/.ai/skills/manage-client-expose-rules/SKILL.md',
+                      description:
+                        'Guide for persisting route expose rules for a stored Chrome extension client.',
+                      source: `# Add Stored Expose Rules To Route Clients
+
+Use this skill when you need to add and persist a new expose rule for a route client.
+
+## Recommended workflow
+
+1. Read \`/extension/clients\` and find the target route client.
+2. Call \`/extension/clients/add-expose-rule\` with the route client \`id\`, a \`mode\`, and a \`value\`.
+3. Re-read the client listing if you need to confirm the saved route rule list.
+
+## Supported modes
+
+- \`pathname-prefix\`
+- \`pathname-exact\`
+- \`url-contains\`
+- \`regex\`
+
+## Notes
+
+- This endpoint only works for \`route\` clients.
+- The response sets \`duplicate: true\` when the same \`mode\` and \`value\` already exist.
+- Stored expose rules are persisted and then applied to the live route client registration.
+`
+                  }
+                : { ...asset }
+          )
+        },
+        DEFAULT_WORKSPACE_MANAGEMENT_CLIENT
+      ]
+    })
+
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.root'
+      )
+    ).toMatchObject({
+      path: '/SKILL.md',
+      description:
+        'Overview for the root directory and the built-in Chrome extension capabilities exposed from it.'
+    })
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.root'
+      )?.source
+    ).toContain('# /')
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.root'
+      )?.source
+    ).not.toContain('/extension/')
+
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-clients'
+      )
+    ).toMatchObject({
+      path: '/clients/SKILL.md',
+      description:
+        'Overview for the /clients workspace folder and its built-in management capabilities.'
+    })
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-clients'
+      )?.source
+    ).toContain('POST /clients/create')
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-clients'
+      )?.source
+    ).not.toContain('/extension/clients')
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-client-expose-rules'
+      )
+    ).toMatchObject({
+      path: '/clients/.ai/skills/manage-client-expose-rules/SKILL.md',
+      description:
+        'Detailed skill for persisting route expose rules under the /clients workspace folder.'
+    })
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-client-expose-rules'
+      )?.source
+    ).toContain('/clients/add-expose-rule')
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-client-expose-rules'
+      )?.source
+    ).not.toContain('/extension/clients')
+  })
+
   it('deduplicates and trims match patterns', () => {
     expect(
       parseMatchPatterns(' https://app.example.com/* \nhttps://app.example.com/*\n')
