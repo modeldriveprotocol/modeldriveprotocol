@@ -14,8 +14,12 @@ Open the smallest relevant guide for the current task:
   read [.ai/rules/progressive-disclosure.md](./.ai/rules/progressive-disclosure.md)
 - new to the repo, need the reading order, workspace map, or architecture overview:
   read [.ai/rules/architecture.md](./.ai/rules/architecture.md)
+- task is about splitting large source files, keeping file size bounded, or deciding where extracted modules should live:
+  read [.ai/rules/architecture/module-organization.md](./.ai/rules/architecture/module-organization.md)
 - deciding which repo-level checks to run or what each validation command proves:
   read [.ai/rules/validation.md](./.ai/rules/validation.md)
+- task is about import grouping, path style, naming, or deciding whether code should stay feature-local or move into a shared module:
+  read [.ai/rules/CODING-STYLE.md](./.ai/rules/CODING-STYLE.md)
 - task requires proof from a real hosted runtime, not just unit tests or repo smoke checks:
   read [.ai/rules/validation.md](./.ai/rules/validation.md), then the relevant subproject validation and host-specific E2E guide
 - task is about Codex CLI usage, project-level MCP config, or debugging why Codex cannot use the local `mdp` MCP server:

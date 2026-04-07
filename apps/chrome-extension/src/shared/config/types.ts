@@ -1,8 +1,11 @@
 import {
-  BACKGROUND_BROWSER_TOOL_IDS,
-  BACKGROUND_RESOURCE_IDS,
-  BACKGROUND_SKILL_IDS,
-  BACKGROUND_WORKSPACE_TOOL_IDS
+  BACKGROUND_BROWSER_EXPOSE_PATHS,
+  BACKGROUND_BROWSER_SKILL_EXPOSE_PATHS,
+  BACKGROUND_SKILL_EXPOSE_PATHS,
+  BACKGROUND_WORKSPACE_SKILL_EXPOSE_PATHS,
+  BACKGROUND_WORKSPACE_EXPOSE_PATHS,
+  createBackgroundExposeAssets,
+  type BackgroundExposeAsset
 } from './background-assets.js'
 
 export type ClientIconKey =
@@ -46,10 +49,13 @@ export interface RecordedFlowStep {
 }
 
 export interface RouteClientRecording {
+  kind: 'flow'
   id: string
+  enabled: boolean
   path: string
   name: string
   description: string
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   mode: 'recording' | 'script'
   createdAt: string
   updatedAt: string
@@ -64,10 +70,13 @@ export interface SelectorResourceAttributeMap {
 }
 
 export interface RouteSelectorResource {
+  kind: 'resource'
   id: string
+  enabled: boolean
   path: string
   name: string
   description: string
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   createdAt: string
   url?: string
   selector: string
@@ -76,6 +85,7 @@ export interface RouteSelectorResource {
   classes: string[]
   text?: string
   attributes: SelectorResourceAttributeMap
+  scriptSource?: string
 }
 
 export type RouteSkillParameterType = 'string' | 'number' | 'boolean'
@@ -95,16 +105,25 @@ export interface RouteSkillMetadata {
 }
 
 export interface RouteSkillEntry {
+  kind: 'skill'
   id: string
+  enabled: boolean
   path: string
   metadata: RouteSkillMetadata
   content: string
 }
 
 export interface RouteSkillFolder {
+  kind: 'folder'
   id: string
   path: string
 }
+
+export type RouteExposeAsset =
+  | RouteClientRecording
+  | RouteSelectorResource
+  | RouteSkillEntry
+  | RouteSkillFolder
 
 export interface MarketSourceConfig {
   id: string
@@ -133,22 +152,25 @@ export interface MarketClientInstallSource {
 export interface BackgroundClientConfig {
   kind: 'background'
   id: string
+  createdAt: string
   enabled: boolean
   favorite: boolean
+  pinned: boolean
   clientId: string
   clientName: string
   clientDescription: string
   icon: ClientIconKey
-  disabledTools: string[]
-  disabledResources: string[]
-  disabledSkills: string[]
+  exposes: BackgroundExposeAsset[]
+  disabledExposePaths: string[]
 }
 
 export interface RouteClientConfig {
   kind: 'route'
   id: string
+  createdAt: string
   enabled: boolean
   favorite: boolean
+  pinned: boolean
   clientId: string
   clientName: string
   clientDescription: string
@@ -157,6 +179,7 @@ export interface RouteClientConfig {
   routeRules: RoutePathRule[]
   autoInjectBridge: boolean
   pathScriptSource: string
+  exposes: RouteExposeAsset[]
   recordings: RouteClientRecording[]
   selectorResources: RouteSelectorResource[]
   skillFolders: RouteSkillFolder[]
@@ -196,31 +219,53 @@ export const DEFAULT_OFFICIAL_MARKET_SOURCE: MarketSourceConfig = {
 export const DEFAULT_BACKGROUND_CLIENT: BackgroundClientConfig = {
   kind: 'background',
   id: 'background-client-default',
+  createdAt: new Date().toISOString(),
   enabled: true,
   favorite: false,
+  pinned: false,
   clientId: 'mdp-chrome-background',
   clientName: 'MDP Chrome Background',
   clientDescription:
     'Chrome extension runtime that exposes browser-level capabilities through Model Drive Protocol.',
   icon: 'chrome',
-  disabledTools: [...BACKGROUND_WORKSPACE_TOOL_IDS],
-  disabledResources: [],
-  disabledSkills: [...BACKGROUND_SKILL_IDS]
+  exposes: createBackgroundExposeAssets([
+    ...BACKGROUND_WORKSPACE_EXPOSE_PATHS,
+    ...BACKGROUND_SKILL_EXPOSE_PATHS.filter(
+      (path) => !BACKGROUND_BROWSER_SKILL_EXPOSE_PATHS.includes(path)
+    )
+  ]),
+  disabledExposePaths: [
+    ...BACKGROUND_WORKSPACE_EXPOSE_PATHS,
+    ...BACKGROUND_SKILL_EXPOSE_PATHS.filter(
+      (path) => !BACKGROUND_BROWSER_SKILL_EXPOSE_PATHS.includes(path)
+    )
+  ]
 }
 
 export const DEFAULT_WORKSPACE_MANAGEMENT_CLIENT: BackgroundClientConfig = {
   kind: 'background',
   id: 'background-client-workspace',
+  createdAt: new Date().toISOString(),
   enabled: true,
   favorite: false,
+  pinned: false,
   clientId: 'mdp-chrome-workspace',
   clientName: 'MDP Chrome Workspace',
   clientDescription:
     'Chrome extension workspace manager that can create, update, and remove clients and persist route expose rules.',
   icon: 'layers',
-  disabledTools: [...BACKGROUND_BROWSER_TOOL_IDS],
-  disabledResources: [...BACKGROUND_RESOURCE_IDS],
-  disabledSkills: []
+  exposes: createBackgroundExposeAssets([
+    ...BACKGROUND_BROWSER_EXPOSE_PATHS,
+    ...BACKGROUND_SKILL_EXPOSE_PATHS.filter(
+      (path) => !BACKGROUND_WORKSPACE_SKILL_EXPOSE_PATHS.includes(path)
+    )
+  ]),
+  disabledExposePaths: [
+    ...BACKGROUND_BROWSER_EXPOSE_PATHS,
+    ...BACKGROUND_SKILL_EXPOSE_PATHS.filter(
+      (path) => !BACKGROUND_WORKSPACE_SKILL_EXPOSE_PATHS.includes(path)
+    )
+  ]
 }
 
 export const DEFAULT_BACKGROUND_CLIENTS: BackgroundClientConfig[] = [
@@ -238,9 +283,8 @@ export const DEFAULT_EXTENSION_CONFIG: ExtensionConfig = {
   notificationTitle: 'Model Drive Protocol for Chrome',
   backgroundClients: DEFAULT_BACKGROUND_CLIENTS.map((client) => ({
     ...client,
-    disabledTools: [...client.disabledTools],
-    disabledResources: [...client.disabledResources],
-    disabledSkills: [...client.disabledSkills]
+    exposes: client.exposes.map((asset) => ({ ...asset })),
+    disabledExposePaths: [...client.disabledExposePaths]
   })),
   routeClients: [],
   marketSources: [DEFAULT_OFFICIAL_MARKET_SOURCE],

@@ -4,6 +4,7 @@ import type {
   RouteClientConfig,
   RouteSelectorResource
 } from '#~/shared/config.js'
+import { summarizeRouteAssetKinds } from '#~/shared/config.js'
 import type { MarketSourcePendingUpdate } from '#~/shared/storage.js'
 import { asRecord, createStableId, readNumber, readString } from '#~/shared/utils.js'
 import type {
@@ -219,7 +220,7 @@ export function toCanonicalPath(path: string): string {
 
 export function toCanonicalSkillPath(path: string): string {
   const canonical = toCanonicalPath(path)
-  return canonical.endsWith('/skill.md') ? canonical : `${canonical}/skill.md`
+  return canonical.replace(/\/skill\.md$/i, '/SKILL.md')
 }
 
 export function serializeTab(
@@ -291,9 +292,5 @@ export function isScrollLogicalPosition(
 }
 
 export function summarizeRouteClientAssets(client: RouteClientConfig) {
-  return {
-    recordingCount: client.recordings.length,
-    selectorResourceCount: client.selectorResources.length,
-    skillCount: client.skillEntries.length
-  }
+  return summarizeRouteAssetKinds(client)
 }

@@ -305,7 +305,7 @@ function matchesMethod(
 function assertPathPattern(path: string): void {
   if (!isPathPattern(path)) {
     throw new Error(
-      `Invalid path "${path}". Expected a leading slash, lowercase segments, optional :params, and reserved leaf names skill.md or prompt.md.`
+      `Invalid path "${path}". Expected a leading slash, lowercase or dot-prefixed metadata segments, optional :params, and reserved leaf names skill.md, prompt.md, SKILL.md, or PROMPT.md.`
     )
   }
 }

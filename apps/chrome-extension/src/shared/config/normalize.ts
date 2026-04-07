@@ -10,7 +10,13 @@ import {
   createBackgroundClientConfig,
   createRouteClientConfig
 } from './create.js'
-import { normalizeDisabledBackgroundCapabilities } from './background-assets.js'
+import {
+  cloneBackgroundExposeAssets,
+  deriveDisabledBackgroundExposePaths,
+  normalizeBackgroundExposeAssets,
+  normalizeDisabledBackgroundExposePaths,
+  normalizeLegacyDisabledBackgroundExposePaths
+} from './background-assets.js'
 import {
   DEFAULT_BACKGROUND_CLIENT,
   DEFAULT_BACKGROUND_CLIENTS,
@@ -42,6 +48,10 @@ import {
   normalizeSelectorResources,
   normalizeSkillEntries
 } from './normalize-assets.js'
+import {
+  ensureRootRouteSkillAsset,
+  syncRouteClientAssetViews
+} from './route-assets.js'
 
 export function normalizeConfig(value: unknown): ExtensionConfig {
   if (value === undefined || value === null) {
@@ -141,13 +151,12 @@ function migrateLegacyConfig(value: unknown): unknown {
         id: 'background-client-default',
         enabled: legacyAutoConnect,
         favorite: false,
+        pinned: false,
         clientId: `${legacyClientId}-background`,
         clientName: `${legacyClientName} Background`,
         clientDescription: legacyClientDescription,
         icon: 'chrome',
-        disabledTools: [...DEFAULT_BACKGROUND_CLIENT.disabledTools],
-        disabledResources: [...DEFAULT_BACKGROUND_CLIENT.disabledResources],
-        disabledSkills: [...DEFAULT_BACKGROUND_CLIENT.disabledSkills]
+        disabledExposePaths: [...DEFAULT_BACKGROUND_CLIENT.disabledExposePaths]
       })
     ],
     routeClients,
@@ -159,12 +168,31 @@ function migrateLegacyConfig(value: unknown): unknown {
 function normalizeBackgroundClient(value: unknown): BackgroundClientConfig {
   const record = asRecord(value)
   const fallback = resolveBackgroundClientFallback(record)
+  const fallbackDisabledExposePaths = [...fallback.disabledExposePaths]
+  const disabledExposePaths =
+    'disabledExposePaths' in record
+      ? normalizeDisabledBackgroundExposePaths(record.disabledExposePaths)
+      : 'disabledTools' in record ||
+          'disabledResources' in record ||
+          'disabledSkills' in record
+        ? normalizeLegacyDisabledBackgroundExposePaths({
+            disabledTools: record.disabledTools,
+            disabledResources: record.disabledResources,
+            disabledSkills: record.disabledSkills
+          })
+        : fallbackDisabledExposePaths
+  const exposes = normalizeBackgroundExposeAssets(
+    'exposes' in record ? record.exposes : undefined,
+    disabledExposePaths
+  )
 
   const normalized: BackgroundClientConfig = {
     kind: 'background',
     id: normalizeId(readString(record, 'id')) ?? fallback.id,
+    createdAt: normalizeTimestamp(readString(record, 'createdAt')),
     enabled: readBoolean(record, 'enabled') ?? fallback.enabled,
     favorite: readBoolean(record, 'favorite') ?? fallback.favorite,
+    pinned: readBoolean(record, 'pinned') ?? fallback.pinned,
     clientId: normalizeId(readString(record, 'clientId')) ?? fallback.clientId,
     clientName: normalizeString(
       readString(record, 'clientName'),
@@ -175,21 +203,8 @@ function normalizeBackgroundClient(value: unknown): BackgroundClientConfig {
       fallback.clientDescription
     ),
     icon: normalizeIcon(readString(record, 'icon'), fallback.icon),
-    disabledTools:
-      'disabledTools' in record
-        ? normalizeDisabledBackgroundCapabilities('tool', record.disabledTools)
-        : [...fallback.disabledTools],
-    disabledResources:
-      'disabledResources' in record
-        ? normalizeDisabledBackgroundCapabilities(
-            'resource',
-            record.disabledResources
-          )
-        : [...fallback.disabledResources],
-    disabledSkills:
-      'disabledSkills' in record
-        ? normalizeDisabledBackgroundCapabilities('skill', record.disabledSkills)
-        : [...fallback.disabledSkills]
+    exposes,
+    disabledExposePaths: deriveDisabledBackgroundExposePaths(exposes)
   }
 
   return stabilizeRequiredBackgroundClient(normalized)
@@ -225,9 +240,8 @@ function resolveBackgroundClientFallback(
 function cloneDefaultBackgroundClients(): BackgroundClientConfig[] {
   return DEFAULT_BACKGROUND_CLIENTS.map((client) => ({
     ...client,
-    disabledTools: [...client.disabledTools],
-    disabledResources: [...client.disabledResources],
-    disabledSkills: [...client.disabledSkills]
+    exposes: cloneBackgroundExposeAssets(client.exposes),
+    disabledExposePaths: [...client.disabledExposePaths]
   }))
 }
 
@@ -240,9 +254,12 @@ function ensureRequiredBackgroundClients(
   if (!existingIds.has(DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id)) {
     normalized.push({
       ...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
-      disabledTools: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledTools],
-      disabledResources: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledResources],
-      disabledSkills: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledSkills]
+      exposes: cloneBackgroundExposeAssets(
+        DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.exposes
+      ),
+      disabledExposePaths: [
+        ...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledExposePaths
+      ]
     })
   }
 
@@ -264,9 +281,8 @@ function stabilizeRequiredBackgroundClient(
     id: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id,
     enabled: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.enabled,
     clientId: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.clientId,
-    disabledTools: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledTools],
-    disabledResources: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledResources],
-    disabledSkills: [...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledSkills]
+    exposes: cloneBackgroundExposeAssets(client.exposes),
+    disabledExposePaths: [...client.disabledExposePaths]
   }
 }
 
@@ -365,13 +381,41 @@ function normalizeRouteClient(value: unknown): RouteClientConfig {
     normalizeId(readString(record, 'clientId')) ??
     buildClientId(clientName, routeId)
   const installSource = normalizeMarketInstallSource(record.installSource)
-  const skillEntries = normalizeSkillEntries(record.skillEntries)
+  const legacySkillEntries = normalizeSkillEntries(record.skillEntries)
+  const legacySkillFolders = normalizeSkillFolders(
+    record.skillFolders,
+    legacySkillEntries
+  )
+  const hasLegacyRouteAssets =
+    'recordings' in record ||
+    'selectorResources' in record ||
+    'skillEntries' in record ||
+    'skillFolders' in record
+  const exposes = ensureRootRouteSkillAsset(
+    hasLegacyRouteAssets
+      ? [
+          ...legacySkillEntries,
+          ...legacySkillFolders,
+          ...normalizeRecordings(record.recordings),
+          ...normalizeSelectorResources(record.selectorResources)
+        ]
+      : 'exposes' in record && Array.isArray(record.exposes)
+        ? normalizeRouteExposes(record.exposes)
+        : [
+            ...legacySkillEntries,
+            ...legacySkillFolders,
+            ...normalizeRecordings(record.recordings),
+            ...normalizeSelectorResources(record.selectorResources)
+          ]
+  )
 
-  return {
+  return syncRouteClientAssetViews({
     kind: 'route',
     id: routeId,
+    createdAt: normalizeTimestamp(readString(record, 'createdAt')),
     enabled: readBoolean(record, 'enabled') ?? true,
     favorite: readBoolean(record, 'favorite') ?? false,
+    pinned: readBoolean(record, 'pinned') ?? false,
     clientId,
     clientName,
     clientDescription: normalizeString(
@@ -385,12 +429,36 @@ function normalizeRouteClient(value: unknown): RouteClientConfig {
     routeRules: normalizeRouteRules(record.routeRules),
     autoInjectBridge: readBoolean(record, 'autoInjectBridge') ?? true,
     pathScriptSource: readPathScriptSource(record),
-    recordings: normalizeRecordings(record.recordings),
-    selectorResources: normalizeSelectorResources(record.selectorResources),
-    skillFolders: normalizeSkillFolders(record.skillFolders, skillEntries),
-    skillEntries,
+    exposes,
     ...(installSource ? { installSource } : {})
+  })
+}
+
+function normalizeRouteExposes(value: unknown) {
+  if (!Array.isArray(value)) {
+    return []
   }
+
+  const recordings = normalizeRecordings(
+    value.filter((item) => asRecord(item).kind === 'flow')
+  )
+  const selectorResources = normalizeSelectorResources(
+    value.filter((item) => asRecord(item).kind === 'resource')
+  )
+  const skillEntries = normalizeSkillEntries(
+    value.filter((item) => asRecord(item).kind === 'skill')
+  )
+  const skillFolders = normalizeSkillFolders(
+    value.filter((item) => asRecord(item).kind === 'folder'),
+    skillEntries
+  )
+
+  return [
+    ...skillEntries,
+    ...skillFolders,
+    ...recordings,
+    ...selectorResources
+  ]
 }
 
 function readPathScriptSource(record: Record<string, unknown>): string {

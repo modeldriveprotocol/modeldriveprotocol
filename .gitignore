@@ -4,9 +4,15 @@ packages/*/dist/
 packages/*/*.tsbuildinfo
 apps/*/dist/
 apps/*/.wxt/
+apps/*/.artifacts/
 apps/*/web-ext.config.ts
 apps/*/*.tsbuildinfo
 apps/*/*.vsix
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 .DS_Store
 .idea/
 .eslintcache

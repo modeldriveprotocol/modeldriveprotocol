@@ -38,12 +38,14 @@ export type ImportSourceDraftInput =
 
 export type OptionsRouteState = {
   assetTab?: OptionsAssetsTab
+  assetPath?: string
   clientDetailOpen: boolean
   clientId?: EditableClientId
   detailTab?: ClientDetailTab
   marketDetailOpen: boolean
   marketEntryKey?: string
   section: Section
+  sidebarCollapsed: boolean
 }
 
 export const ICON_OPTIONS: ClientIconKey[] = [

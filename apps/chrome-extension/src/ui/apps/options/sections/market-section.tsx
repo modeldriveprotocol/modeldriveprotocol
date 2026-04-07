@@ -1,34 +1,30 @@
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
-import SearchOutlined from '@mui/icons-material/SearchOutlined'
-import SettingsOutlined from '@mui/icons-material/SettingsOutlined'
 import {
-  Box,
   Button,
-  Dialog,
-  DialogContent,
-  DialogTitle,
+  Collapse,
   Divider,
-  InputAdornment,
   List,
   ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
   Stack,
-  TextField,
   Typography
 } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { MarketSourceConfig, RouteClientConfig } from '#~/shared/config.js'
 import type { PopupState } from '#~/background/shared.js'
-import { renderClientIcon } from '../../../foundation/client-icons.js'
 import { useI18n } from '../../../i18n/provider.js'
-import { countInstalledMarketClients, fetchMarketCatalog, type MarketCatalogClientEntry, type MarketCatalogSourceData, type MarketCatalogSourceResult } from '../../../market/catalog.js'
-import { SectionPanel, ToolbarIcon } from '../shared.js'
+import {
+  countInstalledMarketClients,
+  fetchMarketCatalog,
+  type MarketCatalogClientEntry,
+  type MarketCatalogSourceData,
+  type MarketCatalogSourceResult
+} from '../../../market/catalog.js'
 import type { MarketSourceDraftInput } from '../types.js'
-import { MarketSourcesDialog } from './market-sources-dialog.js'
+import { MarketDetailView } from './market-section/detail-view.js'
+import { MarketEntryRow } from './market-section/entry-row.js'
+import { MarketSourcesPanel } from './market-section/sources-panel.js'
+import { MarketToolbar } from './market-section/toolbar.js'
+import type { MarketEntryItem } from './market-section/types.js'
 
 export function MarketSection({
   marketDetailOpen,
@@ -38,6 +34,7 @@ export function MarketSection({
   selectedEntryKey,
   onAddSource,
   onCloseDetail,
+  onDetailTitleChange,
   onOpenDetail,
   onInstall,
   onRemoveSource
@@ -49,6 +46,7 @@ export function MarketSection({
   selectedEntryKey?: string
   onAddSource: (input: MarketSourceDraftInput) => Promise<void>
   onCloseDetail: () => void
+  onDetailTitleChange: (title: string | undefined) => void
   onOpenDetail: (entryKey: string) => void
   onInstall: (catalog: MarketCatalogSourceData, entry: MarketCatalogClientEntry) => void
   onRemoveSource: (sourceId: string) => void
@@ -56,9 +54,85 @@ export function MarketSection({
   const { t } = useI18n()
   const [search, setSearch] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [controlsExpanded, setControlsExpanded] = useState(
+    marketSources.length === 0
+  )
   const [catalogs, setCatalogs] = useState<MarketCatalogSourceResult[]>([])
   const [loadingCatalogs, setLoadingCatalogs] = useState(false)
+  const [highlightedEntryKey, setHighlightedEntryKey] = useState<string>()
+  const highlightedEntryKeyRef = useRef<string | undefined>(undefined)
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
+
+  function updateHighlightedEntryKey(nextKey: string | undefined) {
+    highlightedEntryKeyRef.current = nextKey
+    setHighlightedEntryKey(nextKey)
+  }
+
+  useEffect(() => {
+    if (marketSources.length === 0) {
+      setControlsExpanded(true)
+    }
+  }, [marketSources.length])
+
+  useEffect(() => {
+    if (marketDetailOpen) {
+      function onWindowKeyDown(event: KeyboardEvent) {
+        if (event.key === 'Escape' && !event.metaKey && !event.ctrlKey && !event.altKey) {
+          event.preventDefault()
+          onCloseDetail()
+        }
+      }
+
+      window.addEventListener('keydown', onWindowKeyDown)
+      return () => {
+        window.removeEventListener('keydown', onWindowKeyDown)
+      }
+    }
+
+    function isTypingTarget(target: EventTarget | null) {
+      if (!(target instanceof HTMLElement)) {
+        return false
+      }
+
+      return (
+        target.isContentEditable ||
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT'
+      )
+    }
+
+    function focusSearch() {
+      searchInputRef.current?.focus()
+      searchInputRef.current?.select()
+    }
+
+    function onWindowKeyDown(event: KeyboardEvent) {
+      if (isTypingTarget(event.target)) {
+        return
+      }
+
+      if (event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        event.preventDefault()
+        focusSearch()
+        return
+      }
+
+      if (
+        event.key.toLowerCase() === 'k' &&
+        (event.metaKey || event.ctrlKey) &&
+        !event.altKey
+      ) {
+        event.preventDefault()
+        focusSearch()
+      }
+    }
+
+    window.addEventListener('keydown', onWindowKeyDown)
+    return () => {
+      window.removeEventListener('keydown', onWindowKeyDown)
+    }
+  }, [marketDetailOpen, onCloseDetail])
 
   useEffect(() => {
     let cancelled = false
@@ -85,7 +159,7 @@ export function MarketSection({
     }
   }, [marketSources, refreshKey])
 
-  const marketEntries = useMemo(() => {
+  const marketEntries = useMemo<MarketEntryItem[]>(() => {
     const keyword = search.trim().toLowerCase()
     return catalogs
       .flatMap((catalog) =>
@@ -99,83 +173,174 @@ export function MarketSection({
   }, [catalogs, routeClients, search])
 
   const selectedMarketEntry = marketEntries.find((item) => item.key === selectedEntryKey) ?? marketEntries[0]
+  const highlightedMarketEntry =
+    marketEntries.find((item) => item.key === highlightedEntryKey) ??
+    marketEntries[0]
+  const toolbarStatusText = search.trim()
+    ? t('options.market.resultsFilteredSummary', {
+        count: marketEntries.length,
+        query: search.trim(),
+        sourceCount: marketSources.length
+      })
+    : t('options.market.resultsSummary', {
+        clientCount: marketEntries.length,
+        sourceCount: marketSources.length
+      })
+  const toolbarShortcutText = marketEntries.length > 0
+    ? t('options.market.searchShortcutWithSelection')
+    : t('options.market.searchShortcut')
+
+  useEffect(() => {
+    if (marketEntries.length === 0) {
+      updateHighlightedEntryKey(undefined)
+      return
+    }
+
+    const currentKey = highlightedEntryKeyRef.current
+    const nextKey =
+      currentKey && marketEntries.some((item) => item.key === currentKey)
+        ? currentKey
+        : marketEntries[0]?.key
+
+    updateHighlightedEntryKey(nextKey)
+  }, [marketEntries])
+
+  function moveHighlightedEntry(direction: 1 | -1) {
+    if (marketEntries.length === 0) {
+      return
+    }
+
+    const currentIndex = highlightedMarketEntry
+      ? marketEntries.findIndex((item) => item.key === highlightedMarketEntry.key)
+      : 0
+    const safeIndex = currentIndex < 0 ? 0 : currentIndex
+    const nextIndex =
+      (safeIndex + direction + marketEntries.length) % marketEntries.length
+
+    updateHighlightedEntryKey(marketEntries[nextIndex]?.key)
+  }
+
+  useEffect(() => {
+    onDetailTitleChange(
+      marketDetailOpen ? selectedMarketEntry?.entry.title : undefined
+    )
+  }, [marketDetailOpen, onDetailTitleChange, selectedMarketEntry?.entry.title])
 
   return (
-    <SectionPanel title={t('options.market.title')} description={t('options.market.description')} icon={<SettingsOutlined fontSize="small" />}>
-      <Stack spacing={1.25}>
-        {marketUpdates?.pendingUpdateCount ? <Typography variant="caption" color="text.secondary">{t('options.market.pendingUpdates', { count: marketUpdates.pendingUpdateCount })}</Typography> : null}
-        <Stack direction="row" spacing={1} alignItems="center">
-          <TextField fullWidth size="small" placeholder={t('options.market.search')} value={search} onChange={(event) => setSearch(event.target.value)} InputProps={{ startAdornment: <InputAdornment position="start"><SearchOutlined fontSize="small" /></InputAdornment> }} />
-          <ToolbarIcon label={t('options.nav.settings')} onClick={() => setSettingsOpen(true)}><SettingsOutlined fontSize="small" /></ToolbarIcon>
-        </Stack>
+    marketDetailOpen ? (
+      <MarketDetailView
+        item={selectedMarketEntry}
+        onInstall={() => {
+          if (selectedMarketEntry) {
+            onInstall(selectedMarketEntry.catalog, selectedMarketEntry.entry)
+          }
+        }}
+        t={t}
+      />
+    ) : (
+      <Stack spacing={0}>
+        <MarketToolbar
+          controlsExpanded={controlsExpanded}
+          loading={loadingCatalogs}
+          pendingUpdateCount={marketUpdates?.pendingUpdateCount ?? 0}
+          search={search}
+          searchInputRef={searchInputRef}
+          statusText={toolbarStatusText}
+          shortcutText={toolbarShortcutText}
+          onRefresh={() => setRefreshKey((value) => value + 1)}
+          onSearchChange={setSearch}
+          onSelectNextResult={() => moveHighlightedEntry(1)}
+          onSelectPreviousResult={() => moveHighlightedEntry(-1)}
+          onSubmitSearch={
+            marketEntries.length > 0
+              ? () => {
+                  const entryKey =
+                    highlightedEntryKeyRef.current &&
+                    marketEntries.some(
+                      (item) => item.key === highlightedEntryKeyRef.current
+                    )
+                      ? highlightedEntryKeyRef.current
+                      : marketEntries[0]?.key
 
-        {marketDetailOpen ? (
-          selectedMarketEntry ? (
-            <Stack spacing={1.25}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Button size="small" variant="text" onClick={onCloseDetail} sx={{ px: 0 }}>{t('options.clients.backToList')}</Button>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }} noWrap>{selectedMarketEntry.entry.title}</Typography>
+                  if (entryKey) {
+                    onOpenDetail(entryKey)
+                  }
+                }
+              : undefined
+          }
+          onToggleControlsExpanded={() =>
+            setControlsExpanded((current) => !current)
+          }
+          t={t}
+        />
+
+        <Collapse in={controlsExpanded} timeout="auto" unmountOnExit>
+          <MarketSourcesPanel
+            catalogs={catalogs}
+            marketSources={marketSources}
+            onAddSource={onAddSource}
+            onRemoveSource={onRemoveSource}
+            t={t}
+          />
+        </Collapse>
+
+        <Divider sx={{ mt: 0.75, mb: 0.75 }} />
+
+        <List dense disablePadding sx={{ py: 0.5 }}>
+          {loadingCatalogs ? (
+            <ListItem disablePadding sx={{ px: 1.25, py: 1.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                {t('options.loadingWorkspace')}
+              </Typography>
+            </ListItem>
+          ) : marketEntries.length === 0 ? (
+            <ListItem disablePadding sx={{ px: 1.25, py: 1.5 }}>
+              <Stack spacing={0.75} alignItems="flex-start">
+                <Typography variant="body2">
+                  {t('options.market.emptyResults')}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {t('options.market.emptyResultsHint')}
+                </Typography>
+                {search.trim() || !controlsExpanded ? (
+                  <Stack direction="row" spacing={0.75}>
+                    {search.trim() ? (
+                      <Button
+                        size="small"
+                        onClick={() => setSearch('')}
+                        sx={{ minWidth: 0, px: 0.75 }}
+                      >
+                        {t('options.market.clearSearch')}
+                      </Button>
+                    ) : null}
+                    {!controlsExpanded ? (
+                      <Button
+                        size="small"
+                        onClick={() => setControlsExpanded(true)}
+                        sx={{ minWidth: 0, px: 0.75 }}
+                      >
+                        {t('options.market.showSources')}
+                      </Button>
+                    ) : null}
+                  </Stack>
+                ) : null}
               </Stack>
-              <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
-                  <Box sx={{ color: 'primary.main', display: 'grid', placeItems: 'center' }}>{renderClientIcon(selectedMarketEntry.entry.icon)}</Box>
-                  <Typography variant="body2" color="text.secondary">{selectedMarketEntry.entry.summary || t('options.market.noSummary')}</Typography>
-                </Stack>
-                <Button variant="contained" onClick={() => onInstall(selectedMarketEntry.catalog, selectedMarketEntry.entry)}>
-                  {selectedMarketEntry.localCount > 0 ? t('options.market.installAgain') : t('options.market.install')}
-                </Button>
-              </Stack>
-              <Stack spacing={0.5}>
-                <Typography variant="caption" color="text.secondary">{t('options.market.source')}</Typography>
-                <Typography variant="body2">{selectedMarketEntry.catalog.title}</Typography>
-                <Typography variant="caption" color="text.secondary">{[`${t('options.market.version')}: ${selectedMarketEntry.catalog.version}`, t('options.market.relatedLocalClients', { count: selectedMarketEntry.localCount })].join(' · ')}</Typography>
-              </Stack>
-              <Divider />
-              <Stack spacing={0.5}>
-                <Typography variant="caption" color="text.secondary">{t('options.market.previewClient')}</Typography>
-                <Typography variant="body2">{selectedMarketEntry.entry.template.clientName}</Typography>
-                <Typography variant="body2" color="text.secondary">{selectedMarketEntry.entry.template.clientDescription || t('options.market.noSummary')}</Typography>
-              </Stack>
-            </Stack>
-          ) : <Typography variant="body2" color="text.secondary">{t('options.market.noSelection')}</Typography>
-        ) : (
-          <Stack spacing={0.5}>
-            <Typography variant="subtitle2">{t('options.market.results')}</Typography>
-            {loadingCatalogs ? (
-              <Typography variant="body2" color="text.secondary">{t('options.loadingWorkspace')}</Typography>
-            ) : marketEntries.length === 0 ? (
-              <Stack spacing={0.25}>
-                <Typography variant="body2" color="text.secondary">{t('options.market.emptyResults')}</Typography>
-                <Typography variant="caption" color="text.secondary">{t('options.market.emptyResultsHint')}</Typography>
-              </Stack>
-            ) : (
-              <List disablePadding>
-                {marketEntries.map((item) => (
-                  <ListItem key={item.key} disablePadding>
-                    <ListItemButton onClick={() => onOpenDetail(item.key)}>
-                      <ListItemIcon sx={{ minWidth: 34 }}>{renderClientIcon(item.entry.icon)}</ListItemIcon>
-                      <ListItemText primary={item.entry.title} secondary={[item.catalog.title, t('options.market.localClients', { count: item.localCount })].join(' · ')} primaryTypographyProps={{ variant: 'body2', fontWeight: 600, noWrap: true }} secondaryTypographyProps={{ variant: 'caption', noWrap: true }} />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-              </List>
-            )}
-          </Stack>
-        )}
+            </ListItem>
+          ) : (
+            marketEntries.map((item) => (
+              <MarketEntryRow
+                active={item.key === highlightedMarketEntry?.key}
+                key={item.key}
+                item={item}
+                onActivate={() => updateHighlightedEntryKey(item.key)}
+                onInstall={() => onInstall(item.catalog, item.entry)}
+                onOpenDetail={() => onOpenDetail(item.key)}
+                t={t}
+              />
+            ))
+          )}
+        </List>
       </Stack>
-
-      <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} fullWidth maxWidth="md">
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{t('options.market.sources')}</Typography>
-          <Stack direction="row" spacing={0.5}>
-            <ToolbarIcon label={t('options.market.refreshSources')} onClick={() => setRefreshKey((value) => value + 1)}><RefreshOutlined fontSize="small" /></ToolbarIcon>
-            <ToolbarIcon label={t('common.close')} onClick={() => setSettingsOpen(false)}><CloseOutlined fontSize="small" /></ToolbarIcon>
-          </Stack>
-        </DialogTitle>
-        <DialogContent dividers>
-          <MarketSourcesDialog marketSources={marketSources} catalogs={catalogs} onAddSource={onAddSource} onRemoveSource={onRemoveSource} />
-        </DialogContent>
-      </Dialog>
-    </SectionPanel>
+    )
   )
 }

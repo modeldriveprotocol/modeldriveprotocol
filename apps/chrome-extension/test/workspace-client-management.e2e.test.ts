@@ -84,13 +84,13 @@ describe('workspace management background client end-to-end flow', () => {
     )
 
     const skill = await harness.invoke(
-      '/extension/skills/manage-clients/skill.md'
+      '/clients/SKILL.md'
     )
-    expect(skill).toContain('/extension/clients/create')
-    expect(skill).toContain('/extension/clients/delete')
+    expect(skill).toContain('/clients/create')
+    expect(skill).toContain('/clients/delete')
 
     const initialSnapshot = (await harness.invoke(
-      '/extension/clients'
+      '/clients'
     )) as {
       backgroundClients: Array<{ id: string }>
       routeClients: Array<{ id: string }>
@@ -101,7 +101,7 @@ describe('workspace management background client end-to-end flow', () => {
     ).toContain(DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id)
     expect(initialSnapshot.routeClients).toEqual([])
 
-    const created = (await harness.invoke('/extension/clients/create', {
+    const created = (await harness.invoke('/clients/create', {
       body: {
         kind: 'route',
         clientName: 'Billing Route',
@@ -124,7 +124,7 @@ describe('workspace management background client end-to-end flow', () => {
     await vi.runAllTimersAsync()
     expect(runtime.refresh).toHaveBeenCalledTimes(1)
 
-    const updated = (await harness.invoke('/extension/clients/update', {
+    const updated = (await harness.invoke('/clients/update', {
       body: {
         kind: 'route',
         id: created.client.id,
@@ -145,7 +145,7 @@ describe('workspace management background client end-to-end flow', () => {
     await vi.runAllTimersAsync()
     expect(runtime.refresh).toHaveBeenCalledTimes(2)
 
-    const addedRule = (await harness.invoke('/extension/clients/add-expose-rule', {
+    const addedRule = (await harness.invoke('/clients/add-expose-rule', {
       body: {
         id: created.client.id,
         mode: 'pathname-prefix',
@@ -194,7 +194,7 @@ describe('workspace management background client end-to-end flow', () => {
       })
     )
 
-    const deleted = (await harness.invoke('/extension/clients/delete', {
+    const deleted = (await harness.invoke('/clients/delete', {
       body: {
         kind: 'route',
         id: created.client.id
@@ -214,7 +214,7 @@ describe('workspace management background client end-to-end flow', () => {
     await vi.runAllTimersAsync()
     expect(runtime.refresh).toHaveBeenCalledTimes(4)
 
-    const finalSnapshot = (await harness.invoke('/extension/clients')) as {
+    const finalSnapshot = (await harness.invoke('/clients')) as {
       routeClients: Array<{ id: string }>
     }
 
@@ -232,34 +232,40 @@ describe('workspace management background client end-to-end flow', () => {
       DEFAULT_WORKSPACE_MANAGEMENT_CLIENT
     )
 
-    const created = (await harness.invoke('/extension/clients/create', {
+    const created = (await harness.invoke('/clients/create', {
       body: {
         kind: 'background',
         clientId: 'mdp-workspace-helper',
         clientName: 'Workspace Helper',
         clientDescription: 'Extra background client managed through the workspace client.',
-        disabledTools: ['extension.getStatus'],
-        disabledResources: ['chrome-extension://status'],
-        disabledSkills: ['extension.manageClients']
+        disabledExposePaths: [
+          '/status',
+          '/resources/status',
+          '/clients/SKILL.md'
+        ]
       }
     })) as {
       client: {
         id: string
         clientId: string
         clientName: string
-        disabledTools: string[]
+        disabledExposePaths: string[]
       }
     }
 
     expect(created.client).toMatchObject({
       clientId: 'mdp-workspace-helper',
       clientName: 'Workspace Helper',
-      disabledTools: ['extension.getStatus']
+      disabledExposePaths: [
+        '/status',
+        '/resources/status',
+        '/clients/SKILL.md'
+      ]
     })
 
     await vi.runAllTimersAsync()
 
-    const updated = (await harness.invoke('/extension/clients/update', {
+    const updated = (await harness.invoke('/clients/update', {
       body: {
         kind: 'background',
         clientId: 'mdp-workspace-helper',
@@ -283,7 +289,7 @@ describe('workspace management background client end-to-end flow', () => {
     await vi.runAllTimersAsync()
 
     await expect(
-      harness.invoke('/extension/clients/delete', {
+      harness.invoke('/clients/delete', {
         body: {
           kind: 'background',
           id: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id
@@ -291,7 +297,7 @@ describe('workspace management background client end-to-end flow', () => {
       })
     ).rejects.toThrow('is required')
 
-    const deleted = (await harness.invoke('/extension/clients/delete', {
+    const deleted = (await harness.invoke('/clients/delete', {
       body: {
         kind: 'background',
         clientId: 'mdp-workspace-helper'
@@ -335,7 +341,7 @@ describe('workspace management background client end-to-end flow', () => {
       DEFAULT_WORKSPACE_MANAGEMENT_CLIENT
     )
 
-    const created = (await harness.invoke('/extension/clients/create', {
+    const created = (await harness.invoke('/clients/create', {
       body: {
         kind: 'route',
         clientId: 'mdp-billing-rules',
@@ -351,7 +357,7 @@ describe('workspace management background client end-to-end flow', () => {
 
     await vi.runAllTimersAsync()
 
-    const firstRule = (await harness.invoke('/extension/clients/add-expose-rule', {
+    const firstRule = (await harness.invoke('/clients/add-expose-rule', {
       body: {
         clientId: created.client.clientId,
         mode: 'pathname-prefix',
@@ -369,7 +375,7 @@ describe('workspace management background client end-to-end flow', () => {
 
     await vi.runAllTimersAsync()
 
-    const prepended = (await harness.invoke('/extension/clients/add-expose-rule', {
+    const prepended = (await harness.invoke('/clients/add-expose-rule', {
       body: {
         clientId: created.client.clientId,
         mode: 'pathname-prefix',
@@ -391,7 +397,7 @@ describe('workspace management background client end-to-end flow', () => {
 
     await vi.runAllTimersAsync()
 
-    const duplicate = (await harness.invoke('/extension/clients/add-expose-rule', {
+    const duplicate = (await harness.invoke('/clients/add-expose-rule', {
       body: {
         clientId: created.client.clientId,
         mode: 'pathname-prefix',

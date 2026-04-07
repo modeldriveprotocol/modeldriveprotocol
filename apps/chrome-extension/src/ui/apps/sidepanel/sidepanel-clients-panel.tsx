@@ -1,24 +1,72 @@
 import { Box, Button, List, ListItem, ListItemText, Stack, Typography } from '@mui/material'
-import { memo } from 'react'
+import { memo, useMemo, useState } from 'react'
 
-import { openOptionsSection } from '../../platform/extension-api.js'
 import { BackgroundClientPanel } from './background-client-panel.js'
 import { RouteClientPanel } from './route-client-panel.js'
 import type { SidepanelController } from './types.js'
 
 function SidepanelClientsPanelComponent({ controller }: { controller: SidepanelController }) {
+  const hasFiltering =
+    controller.clientFilter !== 'all' || controller.clientSearch.trim().length > 0
+  const [expandedClientKeys, setExpandedClientKeys] = useState<string[]>([])
+  const visibleClientKeys = useMemo(
+    () => new Set(controller.filteredSidepanelClients.map((item) => item.listId)),
+    [controller.filteredSidepanelClients]
+  )
+
+  function setClientExpanded(clientKey: string, expanded: boolean) {
+    setExpandedClientKeys((current) => {
+      const next = current.filter((key) => visibleClientKeys.has(key))
+      if (expanded) {
+        return next.includes(clientKey) ? next : [...next, clientKey]
+      }
+      return next.filter((key) => key !== clientKey)
+    })
+  }
+
   return (
     <>
-      {controller.pageRouteClients.length === 0 ? <SidepanelEmptyState controller={controller} /> : null}
+      {controller.pageRouteClients.length === 0 && controller.backgroundClients.length === 0 ? (
+        <SidepanelEmptyState controller={controller} />
+      ) : null}
       {controller.filteredSidepanelClients.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
-          {controller.t('popup.noFilteredClients')}
-        </Typography>
+        <Stack spacing={0.75} sx={{ py: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            {controller.t('popup.noFilteredClients')}
+          </Typography>
+          {hasFiltering ? (
+            <Button
+              size="small"
+              variant="text"
+              onClick={() => {
+                controller.setClientSearch('')
+                controller.setClientFilter('all')
+              }}
+              sx={{ alignSelf: 'flex-start', px: 0 }}
+            >
+              {controller.t('popup.resetClientFilters')}
+            </Button>
+          ) : null}
+        </Stack>
       ) : null}
       {controller.filteredSidepanelClients.map((item) =>
-        item.type === 'background'
-          ? <BackgroundClientPanel key={item.listId} controller={controller} item={item} />
-          : <RouteClientPanel key={item.listId} controller={controller} item={item} />
+        item.type === 'background' ? (
+          <BackgroundClientPanel
+            key={item.listId}
+            controller={controller}
+            item={item}
+            expanded={expandedClientKeys.includes(item.listId)}
+            onExpandedChange={(expanded) => setClientExpanded(item.listId, expanded)}
+          />
+        ) : (
+          <RouteClientPanel
+            key={item.listId}
+            controller={controller}
+            item={item}
+            expanded={expandedClientKeys.includes(item.listId)}
+            onExpandedChange={(expanded) => setClientExpanded(item.listId, expanded)}
+          />
+        )
       )}
     </>
   )
@@ -32,7 +80,6 @@ export const SidepanelClientsPanel = memo(
     previousProps.controller.pageRouteClients === nextProps.controller.pageRouteClients &&
     previousProps.controller.filteredSidepanelClients === nextProps.controller.filteredSidepanelClients &&
     previousProps.controller.relatedRouteClients === nextProps.controller.relatedRouteClients &&
-    previousProps.controller.expandedClientKey === nextProps.controller.expandedClientKey &&
     previousProps.controller.recordingName === nextProps.controller.recordingName &&
     previousProps.controller.recordingDescription === nextProps.controller.recordingDescription &&
     previousProps.controller.activeTabHasPermission === nextProps.controller.activeTabHasPermission &&
@@ -45,14 +92,8 @@ function SidepanelEmptyState({ controller }: { controller: SidepanelController }
       <Typography variant="body2" color="text.secondary">
         {controller.canCreateFromActivePage ? controller.t('popup.noMatchingClient') : controller.t('popup.unsupportedActivePage')}
       </Typography>
-      {!controller.canCreateFromActivePage && controller.relatedRouteClients.length === 0 ? (
-        <Button size="small" variant="text" onClick={() => void openOptionsSection('clients')} sx={{ mt: 1, px: 0 }}>
-          {controller.t('popup.errorRecovery.clients')}
-        </Button>
-      ) : null}
       {controller.relatedRouteClients.length ? (
-        <Stack spacing={1} sx={{ mt: 1.25 }}>
-          <Typography variant="caption" color="text.secondary">{controller.t('popup.relatedClientsTitle')}</Typography>
+        <Stack spacing={1} sx={{ mt: 1 }}>
           <List dense disablePadding>
             {controller.relatedRouteClients.slice(0, 3).map((client) => (
               <ListItem key={client.id} disablePadding sx={{ py: 0.5 }}>
@@ -65,14 +106,6 @@ function SidepanelEmptyState({ controller }: { controller: SidepanelController }
               </ListItem>
             ))}
           </List>
-          <Button
-            size="small"
-            variant="text"
-            onClick={() => void openOptionsSection('clients', { clientId: controller.relatedRouteClients[0]?.id })}
-            sx={{ alignSelf: 'flex-start', px: 0 }}
-          >
-            {controller.t('popup.relatedClientsAction')}
-          </Button>
         </Stack>
       ) : null}
     </Box>

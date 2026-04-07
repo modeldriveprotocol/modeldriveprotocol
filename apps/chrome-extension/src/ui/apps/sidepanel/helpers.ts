@@ -13,6 +13,21 @@ export function stateTone(state: PopupClientState['connectionState']): 'default'
   }
 }
 
+export function connectionStateColor(
+  state: PopupClientState['connectionState']
+): string {
+  switch (state) {
+    case 'connected':
+      return 'success.main'
+    case 'connecting':
+      return 'warning.main'
+    case 'error':
+      return 'error.main'
+    default:
+      return 'text.disabled'
+  }
+}
+
 export function abilitySummary(
   client: PopupClientState,
   t: (key: string, vars?: Record<string, string | number | undefined>) => string

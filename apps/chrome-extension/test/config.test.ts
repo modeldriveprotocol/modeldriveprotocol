@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_BACKGROUND_CLIENT,
   DEFAULT_EXTENSION_CONFIG,
+  ROOT_ROUTE_SKILL_PATH,
   DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
   createRouteClientFromUrl,
   createRouteClientConfig,
@@ -33,8 +34,8 @@ describe('chrome extension config helpers', () => {
     })
 
     expect(migrated.backgroundClients[0]?.clientId).toBe('legacy-client-background')
-    expect(migrated.backgroundClients[0]?.disabledTools).toContain(
-      'extension.listClients'
+    expect(migrated.backgroundClients[0]?.disabledExposePaths).toContain(
+      '/clients'
     )
     expect(migrated.backgroundClients[1]?.id).toBe(DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id)
     expect(migrated.routeClients).toHaveLength(1)
@@ -64,9 +65,16 @@ describe('chrome extension config helpers', () => {
           ...DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
           enabled: false,
           clientId: 'custom-workspace-client',
-          disabledTools: [],
-          disabledResources: [],
-          disabledSkills: ['extension.manageClients']
+          exposes: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.exposes.map((asset) =>
+            asset.id === 'extension.clients.list'
+              ? {
+                  ...asset,
+                  path: '/workspace/clients',
+                  description: 'List workspace clients from a custom path.'
+                }
+              : { ...asset }
+          ),
+          disabledExposePaths: []
         }
       ]
     })
@@ -74,11 +82,13 @@ describe('chrome extension config helpers', () => {
     expect(normalized.backgroundClients[1]).toMatchObject({
       id: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.id,
       enabled: true,
-      clientId: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.clientId,
-      disabledTools: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledTools,
-      disabledResources: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledResources,
-      disabledSkills: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledSkills
+      clientId: DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.clientId
     })
+    expect(normalized.backgroundClients[1]?.exposes.find((asset) => asset.id === 'extension.clients.list'))
+      .toMatchObject({
+        path: '/workspace/clients',
+        description: 'List workspace clients from a custom path.'
+      })
   })
 
   it('normalizes script-based flows alongside recorded flows', () => {
@@ -117,30 +127,275 @@ describe('chrome extension config helpers', () => {
     })
   })
 
-  it('normalizes background disabled capability lists against built-in ids', () => {
+  it('normalizes background expose configuration from legacy capability ids', () => {
+    const {
+      exposes: _exposes,
+      disabledExposePaths: _disabledExposePaths,
+      ...legacyBackgroundClient
+    } = DEFAULT_EXTENSION_CONFIG.backgroundClients[0]!
     const normalized = normalizeConfig({
       ...DEFAULT_EXTENSION_CONFIG,
       backgroundClients: [
         {
-          ...DEFAULT_EXTENSION_CONFIG.backgroundClients[0],
-        disabledTools: [
-          'extension.listTabs',
-          ' extension.listTabs ',
-          'extension.unknown'
-        ],
-        disabledResources: [
-          'chrome-extension://tabs',
-          'chrome-extension://missing',
-          'chrome-extension://tabs'
-        ],
-        disabledSkills: ['background.skill.missing']
-      }
+          ...legacyBackgroundClient,
+          disabledTools: [
+            'extension.listTabs',
+            ' extension.listTabs ',
+            'extension.unknown'
+          ],
+          disabledResources: [
+            'chrome-extension://tabs',
+            'chrome-extension://missing',
+            'chrome-extension://tabs'
+          ],
+          disabledSkills: ['background.skill.missing']
+        }
       ]
     })
 
-    expect(normalized.backgroundClients[0]?.disabledTools).toEqual(['extension.listTabs'])
-    expect(normalized.backgroundClients[0]?.disabledResources).toEqual(['chrome-extension://tabs'])
-    expect(normalized.backgroundClients[0]?.disabledSkills).toEqual([])
+    expect(normalized.backgroundClients[0]?.disabledExposePaths).toEqual([
+      '/tabs',
+      '/resources/tabs'
+    ])
+  })
+
+  it('preserves editable background expose assets and derives disabled paths from them', () => {
+    const normalized = normalizeConfig({
+      ...DEFAULT_EXTENSION_CONFIG,
+      backgroundClients: [
+        {
+          ...DEFAULT_BACKGROUND_CLIENT,
+          exposes: DEFAULT_BACKGROUND_CLIENT.exposes.map((asset) =>
+            asset.id === 'extension.status'
+              ? {
+                  ...asset,
+                  path: '/browser/status',
+                  description: 'Read browser status from a custom background path.',
+                  enabled: false
+                }
+              : { ...asset }
+          )
+        },
+        DEFAULT_WORKSPACE_MANAGEMENT_CLIENT
+      ]
+    })
+
+    expect(normalized.backgroundClients[0]?.exposes.find((asset) => asset.id === 'extension.status'))
+      .toMatchObject({
+        path: '/browser/status',
+        description: 'Read browser status from a custom background path.',
+        enabled: false
+      })
+    expect(normalized.backgroundClients[0]?.disabledExposePaths).toContain(
+      '/browser/status'
+    )
+  })
+
+  it('migrates legacy background skill paths to the directory-local SKILL.md layout', () => {
+    const normalized = normalizeConfig({
+      ...DEFAULT_EXTENSION_CONFIG,
+      backgroundClients: [
+        {
+          ...DEFAULT_BACKGROUND_CLIENT,
+          disabledExposePaths: [
+            '/extension/skills/manage-clients/skill.md'
+          ],
+          exposes: DEFAULT_BACKGROUND_CLIENT.exposes.map((asset) =>
+            asset.id === 'extension.skills.manage-clients'
+              ? {
+                  ...asset,
+                  path: '/extension/skills/manage-clients/skill.md',
+                  enabled: false
+                }
+              : asset.id === 'extension.skills.manage-client-expose-rules'
+                ? {
+                    ...asset,
+                    path: '/extension/skills/manage-client-expose-rules/skill.md'
+                  }
+                : { ...asset }
+          )
+        },
+        DEFAULT_WORKSPACE_MANAGEMENT_CLIENT
+      ]
+    })
+
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-clients'
+      )
+    ).toMatchObject({
+      path: '/clients/SKILL.md',
+      enabled: false
+    })
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-client-expose-rules'
+      )
+    ).toMatchObject({
+      path: '/clients/.ai/skills/manage-client-expose-rules/SKILL.md'
+    })
+    expect(normalized.backgroundClients[0]?.disabledExposePaths).toContain(
+      '/clients/SKILL.md'
+    )
+    expect(normalized.backgroundClients[0]?.disabledExposePaths).toContain(
+      '/clients/.ai/skills/manage-client-expose-rules/SKILL.md'
+    )
+  })
+
+  it('migrates legacy built-in background skill descriptions and markdown content to root paths', () => {
+    const normalized = normalizeConfig({
+      ...DEFAULT_EXTENSION_CONFIG,
+      backgroundClients: [
+        {
+          ...DEFAULT_BACKGROUND_CLIENT,
+          exposes: DEFAULT_BACKGROUND_CLIENT.exposes.map((asset) =>
+            asset.id === 'extension.skills.root'
+              ? {
+                  ...asset,
+                  path: '/extension/SKILL.md',
+                  description:
+                    'Overview for the /extension directory and the built-in Chrome extension capabilities exposed from it.',
+                  source: `# /extension
+
+This directory is the root of the built-in Chrome extension capabilities exposed through Model Drive Protocol.
+
+## How to navigate
+
+- Read the files directly under \`/extension\` for runtime status and browser actions.
+- Read \`/extension/resources/SKILL.md\` before working with JSON snapshot resources.
+- Read \`/extension/clients/SKILL.md\` before creating, updating, or deleting stored clients.
+
+## Notes
+
+- Different background clients can expose different subsets of this directory.
+- Prefer reading the nearest \`SKILL.md\` in the folder you are working in.
+- If a folder contains \`.ai/skills\` or \`.ai/rules\`, use those for more detailed guidance.
+`
+                }
+              : asset.id === 'extension.skills.manage-clients'
+                ? {
+                    ...asset,
+                    path: '/extension/clients/SKILL.md',
+                    description:
+                      'Guide for creating, updating, and deleting stored Chrome extension clients.',
+                    source: `# Manage Chrome Workspace Clients
+
+Use this skill to inspect, create, update, or delete the Chrome extension clients stored in the workspace.
+
+## Recommended workflow
+
+1. Read \`/extension/clients\` and inspect the current \`backgroundClients\` and \`routeClients\` entries.
+2. Create a new \`background\` or \`route\` client with \`/extension/clients/create\`.
+3. Update client metadata, enablement, icons, expose paths, descriptions, or backend scripts with \`/extension/clients/update\`.
+4. Delete a client when it is no longer needed with \`/extension/clients/delete\`.
+
+## Targeting rules
+
+- Prefer the internal \`id\` field from the client listing result when mutating a specific client.
+- Pass \`kind\` together with \`clientId\` if the target would otherwise be ambiguous.
+- The built-in \`background-client-workspace\` client is required and cannot be deleted.
+
+## Notes
+
+- Mutations are persisted to extension storage.
+- Saved changes are applied to connected clients right after the write completes.
+`
+                  }
+                : asset.id === 'extension.skills.manage-client-expose-rules'
+                  ? {
+                      ...asset,
+                      path: '/extension/clients/.ai/skills/manage-client-expose-rules/SKILL.md',
+                      description:
+                        'Guide for persisting route expose rules for a stored Chrome extension client.',
+                      source: `# Add Stored Expose Rules To Route Clients
+
+Use this skill when you need to add and persist a new expose rule for a route client.
+
+## Recommended workflow
+
+1. Read \`/extension/clients\` and find the target route client.
+2. Call \`/extension/clients/add-expose-rule\` with the route client \`id\`, a \`mode\`, and a \`value\`.
+3. Re-read the client listing if you need to confirm the saved route rule list.
+
+## Supported modes
+
+- \`pathname-prefix\`
+- \`pathname-exact\`
+- \`url-contains\`
+- \`regex\`
+
+## Notes
+
+- This endpoint only works for \`route\` clients.
+- The response sets \`duplicate: true\` when the same \`mode\` and \`value\` already exist.
+- Stored expose rules are persisted and then applied to the live route client registration.
+`
+                  }
+                : { ...asset }
+          )
+        },
+        DEFAULT_WORKSPACE_MANAGEMENT_CLIENT
+      ]
+    })
+
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.root'
+      )
+    ).toMatchObject({
+      path: '/SKILL.md',
+      description:
+        'Overview for the root directory and the built-in Chrome extension capabilities exposed from it.'
+    })
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.root'
+      )?.source
+    ).toContain('# /')
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.root'
+      )?.source
+    ).not.toContain('/extension/')
+
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-clients'
+      )
+    ).toMatchObject({
+      path: '/clients/SKILL.md',
+      description:
+        'Overview for the /clients workspace folder and its built-in management capabilities.'
+    })
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-clients'
+      )?.source
+    ).toContain('POST /clients/create')
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-clients'
+      )?.source
+    ).not.toContain('/extension/clients')
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-client-expose-rules'
+      )
+    ).toMatchObject({
+      path: '/clients/.ai/skills/manage-client-expose-rules/SKILL.md',
+      description:
+        'Detailed skill for persisting route expose rules under the /clients workspace folder.'
+    })
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-client-expose-rules'
+      )?.source
+    ).toContain('/clients/add-expose-rule')
+    expect(
+      normalized.backgroundClients[0]?.exposes.find(
+        (asset) => asset.id === 'extension.skills.manage-client-expose-rules'
+      )?.source
+    ).not.toContain('/extension/clients')
   })
 
   it('deduplicates and trims match patterns', () => {
@@ -185,6 +440,55 @@ describe('chrome extension config helpers', () => {
     expect(client.matchPatterns).toEqual(['https://app.example.com/*'])
     expect(client.routeRules[0]?.value).toBe('/billing/invoices')
     expect(client.clientName).toContain('app.example.com')
+  })
+
+  it('creates route clients with a protected root skill entry by default', () => {
+    const client = createRouteClientConfig({
+      id: 'route-with-root-skill',
+      clientId: 'route-with-root-skill',
+      matchPatterns: ['https://app.example.com/*']
+    })
+
+    expect(client.skillEntries).toHaveLength(1)
+    expect(client.skillEntries[0]).toMatchObject({
+      path: ROOT_ROUTE_SKILL_PATH,
+      content: ''
+    })
+  })
+
+  it('re-adds a missing root skill entry when normalizing imported route clients', () => {
+    const normalized = normalizeConfig({
+      ...DEFAULT_EXTENSION_CONFIG,
+      routeClients: [
+        {
+          ...createRouteClientConfig({
+            id: 'route-imported',
+            clientId: 'route-imported',
+            matchPatterns: ['https://app.example.com/*'],
+            skillEntries: []
+          }),
+          skillEntries: [
+            {
+              id: 'nested-skill',
+              path: 'orders/refund-policy',
+              metadata: {
+                title: 'Refund policy',
+                summary: '',
+                queryParameters: [],
+                headerParameters: []
+              },
+              content: '# Refund Policy'
+            }
+          ]
+        }
+      ]
+    })
+
+    expect(normalized.routeClients[0]?.skillEntries.map((skill) => skill.path)).toEqual([
+      ROOT_ROUTE_SKILL_PATH,
+      'orders/refund-policy/SKILL.md'
+    ])
+    expect(normalized.routeClients[0]?.skillEntries[0]?.content).toBe('')
   })
 
   it('collects enabled route match patterns across the workspace', () => {

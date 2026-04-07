@@ -3,6 +3,11 @@ import type {
 } from '@modeldriveprotocol/client/browser'
 
 import type { RouteClientConfig } from '#~/shared/config.js'
+import {
+  getRouteClientRecordings,
+  getRouteClientSelectorResources,
+  getRouteClientSkillEntries
+} from '#~/shared/config.js'
 import type { ChromeExtensionRuntimeApi } from '#~/background/runtime-api.js'
 import {
   jsonResource,
@@ -36,7 +41,11 @@ export function registerRouteClientCapabilities(
   registerPageInjectedPaths(client, runtime, routeClient)
   registerPageWaitTools(client, runtime, routeClient)
 
-  for (const recording of routeClient.recordings) {
+  for (const recording of getRouteClientRecordings(routeClient)) {
+    if (!recording.enabled) {
+      continue
+    }
+
     const runnable =
       recording.mode === 'script'
         ? recording.scriptSource.trim().length > 0
@@ -46,12 +55,14 @@ export function registerRouteClientCapabilities(
       continue
     }
 
+    const method = recording.method ?? 'POST'
+
     client.expose(
       toCanonicalPath(recording.path || `flows/${slugify(recording.name)}`),
       {
-        method: 'POST',
+        method,
         description: recording.description,
-        inputSchema: tabTargetSchema()
+        ...(method !== 'GET' ? { inputSchema: tabTargetSchema() } : {})
       },
       async (request) =>
         runtime.runRouteRecording(routeClient.id, recording.id, readRequestRecord(request))
@@ -75,19 +86,47 @@ export function registerRouteClientCapabilities(
       }),
   )
 
-  for (const resource of routeClient.selectorResources) {
+  for (const resource of getRouteClientSelectorResources(routeClient)) {
+    if (!resource.enabled) {
+      continue
+    }
+
+    const method = resource.method ?? 'GET'
+
     client.expose(
       toCanonicalPath(resource.path || `selectors/${resource.id}`),
       {
-        method: 'GET',
+        method,
         description: resource.description,
-        contentType: 'application/json'
+        contentType: 'application/json',
+        ...(method !== 'GET' ? { inputSchema: tabTargetSchema() } : {})
       },
-      async () => jsonResource(buildSelectorResourcePayload(resource)),
+      async (request) => {
+        if (resource.scriptSource?.trim()) {
+          return runtime.runPageCommandForRouteClient(
+            routeClient.id,
+            request,
+            {
+              type: 'runMainWorld',
+              action: 'runScript',
+              args: {
+                source: resource.scriptSource,
+                scriptArgs: readRequestRecord(request)
+              }
+            }
+          )
+        }
+
+        return jsonResource(buildSelectorResourcePayload(resource))
+      },
     )
   }
 
-  for (const skill of routeClient.skillEntries) {
+  for (const skill of getRouteClientSkillEntries(routeClient)) {
+    if (!skill.enabled) {
+      continue
+    }
+
     client.expose(
       toCanonicalSkillPath(skill.path),
       {

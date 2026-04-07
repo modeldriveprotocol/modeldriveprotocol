@@ -5,7 +5,7 @@ export function createExtensionTheme(mode: PaletteMode) {
 
   return createTheme({
     shape: {
-      borderRadius: 10
+      borderRadius: 4
     },
     palette: {
       mode,
@@ -63,7 +63,7 @@ export function createExtensionTheme(mode: PaletteMode) {
       MuiPaper: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
+            borderRadius: 4,
             backgroundImage: 'none'
           }
         }
@@ -71,21 +71,21 @@ export function createExtensionTheme(mode: PaletteMode) {
       MuiIconButton: {
         styleOverrides: {
           root: {
-            borderRadius: 10
+            borderRadius: 4
           }
         }
       },
       MuiTooltip: {
         styleOverrides: {
           tooltip: {
-            borderRadius: 10
+            borderRadius: 4
           }
         }
       },
       MuiListItemButton: {
         styleOverrides: {
           root: {
-            borderRadius: 10
+            borderRadius: 4
           }
         }
       }

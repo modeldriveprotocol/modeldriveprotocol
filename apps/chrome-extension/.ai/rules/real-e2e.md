@@ -14,10 +14,16 @@ Prove the full hosted path:
 
 ## Preferred Loop
 
-Start the extension in manual WXT mode on a fixed Vite port:
+Use WXT's normal `dev` runner and give it a gitignored `apps/chrome-extension/web-ext.config.ts` that:
+
+- points `binaries.chrome` at `/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary`
+- uses `apps/chrome-extension/.artifacts/chrome-profile` as `chromiumProfile`
+- adds `--remote-debugging-port=9227`
+
+Then start the extension:
 
 ```bash
-MDP_WXT_MANUAL=1 pnpm --filter @modeldriveprotocol/chrome-extension dev -- --port 3001
+pnpm --filter @modeldriveprotocol/chrome-extension dev -- --port 3001
 ```
 
 Start a real local server on the default extension dev port:
@@ -26,18 +32,11 @@ Start a real local server on the default extension dev port:
 node packages/server/dist/cli.js --port 47372
 ```
 
-On this machine, the most reliable browser launch has been:
+Do not prefer `dev:manual` plus a hand-built `--load-extension` Chrome launch here unless you are already blocked on the normal WXT runner.
+That path looked viable earlier, but in the verified session it often opened Chrome without reliably surfacing the unpacked extension as a debuggable target.
 
-```bash
-/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary \
-  --user-data-dir=/Users/bytedance/projects/mdp/apps/chrome-extension/.wxt/chrome-data \
-  --remote-debugging-port=9227 \
-  --enable-unsafe-extension-debugging \
-  --unsafely-disable-devtools-self-xss-warnings \
-  about:blank
-```
-
-Use the persistent WXT profile so the extension id, workspace config, and prior login state are preserved across restarts.
+Before starting on a new machine, first confirm a dedicated Chrome debug channel exists.
+If the machine only has the regular stable Chrome app, install Canary first; otherwise the WXT-driven debug session can conflict with the user's normal Chrome windows and vanish mid-run.
 
 ## Real Caller Rule
 
@@ -50,6 +49,7 @@ Use a real MCP consumer, for example:
 - canonical bridge calls such as `listClients` and `callPath`
 
 Wait for `listClients` to return `mdp-chrome-workspace` before starting the scenario.
+If the local server started after the extension, open the real `options.html` page and trigger `runtime:refresh` once to force a reconnect; on this machine that was much faster than waiting for background reconnect on its own.
 
 ## Known Runtime Behavior
 
@@ -80,6 +80,13 @@ Preferred capture flow:
 3. inspect `document.body.innerText` before taking a screenshot
 4. capture the screenshot from the real extension page target
 
+On this machine, the most reliable way to reach the page target was:
+
+1. let WXT open Chrome
+2. verify `http://127.0.0.1:9227/json/list` shows the extension service worker
+3. open `chrome-extension://<extension-id>/options.html#/workspace`
+4. re-read `/json/list` and connect to the newly created page target
+
 If the page title loads but `document.body.innerText` is empty, the page usually has not loaded its dev assets.
 Inspect the page HTML and look for `http://localhost:<port>/...` script tags.
 Run WXT on that same port and reload before trusting the screenshot.
@@ -100,4 +107,5 @@ Before handing off:
 
 - verify temporary client ids are gone from `chrome.storage.local`
 - stop the local server, WXT dev server, and temporary browser session
+- remove any temporary `web-ext.config.ts` override you created just for validation
 - mention any kept screenshots or artifacts explicitly

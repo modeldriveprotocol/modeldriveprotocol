@@ -1,4 +1,5 @@
 import type {
+  BackgroundExposeAsset,
   BackgroundClientConfig,
   ClientIconKey,
   ExtensionConfig,
@@ -30,9 +31,12 @@ export interface WorkspaceClientCreateInput {
   icon?: ClientIconKey
   enabled?: boolean
   favorite?: boolean
+  pinned?: boolean
   matchPatterns?: string[]
   autoInjectBridge?: boolean
   pathScriptSource?: string
+  exposes?: BackgroundExposeAsset[]
+  disabledExposePaths?: string[]
   disabledTools?: string[]
   disabledResources?: string[]
   disabledSkills?: string[]
@@ -44,10 +48,13 @@ export interface WorkspaceClientUpdateInput extends WorkspaceClientTargetInput {
   icon?: ClientIconKey
   enabled?: boolean
   favorite?: boolean
+  pinned?: boolean
   nextClientId?: string
   matchPatterns?: string[]
   autoInjectBridge?: boolean
   pathScriptSource?: string
+  exposes?: BackgroundExposeAsset[]
+  disabledExposePaths?: string[]
   disabledTools?: string[]
   disabledResources?: string[]
   disabledSkills?: string[]

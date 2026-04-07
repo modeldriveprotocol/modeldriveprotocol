@@ -1,6 +1,7 @@
 import {
   asRecord,
   createRequestId,
+  readBoolean,
   readString,
   readStringArray
 } from '../utils.js'
@@ -19,10 +20,15 @@ import {
   normalizeId,
   normalizeOffset,
   normalizePatterns,
-  normalizeSkillPath,
   normalizeString,
   normalizeTimestamp
 } from './internal.js'
+import {
+  normalizeRouteRecordingPath,
+  normalizeRouteResourcePath,
+  normalizeRouteSkillEntryPath,
+  normalizeRouteSkillFolderPath
+} from './route-assets.js'
 
 export function normalizeRecordings(value: unknown): RouteClientRecording[] {
   if (!Array.isArray(value)) {
@@ -40,10 +46,13 @@ export function normalizeRecordings(value: unknown): RouteClientRecording[] {
 
     return {
       id: normalizeId(readString(record, 'id')) ?? createRequestId('recording'),
+      kind: 'flow',
+      enabled: readBoolean(record, 'enabled') ?? true,
       path: normalizeUniqueAssetPath(
         readString(record, 'path'),
         name,
         'flow',
+        normalizeRouteRecordingPath,
         usedPaths
       ),
       name,
@@ -51,6 +60,9 @@ export function normalizeRecordings(value: unknown): RouteClientRecording[] {
         readString(record, 'description'),
         'Recorded user interactions that can be replayed as a tool call.'
       ),
+      ...(normalizeRouteAssetMethod(readString(record, 'method'))
+        ? { method: normalizeRouteAssetMethod(readString(record, 'method')) }
+        : {}),
       mode,
       createdAt: normalizeTimestamp(readString(record, 'createdAt')),
       updatedAt: normalizeTimestamp(readString(record, 'updatedAt')),
@@ -137,6 +149,7 @@ export function normalizeSelectorResources(
       )
       const selector = readString(record, 'selector')?.trim()
       const tagName = readString(record, 'tagName')?.trim()
+      const method = normalizeRouteAssetMethod(readString(record, 'method'))
 
       if (!selector || !tagName) {
         return undefined
@@ -146,10 +159,13 @@ export function normalizeSelectorResources(
         id:
           normalizeId(readString(record, 'id')) ??
           createRequestId('selector-resource'),
+        kind: 'resource',
+        enabled: readBoolean(record, 'enabled') ?? true,
         path: normalizeUniqueAssetPath(
           readString(record, 'path'),
           name,
           'resource',
+          normalizeRouteResourcePath,
           usedPaths
         ),
         name,
@@ -157,6 +173,7 @@ export function normalizeSelectorResources(
           readString(record, 'description'),
           'Serializable selector resource captured from a page element.'
         ),
+        ...(method ? { method } : {}),
         createdAt: normalizeTimestamp(readString(record, 'createdAt')),
         ...(readString(record, 'url')
           ? { url: readString(record, 'url') }
@@ -170,7 +187,10 @@ export function normalizeSelectorResources(
         ...(readString(record, 'text')
           ? { text: readString(record, 'text') }
           : {}),
-        attributes: normalizeAttributeMap(record.attributes)
+        attributes: normalizeAttributeMap(record.attributes),
+        ...(readString(record, 'scriptSource')?.trim()
+          ? { scriptSource: readString(record, 'scriptSource')?.trim() }
+          : {})
       } satisfies RouteSelectorResource
     })
     .filter((resource): resource is RouteSelectorResource => Boolean(resource))
@@ -180,11 +200,12 @@ function normalizeUniqueAssetPath(
   rawPath: string | undefined,
   fallbackName: string,
   defaultBase: string,
+  normalizePath: (value: string | undefined) => string | undefined,
   usedPaths: Set<string>
 ): string {
   const basePath =
-    normalizeSkillPath(rawPath) ??
-    normalizeSkillPath(fallbackName) ??
+    normalizePath(rawPath) ??
+    normalizePath(fallbackName) ??
     defaultBase
   let candidate = basePath
   let attempt = 2
@@ -207,7 +228,7 @@ export function normalizeSkillEntries(value: unknown): RouteSkillEntry[] {
     .map((item) => {
       const record = asRecord(item)
       const metadataRecord = asRecord(record.metadata)
-      const path = normalizeSkillPath(readString(record, 'path'))
+      const path = normalizeRouteSkillEntryPath(readString(record, 'path'))
 
       if (!path) {
         return undefined
@@ -215,6 +236,8 @@ export function normalizeSkillEntries(value: unknown): RouteSkillEntry[] {
 
       return {
         id: normalizeId(readString(record, 'id')) ?? createRequestId('skill'),
+        kind: 'skill',
+        enabled: readBoolean(record, 'enabled') ?? true,
         path,
         metadata: {
           title: normalizeString(
@@ -258,7 +281,7 @@ export function normalizeSkillFolders(
   return value
     .map((item) => {
       const record = asRecord(item)
-      const path = normalizeSkillPath(readString(record, 'path'))
+      const path = normalizeRouteSkillFolderPath(readString(record, 'path'))
 
       if (!path || skillEntryPaths.has(path)) {
         return undefined
@@ -268,6 +291,7 @@ export function normalizeSkillFolders(
         id:
           normalizeId(readString(record, 'id')) ??
           createRequestId('skill-folder'),
+        kind: 'folder',
         path
       } satisfies RouteSkillFolder
     })
@@ -338,4 +362,16 @@ function normalizeSkillParameterType(
   }
 
   return 'string'
+}
+
+function normalizeRouteAssetMethod(
+  value: string | undefined
+): 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | undefined {
+  return value === 'GET' ||
+    value === 'POST' ||
+    value === 'PUT' ||
+    value === 'PATCH' ||
+    value === 'DELETE'
+    ? value
+    : undefined
 }

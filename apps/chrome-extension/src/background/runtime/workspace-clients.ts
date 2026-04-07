@@ -1,8 +1,14 @@
 import {
+  cloneBackgroundExposeAssets,
   createBackgroundClientConfig,
   createRouteClientConfig,
   createRouteRule,
+  cloneRouteExposeAssets,
+  deriveDisabledBackgroundExposePaths,
   isRequiredBackgroundClientId,
+  normalizeDisabledBackgroundExposePaths,
+  normalizeBackgroundExposeAssets,
+  normalizeLegacyDisabledBackgroundExposePaths,
   DEFAULT_WORKSPACE_MANAGEMENT_CLIENT,
   type BackgroundClientConfig,
   type ExtensionConfig,
@@ -42,42 +48,14 @@ export async function listWorkspaceClients(
   return {
     backgroundClients: config.backgroundClients.map((client) => ({
       ...client,
-      disabledTools: [...client.disabledTools],
-      disabledResources: [...client.disabledResources],
-      disabledSkills: [...client.disabledSkills]
+      exposes: cloneBackgroundExposeAssets(client.exposes),
+      disabledExposePaths: [...client.disabledExposePaths]
     })),
     routeClients: config.routeClients.map((client) => ({
       ...client,
       matchPatterns: [...client.matchPatterns],
       routeRules: client.routeRules.map((rule) => ({ ...rule })),
-      recordings: client.recordings.map((recording) => ({
-        ...recording,
-        capturedFeatures: [...recording.capturedFeatures],
-        steps: recording.steps.map((step) => ({
-          ...step,
-          alternativeSelectors: [...step.alternativeSelectors],
-          classes: [...step.classes]
-        }))
-      })),
-      selectorResources: client.selectorResources.map((resource) => ({
-        ...resource,
-        alternativeSelectors: [...resource.alternativeSelectors],
-        classes: [...resource.classes],
-        attributes: { ...resource.attributes }
-      })),
-      skillFolders: client.skillFolders.map((folder) => ({ ...folder })),
-      skillEntries: client.skillEntries.map((skill) => ({
-        ...skill,
-        metadata: {
-          ...skill.metadata,
-          queryParameters: skill.metadata.queryParameters.map((parameter) => ({
-            ...parameter
-          })),
-          headerParameters: skill.metadata.headerParameters.map((parameter) => ({
-            ...parameter
-          }))
-        }
-      })),
+      exposes: cloneRouteExposeAssets(client.exposes),
       ...(client.installSource ? { installSource: { ...client.installSource } } : {})
     }))
   }
@@ -99,6 +77,7 @@ export async function createWorkspaceClient(
   })
 
   if (input.kind === 'background') {
+    const exposes = resolveBackgroundClientExposes(input)
     const client = createBackgroundClientConfig({
       ...(input.id?.trim() ? { id: input.id.trim() } : {}),
       ...(nextClientId ? { clientId: nextClientId } : {}),
@@ -109,11 +88,8 @@ export async function createWorkspaceClient(
       ...(input.icon ? { icon: input.icon } : {}),
       ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
       ...(input.favorite !== undefined ? { favorite: input.favorite } : {}),
-      ...(input.disabledTools ? { disabledTools: [...input.disabledTools] } : {}),
-      ...(input.disabledResources
-        ? { disabledResources: [...input.disabledResources] }
-        : {}),
-      ...(input.disabledSkills ? { disabledSkills: [...input.disabledSkills] } : {})
+      ...(input.pinned !== undefined ? { pinned: input.pinned } : {}),
+      ...(exposes !== undefined ? { exposes } : {})
     })
     const nextConfig = {
       ...config,
@@ -136,6 +112,7 @@ export async function createWorkspaceClient(
     ...(input.icon ? { icon: input.icon } : {}),
     ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
     ...(input.favorite !== undefined ? { favorite: input.favorite } : {}),
+    ...(input.pinned !== undefined ? { pinned: input.pinned } : {}),
     ...(input.matchPatterns ? { matchPatterns: [...input.matchPatterns] } : {}),
     ...(input.autoInjectBridge !== undefined
       ? { autoInjectBridge: input.autoInjectBridge }
@@ -174,6 +151,7 @@ export async function updateWorkspaceClient(
 
   if (resolved.kind === 'background') {
     assertRequiredBackgroundClientUpdate(resolved.client, input)
+    const exposes = resolveBackgroundClientExposes(input)
 
     const nextClient: BackgroundClientConfig = {
       ...resolved.client,
@@ -184,12 +162,14 @@ export async function updateWorkspaceClient(
       ...(input.icon ? { icon: input.icon } : {}),
       ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
       ...(input.favorite !== undefined ? { favorite: input.favorite } : {}),
+      ...(input.pinned !== undefined ? { pinned: input.pinned } : {}),
       ...(nextClientId ? { clientId: nextClientId } : {}),
-      ...(input.disabledTools ? { disabledTools: [...input.disabledTools] } : {}),
-      ...(input.disabledResources
-        ? { disabledResources: [...input.disabledResources] }
-        : {}),
-      ...(input.disabledSkills ? { disabledSkills: [...input.disabledSkills] } : {})
+      ...(exposes !== undefined
+        ? {
+            exposes,
+            disabledExposePaths: deriveDisabledBackgroundExposePaths(exposes)
+          }
+        : {})
     }
     const nextConfig = {
       ...config,
@@ -215,6 +195,7 @@ export async function updateWorkspaceClient(
     ...(input.icon ? { icon: input.icon } : {}),
     ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
     ...(input.favorite !== undefined ? { favorite: input.favorite } : {}),
+    ...(input.pinned !== undefined ? { pinned: input.pinned } : {}),
     ...(nextClientId ? { clientId: nextClientId } : {}),
     ...(input.matchPatterns ? { matchPatterns: [...input.matchPatterns] } : {}),
     ...(input.autoInjectBridge !== undefined
@@ -446,46 +427,44 @@ function assertRequiredBackgroundClientUpdate(
     )
   }
 
-  if (
-    input.disabledTools !== undefined &&
-    !sameStringArray(
-      input.disabledTools,
-      DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledTools
-    )
-  ) {
-    throw new Error(
-      `Background client "${client.clientName}" must keep its built-in tools enabled`
-    )
-  }
-
-  if (
-    input.disabledResources !== undefined &&
-    !sameStringArray(
-      input.disabledResources,
-      DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledResources
-    )
-  ) {
-    throw new Error(
-      `Background client "${client.clientName}" must keep its built-in resources disabled`
-    )
-  }
-
-  if (
-    input.disabledSkills !== undefined &&
-    !sameStringArray(
-      input.disabledSkills,
-      DEFAULT_WORKSPACE_MANAGEMENT_CLIENT.disabledSkills
-    )
-  ) {
-    throw new Error(
-      `Background client "${client.clientName}" must keep its built-in skills enabled`
-    )
-  }
 }
 
-function sameStringArray(left: string[], right: readonly string[]): boolean {
+function hasBackgroundClientExposeOverride(
+  input: WorkspaceClientCreateInput | WorkspaceClientUpdateInput
+): boolean {
   return (
-    left.length === right.length &&
-    left.every((value, index) => value === right[index])
+    input.exposes !== undefined ||
+    input.disabledExposePaths !== undefined ||
+    input.disabledTools !== undefined ||
+    input.disabledResources !== undefined ||
+    input.disabledSkills !== undefined
+  )
+}
+
+function resolveBackgroundClientExposes(
+  input: WorkspaceClientCreateInput | WorkspaceClientUpdateInput
+): BackgroundClientConfig['exposes'] | undefined {
+  if (!hasBackgroundClientExposeOverride(input)) {
+    return undefined
+  }
+
+  if (input.exposes !== undefined) {
+    return normalizeBackgroundExposeAssets(input.exposes)
+  }
+
+  if (input.disabledExposePaths !== undefined) {
+    return normalizeBackgroundExposeAssets(
+      undefined,
+      normalizeDisabledBackgroundExposePaths(input.disabledExposePaths)
+    )
+  }
+
+  return normalizeBackgroundExposeAssets(
+    undefined,
+    normalizeLegacyDisabledBackgroundExposePaths({
+      disabledTools: input.disabledTools,
+      disabledResources: input.disabledResources,
+      disabledSkills: input.disabledSkills
+    })
   )
 }

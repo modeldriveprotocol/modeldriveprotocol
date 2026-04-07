@@ -53,25 +53,38 @@ export const routeClientRecordingSchema = z.object({
   scriptSource: z.string().optional()
 })
 
+export const backgroundExposeAssetSchema = z.object({
+  id: nonEmptyStringSchema,
+  path: nonEmptyStringSchema,
+  description: z.string(),
+  enabled: z.boolean().default(true)
+})
+
 export const backgroundClientSchema = z.object({
   kind: z.literal('background'),
   id: nonEmptyStringSchema,
+  createdAt: dateTimeStringSchema,
   enabled: z.boolean().default(true),
   favorite: z.boolean().default(false),
+  pinned: z.boolean().default(false),
   clientId: nonEmptyStringSchema,
   clientName: nonEmptyStringSchema,
   clientDescription: nonEmptyStringSchema,
   icon: z.enum(clientIconEnum),
-  disabledTools: z.array(nonEmptyStringSchema),
-  disabledResources: z.array(nonEmptyStringSchema),
-  disabledSkills: z.array(nonEmptyStringSchema)
+  exposes: z.array(backgroundExposeAssetSchema).optional(),
+  disabledExposePaths: z.array(nonEmptyStringSchema).optional(),
+  disabledTools: z.array(nonEmptyStringSchema).optional(),
+  disabledResources: z.array(nonEmptyStringSchema).optional(),
+  disabledSkills: z.array(nonEmptyStringSchema).optional()
 })
 
 export const routeClientSchema = z.object({
   kind: z.literal('route'),
   id: nonEmptyStringSchema,
+  createdAt: dateTimeStringSchema,
   enabled: z.boolean().default(true),
   favorite: z.boolean().default(false),
+  pinned: z.boolean().default(false),
   clientId: nonEmptyStringSchema,
   clientName: nonEmptyStringSchema,
   clientDescription: nonEmptyStringSchema,

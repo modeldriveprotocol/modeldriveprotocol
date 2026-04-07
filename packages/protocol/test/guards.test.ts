@@ -161,6 +161,9 @@ describe('protocol guards', () => {
     expect(isPathPattern('/goods')).toBe(true)
     expect(isPathPattern('/goods/:id')).toBe(true)
     expect(isPathPattern('/goods/skill.md')).toBe(true)
+    expect(isPathPattern('/goods/SKILL.md')).toBe(true)
+    expect(isPathPattern('/goods/PROMPT.md')).toBe(true)
+    expect(isPathPattern('/goods/.ai/skills/SKILL.md')).toBe(true)
     expect(isPathPattern('goods')).toBe(false)
     expect(isPathPattern('/goods/:bad?')).toBe(false)
     expect(isPathPattern('/goods/prompt.md/extra')).toBe(false)
@@ -168,6 +171,8 @@ describe('protocol guards', () => {
     expect(isConcretePath('/goods/123')).toBe(true)
     expect(isConcretePath('/goods/:id')).toBe(false)
     expect(isConcretePath('/goods/Prompt.md')).toBe(false)
+    expect(isConcretePath('/goods/SKILL.md')).toBe(true)
+    expect(isConcretePath('/goods/.ai/skills/SKILL.md')).toBe(true)
   })
 
   it('matches path params and prefers static routes over param routes', () => {

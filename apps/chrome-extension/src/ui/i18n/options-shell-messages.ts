@@ -25,6 +25,7 @@ export const optionsShellMessages: Record<Locale, Record<string, string>> = {
     'options.status.initial': 'Workspace changes stay local until you save.',
     'options.status.saved': 'Workspace saved and runtime refreshed.',
     'options.status.runtimeRefreshed': 'Runtime refreshed.',
+    'options.status.runtimeUnavailable': 'Background runtime is not responding. Showing the saved workspace only.',
     'options.status.discarded': 'Draft reverted to the last saved workspace.',
     'options.status.exportPrepared': 'Workspace JSON prepared for export.',
     'options.status.transferCopied.export': 'Export JSON copied to clipboard.',
@@ -94,6 +95,10 @@ export const optionsShellMessages: Record<Locale, Record<string, string>> = {
     'options.appearance.auto': 'Follow system',
     'options.appearance.light': 'Light',
     'options.appearance.dark': 'Dark',
+    'options.sidebar.locale': 'Language',
+    'options.sidebar.appearance': 'Theme',
+    'options.sidebar.collapse': 'Collapse sidebar',
+    'options.sidebar.expand': 'Expand sidebar',
     'options.workspace.background.title': 'Background client',
     'options.workspace.background.description': 'Browser-level clients for tabs, windows, bookmarks, and extension actions.'
   },
@@ -121,6 +126,7 @@ export const optionsShellMessages: Record<Locale, Record<string, string>> = {
     'options.status.initial': '',
     'options.status.saved': '工作区已保存，运行时已刷新。',
     'options.status.runtimeRefreshed': '运行时已刷新。',
+    'options.status.runtimeUnavailable': '后台运行时暂时没有响应，当前先展示已保存的工作区配置。',
     'options.status.discarded': '草稿已恢复到上次保存的工作区状态。',
     'options.status.exportPrepared': '已准备好导出的工作区 JSON。',
     'options.status.transferCopied.export': '导出 JSON 已复制到剪贴板。',
@@ -190,6 +196,10 @@ export const optionsShellMessages: Record<Locale, Record<string, string>> = {
     'options.appearance.auto': '跟随系统',
     'options.appearance.light': '浅色',
     'options.appearance.dark': '深色',
+    'options.sidebar.locale': '语言',
+    'options.sidebar.appearance': '主题',
+    'options.sidebar.collapse': '折叠侧边栏',
+    'options.sidebar.expand': '展开侧边栏',
     'options.workspace.background.title': '后台级客户端',
     'options.workspace.background.description': '浏览器级客户端，用来承载标签页、窗口、书签和扩展动作等能力。'
   }

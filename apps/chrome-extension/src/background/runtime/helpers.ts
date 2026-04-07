@@ -14,7 +14,11 @@ import type {
   RouteClientRecording,
   RouteSelectorResource
 } from '#~/shared/config.js'
-import { matchesRouteClient } from '#~/shared/config.js'
+import {
+  getRouteClientRecordings,
+  getRouteClientSelectorResources,
+  matchesRouteClient
+} from '#~/shared/config.js'
 import { createRequestId } from '#~/shared/utils.js'
 import type { BrowserTabSummary } from '#~/background/shared.js'
 
@@ -51,17 +55,21 @@ export function createRecordingFromCapture(
     .map((step) => step.type)
     .slice(0, 3)
     .join(' -> ')
-  const name = options.name?.trim() || `${routeClient.clientName} Flow ${routeClient.recordings.length + 1}`
+  const recordings = getRouteClientRecordings(routeClient)
+  const name = options.name?.trim() || `${routeClient.clientName} Flow ${recordings.length + 1}`
 
   return {
+    kind: 'flow',
     id: createRequestId('recording'),
+    enabled: true,
     path: createUniqueAssetPath(
-      routeClient.recordings.map((recording) => recording.path),
+      recordings.map((recording) => recording.path),
       name,
       'flow'
     ),
     name,
     description: options.description?.trim() || stepPreview || 'Recorded interaction flow.',
+    method: 'POST',
     mode: 'recording',
     createdAt: result.finishedAt,
     updatedAt: result.finishedAt,
@@ -94,17 +102,21 @@ export function createSelectorResource(
   routeClient: RouteClientConfig,
   result: PageSelectorCaptureResult
 ): RouteSelectorResource {
-  const name = `${routeClient.clientName} Selector ${routeClient.selectorResources.length + 1}`
+  const selectorResources = getRouteClientSelectorResources(routeClient)
+  const name = `${routeClient.clientName} Selector ${selectorResources.length + 1}`
 
   return {
+    kind: 'resource',
     id: createRequestId('selector-resource'),
+    enabled: true,
     path: createUniqueAssetPath(
-      routeClient.selectorResources.map((resource) => resource.path),
+      selectorResources.map((resource) => resource.path),
       name,
       'resource'
     ),
     name,
     description: `Captured selector resource for ${result.tagName}.`,
+    method: 'GET',
     createdAt: new Date().toISOString(),
     url: result.url,
     selector: result.selector,

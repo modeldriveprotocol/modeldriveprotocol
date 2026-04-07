@@ -28,37 +28,34 @@ export function SidepanelStatusStrip({ controller }: { controller: SidepanelCont
           }
         : undefined
 
+  if (!status) {
+    return null
+  }
+
   return (
     <Box sx={{ px: 2, py: 0.75, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.default' }}>
-      <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
-        <Typography variant="body2" color="text.secondary" sx={{ flex: 1, minWidth: 0 }} noWrap>
-          {controller.sidepanelFocusText}
-        </Typography>
-        {status ? (
-          <Box sx={statusShellSx[status.tone]}>
-            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
-              <Box component="span" sx={{ display: 'inline-grid', placeItems: 'center', fontSize: 14, flexShrink: 0 }}>
-                {status.icon}
-              </Box>
-              <Typography variant="caption" noWrap title={status.message} sx={{ minWidth: 0 }}>
-                {status.message}
-              </Typography>
-              {status.action ? (
-                <Button
-                  size="small"
-                  variant="text"
-                  color="inherit"
-                  onClick={status.action.onClick}
-                  startIcon={'icon' in status.action ? status.action.icon : undefined}
-                  sx={{ minWidth: 'auto', px: 0.5, py: 0, flexShrink: 0 }}
-                >
-                  {status.action.label}
-                </Button>
-              ) : null}
-            </Stack>
+      <Box sx={statusShellSx[status.tone]}>
+        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
+          <Box component="span" sx={{ display: 'inline-grid', placeItems: 'center', fontSize: 14, flexShrink: 0 }}>
+            {status.icon}
           </Box>
-        ) : null}
-      </Stack>
+          <Typography variant="caption" noWrap title={status.message} sx={{ minWidth: 0 }}>
+            {status.message}
+          </Typography>
+          {status.action ? (
+            <Button
+              size="small"
+              variant="text"
+              color="inherit"
+              onClick={status.action.onClick}
+              startIcon={'icon' in status.action ? status.action.icon : undefined}
+              sx={{ minWidth: 'auto', px: 0.5, py: 0, flexShrink: 0 }}
+            >
+              {status.action.label}
+            </Button>
+          ) : null}
+        </Stack>
+      </Box>
     </Box>
   )
 }
@@ -70,7 +67,7 @@ const statusShellSx = {
     maxWidth: '100%',
     px: 1,
     py: 0.5,
-    borderRadius: '999px',
+    borderRadius: '4px',
     border: '1px solid',
     borderColor: 'success.main',
     color: 'success.dark',
@@ -82,7 +79,7 @@ const statusShellSx = {
     maxWidth: '100%',
     px: 1,
     py: 0.5,
-    borderRadius: '999px',
+    borderRadius: '4px',
     border: '1px solid',
     borderColor: 'error.main',
     color: 'error.main',
@@ -94,7 +91,7 @@ const statusShellSx = {
     maxWidth: '100%',
     px: 1,
     py: 0.5,
-    borderRadius: '999px',
+    borderRadius: '4px',
     border: '1px solid',
     borderColor: 'divider',
     color: 'text.secondary',

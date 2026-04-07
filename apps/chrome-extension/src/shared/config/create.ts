@@ -1,5 +1,11 @@
 import { createRequestId } from '../utils.js'
 import {
+  cloneBackgroundExposeAssets,
+  createBackgroundExposeAssets,
+  deriveDisabledBackgroundExposePaths,
+  normalizeBackgroundExposeAssets
+} from './background-assets.js'
+import {
   type BackgroundClientConfig,
   DEFAULT_EXTENSION_CONFIG,
   MARKET_CATALOG_SYNC_PATH,
@@ -17,9 +23,15 @@ import {
   normalizeId,
   normalizeMarketSourceUrl,
   normalizePatterns,
+  normalizeTimestamp,
   normalizeRepositoryIdentifier
 } from './internal.js'
 import { getOriginMatchPattern, suggestPathnameRule } from './matching.js'
+import {
+  cloneRouteExposeAssets,
+  ensureRootRouteSkillAsset,
+  syncRouteClientAssetViews
+} from './route-assets.js'
 
 export function createRouteClientConfig(
   overrides: Partial<RouteClientConfig> = {}
@@ -29,11 +41,24 @@ export function createRouteClientConfig(
   const clientId =
     normalizeId(overrides.clientId) ?? buildClientId(sourceName, routeId)
 
-  return {
+  const exposes = ensureRootRouteSkillAsset(
+    overrides.exposes
+      ? cloneRouteExposeAssets(overrides.exposes)
+      : [
+          ...(overrides.skillEntries ?? []),
+          ...(overrides.skillFolders ?? []),
+          ...(overrides.recordings ?? []),
+          ...(overrides.selectorResources ?? [])
+        ]
+  )
+
+  return syncRouteClientAssetViews({
     kind: 'route',
     id: routeId,
+    createdAt: normalizeTimestamp(overrides.createdAt),
     enabled: overrides.enabled ?? true,
     favorite: overrides.favorite ?? false,
+    pinned: overrides.pinned ?? false,
     clientId,
     clientName: sourceName,
     clientDescription:
@@ -44,14 +69,11 @@ export function createRouteClientConfig(
     routeRules: overrides.routeRules ?? [],
     autoInjectBridge: overrides.autoInjectBridge ?? true,
     pathScriptSource: overrides.pathScriptSource?.trim() ?? '',
-    recordings: overrides.recordings ?? [],
-    selectorResources: overrides.selectorResources ?? [],
-    skillFolders: overrides.skillFolders ?? [],
-    skillEntries: overrides.skillEntries ?? [],
+    exposes,
     ...(overrides.installSource
       ? { installSource: overrides.installSource }
       : {})
-  }
+  })
 }
 
 export function createBackgroundClientConfig(
@@ -62,21 +84,25 @@ export function createBackgroundClientConfig(
     normalizeId(overrides.id) ?? createRequestId('background-client')
   const clientId =
     normalizeId(overrides.clientId) ?? buildClientId(sourceName, backgroundId)
+  const exposes = overrides.exposes
+    ? normalizeBackgroundExposeAssets(overrides.exposes, overrides.disabledExposePaths)
+    : createBackgroundExposeAssets(overrides.disabledExposePaths ?? [])
 
   return {
     kind: 'background',
     id: backgroundId,
+    createdAt: normalizeTimestamp(overrides.createdAt),
     enabled: overrides.enabled ?? true,
     favorite: overrides.favorite ?? false,
+    pinned: overrides.pinned ?? false,
     clientId,
     clientName: sourceName,
     clientDescription:
       overrides.clientDescription?.trim() ||
-      'Browser-level client for extension tools, resources, and background automation capabilities.',
+      'Browser-level client for built-in extension exposes and background automation capabilities.',
     icon: overrides.icon ?? 'chrome',
-    disabledTools: overrides.disabledTools ?? [],
-    disabledResources: overrides.disabledResources ?? [],
-    disabledSkills: overrides.disabledSkills ?? []
+    exposes: cloneBackgroundExposeAssets(exposes),
+    disabledExposePaths: deriveDisabledBackgroundExposePaths(exposes)
   }
 }
 

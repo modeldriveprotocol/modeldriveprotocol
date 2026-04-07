@@ -14,6 +14,8 @@ Do not reintroduce a `src/ui/react/` wrapper layer.
 
 Open the smallest relevant guide for the current task:
 
+- task is about splitting UI modules, reducing file size, or deciding what should stay local versus shared:
+  read [../../.ai/rules/module-organization.md](../../.ai/rules/module-organization.md)
 - task is about the extension app surfaces under `options` or `sidepanel`:
   read [apps/AGENTS.md](./apps/AGENTS.md)
 - task is about UI localization, locale storage, or message dictionaries:

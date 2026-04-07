@@ -87,15 +87,12 @@ export type SidepanelController = PopupRuntimeSlice & {
   ) => Promise<void>
   selectedClient: PopupClientState | undefined
   selectedRouteConfig: PopupState['config']['routeClients'][number] | undefined
-  selectedOptionsClientId: string | undefined
   activeTabHasPermission: boolean
   canCreateFromActivePage: boolean
   clientFilter: SidepanelClientFilter
   setClientFilter: (value: SidepanelClientFilter) => void
   clientSearch: string
   setClientSearch: (value: string) => void
-  expandedClientKey: string | undefined
-  setExpandedClientKey: (value: string | undefined) => void
   setSelectedClientId: (value: string | undefined) => void
   sidepanelPrimaryAction: PopupActionDescriptor
   sidepanelFocusText: string

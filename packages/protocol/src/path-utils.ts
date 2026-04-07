@@ -1,8 +1,14 @@
 import type { RpcArguments } from './json.js'
 
-const STATIC_SEGMENT_PATTERN = /^[a-z0-9](?:[a-z0-9_-]*)$/
+const STATIC_SEGMENT_PATTERN =
+  /^(?:[a-z0-9](?:[a-z0-9_-]*)?|\.[a-z0-9](?:[a-z0-9_-]*)?)$/
 const PARAM_SEGMENT_PATTERN = /^:[a-z0-9](?:[a-z0-9_-]*)$/
-const RESERVED_LEAF_NAMES = new Set(['skill.md', 'prompt.md'])
+const RESERVED_LEAF_NAMES = new Set([
+  'skill.md',
+  'prompt.md',
+  'SKILL.md',
+  'PROMPT.md'
+])
 
 export interface PathPatternMatch {
   params: RpcArguments
@@ -18,11 +24,21 @@ export function isConcretePath(value: unknown): value is string {
 }
 
 export function isSkillPath(value: unknown): value is string {
-  return isPathPattern(value) && value.endsWith('/skill.md')
+  if (!isPathPattern(value)) {
+    return false
+  }
+
+  const leaf = splitPath(value).at(-1) ?? ''
+  return leaf === 'skill.md' || leaf === 'SKILL.md'
 }
 
 export function isPromptPath(value: unknown): value is string {
-  return isPathPattern(value) && value.endsWith('/prompt.md')
+  if (!isPathPattern(value)) {
+    return false
+  }
+
+  const leaf = splitPath(value).at(-1) ?? ''
+  return leaf === 'prompt.md' || leaf === 'PROMPT.md'
 }
 
 export function matchPathPattern(pattern: string, path: string): PathPatternMatch | undefined {

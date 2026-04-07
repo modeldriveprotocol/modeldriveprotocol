@@ -3,6 +3,11 @@ import { Box } from '@mui/material'
 import type { AppearancePreference } from '../../foundation/appearance.js'
 import type { LocalePreference } from '../../i18n/provider.js'
 import type { ExtensionConfig } from '#~/shared/config.js'
+import {
+  OPTIONS_SIDEBAR_COLLAPSED_WIDTH,
+  OPTIONS_SIDEBAR_EXPANDED_WIDTH,
+  OPTIONS_SIDEBAR_TRANSITION
+} from './layout.js'
 import type { OptionsController } from './use-options-controller.js'
 import { OptionsMainPanel } from './shell-main-panel.js'
 import { OptionsSidebar } from './shell-sidebar.js'
@@ -23,9 +28,10 @@ export function OptionsShell(props: OptionsShellProps) {
       sx={{
         height: '100vh',
         display: 'grid',
-        gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: '220px minmax(0, 1fr)' },
+        gridTemplateColumns: `${props.controller.sidebarCollapsed ? OPTIONS_SIDEBAR_COLLAPSED_WIDTH : OPTIONS_SIDEBAR_EXPANDED_WIDTH}px minmax(0, 1fr)`,
         bgcolor: 'background.default',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        transition: `grid-template-columns ${OPTIONS_SIDEBAR_TRANSITION}`
       }}
     >
       <OptionsSidebar

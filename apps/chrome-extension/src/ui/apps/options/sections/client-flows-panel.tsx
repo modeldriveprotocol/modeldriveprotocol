@@ -134,7 +134,9 @@ export function ClientFlowsPanel({
   function addCodeFlow() {
     const now = new Date().toISOString()
     const nextFlow: RouteClientRecording = {
+      kind: 'flow',
       id: createLocalId('flow'),
+      enabled: true,
       path: createUniqueAssetPath(
         client.recordings.map((recording) => recording.path),
         '',
@@ -233,7 +235,7 @@ export function ClientFlowsPanel({
           sx={{
             border: '1px solid',
             borderColor: 'divider',
-            borderRadius: '12px',
+            borderRadius: '4px',
             overflow: 'hidden'
           }}
         >
@@ -339,7 +341,7 @@ export function ClientFlowsPanel({
               sx={{
                 border: '1px solid',
                 borderColor: 'divider',
-                borderRadius: '12px',
+                borderRadius: '4px',
                 overflow: 'hidden'
               }}
             >

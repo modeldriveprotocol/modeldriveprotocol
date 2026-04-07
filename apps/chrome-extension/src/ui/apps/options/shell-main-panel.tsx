@@ -11,6 +11,7 @@ import {
   Tooltip,
   Typography
 } from '@mui/material'
+import { useState } from 'react'
 import { createClientKey } from '#~/background/shared.js'
 import {
   createBackgroundClientConfig,
@@ -22,6 +23,7 @@ import {
 import type { AppearancePreference } from '../../foundation/appearance.js'
 import { createPresetRouteClient } from '../../platform/extension-api.js'
 import type { LocalePreference } from '../../i18n/provider.js'
+import { forkEditableClient } from './editable-client-copy.js'
 import { OPTIONS_SHELL_HEADER_HEIGHT } from './layout.js'
 import { ClientsSection } from './sections/clients-section.js'
 import { GlobalSettingsSection } from './sections/global-settings-section.js'
@@ -46,6 +48,7 @@ export function OptionsMainPanel({
   setLocalePreference,
   t
 }: OptionsMainPanelProps) {
+  const [marketDetailTitle, setMarketDetailTitle] = useState<string>()
   const clientItems = [
     ...draft.backgroundClients.map((client) => ({
       kind: 'background' as const,
@@ -68,6 +71,9 @@ export function OptionsMainPanel({
       : undefined
   const headerTitle =
     clientDetailTitle ??
+    (controller.section === 'market' && controller.marketDetailOpen
+      ? marketDetailTitle
+      : undefined) ??
     (controller.section === 'workspace'
       ? t('options.header.workspace')
       : controller.section === 'settings'
@@ -99,16 +105,28 @@ export function OptionsMainPanel({
           bgcolor: 'background.default'
         }}
       >
-        {controller.section === 'clients' && controller.clientDetailOpen ? (
+        {(
+          controller.section === 'clients' && controller.clientDetailOpen
+        ) || (
+          controller.section === 'market' && controller.marketDetailOpen
+        ) ? (
           <Tooltip title={t('options.clients.backToList')}>
             <IconButton
               size="small"
               aria-label={t('options.clients.backToList')}
-              onClick={() =>
-                controller.setSectionAndHash('clients', {
-                  clientDetailOpen: false
+              onClick={() => {
+                if (controller.section === 'clients') {
+                  controller.setSectionAndHash('clients', {
+                    clientDetailOpen: false
+                  })
+                  return
+                }
+
+                controller.setSectionAndHash('market', {
+                  marketDetailOpen: false,
+                  marketEntryKey: undefined
                 })
-              }
+              }}
               sx={{ ml: -0.5 }}
             >
               <ArrowBackOutlined fontSize="small" />
@@ -142,11 +160,14 @@ export function OptionsMainPanel({
                 size="small"
                 aria-label={t('options.clients.duplicate')}
                 onClick={() => {
-                  const nextClient = forkEditableClient(selectedClientItem, t)
+                  if (selectedClientItem.kind === 'background') {
+                    const nextClient = forkEditableClient(
+                      selectedClientItem,
+                      t
+                    )
 
-                  controller.setDraft((current: any) =>
-                    current
-                      ? selectedClientItem.kind === 'background'
+                    controller.setDraft((current: any) =>
+                      current
                         ? {
                             ...current,
                             backgroundClients: [
@@ -154,10 +175,30 @@ export function OptionsMainPanel({
                               nextClient
                             ]
                           }
-                        : {
-                            ...current,
-                            routeClients: [...current.routeClients, nextClient]
-                          }
+                        : current
+                    )
+                    controller.setSelectedClientId(nextClient.id)
+                    controller.setSectionAndHash('clients', {
+                      clientId: nextClient.id,
+                      clientDetailOpen: true
+                    })
+                    controller.notify(
+                      t('options.status.clientForked', {
+                        name: nextClient.clientName
+                      }),
+                      'success'
+                    )
+                    return
+                  }
+
+                  const nextClient = forkEditableClient(selectedClientItem, t)
+
+                  controller.setDraft((current: any) =>
+                    current
+                      ? {
+                          ...current,
+                          routeClients: [...current.routeClients, nextClient]
+                        }
                       : current
                   )
                   controller.setSelectedClientId(nextClient.id)
@@ -212,7 +253,8 @@ export function OptionsMainPanel({
           px: 1.5,
           pb: 1.5,
           pt:
-            controller.section === 'clients' && controller.clientDetailOpen
+            (controller.section === 'clients' && controller.clientDetailOpen) ||
+            (controller.section === 'market' && controller.marketDetailOpen)
               ? 0
               : 1.5,
           minHeight: 0,
@@ -290,14 +332,29 @@ export function OptionsMainPanel({
             clientDetailOpen={controller.clientDetailOpen}
             canCreateFromPage={Boolean(controller.runtimeState?.activeTab?.url)}
             draft={draft}
+            initialAssetPath={controller.assetPathHint}
             initialAssetTab={controller.assetTabHint}
             initialDetailTab={
               controller.detailTabHint ??
-              (controller.assetTabHint ? 'assets' : undefined)
+              (controller.assetTabHint || controller.assetPathHint
+                ? 'assets'
+                : undefined)
             }
             routeSearch={controller.routeSearch}
             selectedClientId={controller.selectedClientId}
             runtimeState={controller.runtimeState}
+            onAssetPathChange={(assetPath, detailTab) => {
+              if (!selectedClientItem) {
+                return
+              }
+
+              controller.setSectionAndHash('clients', {
+                clientId: selectedClientItem.id,
+                clientDetailOpen: true,
+                detailTab,
+                assetPath
+              })
+            }}
             onClearInvocationHistory={() => {
               if (!selectedClientItem) {
                 return
@@ -314,6 +371,18 @@ export function OptionsMainPanel({
                 clientDetailOpen: false
               })
             }
+            onDetailTabChange={(detailTab) => {
+              if (!selectedClientItem) {
+                return
+              }
+
+              controller.setSectionAndHash('clients', {
+                clientId: selectedClientItem.id,
+                clientDetailOpen: true,
+                detailTab,
+                assetPath: controller.assetPathHint
+              })
+            }}
             onOpenDetail={(clientId: any, detailTab?: any) => {
               controller.setSelectedClientId(clientId)
               controller.setSectionAndHash('clients', {
@@ -405,13 +474,14 @@ export function OptionsMainPanel({
             routeClients={draft.routeClients}
             selectedEntryKey={controller.selectedMarketEntryKey}
             onAddSource={async (input) => controller.addMarketSource(input)}
-            onInstall={controller.installMarketClient}
             onCloseDetail={() =>
               controller.setSectionAndHash('market', {
                 marketDetailOpen: false,
                 marketEntryKey: undefined
               })
             }
+            onDetailTitleChange={setMarketDetailTitle}
+            onInstall={controller.installMarketClient}
             onOpenDetail={(entryKey) =>
               controller.setSectionAndHash('market', {
                 marketEntryKey: entryKey,
@@ -505,80 +575,6 @@ function createBackgroundClient(
     clientName: t('options.clients.backgroundDefaultName', { count: index }),
     clientId: `mdp-background-client-${index}`,
     icon: 'chrome'
-  })
-}
-
-function forkEditableClient(
-  item:
-    | {
-        kind: 'background'
-        id: string
-        client: BackgroundClientConfig
-      }
-    | {
-        kind: 'route'
-        id: string
-        client: RouteClientConfig
-      },
-  t: (key: string, values?: Record<string, string | number>) => string
-) {
-  const nextName = `${item.client.clientName} ${t(
-    'options.clients.copySuffix'
-  )}`
-
-  if (item.kind === 'background') {
-    const { id: _id, clientId: _clientId, ...backgroundRest } = item.client
-
-    return createBackgroundClientConfig({
-      ...backgroundRest,
-      clientName: nextName,
-      favorite: false,
-      disabledTools: [...item.client.disabledTools],
-      disabledResources: [...item.client.disabledResources],
-      disabledSkills: [...item.client.disabledSkills]
-    })
-  }
-
-  const {
-    id: _id,
-    clientId: _clientId,
-    installSource: _installSource,
-    ...routeRest
-  } = item.client
-
-  return createRouteClientConfig({
-    ...routeRest,
-    clientName: nextName,
-    favorite: false,
-    routeRules: item.client.routeRules.map((rule) => ({ ...rule })),
-    recordings: item.client.recordings.map((recording) => ({
-      ...recording,
-      capturedFeatures: [...recording.capturedFeatures],
-      steps: recording.steps.map((step) => ({
-        ...step,
-        alternativeSelectors: [...step.alternativeSelectors],
-        classes: [...step.classes]
-      }))
-    })),
-    selectorResources: item.client.selectorResources.map((resource) => ({
-      ...resource,
-      alternativeSelectors: [...resource.alternativeSelectors],
-      classes: [...resource.classes],
-      attributes: { ...resource.attributes }
-    })),
-    skillFolders: item.client.skillFolders.map((folder) => ({ ...folder })),
-    skillEntries: item.client.skillEntries.map((skill) => ({
-      ...skill,
-      metadata: {
-        ...skill.metadata,
-        queryParameters: skill.metadata.queryParameters.map((parameter) => ({
-          ...parameter
-        })),
-        headerParameters: skill.metadata.headerParameters.map((parameter) => ({
-          ...parameter
-        }))
-      }
-    }))
   })
 }
 

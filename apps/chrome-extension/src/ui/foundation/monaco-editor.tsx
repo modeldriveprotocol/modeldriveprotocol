@@ -26,6 +26,7 @@ type MonacoCodeEditorProps = {
   modelUri: string
   onChange: (value: string) => void
   options?: monaco.editor.IStandaloneEditorConstructionOptions
+  placeholder?: string
   value: string
 }
 
@@ -44,6 +45,7 @@ export const MonacoCodeEditor = forwardRef<
       modelUri,
       onChange,
       options,
+      placeholder,
       value
     },
     ref
@@ -132,6 +134,7 @@ export const MonacoCodeEditor = forwardRef<
           bottom: 12,
           top: 12
         },
+        placeholder,
         roundedSelection: true,
         scrollBeyondLastLine: false,
         smoothScrolling: true,
@@ -155,7 +158,7 @@ export const MonacoCodeEditor = forwardRef<
         model.dispose()
         editorRef.current = null
       }
-    }, [ariaLabel, language, modelUri])
+    }, [ariaLabel, language, modelUri, placeholder])
 
     useEffect(() => {
       const model = editorRef.current?.getModel()
@@ -166,10 +169,13 @@ export const MonacoCodeEditor = forwardRef<
     }, [value])
 
     useEffect(() => {
-      if (options && editorRef.current) {
-        editorRef.current.updateOptions(options)
+      if (editorRef.current) {
+        editorRef.current.updateOptions({
+          ...(options ?? {}),
+          placeholder
+        })
       }
-    }, [options])
+    }, [options, placeholder])
 
     return (
       <Box

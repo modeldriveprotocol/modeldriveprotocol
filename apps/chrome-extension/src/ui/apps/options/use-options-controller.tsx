@@ -156,7 +156,11 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
       setLoading(true)
       const nextDraft = await loadWorkspaceConfig()
       setDraft(nextDraft)
-      await refreshRuntimeState()
+      try {
+        await refreshRuntimeState()
+      } catch {
+        notify(t('options.status.runtimeUnavailable'), 'error')
+      }
       setTransferDraft(serializeWorkspaceBundle(nextDraft))
       setLastSavedSnapshot(JSON.stringify(normalizeConfig(nextDraft)))
     } catch (nextError) {
@@ -166,9 +170,17 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
     }
   }
 
-  async function refreshRuntimeState(options?: { notify?: boolean; suppressError?: boolean }) {
+  async function refreshRuntimeState(options?: {
+    notify?: boolean
+    showSpinner?: boolean
+    suppressError?: boolean
+  }) {
+    const showSpinner = options?.showSpinner ?? Boolean(options?.notify)
+
     try {
-      setRuntimeRefreshing(true)
+      if (showSpinner) {
+        setRuntimeRefreshing(true)
+      }
       const nextRuntime = await getRuntimeStatus()
       setRuntimeState(nextRuntime)
       setRuntimeStateUpdatedAt(new Date().toISOString())
@@ -184,7 +196,9 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
         throw nextError
       }
     } finally {
-      setRuntimeRefreshing(false)
+      if (showSpinner) {
+        setRuntimeRefreshing(false)
+      }
     }
   }
 
@@ -219,8 +233,9 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
         }
       }
       const requestedOrigins = [...new Set([...draft.routeClients.flatMap((client) => client.matchPatterns), ...draft.marketSources.map((source) => getOriginMatchPattern(source.url)).filter(Boolean) as string[]])]
-      if (requestedOrigins.length > 0) {
-        const granted = await chrome.permissions.request({ origins: requestedOrigins })
+      const missingOrigins = await listMissingOrigins(requestedOrigins)
+      if (missingOrigins.length > 0) {
+        const granted = await chrome.permissions.request({ origins: missingOrigins })
         if (!granted) {
           throw new Error(t('options.error.hostAccessDenied'))
         }
@@ -235,6 +250,22 @@ export function useOptionsController(t: (key: string, values?: Record<string, st
     } catch (nextError) {
       notify(String(nextError), 'error')
     }
+  }
+
+  async function listMissingOrigins(origins: string[]): Promise<string[]> {
+    const missing: string[] = []
+
+    for (const origin of origins) {
+      const granted = (await chrome.permissions.contains({
+        origins: [origin]
+      })) as boolean
+
+      if (!granted) {
+        missing.push(origin)
+      }
+    }
+
+    return missing
   }
 
   function handleDiscardChanges() {
