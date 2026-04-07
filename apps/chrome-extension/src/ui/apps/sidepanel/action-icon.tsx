@@ -6,13 +6,15 @@ export function ActionIcon({
   disabled,
   emphasis,
   label,
-  onClick
+  onClick,
+  size = 32
 }: {
   children: ReactNode
   disabled?: boolean
   emphasis?: boolean
   label: string
   onClick: () => void
+  size?: number
 }) {
   return (
     <Tooltip title={label}>
@@ -25,6 +27,8 @@ export function ActionIcon({
           sx={
             emphasis
               ? {
+                  width: size,
+                  height: size,
                   bgcolor: 'primary.main',
                   color: '#fff',
                   '&:hover': {
@@ -32,7 +36,10 @@ export function ActionIcon({
                     opacity: 0.92
                   }
                 }
-              : undefined
+              : {
+                  width: size,
+                  height: size
+                }
           }
         >
           {children}

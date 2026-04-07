@@ -1,7 +1,21 @@
+import DnsOutlined from '@mui/icons-material/DnsOutlined'
+import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
 import SearchOutlined from '@mui/icons-material/SearchOutlined'
 import StorageOutlined from '@mui/icons-material/StorageOutlined'
 import StorefrontOutlined from '@mui/icons-material/StorefrontOutlined'
-import { InputAdornment, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import ViewModuleOutlined from '@mui/icons-material/ViewModuleOutlined'
+import WebOutlined from '@mui/icons-material/WebOutlined'
+import {
+  Collapse,
+  InputAdornment,
+  Stack,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
+  Typography
+} from '@mui/material'
+import { useState } from 'react'
 
 import { openOptionsSection } from '../../platform/extension-api.js'
 import { ActionIcon } from './action-icon.js'
@@ -11,6 +25,8 @@ import { SidepanelStatusStrip } from './sidepanel-status-strip.js'
 import type { SidepanelController } from './types.js'
 
 export function SidepanelView({ controller }: { controller: SidepanelController }) {
+  const [clientFiltersExpanded, setClientFiltersExpanded] = useState(false)
+
   return (
     <Stack spacing={0} sx={{ minHeight: '100vh' }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
@@ -39,19 +55,74 @@ export function SidepanelView({ controller }: { controller: SidepanelController 
         </Stack>
       ) : (
         <Stack spacing={1} sx={{ px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
-          <TextField
-            size="small"
-            placeholder={controller.t('popup.searchClients')}
-            value={controller.clientSearch}
-            onChange={(event) => controller.setClientSearch(event.target.value)}
-            fullWidth
-            InputProps={{ startAdornment: <InputAdornment position="start"><SearchOutlined fontSize="small" /></InputAdornment> }}
-          />
-          <ToggleButtonGroup size="small" exclusive value={controller.clientFilter} onChange={(_event, nextValue) => nextValue && controller.setClientFilter(nextValue)} sx={{ alignSelf: 'flex-start' }}>
-            <ToggleButton value="all">{controller.t('popup.filter.all')}</ToggleButton>
-            <ToggleButton value="background">{controller.t('popup.filter.background')}</ToggleButton>
-            <ToggleButton value="route">{controller.t('popup.filter.route')}</ToggleButton>
-          </ToggleButtonGroup>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <TextField
+              size="small"
+              placeholder={controller.t('popup.searchClients')}
+              value={controller.clientSearch}
+              onChange={(event) => controller.setClientSearch(event.target.value)}
+              fullWidth
+              InputProps={{ startAdornment: <InputAdornment position="start"><SearchOutlined fontSize="small" /></InputAdornment> }}
+            />
+            <ActionIcon
+              label={
+                clientFiltersExpanded
+                  ? controller.t('popup.hideFilters')
+                  : controller.t('popup.showFilters')
+              }
+              onClick={() => setClientFiltersExpanded((current) => !current)}
+              emphasis={clientFiltersExpanded}
+              size={40}
+            >
+              <ExpandMoreOutlined
+                fontSize="small"
+                style={{
+                  transform: clientFiltersExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 120ms ease'
+                }}
+              />
+            </ActionIcon>
+          </Stack>
+          <Collapse in={clientFiltersExpanded} timeout="auto" unmountOnExit>
+            <Stack direction="row" justifyContent="flex-end" sx={{ pt: 0.25 }}>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={controller.clientFilter}
+                onChange={(_event, nextValue) =>
+                  nextValue && controller.setClientFilter(nextValue)
+                }
+              >
+                <Tooltip title={controller.t('popup.filter.all')}>
+                  <ToggleButton
+                    value="all"
+                    aria-label={controller.t('popup.filter.all')}
+                    sx={{ width: 36, height: 32, p: 0 }}
+                  >
+                    <ViewModuleOutlined fontSize="small" />
+                  </ToggleButton>
+                </Tooltip>
+                <Tooltip title={controller.t('popup.filter.background')}>
+                  <ToggleButton
+                    value="background"
+                    aria-label={controller.t('popup.filter.background')}
+                    sx={{ width: 36, height: 32, p: 0 }}
+                  >
+                    <DnsOutlined fontSize="small" />
+                  </ToggleButton>
+                </Tooltip>
+                <Tooltip title={controller.t('popup.filter.route')}>
+                  <ToggleButton
+                    value="route"
+                    aria-label={controller.t('popup.filter.route')}
+                    sx={{ width: 36, height: 32, p: 0 }}
+                  >
+                    <WebOutlined fontSize="small" />
+                  </ToggleButton>
+                </Tooltip>
+              </ToggleButtonGroup>
+            </Stack>
+          </Collapse>
         </Stack>
       )}
 
