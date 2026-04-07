@@ -1,4 +1,4 @@
-import type { MdpClient } from '@modeldriveprotocol/client'
+import type { MdpClient } from '@modeldriveprotocol/client/browser'
 
 import type { RouteSelectorResource } from '#~/shared/config.js'
 

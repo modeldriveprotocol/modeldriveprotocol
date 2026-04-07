@@ -10,10 +10,40 @@ import type {
   ServerToClientMessage
 } from '@modeldriveprotocol/protocol'
 
+import type { HttpLoopClientTransportOptions } from './transport/http-loop-client.js'
+import type { WebSocketClientTransportOptions } from './transport/ws-client.js'
+
+export type TransportCredentialsMode = 'include' | 'omit' | 'same-origin'
+
+export interface AbortSignalLike {
+  readonly aborted: boolean
+}
+
+export interface AbortControllerLike {
+  readonly signal: AbortSignalLike
+  abort(reason?: unknown): void
+}
+
+export type AbortControllerFactory = () => AbortControllerLike
+
+export interface FetchRequestOptions {
+  method?: string
+  headers?: Record<string, string>
+  body?: string
+  signal?: AbortSignalLike
+  credentials?: TransportCredentialsMode
+}
+
+export interface FetchResponseLike {
+  readonly ok: boolean
+  readonly status: number
+  json(): Promise<unknown>
+}
+
 export type FetchLike = (
-  input: RequestInfo | URL,
-  init?: RequestInit
-) => Promise<Response>
+  url: string,
+  init?: FetchRequestOptions
+) => Promise<FetchResponseLike>
 
 export interface ClientInfo {
   id: string
@@ -94,7 +124,7 @@ export interface CookieTransportAuthOptions {
   endpoint?: string
   auth?: AuthContext
   headers?: Record<string, string>
-  credentials?: RequestCredentials
+  credentials?: TransportCredentialsMode
   fetch?: FetchLike
 }
 
@@ -133,6 +163,11 @@ export interface MdpClientReconnectOptions {
   onEvent?: (event: MdpClientReconnectEvent) => void
 }
 
+export interface DefaultClientTransportOptions {
+  webSocket?: WebSocketClientTransportOptions
+  fetch?: Pick<HttpLoopClientTransportOptions, 'fetch' | 'abortControllerFactory'>
+}
+
 export interface MdpClientOptions {
   serverUrl: string
   client: ClientInfo
@@ -140,6 +175,7 @@ export interface MdpClientOptions {
   transportAuth?: ClientTransportAuthOptions
   reconnect?: boolean | MdpClientReconnectOptions
   transport?: ClientTransport
+  defaultTransport?: DefaultClientTransportOptions
 }
 
 export interface BrowserScriptClientAttributes {

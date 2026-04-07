@@ -8,8 +8,9 @@ import {
   type ClientInfo,
   type MdpClientReconnectOptions,
   type ClientTransport,
-  type MdpClient
-} from '@modeldriveprotocol/client'
+  type MdpClient,
+  type DefaultClientTransportOptions
+} from '@modeldriveprotocol/client/node'
 
 type JsonRecord = Record<string, unknown>
 type RpcArguments = Record<string, unknown> | undefined
@@ -44,6 +45,7 @@ export interface NodejsSimpleClientOptions {
   client?: Partial<ClientInfo>
   reconnect?: boolean | MdpClientReconnectOptions
   transport?: ClientTransport
+  defaultTransport?: DefaultClientTransportOptions
 }
 
 export interface RegisterNodejsSimpleCapabilitiesOptions {
@@ -168,7 +170,8 @@ export function createNodejsSimpleMdpClient(
     serverUrl: options.serverUrl ?? DEFAULT_SERVER_URL,
     client: buildClientInfo(options.client, options.workspaceRoot),
     reconnect: options.reconnect ?? true,
-    ...(options.transport ? { transport: options.transport } : {})
+    ...(options.transport ? { transport: options.transport } : {}),
+    ...(options.defaultTransport ? { defaultTransport: options.defaultTransport } : {})
   })
 
   registerNodejsSimpleCapabilities(client, {

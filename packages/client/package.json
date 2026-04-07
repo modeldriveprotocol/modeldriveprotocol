@@ -27,9 +27,17 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./pure": {
+      "types": "./dist/pure.d.ts",
+      "default": "./dist/pure.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    },
     "./browser": {
-      "types": "./dist/browser-entry.d.ts",
-      "default": "./dist/browser-entry.js"
+      "types": "./dist/browser.d.ts",
+      "default": "./dist/browser.js"
     },
     "./global": {
       "default": "./dist/modeldriveprotocol-client.global.js"
@@ -43,7 +51,11 @@
     "provenance": true
   },
   "dependencies": {
-    "@modeldriveprotocol/protocol": "workspace:*"
+    "@modeldriveprotocol/protocol": "workspace:*",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1"
   },
   "scripts": {
     "build": "tsc -b && node ./scripts/bundle.mjs",

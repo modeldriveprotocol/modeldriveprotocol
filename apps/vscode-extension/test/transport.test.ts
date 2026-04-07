@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ClientTransport } from '@modeldriveprotocol/client'
+import type { ClientTransport } from '@modeldriveprotocol/client/node'
 import type { ClientToServerMessage, ServerToClientMessage } from '@modeldriveprotocol/protocol'
 
 import { createDefaultClientTransport, observeClientTransport } from '../src/transport.js'

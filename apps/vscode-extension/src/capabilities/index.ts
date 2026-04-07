@@ -1,4 +1,4 @@
-import type { MdpClient } from '@modeldriveprotocol/client'
+import type { MdpClient } from '@modeldriveprotocol/client/node'
 
 import { registerCapabilityResources } from './resources.js'
 import { registerReviewCapabilities } from './review.js'

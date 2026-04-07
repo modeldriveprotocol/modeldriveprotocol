@@ -1,4 +1,4 @@
-import type { MdpClient } from '@modeldriveprotocol/client'
+import type { MdpClient } from '@modeldriveprotocol/client/browser'
 
 import type { PageSnapshot } from '#~/page/messages.js'
 import type { RouteClientConfig } from '#~/shared/config.js'

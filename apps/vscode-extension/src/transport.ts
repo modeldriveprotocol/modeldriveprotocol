@@ -1,4 +1,4 @@
-import { type ClientTransport, HttpLoopClientTransport, WebSocketClientTransport } from '@modeldriveprotocol/client'
+import { type ClientTransport, HttpLoopClientTransport, WebSocketClientTransport } from '@modeldriveprotocol/client/node'
 import type { ClientToServerMessage, ServerToClientMessage } from '@modeldriveprotocol/protocol'
 
 export function createObservedClientTransport(

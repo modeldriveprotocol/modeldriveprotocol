@@ -1,5 +1,5 @@
 import { createClientFromScriptTag } from './browser-entry.js'
-import { MdpClient, createMdpClient, resolveServerUrl } from '../mdp-client.js'
+import { MdpClient, createMdpClient, resolveServerUrl } from './api.js'
 
 const api = {
   MdpClient,

@@ -10,7 +10,7 @@ status: MVP
 ## 1. 创建 client
 
 ```ts
-import { createMdpClient } from '@modeldriveprotocol/client'
+import { createMdpClient } from '@modeldriveprotocol/client/browser'
 
 const client = createMdpClient({
   serverUrl: 'ws://127.0.0.1:47372',
