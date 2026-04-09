@@ -50,6 +50,7 @@ describe('cluster manager state change notifications', () => {
           hasQuorum: false
         })
       }))
+      expect(vi.getTimerCount()).toBe(0)
     } finally {
       vi.useRealTimers()
       await manager.close()

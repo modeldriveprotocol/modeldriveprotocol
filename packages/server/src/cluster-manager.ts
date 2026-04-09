@@ -1340,7 +1340,7 @@ export class MdpClusterManager {
       const deadline = peer.lastSeenAt + this.leaseDurationMs + 1
 
       if (deadline <= now) {
-        return 0
+        continue
       }
 
       if (nextDeadline === undefined || deadline < nextDeadline) {
