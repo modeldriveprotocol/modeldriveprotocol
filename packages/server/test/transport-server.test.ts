@@ -1,7 +1,8 @@
 import { MDP_PROTOCOL_VERSION, MDP_SUPPORTED_PROTOCOL_RANGES } from '@modeldriveprotocol/protocol'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import WebSocket from 'ws'
 
+import { buildRuntimeDocs } from '../scripts/runtime-docs-lib.mjs'
 import { MdpServerRuntime } from '../src/mdp-server.js'
 import { MdpTransportServer } from '../src/transport-server.js'
 
@@ -71,11 +72,107 @@ const registeredClient = {
 
 const servers: MdpTransportServer[] = []
 
+beforeAll(async () => {
+  await buildRuntimeDocs()
+})
+
 afterEach(async () => {
   await Promise.allSettled(servers.splice(0).map((server) => server.stop()))
 })
 
 describe('MdpTransportServer', () => {
+  it('serves runtime docs over root, canonical, and locale-aware alias routes', async () => {
+    const runtime = new MdpServerRuntime()
+    const server = new MdpTransportServer(runtime, {
+      host: '127.0.0.1',
+      port: 0
+    })
+    servers.push(server)
+    await server.start()
+
+    const rootResponse = await fetch(server.endpoints.meta.replace('/mdp/meta', '/'))
+    const rootBody = await rootResponse.text()
+
+    expect(rootResponse.status).toBe(200)
+    expect(rootResponse.headers.get('content-type')).toBe('text/markdown; charset=utf-8')
+    expect(rootResponse.headers.get('content-language')).toBe('en')
+    expect(rootBody).toContain('# MDP Server Runtime Docs')
+
+    const chineseRootResponse = await fetch(
+      server.endpoints.meta.replace('/mdp/meta', '/SKILL.md'),
+      {
+        headers: {
+          'accept-language': 'zh-CN,zh;q=0.9,en;q=0.2'
+        }
+      }
+    )
+    const chineseRootBody = await chineseRootResponse.text()
+
+    expect(chineseRootResponse.status).toBe(200)
+    expect(chineseRootResponse.headers.get('content-language')).toBe('zh-Hans')
+    expect(chineseRootBody).toContain('# MDP Server 内置文档')
+
+    const weightedEnglishRootResponse = await fetch(
+      server.endpoints.meta.replace('/mdp/meta', '/SKILL.md'),
+      {
+        headers: {
+          'accept-language': 'zh;q=0.1,en;q=1'
+        }
+      }
+    )
+    const weightedEnglishRootBody = await weightedEnglishRootResponse.text()
+
+    expect(weightedEnglishRootResponse.status).toBe(200)
+    expect(weightedEnglishRootResponse.headers.get('content-language')).toBe('en')
+    expect(weightedEnglishRootBody).toContain('# MDP Server Runtime Docs')
+
+    const toolsAliasResponse = await fetch(
+      server.endpoints.meta.replace('/mdp/meta', '/server/tools')
+    )
+    const toolsAliasBody = await toolsAliasResponse.text()
+
+    expect(toolsAliasResponse.status).toBe(200)
+    expect(toolsAliasBody).toContain('# Tools')
+
+    const toolsTrailingSlashResponse = await fetch(
+      server.endpoints.meta.replace('/mdp/meta', '/server/tools/')
+    )
+
+    expect(toolsTrailingSlashResponse.status).toBe(200)
+    await expect(toolsTrailingSlashResponse.text()).resolves.toContain('# Tools')
+
+    const chineseToolsResponse = await fetch(
+      server.endpoints.meta.replace('/mdp/meta', '/zh-Hans/server/tools/SKILL.md')
+    )
+    const chineseToolsBody = await chineseToolsResponse.text()
+
+    expect(chineseToolsResponse.status).toBe(200)
+    expect(chineseToolsResponse.headers.get('content-language')).toBe('zh-Hans')
+    expect(chineseToolsBody).toContain('# 工具集')
+  })
+
+  it('returns 404 for unknown runtime docs without breaking existing routes', async () => {
+    const runtime = new MdpServerRuntime()
+    const server = new MdpTransportServer(runtime, {
+      host: '127.0.0.1',
+      port: 0
+    })
+    servers.push(server)
+    await server.start()
+
+    const missingResponse = await fetch(
+      server.endpoints.meta.replace('/mdp/meta', '/missing-runtime-doc')
+    )
+    const missingChineseResponse = await fetch(
+      server.endpoints.meta.replace('/mdp/meta', '/zh-Hans/missing-runtime-doc')
+    )
+    const metaResponse = await fetch(server.endpoints.meta)
+
+    expect(missingResponse.status).toBe(404)
+    expect(missingChineseResponse.status).toBe(404)
+    expect(metaResponse.status).toBe(200)
+  })
+
   it('exposes an MDP metadata probe endpoint', async () => {
     const runtime = new MdpServerRuntime()
     const server = new MdpTransportServer(runtime, {

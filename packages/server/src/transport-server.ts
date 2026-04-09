@@ -31,6 +31,7 @@ import {
   DEFAULT_SERVER_HOST
 } from './defaults.js'
 import { MdpServerRuntime } from './mdp-server.js'
+import { resolveRuntimeDoc, type RuntimeDocAsset } from './runtime-docs.js'
 import type { MdpServerMeta } from './upstream-discovery.js'
 
 const DEFAULT_HTTP_LOOP_PATH = '/mdp/http-loop'
@@ -296,6 +297,23 @@ export class MdpTransportServer {
       return
     }
 
+    try {
+      const runtimeDoc = await resolveRuntimeDoc(
+        url.pathname,
+        readAcceptLanguage(request)
+      )
+
+      if (runtimeDoc) {
+        this.handleRuntimeDocsRequest(request, response, runtimeDoc)
+        return
+      }
+    } catch (error) {
+      this.writeJson(response, 500, {
+        error: error instanceof Error ? error.message : 'Unable to load runtime docs'
+      })
+      return
+    }
+
     if (!url.pathname.startsWith(this.httpLoopPath)) {
       response.statusCode = 404
       response.end()
@@ -459,6 +477,33 @@ export class MdpTransportServer {
     }
 
     this.writeSkillResponse(response, resolved.descriptor.contentType, result.data)
+  }
+
+  private handleRuntimeDocsRequest(
+    request: IncomingMessage,
+    response: ServerResponse,
+    document: RuntimeDocAsset
+  ): void {
+    this.applyCors(request, response)
+    appendVaryHeader(response, 'Accept-Language')
+
+    if (request.method === 'OPTIONS') {
+      response.statusCode = 204
+      response.end()
+      return
+    }
+
+    if (request.method !== 'GET') {
+      response.statusCode = 405
+      response.setHeader('allow', 'GET, OPTIONS')
+      response.end()
+      return
+    }
+
+    response.statusCode = 200
+    response.setHeader('content-language', document.locale)
+    response.setHeader('content-type', 'text/markdown; charset=utf-8')
+    response.end(document.content)
   }
 
   private async handleHttpLoopConnect(
@@ -1008,6 +1053,12 @@ function readRequestHeaders(request: IncomingMessage): Record<string, string> {
   }
 
   return headers
+}
+
+function readAcceptLanguage(request: IncomingMessage): string | undefined {
+  const value = request.headers['accept-language']
+
+  return typeof value === 'string' ? value : undefined
 }
 
 function trimTrailingSlash(value: string): string {

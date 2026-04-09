@@ -33,7 +33,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "runtime-docs"
   ],
   "publishConfig": {
     "access": "public",
@@ -51,8 +52,9 @@
     "@types/ws": "^8.5.14"
   },
   "scripts": {
-    "build": "tsc -b",
+    "build": "node ./scripts/build-runtime-docs.mjs && tsc -b",
+    "build:runtime-docs": "node ./scripts/build-runtime-docs.mjs",
     "clean": "node ../../scripts/clean.mjs",
-    "test": "vitest run test"
+    "test": "pnpm --dir ../.. exec vitest run packages/server/test"
   }
 }

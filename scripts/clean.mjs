@@ -5,6 +5,7 @@ const targets = [
   'packages/protocol/dist',
   'packages/client/dist',
   'packages/server/dist',
+  'packages/server/runtime-docs',
   'apps/browser-simple-mdp-client/dist',
   'apps/chrome-extension/dist',
   'apps/vscode-extension/dist',
