@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { renderHelpText } from '../src/cli-reference.js'
-import { parseArgs, resolveCliOptions } from '../src/cli.js'
+import { parseArgs, resolveCliOptions, resolveStateStoreDir } from '../src/cli.js'
 import { parseSetupArgs, renderSetupHelpText } from '../src/setup.js'
 
 describe('server cli', () => {
@@ -97,21 +97,25 @@ describe('server cli', () => {
   })
 
   it('derives cluster id from discovery settings unless explicitly provided', () => {
-    expect(parseArgs([
-      '--discover-host',
-      '10.0.0.10',
-      '--discover-start-port',
-      '49000'
-    ]).options.clusterId).toBe('10.0.0.10:49000')
+    expect(
+      parseArgs([
+        '--discover-host',
+        '10.0.0.10',
+        '--discover-start-port',
+        '49000'
+      ]).options.clusterId
+    ).toBe('10.0.0.10:49000')
 
-    expect(parseArgs([
-      '--discover-host',
-      '10.0.0.10',
-      '--discover-start-port',
-      '49000',
-      '--cluster-id',
-      'cluster-prod'
-    ]).options.clusterId).toBe('cluster-prod')
+    expect(
+      parseArgs([
+        '--discover-host',
+        '10.0.0.10',
+        '--discover-start-port',
+        '49000',
+        '--cluster-id',
+        'cluster-prod'
+      ]).options.clusterId
+    ).toBe('cluster-prod')
   })
 
   it('parses cluster config paths without mutating base defaults', () => {
@@ -139,6 +143,55 @@ describe('server cli', () => {
     })
   })
 
+  it('parses filesystem state store options and resolves their directories', () => {
+    expect(parseArgs(['--state-store'])).toEqual({
+      helpRequested: false,
+      portProvided: false,
+      options: {
+        host: '127.0.0.1',
+        port: 47372,
+        clusterMode: 'auto',
+        clusterId: '127.0.0.1:47372',
+        discoverHost: '127.0.0.1',
+        discoverStartPort: 47372,
+        discoverAttempts: 100,
+        clusterHeartbeatIntervalMs: 1000,
+        clusterLeaseDurationMs: 4000,
+        clusterElectionTimeoutMinMs: 4500,
+        clusterElectionTimeoutMaxMs: 7000,
+        clusterDiscoveryIntervalMs: 2000,
+        stateStoreEnabled: true
+      }
+    })
+
+    expect(parseArgs([
+      '--state-store-dir',
+      './var/mdp'
+    ])).toEqual({
+      helpRequested: false,
+      portProvided: false,
+      options: {
+        host: '127.0.0.1',
+        port: 47372,
+        clusterMode: 'auto',
+        clusterId: '127.0.0.1:47372',
+        discoverHost: '127.0.0.1',
+        discoverStartPort: 47372,
+        discoverAttempts: 100,
+        clusterHeartbeatIntervalMs: 1000,
+        clusterLeaseDurationMs: 4000,
+        clusterElectionTimeoutMinMs: 4500,
+        clusterElectionTimeoutMaxMs: 7000,
+        clusterDiscoveryIntervalMs: 2000,
+        stateStoreEnabled: true,
+        stateStoreDir: './var/mdp'
+      }
+    })
+
+    expect(resolveStateStoreDir({ stateStoreEnabled: true }, '/tmp/app')).toBe('/tmp/app/.mdp/store')
+    expect(resolveStateStoreDir({ stateStoreDir: './var/mdp' }, '/tmp/app')).toBe('/tmp/app/var/mdp')
+  })
+
   it('loads cluster config defaults while keeping explicit CLI overrides authoritative', async () => {
     await expect(resolveCliOptions([
       '--cluster-config',
@@ -148,14 +201,15 @@ describe('server cli', () => {
       '--discover-attempts',
       '12'
     ], {
-      readTextFile: async () => JSON.stringify({
-        clusterId: 'cluster-manifest',
-        clusterMembers: ['node-a', 'node-b'],
-        discoverHost: '10.0.0.10',
-        discoverStartPort: 49000,
-        discoverAttempts: 7,
-        upstreamUrl: 'ws://10.0.0.10:49000'
-      }),
+      readTextFile: async () =>
+        JSON.stringify({
+          clusterId: 'cluster-manifest',
+          clusterMembers: ['node-a', 'node-b'],
+          discoverHost: '10.0.0.10',
+          discoverStartPort: 49000,
+          discoverAttempts: 7,
+          upstreamUrl: 'ws://10.0.0.10:49000'
+        }),
       hasExistingClusterPeer: async () => false
     })).resolves.toEqual({
       helpRequested: false,
@@ -185,9 +239,10 @@ describe('server cli', () => {
       '--cluster-config',
       '/tmp/mdp-cluster.json'
     ], {
-      readTextFile: async () => JSON.stringify({
-        clusterMembers: ['node-a', 3]
-      })
+      readTextFile: async () =>
+        JSON.stringify({
+          clusterMembers: ['node-a', 3]
+        })
     })).rejects.toThrow(
       'Cluster config /tmp/mdp-cluster.json field "clusterMembers" must be an array of strings'
     )
@@ -238,6 +293,10 @@ describe('server cli', () => {
     expect(() => {
       parseArgs(['--server-id', '   '])
     }).toThrow('Option --server-id requires a non-empty value')
+
+    expect(() => {
+      parseArgs(['--state-store-dir', '   '])
+    }).toThrow('Option --state-store-dir requires a non-empty value')
   })
 
   it('rejects invalid numeric option values and invalid cluster timing combinations', () => {

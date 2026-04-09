@@ -45,10 +45,13 @@ const optionDefinitions: CliOptionDefinition[] = [
     flags: ['--port'],
     valueName: '<port>',
     category: 'core',
-    helpDescription: `Bind port (default: ${DEFAULT_MDP_PORT}; auto/proxy-required use 0 after upstream discovery when omitted)`,
+    helpDescription:
+      `Bind port (default: ${DEFAULT_MDP_PORT}; auto/proxy-required use 0 after upstream discovery when omitted)`,
     markdownDescription: {
-      en: `Bind port. Default: \`${DEFAULT_MDP_PORT}\`. In auto and proxy-required mode, omitted \`--port\` falls back to \`0\` only after an upstream hub is discovered, so the edge can use an ephemeral free port.`,
-      'zh-Hans': `绑定端口。默认：\`${DEFAULT_MDP_PORT}\`。在 auto 和 proxy-required 模式下，只有在发现上游 hub 之后，省略 \`--port\` 才会回退到 \`0\`，让 edge 自动拿一个空闲临时端口。`
+      en:
+        `Bind port. Default: \`${DEFAULT_MDP_PORT}\`. In auto and proxy-required mode, omitted \`--port\` falls back to \`0\` only after an upstream hub is discovered, so the edge can use an ephemeral free port.`,
+      'zh-Hans':
+        `绑定端口。默认：\`${DEFAULT_MDP_PORT}\`。在 auto 和 proxy-required 模式下，只有在发现上游 hub 之后，省略 \`--port\` 才会回退到 \`0\`，让 edge 自动拿一个空闲临时端口。`
     }
   },
   {
@@ -92,6 +95,28 @@ const optionDefinitions: CliOptionDefinition[] = [
     }
   },
   {
+    flags: ['--state-store'],
+    category: 'core',
+    helpDescription: 'Enable node-local filesystem state snapshots in ./.mdp/store',
+    markdownDescription: {
+      en:
+        'Enable node-local filesystem snapshots for current clients, routes, and service status. Default directory: `./.mdp/store` from the startup working directory.',
+      'zh-Hans':
+        '启用节点本地文件系统快照，记录当前 clients、路由表和服务状态。默认目录是启动工作目录下的 `./.mdp/store`。'
+    }
+  },
+  {
+    flags: ['--state-store-dir'],
+    valueName: '<path>',
+    category: 'core',
+    helpDescription: 'Enable node-local filesystem state snapshots in a custom directory',
+    markdownDescription: {
+      en:
+        'Enable node-local filesystem snapshots and write them to the provided directory. Relative paths resolve from the startup working directory.',
+      'zh-Hans': '启用节点本地文件系统快照，并写入指定目录。相对路径会从启动工作目录解析。'
+    }
+  },
+  {
     flags: ['-h', '--help'],
     category: 'core',
     helpDescription: 'Show this help text',
@@ -116,8 +141,10 @@ const optionDefinitions: CliOptionDefinition[] = [
     category: 'cluster',
     helpDescription: 'Logical cluster identity (default: derived from discovery host/start port)',
     markdownDescription: {
-      en: 'Logical cluster identity. Default: derived from `--discover-host` and `--discover-start-port`. Peers from a different cluster id are ignored.',
-      'zh-Hans': '逻辑 cluster identity。默认根据 `--discover-host` 和 `--discover-start-port` 推导。不同 cluster id 的 peer 会被忽略。'
+      en:
+        'Logical cluster identity. Default: derived from `--discover-host` and `--discover-start-port`. Peers from a different cluster id are ignored.',
+      'zh-Hans':
+        '逻辑 cluster identity。默认根据 `--discover-host` 和 `--discover-start-port` 推导。不同 cluster id 的 peer 会被忽略。'
     }
   },
   {
@@ -126,8 +153,10 @@ const optionDefinitions: CliOptionDefinition[] = [
     category: 'cluster',
     helpDescription: 'JSON cluster manifest that provides default cluster settings',
     markdownDescription: {
-      en: 'Optional JSON cluster manifest. It can provide defaults for `clusterId`, `clusterMembers`, discovery settings, and `upstreamUrl`. Explicit CLI flags still win.',
-      'zh-Hans': '可选的 JSON cluster manifest。它可以为 `clusterId`、`clusterMembers`、discovery 参数和 `upstreamUrl` 提供默认值；显式 CLI 参数仍然优先生效。'
+      en:
+        'Optional JSON cluster manifest. It can provide defaults for `clusterId`, `clusterMembers`, discovery settings, and `upstreamUrl`. Explicit CLI flags still win.',
+      'zh-Hans':
+        '可选的 JSON cluster manifest。它可以为 `clusterId`、`clusterMembers`、discovery 参数和 `upstreamUrl` 提供默认值；显式 CLI 参数仍然优先生效。'
     }
   },
   {
@@ -146,8 +175,10 @@ const optionDefinitions: CliOptionDefinition[] = [
     category: 'cluster',
     helpDescription: 'Static cluster member ids used for quorum and peer admission',
     markdownDescription: {
-      en: 'Optional comma-separated server ids for a static cluster membership. Unknown peers are ignored for quorum and server-to-server control traffic.',
-      'zh-Hans': '可选的逗号分隔 server id 列表，用来声明静态 cluster 成员集合。未知 peer 不会进入 quorum，也不会参与 server-to-server 控制面通信。'
+      en:
+        'Optional comma-separated server ids for a static cluster membership. Unknown peers are ignored for quorum and server-to-server control traffic.',
+      'zh-Hans':
+        '可选的逗号分隔 server id 列表，用来声明静态 cluster 成员集合。未知 peer 不会进入 quorum，也不会参与 server-to-server 控制面通信。'
     }
   },
   {
@@ -196,7 +227,8 @@ const optionDefinitions: CliOptionDefinition[] = [
     category: 'cluster',
     helpDescription: `Leader lease duration in milliseconds (default: ${DEFAULT_CLUSTER_LEASE_DURATION_MS})`,
     markdownDescription: {
-      en: `Follower lease duration before triggering a new election. Default: \`${DEFAULT_CLUSTER_LEASE_DURATION_MS}\`.`,
+      en:
+        `Follower lease duration before triggering a new election. Default: \`${DEFAULT_CLUSTER_LEASE_DURATION_MS}\`.`,
       'zh-Hans': `从节点等待主节点续租的时长，超时后会触发新一轮选主。默认：\`${DEFAULT_CLUSTER_LEASE_DURATION_MS}\`。`
     }
   },
@@ -206,7 +238,8 @@ const optionDefinitions: CliOptionDefinition[] = [
     category: 'cluster',
     helpDescription: `Minimum randomized election timeout (default: ${DEFAULT_CLUSTER_ELECTION_TIMEOUT_MIN_MS})`,
     markdownDescription: {
-      en: `Minimum randomized election timeout in milliseconds. Default: \`${DEFAULT_CLUSTER_ELECTION_TIMEOUT_MIN_MS}\`.`,
+      en:
+        `Minimum randomized election timeout in milliseconds. Default: \`${DEFAULT_CLUSTER_ELECTION_TIMEOUT_MIN_MS}\`.`,
       'zh-Hans': `随机选主超时的最小毫秒值。默认：\`${DEFAULT_CLUSTER_ELECTION_TIMEOUT_MIN_MS}\`。`
     }
   },
@@ -216,7 +249,8 @@ const optionDefinitions: CliOptionDefinition[] = [
     category: 'cluster',
     helpDescription: `Maximum randomized election timeout (default: ${DEFAULT_CLUSTER_ELECTION_TIMEOUT_MAX_MS})`,
     markdownDescription: {
-      en: `Maximum randomized election timeout in milliseconds. Default: \`${DEFAULT_CLUSTER_ELECTION_TIMEOUT_MAX_MS}\`.`,
+      en:
+        `Maximum randomized election timeout in milliseconds. Default: \`${DEFAULT_CLUSTER_ELECTION_TIMEOUT_MAX_MS}\`.`,
       'zh-Hans': `随机选主超时的最大毫秒值。默认：\`${DEFAULT_CLUSTER_ELECTION_TIMEOUT_MAX_MS}\`。`
     }
   },
@@ -226,7 +260,8 @@ const optionDefinitions: CliOptionDefinition[] = [
     category: 'cluster',
     helpDescription: `Peer rediscovery interval (default: ${DEFAULT_CLUSTER_DISCOVERY_INTERVAL_MS})`,
     markdownDescription: {
-      en: `How often to refresh the discovered peer set in milliseconds. Default: \`${DEFAULT_CLUSTER_DISCOVERY_INTERVAL_MS}\`.`,
+      en:
+        `How often to refresh the discovered peer set in milliseconds. Default: \`${DEFAULT_CLUSTER_DISCOVERY_INTERVAL_MS}\`.`,
       'zh-Hans': `重新发现 cluster peer 的毫秒间隔。默认：\`${DEFAULT_CLUSTER_DISCOVERY_INTERVAL_MS}\`。`
     }
   }
@@ -252,7 +287,8 @@ const cliExamples: CliExampleDefinition[] = [
       en: 'Require one explicit upstream hub:',
       'zh-Hans': '要求存在一个显式上游 hub：'
     },
-    command: `modeldriveprotocol-server --cluster-mode proxy-required --upstream-url ws://${DEFAULT_SERVER_HOST}:${DEFAULT_MDP_PORT}`
+    command:
+      `modeldriveprotocol-server --cluster-mode proxy-required --upstream-url ws://${DEFAULT_SERVER_HOST}:${DEFAULT_MDP_PORT}`
   },
   {
     title: {

@@ -126,6 +126,23 @@ npx @modeldriveprotocol/server \
 
 The manifest only provides defaults. Explicit CLI flags still win, so one node can reuse the same manifest and override only its own `--server-id`, `--port`, or a different `--cluster-id` when needed.
 
+## Node-Local State Store
+
+If you want a filesystem snapshot of the current node state for debugging or external supervision, enable `--state-store`.
+
+By default the server writes `snapshot.json`, `clients.json`, `routes.json`, and `services.json` under `./.mdp/store` in the startup working directory. Use `--state-store-dir` to move that directory elsewhere.
+
+This state store is node-local diagnostics only. It does not restore client sessions after restart and it does not replicate registry state across peers.
+
+The files are split by concern:
+
+- `snapshot.json`: one combined node-local snapshot with server metadata, services, clients, and routes
+- `clients.json`: the current `listClients` view
+- `routes.json`: the current indexed route table
+- `services.json`: transport, MCP bridge, cluster, and upstream proxy status only
+
+For the exact file contract and external reader guidance, see [State Store](/server/state-store).
+
 ## Probe Endpoint
 
 Discovery uses the metadata probe:

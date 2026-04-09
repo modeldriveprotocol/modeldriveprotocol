@@ -15,6 +15,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .DS_Store
+.mdp/store/
 .idea/
 .eslintcache
 coverage/

@@ -51,6 +51,8 @@ Options:
   --tls-cert <path>                                TLS certificate path
   --tls-ca <path>                                  TLS CA bundle path
   --server-id <id>                                 Stable server identity exposed in /mdp/meta
+  --state-store                                    Enable node-local filesystem state snapshots in ./.mdp/store
+  --state-store-dir <path>                         Enable node-local filesystem state snapshots in a custom directory
   -h, --help                                       Show this help text
   --cluster-mode <standalone|auto|proxy-required>  Startup topology mode (default: auto)
   --cluster-id <id>                                Logical cluster identity (default: derived from discovery host/start port)
@@ -110,8 +112,20 @@ npx @modeldriveprotocol/server setup
 | `--tls-cert <path>` | TLS 证书路径。 |
 | `--tls-ca <path>` | 可选的 TLS CA bundle 路径。 |
 | `--server-id <id>` | 暴露在 `/mdp/meta` 里的稳定 server 身份。 |
+| `--state-store` | 启用节点本地文件系统快照，记录当前 clients、路由表和服务状态。默认目录是启动工作目录下的 `./.mdp/store`。 |
+| `--state-store-dir <path>` | 启用节点本地文件系统快照，并写入指定目录。相对路径会从启动工作目录解析。 |
 | `-h, --help` | 打印帮助并退出。 |
 <!-- GENERATED:core-options:end -->
+
+## 本地状态目录
+
+如果你希望把当前 server 的 clients、路由表和服务状态落成节点本地的文件系统快照，可以打开 `--state-store`。
+
+默认会写到启动工作目录下的 `./.mdp/store`。如果你要改目录，使用 `--state-store-dir`。
+
+这些文件只用于诊断和排查，不会恢复活跃中的 client session，也不会把 registry 状态复制到别的 server。
+
+如果要看精确的文件定义和读取建议，继续阅读 [状态目录](/zh-Hans/server/state-store)。
 
 ## Cluster 参数
 
@@ -182,6 +196,7 @@ CLI 启动后会打印：
 - HTTP loop endpoint
 - auth endpoint
 - metadata probe endpoint
+- 如果启用了 `--state-store` 或 `--state-store-dir`，还会打印状态目录路径
 - 当前是 standalone 运行，还是已经挂到上游 hub
 
 ## 相关页面

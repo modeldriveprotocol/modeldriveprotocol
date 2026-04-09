@@ -126,6 +126,23 @@ npx @modeldriveprotocol/server \
 
 manifest 只提供默认值。显式 CLI 参数仍然优先生效，所以多个节点可以复用同一份 manifest，只覆盖各自的 `--server-id`、`--port`，或者在需要时覆盖成不同的 `--cluster-id`。
 
+## 节点本地状态目录
+
+如果你希望把当前节点状态落到文件系统里，方便调试或者被外部进程读取，可以启用 `--state-store`。
+
+默认会在启动工作目录下的 `./.mdp/store` 写入 `snapshot.json`、`clients.json`、`routes.json` 和 `services.json`。如果要改目录，使用 `--state-store-dir`。
+
+这个状态目录只提供节点本地诊断信息，不会在重启后恢复 client session，也不会在 peer 之间复制 registry 状态。
+
+这些文件按关注点拆开：
+
+- `snapshot.json`：包含 server 元数据、services、clients 和 routes 的完整节点本地快照
+- `clients.json`：当前 `listClients` 视图
+- `routes.json`：当前索引后的路由表
+- `services.json`：只包含 transport、MCP bridge、cluster 和 upstream proxy 的状态
+
+如果要看精确的文件契约和外部读取建议，继续阅读 [状态目录](/zh-Hans/server/state-store)。
+
 ## 探针接口
 
 发现流程使用的元数据探针是：

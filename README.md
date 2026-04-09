@@ -65,6 +65,7 @@ Current transport support includes:
 - auth envelopes on client registration and routed invocation messages
 - transport auth via request headers or cookie bootstrap at `/mdp/auth`
 - `GET /mdp/meta` for MDP server probing and optional upstream discovery
+- optional node-local filesystem state snapshots under `./.mdp/store` when enabled
 
 MDP servers can also run in a simple layered topology:
 

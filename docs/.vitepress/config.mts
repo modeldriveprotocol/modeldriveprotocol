@@ -41,6 +41,7 @@ interface LocaleCopy {
     serverOverview: string
     serverDeployment: string
     serverCli: string
+    serverStateStore: string
     toolsOverview: string
     listClients: string
     listPaths: string
@@ -167,6 +168,7 @@ const enUS: LocaleCopy = {
     serverOverview: 'Overview',
     serverDeployment: 'Deployment Modes',
     serverCli: 'CLI Reference',
+    serverStateStore: 'State Store',
     toolsOverview: 'Overview',
     listClients: 'listClients',
     listPaths: 'listPaths',
@@ -290,6 +292,7 @@ const zhHans: LocaleCopy = {
     serverOverview: '总览',
     serverDeployment: '部署模式',
     serverCli: 'CLI 参数',
+    serverStateStore: '状态目录',
     toolsOverview: '总览',
     listClients: 'listClients',
     listPaths: 'listPaths',
@@ -470,6 +473,7 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
               { text: copy.pages.serverOverview, link: localePath(prefix, '/server/overview') },
               { text: copy.pages.serverDeployment, link: localePath(prefix, '/server/deployment') },
               { text: copy.pages.serverCli, link: localePath(prefix, '/server/cli') },
+              { text: copy.pages.serverStateStore, link: localePath(prefix, '/server/state-store') },
               { text: copy.sections.tools, link: localePath(prefix, '/server/tools/') },
               { text: copy.sections.apis, link: localePath(prefix, '/server/api/') },
               { text: copy.pages.serverSecurity, link: localePath(prefix, '/server/security') },
@@ -681,6 +685,7 @@ function createDocsSidebar(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
         { text: copy.pages.serverOverview, link: localePath(prefix, '/server/overview') },
         { text: copy.pages.serverDeployment, link: localePath(prefix, '/server/deployment') },
         { text: copy.pages.serverCli, link: localePath(prefix, '/server/cli') },
+        { text: copy.pages.serverStateStore, link: localePath(prefix, '/server/state-store') },
         {
           text: copy.sections.tools,
           collapsed: true,

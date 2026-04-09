@@ -2,8 +2,8 @@ import type {
   AuthContext,
   ClientDescriptor,
   ClientToServerMessage,
-  PathDescriptor,
-  ListedClient
+  ListedClient,
+  PathDescriptor
 } from '@modeldriveprotocol/protocol'
 import { createSerializedError } from '@modeldriveprotocol/protocol'
 
@@ -14,11 +14,7 @@ import {
   CapabilityIndex
 } from './capability-index.js'
 import { type ClientSessionTransport, ClientSession } from './client-session.js'
-import {
-  type InvocationRequest,
-  type ResolvedInvocationRequest,
-  InvocationRouter
-} from './invocation-router.js'
+import { type InvocationRequest, type ResolvedInvocationRequest, InvocationRouter } from './invocation-router.js'
 
 export interface RegistrationAuthorizationContext {
   session: ClientSession
@@ -43,6 +39,10 @@ export interface ClientRemovedContext extends ClientRegisteredContext {
   reason: 'disconnect' | 'unregister'
 }
 
+export interface ClientStateChangedContext extends ClientRegisteredContext {
+  reason: 'activity' | 'transport-auth'
+}
+
 export interface MdpServerOptions {
   heartbeatIntervalMs?: number
   heartbeatTimeoutMs?: number
@@ -51,6 +51,7 @@ export interface MdpServerOptions {
   authorizeInvocation?: (context: InvocationAuthorizationContext) => void
   onClientRegistered?: (context: ClientRegisteredContext) => void
   onClientRemoved?: (context: ClientRemovedContext) => void
+  onClientStateChanged?: (context: ClientStateChangedContext) => void
 }
 
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 30_000
@@ -77,6 +78,9 @@ export class MdpServerRuntime {
   private readonly onClientRemoved:
     | ((context: ClientRemovedContext) => void)
     | undefined
+  private readonly onClientStateChanged:
+    | ((context: ClientStateChangedContext) => void)
+    | undefined
   private heartbeatTimer: NodeJS.Timeout | undefined
 
   constructor(options: MdpServerOptions = {}) {
@@ -86,6 +90,7 @@ export class MdpServerRuntime {
     this.authorizeInvocation = options.authorizeInvocation
     this.onClientRegistered = options.onClientRegistered
     this.onClientRemoved = options.onClientRemoved
+    this.onClientStateChanged = options.onClientStateChanged
 
     this.capabilityIndex = new CapabilityIndex(() => this.getRegisteredSnapshots())
     this.invocationRouter = new InvocationRouter(
@@ -104,28 +109,32 @@ export class MdpServerRuntime {
   }
 
   handleMessage(session: ClientSession, message: ClientToServerMessage): void {
-    session.markSeen()
-
     switch (message.type) {
       case 'registerClient':
+        session.markSeen()
         this.registerClient(session, message.client, message.auth)
         return
       case 'unregisterClient':
+        session.markSeen()
         this.unregisterClient(session, message.clientId)
         return
       case 'updateClientCatalog':
+        session.markSeen()
         this.updateClientCatalog(session, message.clientId, message.paths)
         return
       case 'callClientResult':
+        this.touchSession(session)
         this.invocationRouter.resolve(message)
         return
       case 'ping':
+        this.touchSession(session)
         session.send({
           type: 'pong',
           timestamp: message.timestamp
         })
         return
       case 'pong':
+        this.touchSession(session)
         return
     }
   }
@@ -187,6 +196,21 @@ export class MdpServerRuntime {
 
   findMatchingClientIds(target: Omit<PathTarget, 'clientId'>): string[] {
     return this.capabilityIndex.findMatchingClientIds(target)
+  }
+
+  touchSession(session: ClientSession): void {
+    session.markSeen()
+    this.notifyClientStateChanged(session, 'activity')
+  }
+
+  setSessionTransportAuth(session: ClientSession, auth?: AuthContext): void {
+    const previousAuthSource = session.connection.authSource
+
+    session.setTransportAuth(auth)
+
+    if (session.connection.authSource !== previousAuthSource) {
+      this.notifyClientStateChanged(session, 'transport-auth')
+    }
   }
 
   startHeartbeat(): void {
@@ -354,6 +378,24 @@ export class MdpServerRuntime {
         lastSeenAt: session.lastSeenAt,
         connection: session.connection
       }))
+  }
+
+  private notifyClientStateChanged(
+    session: ClientSession,
+    reason: ClientStateChangedContext['reason']
+  ): void {
+    const descriptor = session.descriptor
+
+    if (!descriptor) {
+      return
+    }
+
+    this.onClientStateChanged?.({
+      session,
+      client: descriptor,
+      ...(session.registeredAuth ? { auth: session.registeredAuth } : {}),
+      reason
+    })
   }
 
   private resolveInvocation(request: InvocationRequest): ResolvedInvocationRequest {
