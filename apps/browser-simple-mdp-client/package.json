@@ -1,6 +1,6 @@
 {
   "name": "@modeldriveprotocol/browser-simple-mdp-client",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
   "license": "MIT",
   "description": "Simple browser client bundle for Model Drive Protocol examples and demos.",
