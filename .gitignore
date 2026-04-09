@@ -1,6 +1,7 @@
 node_modules/
 packages/*/node_modules/
 packages/*/dist/
+packages/server/runtime-docs/
 packages/*/*.tsbuildinfo
 apps/*/dist/
 apps/*/.wxt/
