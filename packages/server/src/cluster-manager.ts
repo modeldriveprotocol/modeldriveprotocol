@@ -171,8 +171,10 @@ export class MdpClusterManager {
   private electionTimer: NodeJS.Timeout | undefined
   private heartbeatTimer: NodeJS.Timeout | undefined
   private discoveryTimer: NodeJS.Timeout | undefined
+  private stateObservationTimer: NodeJS.Timeout | undefined
   private activeElectionVotes = new Set<string>()
   private closed = false
+  private observedState: ClusterManagerState
 
   constructor(options: ClusterManagerOptions) {
     this.serverId = options.serverId
@@ -200,6 +202,9 @@ export class MdpClusterManager {
     } else {
       this.memberIds.add(this.serverId)
     }
+
+    this.observedState = this.state
+    this.scheduleStateObservation()
   }
 
   get state(): ClusterManagerState {
@@ -245,6 +250,7 @@ export class MdpClusterManager {
     this.closed = true
     this.stopElectionTimer()
     this.stopHeartbeatTimer()
+    this.stopStateObservationTimer()
     this.rejectPendingRpcRequests(new Error('Cluster manager closed'))
 
     if (this.discoveryTimer) {
@@ -990,6 +996,13 @@ export class MdpClusterManager {
     }
   }
 
+  private stopStateObservationTimer(): void {
+    if (this.stateObservationTimer) {
+      clearTimeout(this.stateObservationTimer)
+      this.stateObservationTimer = undefined
+    }
+  }
+
   private sendHeartbeats(): void {
     if (this.role !== 'leader') {
       return
@@ -1270,6 +1283,9 @@ export class MdpClusterManager {
   private emitStateChange(previous: ClusterManagerState): void {
     const next = this.state
 
+    this.observedState = next
+    this.scheduleStateObservation()
+
     this.onStateChange?.({
       state: next,
       leaderChanged: previous.leaderId !== next.leaderId || previous.leaderUrl !== next.leaderUrl,
@@ -1279,10 +1295,62 @@ export class MdpClusterManager {
 
   private emitStateChangeIfChanged(previous: ClusterManagerState): void {
     if (clusterStatesEqual(previous, this.state)) {
+      this.scheduleStateObservation()
       return
     }
 
     this.emitStateChange(previous)
+  }
+
+  private scheduleStateObservation(): void {
+    this.stopStateObservationTimer()
+
+    if (this.closed) {
+      return
+    }
+
+    const delayMs = this.nextStateObservationDelayMs()
+
+    if (delayMs === undefined) {
+      return
+    }
+
+    this.stateObservationTimer = setTimeout(() => {
+      this.stateObservationTimer = undefined
+
+      if (clusterStatesEqual(this.observedState, this.state)) {
+        this.scheduleStateObservation()
+        return
+      }
+
+      this.emitStateChange(this.observedState)
+    }, delayMs)
+    this.stateObservationTimer.unref?.()
+  }
+
+  private nextStateObservationDelayMs(): number | undefined {
+    const now = Date.now()
+    let nextDeadline: number | undefined
+
+    for (const peer of this.peers.values()) {
+      if (!firstOpenLink(peer.links)) {
+        continue
+      }
+
+      const deadline = peer.lastSeenAt + this.leaseDurationMs + 1
+
+      if (deadline <= now) {
+        return 0
+      }
+
+      if (nextDeadline === undefined || deadline < nextDeadline) {
+        nextDeadline = deadline
+      }
+    }
+
+    return nextDeadline === undefined
+      ? undefined
+      : Math.max(0, nextDeadline - now)
   }
 }
 

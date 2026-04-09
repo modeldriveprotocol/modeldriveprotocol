@@ -141,6 +141,8 @@ The files are split by concern:
 - `routes.json`: the current indexed route table
 - `services.json`: transport, MCP bridge, cluster, and upstream proxy status only
 
+For the exact file contract and external reader guidance, see [State Store](/server/state-store).
+
 ## Probe Endpoint
 
 Discovery uses the metadata probe:

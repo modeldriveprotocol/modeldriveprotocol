@@ -22,4 +22,4 @@ The server should not know whether the client is implemented in Swift, Kotlin, C
 Even in upstream proxy mode, the server is still not the capability owner. It only accepts registrations, mirrors descriptors, and forwards invocations.
 
 For startup topologies and cluster-mode flags, see [Deployment Modes](/server/deployment).
-For the optional filesystem state store, see [CLI Reference](/server/cli).
+For the optional filesystem state store and file contract, see [State Store](/server/state-store).

@@ -141,6 +141,8 @@ manifest 只提供默认值。显式 CLI 参数仍然优先生效，所以多个
 - `routes.json`：当前索引后的路由表
 - `services.json`：只包含 transport、MCP bridge、cluster 和 upstream proxy 的状态
 
+如果要看精确的文件契约和外部读取建议，继续阅读 [状态目录](/zh-Hans/server/state-store)。
+
 ## 探针接口
 
 发现流程使用的元数据探针是：

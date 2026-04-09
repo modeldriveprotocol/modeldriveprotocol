@@ -4,6 +4,58 @@ import WebSocket from 'ws'
 import { MdpClusterManager } from '../src/cluster-manager.js'
 
 describe('cluster manager state change notifications', () => {
+  it('emits a state change when reachability expires with no new peer events', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-09T00:00:00.000Z'))
+
+    const onStateChange = vi.fn()
+    const manager = createManager(onStateChange)
+    const link = createLink()
+
+    try {
+      setLeaderState(manager)
+
+      await (manager as unknown as {
+        handleClusterMessage: (link: unknown, message: unknown) => Promise<void>
+      }).handleClusterMessage(link, {
+        type: 'clusterHeartbeatAck',
+        clusterId: 'cluster-local',
+        serverId: 'node-b',
+        term: 1,
+        followerId: 'node-b',
+        leaderId: 'node-a',
+        timestamp: Date.now()
+      })
+
+      expect(onStateChange).toHaveBeenCalledWith(expect.objectContaining({
+        roleChanged: false,
+        leaderChanged: false,
+        state: expect.objectContaining({
+          knownMemberCount: 2,
+          reachableMemberCount: 2,
+          hasQuorum: true
+        })
+      }))
+
+      onStateChange.mockClear()
+
+      await vi.advanceTimersByTimeAsync(141)
+
+      expect(onStateChange).toHaveBeenCalledWith(expect.objectContaining({
+        roleChanged: false,
+        leaderChanged: false,
+        state: expect.objectContaining({
+          knownMemberCount: 2,
+          reachableMemberCount: 1,
+          hasQuorum: false
+        })
+      }))
+    } finally {
+      vi.useRealTimers()
+      await manager.close()
+    }
+  })
+
   it('emits a state change when an incoming peer message restores reachability', async () => {
     const onStateChange = vi.fn()
     const manager = createManager(onStateChange)
@@ -139,13 +191,25 @@ function setPeerState(
 }
 
 function createLink(): {
-  socket: Pick<WebSocket, 'readyState'>
+  socket: Pick<WebSocket, 'close' | 'once' | 'readyState' | 'send'>
   outbound: boolean
   peerId: string
 } {
+  let onClose: (() => void) | undefined
+
   return {
     socket: {
-      readyState: WebSocket.OPEN
+      readyState: WebSocket.OPEN,
+      send: vi.fn(),
+      once: vi.fn((event: string, handler: () => void) => {
+        if (event === 'close') {
+          onClose = handler
+        }
+      }),
+      close: vi.fn(function(this: { readyState: number }) {
+        this.readyState = WebSocket.CLOSED
+        onClose?.()
+      })
     },
     outbound: true,
     peerId: 'node-b'

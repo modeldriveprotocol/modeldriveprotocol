@@ -125,6 +125,8 @@ npx @modeldriveprotocol/server setup
 
 这些文件只用于诊断和排查，不会恢复活跃中的 client session，也不会把 registry 状态复制到别的 server。
 
+如果要看精确的文件定义和读取建议，继续阅读 [状态目录](/zh-Hans/server/state-store)。
+
 ## Cluster 参数
 
 <!-- GENERATED:cluster-options:start -->

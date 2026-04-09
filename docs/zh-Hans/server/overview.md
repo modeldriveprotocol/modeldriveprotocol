@@ -22,4 +22,4 @@ server 不应该关心 client 是用 Swift、Kotlin、C++、JavaScript 还是 Py
 即使运行在 upstream proxy 模式下，server 也不是 capability owner。它只是接收注册、镜像 descriptor，并转发调用。
 
 关于启动拓扑和 cluster-mode 参数，继续阅读 [部署模式](/zh-Hans/server/deployment)。
-关于可选的文件系统状态目录，继续阅读 [CLI 参数](/zh-Hans/server/cli)。
+关于可选的文件系统状态目录和文件契约，继续阅读 [状态目录](/zh-Hans/server/state-store)。

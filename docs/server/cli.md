@@ -125,6 +125,8 @@ By default the snapshot files are written under `./.mdp/store` in the startup wo
 
 These files are diagnostic only. They do not restore live client sessions or replicate registry state across servers.
 
+For exact file definitions and reader guidance, see [State Store](/server/state-store).
+
 ## Cluster Options
 
 <!-- GENERATED:cluster-options:start -->
