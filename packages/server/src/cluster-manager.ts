@@ -2,18 +2,18 @@ import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 
 import {
-  createSerializedError,
   type ClusterHeartbeatAckMessage,
   type ClusterHeartbeatMessage,
   type ClusterHelloMessage,
   type ClusterLeaderResignMessage,
   type ClusterMessage,
+  type ClusterRole,
   type ClusterRpcRequestMessage,
   type ClusterRpcResponseMessage,
-  type ClusterRole,
   type ClusterVoteRequestMessage,
   type ClusterVoteResponseMessage,
   type JsonValue,
+  createSerializedError,
   parseClusterMessage
 } from '@modeldriveprotocol/protocol'
 import WebSocket from 'ws'
@@ -25,11 +25,7 @@ import {
   DEFAULT_CLUSTER_HEARTBEAT_INTERVAL_MS,
   DEFAULT_CLUSTER_LEASE_DURATION_MS
 } from './defaults.js'
-import {
-  discoverMdpServers,
-  probeMdpServer,
-  type DiscoveredMdpServer
-} from './upstream-discovery.js'
+import { type DiscoveredMdpServer, discoverMdpServers, probeMdpServer } from './upstream-discovery.js'
 
 export class DuplicateClusterServerIdError extends Error {
   readonly name = 'DuplicateClusterServerIdError'
@@ -257,14 +253,16 @@ export class MdpClusterManager {
     }
 
     if (this.role === 'leader') {
-      this.broadcast({
-        type: 'clusterLeaderResign',
-        clusterId: this.clusterId,
-        serverId: this.serverId,
-        term: this.currentTerm,
-        leaderId: this.serverId,
-        timestamp: Date.now()
-      } satisfies ClusterLeaderResignMessage)
+      this.broadcast(
+        {
+          type: 'clusterLeaderResign',
+          clusterId: this.clusterId,
+          serverId: this.serverId,
+          term: this.currentTerm,
+          leaderId: this.serverId,
+          timestamp: Date.now()
+        } satisfies ClusterLeaderResignMessage
+      )
 
       await delay(50)
     }
@@ -306,16 +304,19 @@ export class MdpClusterManager {
       })
 
       try {
-        this.send(link, {
-          type: 'clusterRpcRequest',
-          clusterId: this.clusterId,
-          serverId: this.serverId,
-          term: this.currentTerm,
-          requestId,
-          method: request.method,
-          timestamp: Date.now(),
-          ...(request.params !== undefined ? { params: request.params as JsonValue } : {})
-        } satisfies ClusterRpcRequestMessage)
+        this.send(
+          link,
+          {
+            type: 'clusterRpcRequest',
+            clusterId: this.clusterId,
+            serverId: this.serverId,
+            term: this.currentTerm,
+            requestId,
+            method: request.method,
+            timestamp: Date.now(),
+            ...(request.params !== undefined ? { params: request.params as JsonValue } : {})
+          } satisfies ClusterRpcRequestMessage
+        )
       } catch (error) {
         clearTimeout(timeout)
         this.pendingRpcRequests.delete(requestId)
@@ -403,6 +404,7 @@ export class MdpClusterManager {
     server: DiscoveredMdpServer,
     now: number
   ): ClusterPeerState {
+    const previous = this.state
     const existing = this.peers.get(server.meta.serverId)
 
     if (existing) {
@@ -411,6 +413,7 @@ export class MdpClusterManager {
       existing.role = server.meta.cluster.role
       existing.term = server.meta.cluster.term
       existing.lastSeenAt = now
+      this.emitStateChangeIfChanged(previous)
       return existing
     }
 
@@ -427,6 +430,7 @@ export class MdpClusterManager {
     }
     this.memberIds.add(peer.serverId)
     this.peers.set(peer.serverId, peer)
+    this.emitStateChangeIfChanged(previous)
     return peer
   }
 
@@ -518,6 +522,7 @@ export class MdpClusterManager {
       return
     }
 
+    const previous = this.state
     const peerId = link.peerId
     if (peerId) {
       const peer = this.peers.get(peerId)
@@ -535,6 +540,8 @@ export class MdpClusterManager {
         )
       }
     }
+
+    this.emitStateChangeIfChanged(previous)
   }
 
   private async handleClusterMessage(
@@ -581,15 +588,18 @@ export class MdpClusterManager {
       case 'clusterHeartbeat':
         this.observeLeader(message.leaderId, message.leaderUrl, message.term, 'control')
         this.leaderLeaseExpiresAt = Date.now() + message.leaseDurationMs
-        this.send(link, {
-          type: 'clusterHeartbeatAck',
-          clusterId: this.clusterId,
-          serverId: this.serverId,
-          term: this.currentTerm,
-          followerId: this.serverId,
-          leaderId: message.leaderId,
-          timestamp: Date.now()
-        } satisfies ClusterHeartbeatAckMessage)
+        this.send(
+          link,
+          {
+            type: 'clusterHeartbeatAck',
+            clusterId: this.clusterId,
+            serverId: this.serverId,
+            term: this.currentTerm,
+            followerId: this.serverId,
+            leaderId: message.leaderId,
+            timestamp: Date.now()
+          } satisfies ClusterHeartbeatAckMessage
+        )
         return
       case 'clusterHeartbeatAck':
         if (this.role === 'leader' && message.term === this.currentTerm && message.leaderId === this.serverId) {
@@ -622,6 +632,7 @@ export class MdpClusterManager {
     message: ClusterMessage,
     now: number
   ): ClusterPeerState {
+    const previous = this.state
     const peer = this.peers.get(message.serverId) ?? {
       serverId: message.serverId,
       wsUrl: resolvePeerWsUrl(message),
@@ -650,6 +661,7 @@ export class MdpClusterManager {
     link.peerId = peer.serverId
     this.memberIds.add(peer.serverId)
     this.peers.set(peer.serverId, peer)
+    this.emitStateChangeIfChanged(previous)
 
     return peer
   }
@@ -733,36 +745,42 @@ export class MdpClusterManager {
     }
 
     if (this.role !== 'leader') {
-      this.send(link, {
-        type: 'clusterRpcResponse',
-        clusterId: this.clusterId,
-        serverId: this.serverId,
-        term: this.currentTerm,
-        requestId: message.requestId,
-        ok: false,
-        error: createSerializedError(
-          'not_ready',
-          `Server ${this.serverId} is not the current cluster leader`
-        ),
-        timestamp: Date.now()
-      } satisfies ClusterRpcResponseMessage)
+      this.send(
+        link,
+        {
+          type: 'clusterRpcResponse',
+          clusterId: this.clusterId,
+          serverId: this.serverId,
+          term: this.currentTerm,
+          requestId: message.requestId,
+          ok: false,
+          error: createSerializedError(
+            'not_ready',
+            `Server ${this.serverId} is not the current cluster leader`
+          ),
+          timestamp: Date.now()
+        } satisfies ClusterRpcResponseMessage
+      )
       return
     }
 
     if (!this.handleRpcRequest) {
-      this.send(link, {
-        type: 'clusterRpcResponse',
-        clusterId: this.clusterId,
-        serverId: this.serverId,
-        term: this.currentTerm,
-        requestId: message.requestId,
-        ok: false,
-        error: createSerializedError(
-          'not_ready',
-          `Server ${this.serverId} does not accept forwarded cluster RPC requests`
-        ),
-        timestamp: Date.now()
-      } satisfies ClusterRpcResponseMessage)
+      this.send(
+        link,
+        {
+          type: 'clusterRpcResponse',
+          clusterId: this.clusterId,
+          serverId: this.serverId,
+          term: this.currentTerm,
+          requestId: message.requestId,
+          ok: false,
+          error: createSerializedError(
+            'not_ready',
+            `Server ${this.serverId} does not accept forwarded cluster RPC requests`
+          ),
+          timestamp: Date.now()
+        } satisfies ClusterRpcResponseMessage
+      )
       return
     }
 
@@ -772,29 +790,35 @@ export class MdpClusterManager {
         ...(message.params !== undefined ? { params: message.params } : {})
       })
 
-      this.send(link, {
-        type: 'clusterRpcResponse',
-        clusterId: this.clusterId,
-        serverId: this.serverId,
-        term: this.currentTerm,
-        requestId: message.requestId,
-        ok: true,
-        ...(result !== undefined ? { result: result as JsonValue } : {}),
-        timestamp: Date.now()
-      } satisfies ClusterRpcResponseMessage)
+      this.send(
+        link,
+        {
+          type: 'clusterRpcResponse',
+          clusterId: this.clusterId,
+          serverId: this.serverId,
+          term: this.currentTerm,
+          requestId: message.requestId,
+          ok: true,
+          ...(result !== undefined ? { result: result as JsonValue } : {}),
+          timestamp: Date.now()
+        } satisfies ClusterRpcResponseMessage
+      )
     } catch (error) {
       const normalized = error instanceof Error ? error : new Error(String(error))
 
-      this.send(link, {
-        type: 'clusterRpcResponse',
-        clusterId: this.clusterId,
-        serverId: this.serverId,
-        term: this.currentTerm,
-        requestId: message.requestId,
-        ok: false,
-        error: createSerializedError('handler_error', normalized.message),
-        timestamp: Date.now()
-      } satisfies ClusterRpcResponseMessage)
+      this.send(
+        link,
+        {
+          type: 'clusterRpcResponse',
+          clusterId: this.clusterId,
+          serverId: this.serverId,
+          term: this.currentTerm,
+          requestId: message.requestId,
+          ok: false,
+          error: createSerializedError('handler_error', normalized.message),
+          timestamp: Date.now()
+        } satisfies ClusterRpcResponseMessage
+      )
     }
   }
 
@@ -977,16 +1001,18 @@ export class MdpClusterManager {
     }
 
     this.leaderLeaseExpiresAt = Date.now() + this.leaseDurationMs
-    this.broadcast({
-      type: 'clusterHeartbeat',
-      clusterId: this.clusterId,
-      serverId: this.serverId,
-      term: this.currentTerm,
-      leaderId: this.serverId,
-      leaderUrl: this.getSelfEndpoints().ws,
-      leaseDurationMs: this.leaseDurationMs,
-      timestamp: Date.now()
-    } satisfies ClusterHeartbeatMessage)
+    this.broadcast(
+      {
+        type: 'clusterHeartbeat',
+        clusterId: this.clusterId,
+        serverId: this.serverId,
+        term: this.currentTerm,
+        leaderId: this.serverId,
+        leaderUrl: this.getSelfEndpoints().ws,
+        leaseDurationMs: this.leaseDurationMs,
+        timestamp: Date.now()
+      } satisfies ClusterHeartbeatMessage
+    )
   }
 
   private scheduleElection(immediate = false): void {
@@ -1205,20 +1231,23 @@ export class MdpClusterManager {
   }
 
   private sendHello(link: ClusterPeerLink): void {
-    this.send(link, {
-      type: 'clusterHello',
-      clusterId: this.clusterId,
-      membershipMode: this.membershipMode(),
-      membershipFingerprint: this.membershipFingerprint(),
-      serverId: this.serverId,
-      term: this.currentTerm,
-      role: this.role,
-      wsUrl: this.getSelfEndpoints().ws,
-      clusterUrl: this.getSelfEndpoints().cluster,
-      timestamp: Date.now(),
-      ...(this.leaderId ? { leaderId: this.leaderId } : {}),
-      ...(this.leaderUrl ? { leaderUrl: this.leaderUrl } : {})
-    } satisfies ClusterHelloMessage)
+    this.send(
+      link,
+      {
+        type: 'clusterHello',
+        clusterId: this.clusterId,
+        membershipMode: this.membershipMode(),
+        membershipFingerprint: this.membershipFingerprint(),
+        serverId: this.serverId,
+        term: this.currentTerm,
+        role: this.role,
+        wsUrl: this.getSelfEndpoints().ws,
+        clusterUrl: this.getSelfEndpoints().cluster,
+        timestamp: Date.now(),
+        ...(this.leaderId ? { leaderId: this.leaderId } : {}),
+        ...(this.leaderUrl ? { leaderUrl: this.leaderUrl } : {})
+      } satisfies ClusterHelloMessage
+    )
   }
 
   private broadcast(message: ClusterMessage): void {
@@ -1246,6 +1275,14 @@ export class MdpClusterManager {
       leaderChanged: previous.leaderId !== next.leaderId || previous.leaderUrl !== next.leaderUrl,
       roleChanged: previous.role !== next.role
     })
+  }
+
+  private emitStateChangeIfChanged(previous: ClusterManagerState): void {
+    if (clusterStatesEqual(previous, this.state)) {
+      return
+    }
+
+    this.emitStateChange(previous)
   }
 }
 
@@ -1300,6 +1337,24 @@ function firstOpenLink(links: Set<ClusterPeerLink>): ClusterPeerLink | undefined
   }
 
   return undefined
+}
+
+function clusterStatesEqual(
+  left: ClusterManagerState,
+  right: ClusterManagerState
+): boolean {
+  return left.id === right.id &&
+    left.membershipMode === right.membershipMode &&
+    left.membershipFingerprint === right.membershipFingerprint &&
+    left.role === right.role &&
+    left.term === right.term &&
+    left.leaderId === right.leaderId &&
+    left.leaderUrl === right.leaderUrl &&
+    left.leaseDurationMs === right.leaseDurationMs &&
+    left.knownMemberCount === right.knownMemberCount &&
+    left.reachableMemberCount === right.reachableMemberCount &&
+    left.quorumSize === right.quorumSize &&
+    left.hasQuorum === right.hasQuorum
 }
 
 async function closeLink(link: ClusterPeerLink): Promise<void> {

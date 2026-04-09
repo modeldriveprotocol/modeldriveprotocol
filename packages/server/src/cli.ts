@@ -95,6 +95,9 @@ export async function runCli(
     onClientRemoved: ({ client }) => {
       queueStateStoreUpdate(stateStore?.syncRegistry())
       void upstreamProxy?.removeClient(client.id)
+    },
+    onClientStateChanged: () => {
+      queueStateStoreUpdate(stateStore?.syncRegistry())
     }
   })
 

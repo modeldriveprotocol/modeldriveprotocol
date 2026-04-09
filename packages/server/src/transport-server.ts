@@ -13,11 +13,11 @@ import {
 import type { Duplex } from 'node:stream'
 
 import {
-  MDP_PROTOCOL_VERSION,
-  MDP_SUPPORTED_PROTOCOL_RANGES,
   type AuthContext,
   type ClientToServerMessage,
   type ServerToClientMessage,
+  MDP_PROTOCOL_VERSION,
+  MDP_SUPPORTED_PROTOCOL_RANGES,
   isJsonObject,
   isMdpMessage
 } from '@modeldriveprotocol/protocol'
@@ -25,11 +25,7 @@ import type { RawData } from 'ws'
 import WebSocket, { WebSocketServer } from 'ws'
 
 import { type ClientSessionTransport, ClientSession } from './client-session.js'
-import {
-  DEFAULT_CLUSTER_LEASE_DURATION_MS,
-  DEFAULT_MDP_PORT,
-  DEFAULT_SERVER_HOST
-} from './defaults.js'
+import { DEFAULT_CLUSTER_LEASE_DURATION_MS, DEFAULT_MDP_PORT, DEFAULT_SERVER_HOST } from './defaults.js'
 import { MdpServerRuntime } from './mdp-server.js'
 import type { MdpServerMeta } from './upstream-discovery.js'
 
@@ -528,8 +524,10 @@ export class MdpTransportServer {
       return
     }
 
-    entry.session.setTransportAuth(this.extractTransportAuth(request))
-    entry.session.markSeen()
+    this.runtime.setSessionTransportAuth(
+      entry.session,
+      this.extractTransportAuth(request)
+    )
 
     const body = (await readJsonBody(request)) as { message?: unknown }
     const message = asClientToServerMessage(body.message)
@@ -563,8 +561,11 @@ export class MdpTransportServer {
       return
     }
 
-    entry.session.setTransportAuth(this.extractTransportAuth(request))
-    entry.session.markSeen()
+    this.runtime.setSessionTransportAuth(
+      entry.session,
+      this.extractTransportAuth(request)
+    )
+    this.runtime.touchSession(entry.session)
 
     const waitMs = clampWaitMs(
       Number(url.searchParams.get('waitMs') ?? this.longPollTimeoutMs),
