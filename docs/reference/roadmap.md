@@ -94,7 +94,7 @@ Make the current server safe enough for repeated local use and easier to extend 
 
 ### Important Non-Goal
 
-Do not add distributed coordination or persistence yet. A simple hub-plus-edge proxy layout is acceptable, but avoid turning the runtime into a peer mesh, a replicated registry, or a multi-writer distributed control plane before the local lifecycle is boring and predictable.
+Do not add durable recovery or replicated persistence yet. A simple hub-plus-edge proxy layout is acceptable, and node-local diagnostic state snapshots are fine, but avoid turning the runtime into a peer mesh, a replicated registry, or a multi-writer distributed control plane before the local lifecycle is boring and predictable.
 
 ### Acceptance Bar
 

@@ -51,6 +51,8 @@ Options:
   --tls-cert <path>                                TLS certificate path
   --tls-ca <path>                                  TLS CA bundle path
   --server-id <id>                                 Stable server identity exposed in /mdp/meta
+  --state-store                                    Enable node-local filesystem state snapshots in ./.mdp/store
+  --state-store-dir <path>                         Enable node-local filesystem state snapshots in a custom directory
   -h, --help                                       Show this help text
   --cluster-mode <standalone|auto|proxy-required>  Startup topology mode (default: auto)
   --cluster-id <id>                                Logical cluster identity (default: derived from discovery host/start port)
@@ -110,8 +112,18 @@ When `setup` runs inside this repository and finds `scripts/run-local-mdp-mcp.mj
 | `--tls-cert <path>` | TLS certificate path. |
 | `--tls-ca <path>` | Optional TLS CA bundle path. |
 | `--server-id <id>` | Stable server identity exposed by `/mdp/meta`. |
+| `--state-store` | Enable node-local filesystem snapshots for current clients, routes, and service status. Default directory: `./.mdp/store` from the startup working directory. |
+| `--state-store-dir <path>` | Enable node-local filesystem snapshots and write them to the provided directory. Relative paths resolve from the startup working directory. |
 | `-h, --help` | Print help and exit. |
 <!-- GENERATED:core-options:end -->
+
+## Local State Store
+
+Use `--state-store` when you want a node-local filesystem snapshot of the server's current clients, routes, and service status.
+
+By default the snapshot files are written under `./.mdp/store` in the startup working directory. Use `--state-store-dir` to pick another location.
+
+These files are diagnostic only. They do not restore live client sessions or replicate registry state across servers.
 
 ## Cluster Options
 
@@ -182,6 +194,7 @@ On startup, the CLI prints:
 - HTTP loop endpoint
 - auth endpoint
 - metadata probe endpoint
+- state store directory when `--state-store` or `--state-store-dir` is enabled
 - whether the server is running standalone or attached to an upstream hub
 
 ## Related Pages
