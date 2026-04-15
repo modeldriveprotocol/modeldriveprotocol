@@ -27,6 +27,12 @@ interface LocaleCopy {
     externalInterfaces: string
     sdks: string
     javaScript: string
+    go: string
+    python: string
+    rust: string
+    java: string
+    kotlin: string
+    csharp: string
     apps: string
     playground: string
   }
@@ -166,6 +172,12 @@ const enUS: LocaleCopy = {
     externalInterfaces: 'External Interfaces',
     sdks: 'SDKs',
     javaScript: 'JavaScript',
+    go: 'Go',
+    python: 'Python',
+    rust: 'Rust',
+    java: 'Java',
+    kotlin: 'Kotlin',
+    csharp: 'C#',
     apps: 'Apps',
     playground: 'Playground'
   },
@@ -302,6 +314,12 @@ const zhHans: LocaleCopy = {
     externalInterfaces: '外部接口',
     sdks: 'SDKs',
     javaScript: 'JavaScript',
+    go: 'Go',
+    python: 'Python',
+    rust: 'Rust',
+    java: 'Java',
+    kotlin: 'Kotlin',
+    csharp: 'C#',
     apps: 'Apps',
     playground: 'Playground'
   },
@@ -1027,14 +1045,38 @@ function createEcosystemSidebar(
             {
               text: copy.pages.jsSkillsDefinitions,
               link: localePath(prefix, '/sdk/javascript/skills-definitions')
-            },
-            { text: copy.pages.goQuickStart, link: localePath(prefix, '/sdk/go/quick-start') },
-            { text: copy.pages.pythonQuickStart, link: localePath(prefix, '/sdk/python/quick-start') },
-            { text: copy.pages.rustQuickStart, link: localePath(prefix, '/sdk/rust/quick-start') },
-            { text: copy.pages.javaQuickStart, link: localePath(prefix, '/sdk/java/quick-start') },
-            { text: copy.pages.kotlinQuickStart, link: localePath(prefix, '/sdk/kotlin/quick-start') },
-            { text: copy.pages.csharpQuickStart, link: localePath(prefix, '/sdk/csharp/quick-start') }
+            }
           ]
+        },
+        {
+          text: copy.sections.go,
+          collapsed: true,
+          items: [{ text: copy.pages.quickStart, link: localePath(prefix, '/sdk/go/quick-start') }]
+        },
+        {
+          text: copy.sections.python,
+          collapsed: true,
+          items: [{ text: copy.pages.quickStart, link: localePath(prefix, '/sdk/python/quick-start') }]
+        },
+        {
+          text: copy.sections.rust,
+          collapsed: true,
+          items: [{ text: copy.pages.quickStart, link: localePath(prefix, '/sdk/rust/quick-start') }]
+        },
+        {
+          text: copy.sections.java,
+          collapsed: true,
+          items: [{ text: copy.pages.quickStart, link: localePath(prefix, '/sdk/java/quick-start') }]
+        },
+        {
+          text: copy.sections.kotlin,
+          collapsed: true,
+          items: [{ text: copy.pages.quickStart, link: localePath(prefix, '/sdk/kotlin/quick-start') }]
+        },
+        {
+          text: copy.sections.csharp,
+          collapsed: true,
+          items: [{ text: copy.pages.quickStart, link: localePath(prefix, '/sdk/csharp/quick-start') }]
         }
       ]
     },
