@@ -5,13 +5,23 @@ status: MVP
 
 # JavaScript 简易上手
 
-如果你想从浏览器、本地 agent 或 Node 进程里最快接入 MDP，JavaScript SDK 是最短路径。
+如果你的 MDP client 运行在浏览器页面、本地 agent、Node 进程或自定义 JavaScript 运行时里，优先使用 JavaScript SDK。
 
-## 1. 创建 client
+## 1. 安装 package
+
+```bash
+npm install @modeldriveprotocol/client
+```
+
+这个简易上手页使用浏览器绑定入口：
 
 ```ts
 import { createMdpClient } from '@modeldriveprotocol/client/browser'
+```
 
+## 2. 创建 client
+
+```ts
 const client = createMdpClient({
   serverUrl: 'ws://127.0.0.1:47372',
   client: {
@@ -21,7 +31,7 @@ const client = createMdpClient({
 })
 ```
 
-## 2. 暴露一个 path
+## 3. 暴露一个 path
 
 ```ts
 client.expose(
@@ -43,14 +53,14 @@ client.expose(
 )
 ```
 
-## 3. 建连并注册
+## 4. 建连并注册
 
 ```ts
 await client.connect()
 client.register()
 ```
 
-## 4. 通过 server 调用
+## 5. 通过 server 调用
 
 client 注册完成后，MCP host 就可以通过这些 bridge tools 访问它：
 
@@ -70,5 +80,13 @@ client.expose('/page/inspect', { method: 'GET' }, async () => ({
 client.syncCatalog()
 ```
 
+## Transport 支持
+
+JavaScript SDK 当前支持：
+
+- `ws` / `wss`
+- `http` / `https` loop mode
+
 如果你需要看 transport、认证引导或浏览器全局 bundle，用下一页 [如何使用](/zh-Hans/sdk/javascript/usage)。
 如果你不想自己从零接 SDK，而是想直接用现成集成，优先看 [Chrome 插件](/zh-Hans/apps/chrome-extension) 或 [VSCode 插件](/zh-Hans/apps/vscode-extension)。
+如果你要看 contributor workflow、调试经验和 package 级验证，继续阅读 [JavaScript SDK 开发指南](/zh-Hans/contributing/modules/sdks/javascript)。
