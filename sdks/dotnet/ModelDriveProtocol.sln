@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{55048216-34D8-40B3-B3DA-F0306B025AAA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModelDriveProtocol.Client", "src\ModelDriveProtocol.Client\ModelDriveProtocol.Client.csproj", "{C6D73CB7-FF1E-4AF6-94D6-2860DEBC39D1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{16E5F4EB-B42D-4044-9BE1-E964EE727050}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModelDriveProtocol.Client.Tests", "tests\ModelDriveProtocol.Client.Tests\ModelDriveProtocol.Client.Tests.csproj", "{93DE84A6-381E-4915-8D96-F6968A2AB0AD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C6D73CB7-FF1E-4AF6-94D6-2860DEBC39D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6D73CB7-FF1E-4AF6-94D6-2860DEBC39D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6D73CB7-FF1E-4AF6-94D6-2860DEBC39D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6D73CB7-FF1E-4AF6-94D6-2860DEBC39D1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93DE84A6-381E-4915-8D96-F6968A2AB0AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93DE84A6-381E-4915-8D96-F6968A2AB0AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93DE84A6-381E-4915-8D96-F6968A2AB0AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93DE84A6-381E-4915-8D96-F6968A2AB0AD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C6D73CB7-FF1E-4AF6-94D6-2860DEBC39D1} = {55048216-34D8-40B3-B3DA-F0306B025AAA}
+		{93DE84A6-381E-4915-8D96-F6968A2AB0AD} = {16E5F4EB-B42D-4044-9BE1-E964EE727050}
+	EndGlobalSection
+EndGlobal

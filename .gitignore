@@ -15,6 +15,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .DS_Store
+.env.dev
 .mdp/store/
 .idea/
 .eslintcache
@@ -26,3 +27,18 @@ docs/public/assets/mdp-client.global.js
 docs/public/assets/mdp-client.global.js.map
 docs/public/assets/modeldriveprotocol-client.global.js
 docs/public/assets/modeldriveprotocol-client.global.js.map
+sdks/python/.venv/
+sdks/python/.pytest_cache/
+sdks/python/build/
+sdks/python/dist/
+sdks/python/src/**/*.egg-info/
+sdks/python/**/__pycache__/
+sdks/rust/Cargo.lock
+sdks/rust/target/
+sdks/jvm/.gradle/
+sdks/jvm/*/build/
+sdks/go/bin/
+sdks/go/pkg/
+sdks/dotnet/artifacts/
+sdks/dotnet/**/bin/
+sdks/dotnet/**/obj/

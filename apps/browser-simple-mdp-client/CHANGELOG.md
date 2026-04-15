@@ -1,5 +1,11 @@
 # @modeldriveprotocol/browser-simple-mdp-client
 
+## 2.2.0
+
+### Minor Changes
+
+- Add the first maintained Go, Python, Rust, JVM, and .NET SDK releases, plus shared release automation and contributor docs.
+
 ## 2.1.0
 
 ### Minor Changes

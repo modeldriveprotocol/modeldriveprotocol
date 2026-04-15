@@ -50,6 +50,12 @@ pnpm docs:build
 
 - [项目架构](/zh-Hans/contributing/architecture)
 - [环境准备](/zh-Hans/contributing/setup/)
+- [Go SDK 开发指南](/zh-Hans/contributing/modules/sdks/go)
+- [Python SDK 开发指南](/zh-Hans/contributing/modules/sdks/python)
+- [Rust SDK 开发指南](/zh-Hans/contributing/modules/sdks/rust)
+- [JVM SDK 开发指南](/zh-Hans/contributing/modules/sdks/jvm)
+- [C# SDK 开发指南](/zh-Hans/contributing/modules/sdks/dotnet)
 - [发布](/zh-Hans/contributing/releasing)
+- [多语言 SDK 包发布](/zh-Hans/contributing/releasing-sdks)
 - [NPM 包发布](/zh-Hans/contributing/releasing-packages)
 - [应用发布](/zh-Hans/contributing/releasing-apps)

@@ -1,5 +1,16 @@
 # @modeldriveprotocol/nodejs-simple-mdp-client
 
+## 2.2.0
+
+### Minor Changes
+
+- Add the first maintained Go, Python, Rust, JVM, and .NET SDK releases, plus shared release automation and contributor docs.
+
+### Patch Changes
+
+- Updated dependencies
+  - @modeldriveprotocol/client@2.2.0
+
 ## 2.1.0
 
 ### Minor Changes

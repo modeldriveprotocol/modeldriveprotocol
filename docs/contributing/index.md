@@ -50,6 +50,12 @@ For most changes:
 
 - [Project Architecture](/contributing/architecture)
 - [Environment Setup](/contributing/setup/)
+- [Go SDK Guide](/contributing/modules/sdks/go)
+- [Python SDK Guide](/contributing/modules/sdks/python)
+- [Rust SDK Guide](/contributing/modules/sdks/rust)
+- [JVM SDK Guide](/contributing/modules/sdks/jvm)
+- [C# SDK Guide](/contributing/modules/sdks/dotnet)
 - [Releasing](/contributing/releasing)
+- [Polyglot SDK Packages](/contributing/releasing-sdks)
 - [Release NPM packages](/contributing/releasing-packages)
 - [Release apps](/contributing/releasing-apps)

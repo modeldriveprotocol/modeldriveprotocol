@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <Version>2.2.0</Version>
+    <Authors>Model Drive Protocol</Authors>
+    <Company>Model Drive Protocol</Company>
+    <RepositoryUrl>https://github.com/modeldriveprotocol/modeldriveprotocol</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>

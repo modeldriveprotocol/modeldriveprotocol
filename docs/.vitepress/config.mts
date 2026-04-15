@@ -78,16 +78,28 @@ interface LocaleCopy {
     contributingServer: string
     contributingSdks: string
     contributingJavaScriptSdk: string
+    contributingGoSdk: string
+    contributingPythonSdk: string
+    contributingRustSdk: string
+    contributingJvmSdk: string
+    contributingDotnetSdk: string
     contributingApps: string
     contributingChromeExtension: string
     contributingVsCodeExtension: string
     contributingReleasingOverview: string
     contributingReleasingPackages: string
+    contributingReleasingSdks: string
     contributingReleasingApps: string
     jsQuickStart: string
     jsUsage: string
     jsMcpDefinitions: string
     jsSkillsDefinitions: string
+    goQuickStart: string
+    pythonQuickStart: string
+    rustQuickStart: string
+    javaQuickStart: string
+    kotlinQuickStart: string
+    csharpQuickStart: string
     browserSimpleMdpClient: string
     chromeExtension: string
     vscodeExtension: string
@@ -205,16 +217,28 @@ const enUS: LocaleCopy = {
     contributingServer: 'Server',
     contributingSdks: 'SDKs',
     contributingJavaScriptSdk: 'JavaScript SDK',
+    contributingGoSdk: 'Go SDK',
+    contributingPythonSdk: 'Python SDK',
+    contributingRustSdk: 'Rust SDK',
+    contributingJvmSdk: 'JVM SDKs',
+    contributingDotnetSdk: 'C# SDK',
     contributingApps: 'Apps',
     contributingChromeExtension: 'Chrome Extension Guide',
     contributingVsCodeExtension: 'VSCode Extension Guide',
     contributingReleasingOverview: 'Releasing Overview',
     contributingReleasingPackages: 'NPM Packages',
+    contributingReleasingSdks: 'Polyglot SDK Packages',
     contributingReleasingApps: 'Apps',
     jsQuickStart: 'Quick Start',
     jsUsage: 'Usage',
     jsMcpDefinitions: 'MCP Definitions',
     jsSkillsDefinitions: 'Skills Definitions',
+    goQuickStart: 'Go / Quick Start',
+    pythonQuickStart: 'Python / Quick Start',
+    rustQuickStart: 'Rust / Quick Start',
+    javaQuickStart: 'Java / Quick Start',
+    kotlinQuickStart: 'Kotlin / Quick Start',
+    csharpQuickStart: 'C# / Quick Start',
     browserSimpleMdpClient: 'Browser Simple MDP Client',
     chromeExtension: 'Chrome Extension',
     vscodeExtension: 'VSCode Extension',
@@ -329,16 +353,28 @@ const zhHans: LocaleCopy = {
     contributingServer: '服务端',
     contributingSdks: 'SDKs',
     contributingJavaScriptSdk: 'JavaScript SDK',
+    contributingGoSdk: 'Go SDK',
+    contributingPythonSdk: 'Python SDK',
+    contributingRustSdk: 'Rust SDK',
+    contributingJvmSdk: 'JVM SDKs',
+    contributingDotnetSdk: 'C# SDK',
     contributingApps: '应用',
     contributingChromeExtension: 'Chrome 插件开发指南',
     contributingVsCodeExtension: 'VSCode 插件开发指南',
     contributingReleasingOverview: '发布总览',
     contributingReleasingPackages: 'NPM 包发布',
+    contributingReleasingSdks: '多语言 SDK 包发布',
     contributingReleasingApps: '应用发布',
     jsQuickStart: '简易上手',
     jsUsage: '如何使用',
     jsMcpDefinitions: 'MCP 定义',
     jsSkillsDefinitions: 'Skills 定义',
+    goQuickStart: 'Go / 简易上手',
+    pythonQuickStart: 'Python / 简易上手',
+    rustQuickStart: 'Rust / 简易上手',
+    javaQuickStart: 'Java / 简易上手',
+    kotlinQuickStart: 'Kotlin / 简易上手',
+    csharpQuickStart: 'C# / 简易上手',
     browserSimpleMdpClient: 'Browser Simple MDP Client',
     chromeExtension: 'Chrome 插件',
     vscodeExtension: 'VSCode 插件',
@@ -505,6 +541,30 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
               {
                 text: `${copy.sections.javaScript} / ${copy.pages.jsSkillsDefinitions}`,
                 link: localePath(prefix, '/sdk/javascript/skills-definitions')
+              },
+              {
+                text: copy.pages.goQuickStart,
+                link: localePath(prefix, '/sdk/go/quick-start')
+              },
+              {
+                text: copy.pages.pythonQuickStart,
+                link: localePath(prefix, '/sdk/python/quick-start')
+              },
+              {
+                text: copy.pages.rustQuickStart,
+                link: localePath(prefix, '/sdk/rust/quick-start')
+              },
+              {
+                text: copy.pages.javaQuickStart,
+                link: localePath(prefix, '/sdk/java/quick-start')
+              },
+              {
+                text: copy.pages.kotlinQuickStart,
+                link: localePath(prefix, '/sdk/kotlin/quick-start')
+              },
+              {
+                text: copy.pages.csharpQuickStart,
+                link: localePath(prefix, '/sdk/csharp/quick-start')
               }
             ]
           },
@@ -556,6 +616,10 @@ function createThemeConfig(prefix: LocalePrefix, copy: LocaleCopy): DefaultTheme
               {
                 text: copy.pages.contributingReleasingPackages,
                 link: localePath(prefix, '/contributing/releasing-packages')
+              },
+              {
+                text: copy.pages.contributingReleasingSdks,
+                link: localePath(prefix, '/contributing/releasing-sdks')
               },
               {
                 text: copy.pages.contributingReleasingApps,
@@ -875,6 +939,26 @@ function createContributingSidebar(
                 {
                   text: copy.pages.contributingJavaScriptSdk,
                   link: localePath(prefix, '/contributing/modules/sdks/javascript')
+                },
+                {
+                  text: copy.pages.contributingGoSdk,
+                  link: localePath(prefix, '/contributing/modules/sdks/go')
+                },
+                {
+                  text: copy.pages.contributingPythonSdk,
+                  link: localePath(prefix, '/contributing/modules/sdks/python')
+                },
+                {
+                  text: copy.pages.contributingRustSdk,
+                  link: localePath(prefix, '/contributing/modules/sdks/rust')
+                },
+                {
+                  text: copy.pages.contributingJvmSdk,
+                  link: localePath(prefix, '/contributing/modules/sdks/jvm')
+                },
+                {
+                  text: copy.pages.contributingDotnetSdk,
+                  link: localePath(prefix, '/contributing/modules/sdks/dotnet')
                 }
               ]
             },
@@ -909,6 +993,10 @@ function createContributingSidebar(
           link: localePath(prefix, '/contributing/releasing-packages')
         },
         {
+          text: copy.pages.contributingReleasingSdks,
+          link: localePath(prefix, '/contributing/releasing-sdks')
+        },
+        {
           text: copy.pages.contributingReleasingApps,
           link: localePath(prefix, '/contributing/releasing-apps')
         }
@@ -939,7 +1027,13 @@ function createEcosystemSidebar(
             {
               text: copy.pages.jsSkillsDefinitions,
               link: localePath(prefix, '/sdk/javascript/skills-definitions')
-            }
+            },
+            { text: copy.pages.goQuickStart, link: localePath(prefix, '/sdk/go/quick-start') },
+            { text: copy.pages.pythonQuickStart, link: localePath(prefix, '/sdk/python/quick-start') },
+            { text: copy.pages.rustQuickStart, link: localePath(prefix, '/sdk/rust/quick-start') },
+            { text: copy.pages.javaQuickStart, link: localePath(prefix, '/sdk/java/quick-start') },
+            { text: copy.pages.kotlinQuickStart, link: localePath(prefix, '/sdk/kotlin/quick-start') },
+            { text: copy.pages.csharpQuickStart, link: localePath(prefix, '/sdk/csharp/quick-start') }
           ]
         }
       ]

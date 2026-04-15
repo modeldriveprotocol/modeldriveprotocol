@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "modeldriveprotocol-client"
+version = "2.2.0"
+description = "Python client SDK for Model Drive Protocol."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+authors = [
+  { name = "Model Drive Protocol" }
+]
+keywords = ["mdp", "mcp", "client", "sdk", "model-drive-protocol"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries :: Python Modules"
+]
+dependencies = [
+  "httpx>=0.28,<1",
+  "websockets>=15,<16"
+]
+
+[project.urls]
+Homepage = "https://github.com/modeldriveprotocol/modeldriveprotocol"
+Documentation = "https://github.com/modeldriveprotocol/modeldriveprotocol/tree/main/sdks/python"
+Repository = "https://github.com/modeldriveprotocol/modeldriveprotocol.git"
+Issues = "https://github.com/modeldriveprotocol/modeldriveprotocol/issues"
+
+[project.optional-dependencies]
+test = [
+  "pytest>=8,<9",
+  "pytest-asyncio>=0.24,<1"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/modeldriveprotocol"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

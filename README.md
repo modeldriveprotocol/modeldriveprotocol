@@ -39,7 +39,7 @@ That runtime can be:
 - iOS
 - Qt / C++
 - Node.js
-- Python / Go / Rust / Java
+- Python / Go / Rust / Java / Kotlin / C#
 - native device or local agent processes
 
 The core model is:
@@ -165,6 +165,7 @@ Connection setup follows the same structure:
 - Use [Quick Start](./docs/guide/quick-start.md) if you want the shortest path from zero to a working client plus MCP bridge.
 - Use [Server Tools](./docs/server/tools/index.md) and [Server APIs](./docs/server/api/index.md) if you already understand the model and need exact data formats.
 - Use [JavaScript SDK Quick Start](./docs/sdk/javascript/quick-start.md) if you want to embed MDP into a browser page, local process, or custom runtime.
+- Use [Go SDK](./sdks/go/README.md), [Python SDK](./sdks/python/README.md), [Rust SDK](./sdks/rust/README.md), [JVM SDKs](./sdks/jvm/README.md), or [.NET SDK](./sdks/dotnet/README.md) if you want a first-party runtime client outside JavaScript.
 - Use [Chrome Extension](./docs/apps/chrome-extension.md) or [VSCode Extension](./docs/apps/vscode-extension.md) if you want a packaged runtime integration instead of wiring the SDK yourself.
 
 ## What Is In This Repo
@@ -172,6 +173,11 @@ Connection setup follows the same structure:
 - `packages/protocol`: protocol models, message types, guards, and errors
 - `packages/server`: MDP server runtime, transport server, and fixed MCP bridge
 - `packages/client`: JavaScript client SDK and browser bundle
+- `sdks/python`: Python client SDK
+- `sdks/go`: Go client SDK
+- `sdks/rust`: Rust client SDK
+- `sdks/jvm`: Java and Kotlin client SDKs
+- `sdks/dotnet`: C# client SDK
 - `apps/chrome-extension`: packaged Chrome runtime integration
 - `apps/vscode-extension`: packaged VSCode runtime integration
 - `docs`: VitePress documentation site and Playground
@@ -186,6 +192,8 @@ Use the docs for getting started, exact tool and API formats, and packaged integ
 - [Server Tools](./docs/server/tools/index.md)
 - [Server APIs](./docs/server/api/index.md)
 - [JavaScript SDK Quick Start](./docs/sdk/javascript/quick-start.md)
+- [Go SDK Quick Start](./docs/sdk/go/quick-start.md)
+- [C# SDK Quick Start](./docs/sdk/csharp/quick-start.md)
 - [Chrome Extension](./docs/apps/chrome-extension.md)
 - [VSCode Extension](./docs/apps/vscode-extension.md)
 - [Playground](./docs/playground/index.md)
