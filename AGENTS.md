@@ -26,6 +26,8 @@ Open the smallest relevant guide for the current task:
   read [.ai/rules/codex-cli.md](./.ai/rules/codex-cli.md)
 - task is about creating GitHub issues, editing issue templates, or following repo issue title conventions:
   read [.ai/rules/github-issues.md](./.ai/rules/github-issues.md)
+- task is about implementing, reviewing, or releasing client SDKs under `sdks/**`, or keeping multiple language SDKs aligned:
+  read [.ai/rules/sdk-development.md](./.ai/rules/sdk-development.md)
 - making cross-package changes, checking architectural assumptions, or avoiding common repo mistakes:
   read [.ai/rules/change-strategy.md](./.ai/rules/change-strategy.md)
 - task is inside a subproject that has its own `AGENTS.md`:
