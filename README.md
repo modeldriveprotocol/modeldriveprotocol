@@ -7,30 +7,41 @@
 | en-US | [zh-Hans](./README.zh-Hans.md) |
 | ----- | ------------------------------ |
 
-> The ultimate solution for connecting models with everything.
+> Expose runtime-local capabilities to AI agents - not just servers.
 
-MDP turns runtime-local path catalogs into MCP-reachable capabilities.
+MDP is a bridge for capabilities that live inside active runtimes. Browsers, apps, local processes, IDE extensions, devices, and embedded runtimes can register structured paths with one MDP server, and MCP-compatible hosts can discover and invoke them through a stable bridge surface.
 
-If your useful logic lives inside a browser tab, mobile app, desktop process, embedded runtime, or local agent, MDP gives it one bridge server to register with and one stable way for AI hosts to call it.
+## The Problem
 
-Instead of standing up a separate MCP server for every runtime, MDP keeps responsibilities clean:
+Most agent integrations assume useful capabilities live in MCP servers.
 
-- clients own capabilities
-- the MDP server owns registration and routing
-- MCP hosts talk to one fixed bridge surface
+In practice, the best context often lives somewhere else:
 
-## Why MDP Exists
+- browser tabs with user session, DOM, page state, and extensions
+- IDEs with workspace files, editor selection, diagnostics, and commands
+- local processes with CLI tools, background services, and private state
+- mobile apps and device runtimes with sensors, permissions, and user context
 
-MCP is a strong host-side protocol, but many real capabilities live somewhere else: inside apps, devices, browser sessions, and local processes.
+These runtimes are not naturally MCP servers.
 
-MDP is the layer between those runtimes and MCP. It lets arbitrary runtimes register path descriptors and route invocations through one server without generating a brand-new MCP tool surface for every connected client.
+Without MDP, teams usually end up:
 
-A typical setup looks like this:
+- rewriting runtime logic into standalone servers
+- building one-off bridges for each host/runtime pair
+- losing the live context that made the capability valuable
 
-- a web app exposes user-context tools
-- a mobile app exposes device-local actions
-- a local process exposes operational procedures
-- one MDP server presents all of them to MCP hosts through fixed bridge tools
+## The Idea
+
+MDP makes runtime capabilities discoverable as a path catalog.
+
+```text
+/browser
+  /tabs
+    /active
+      /dom
+      /selection
+      /actions/click
+```
 
 That runtime can be:
 
@@ -42,38 +53,102 @@ That runtime can be:
 - Python / Go / Rust / Java / Kotlin / C#
 - native device or local agent processes
 
-The core model is:
+Each path can be discovered and invoked. The runtime keeps ownership of the actual capability, while the MDP server owns registration, routing, and MCP exposure.
 
-- clients provide path catalogs
-- the MDP server maintains registration and routing
-- the MDP server exposes bridge tools to MCP hosts
+The path model is the API. Clients register descriptors with `expose()`, and hosts discover or invoke them through `listClients`, `listPaths`, `callPath`, and `callPaths`.
 
-The current path model supports:
+## Path-First, Skill-Aware
+
+MDP does not flatten everything into a giant tool list. It supports endpoint paths, prompt paths, and skill paths:
 
 - endpoint paths such as `GET /search`
 - prompt paths that end with `/prompt.md`
 - skill paths that end with `/skill.md`
 
-Skills can be exposed as hierarchical Markdown documents such as `/workspace/review/skill.md` and `/workspace/review/files/skill.md`, letting hosts reveal more context by reading deeper skill paths only when needed.
+Skills work well for progressive disclosure:
 
-The path model is the API. Clients register descriptors with `expose()` and hosts discover or invoke them through `listClients`, `listPaths`, `callPath`, and `callPaths`.
+```text
+/workspace/review/skill.md
+/workspace/review/files/skill.md
+/workspace/review/files/diff
+```
 
-Current transport support includes:
+An agent can start at a high-level skill, then read deeper paths only when it needs more context.
 
-- `ws` / `wss` for bidirectional socket sessions
-- `http` / `https` loop mode for long-polling runtimes
-- auth envelopes on client registration and routed invocation messages
-- transport auth via request headers or cookie bootstrap at `/mdp/auth`
-- `GET /mdp/meta` for MDP server probing and optional upstream discovery
+## Runtime -> MDP -> MCP
+
+```text
+Browser / App / Device / Local Process
+              |
+              v
+          MDP Client
+              |
+              v
+          MDP Server
+              |
+              v
+          MCP Host
+```
+
+Agents do not need to know where a capability lives. A browser tab, VSCode extension, local process, or device runtime can all appear through one unified bridge surface.
+
+The core responsibilities stay separate:
+
+- clients own capabilities
+- the MDP server owns registration and routing
+- MCP hosts talk to one fixed bridge surface
+
+## Why Not Just an MCP Server?
+
+Because not every useful runtime should become a server.
+
+| Scenario | Plain MCP server | MDP |
+| -------- | ---------------- | --- |
+| Browser tab state | Hard to expose without custom glue | Native runtime client |
+| Mobile or device APIs | Often unrealistic as a server | Expose in place |
+| Local app runtime | Heavyweight for simple local context | Direct runtime bridge |
+| Multi-agent shared context | Fragmented across hosts | One shared registry surface |
+
+## Quick Example
+
+Expose a browser selection path from a runtime client:
+
+```ts
+client.expose({
+  path: '/browser/selection',
+  description: 'Read the current browser selection.',
+  handler: async () => ({ text: window.getSelection()?.toString() ?? '' })
+})
+```
+
+The MCP host sees `/browser/selection` through the MDP bridge. The call still executes inside the live browser runtime.
+
+## What You Can Build
+
+- AI coding agents with real IDE context
+- browser-native agents without scraping workarounds
+- mobile-aware and device-aware assistants
+- local automation that keeps private runtime state local
+- multi-agent systems sharing one runtime capability registry
+- cross-device capability federation
+
+## Current Status
+
+- protocol models for path descriptors, messages, errors, and guards
+- TypeScript MDP server with MCP bridge tools
+- JavaScript client SDK with browser bundle output
+- `ws` / `wss` and `http` / `https` loop transports
+- auth envelopes and transport-carried auth support
+- `GET /mdp/meta` probing and optional upstream discovery
 - optional node-local filesystem state snapshots under `./.mdp/store` when enabled
+- Chrome extension, VSCode extension, and browser simple client integrations
+- primary-secondary server topology for layered local deployments
 
-MDP servers can also run in a simple layered topology:
+MDP is language-agnostic, but this repository currently ships the TypeScript/JavaScript reference implementation.
 
-- `auto` (default): one server becomes the primary registry for runtime-local clients, and other servers can attach to it as secondaries
-- `standalone`: one server owns the local registry without any inter-server links
-- `proxy-required`: a server must find an upstream primary MDP server during startup or fail fast
+## One Sentence
 
-In the primary-secondary view, MDP clients connect only to the primary server. Secondary servers stay connected to that primary so each AgentUI can use its own local server while still reaching the same client registry.
+MDP is the missing layer between runtime-local capabilities and AI agents.
 
 ## Architecture
 
